@@ -61,6 +61,7 @@ extern int ALC_P1_INDEX;
 extern int ALC_P2_INDEX;
 extern int ALC_P3_INDEX;
 extern int ALC_P4_INDEX;
+extern int BIG_HEAD_INDEX;
 
 
 struct ConstantPair {
@@ -203,7 +204,9 @@ static const int ALC_P2_LOC = ALC_P1_LOC + 4; //4
 static const int ALC_P3_LOC = ALC_P2_LOC + 4; //4
 static const int ALC_P4_LOC = ALC_P3_LOC + 4; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = ALC_P4_LOC + 4; //0x200
+static const int BIG_HEAD_LOC = ALC_P4_LOC + 4; //4
+
+static const int DRAW_SETTINGS_BUFFER_LOC = BIG_HEAD_LOC + 4; //0x200
 
 static const int START_OF_CODE_MENU = DRAW_SETTINGS_BUFFER_LOC + 0x200;
 

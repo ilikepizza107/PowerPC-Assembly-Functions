@@ -61,7 +61,8 @@ int ALC_P1_INDEX = -1;
 int ALC_P2_INDEX = -1;
 int ALC_P3_INDEX = -1;
 int ALC_P4_INDEX = -1;
-int EXTERNAL_INDEX = -1;	//Used for codes that use others for context
+int BIG_HEAD_INDEX = -1;
+int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use others for context
 
 //constant overrides
 vector<ConstantPair> constantOverrides;
@@ -240,7 +241,15 @@ void CodeMenu()
 	DBZModeLines.push_back(new Floating("Horizontal Acceleration", -100, 100, 1, .01, DBZ_MODE_ACCEL_X_INDEX, "%.3f"));
 	DBZModeLines.push_back(new Floating("Vertical Acceleration", -100, 100, 1, .01, DBZ_MODE_ACCEL_Y_INDEX, "%.3f"));
 	Page DBZModePage("Flight Mode Settings", DBZModeLines);
-
+	
+	//main page
+	vector<Line*> SpecialModeLines;
+	SpecialModeLines.push_back(new Comment("Special Modes"));
+	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
+	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
+	SpecialModeLines.push_back(new Toggle("Big Head Mode", false, BIG_HEAD_INDEX));
+	SpecialModeLines.push_back(new Selection("Big Head Scale", { "Large", "Larger", "Largest", "Largerest" }, 0, EXTERNAL_INDEX));
+	Page SpecialModePage("Special Modes", SpecialModeLines);
 	//main page
 	vector<Line*> MainLines;
 #if DOLPHIN_BUILD
@@ -283,8 +292,7 @@ void CodeMenu()
 	MainLines.push_back(&P2.CalledFromLine);
 	MainLines.push_back(&P3.CalledFromLine);
 	MainLines.push_back(&P4.CalledFromLine);
-	MainLines.push_back(&ConstantsPage.CalledFromLine);
-	MainLines.push_back(&DBZModePage.CalledFromLine);
+	MainLines.push_back(&SpecialModePage.CalledFromLine);
 
 #if BUILD_TYPE == PROJECT_PLUS
 	MainLines.push_back(new Toggle("Crowd Cheers", false, CROWD_CHEER_TOGGLE_INDEX));
@@ -831,7 +839,9 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(ALC_P2_INDEX, Header);
 	AddValueToByteArray(ALC_P3_INDEX, Header);
 	AddValueToByteArray(ALC_P4_INDEX, Header);
-	//
+	
+	//Big Head Mode Index
+	AddValueToByteArray(BIG_HEAD_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
