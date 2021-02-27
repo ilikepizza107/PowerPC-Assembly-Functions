@@ -57,6 +57,11 @@ int P4_TAG_STRING_INDEX = -1;
 int TAG_COSTUME_TOGGLE_INDEX = -1;
 int CROWD_CHEER_TOGGLE_INDEX = -1;
 int STALING_TOGGLE_INDEX = -1;
+int ALC_P1_INDEX = -1;
+int ALC_P2_INDEX = -1;
+int ALC_P3_INDEX = -1;
+int ALC_P4_INDEX = -1;
+int EXTERNAL_INDEX = -1;	//Used for codes that use others for context
 
 //constant overrides
 vector<ConstantPair> constantOverrides;
@@ -118,6 +123,9 @@ void CodeMenu()
 	P1Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P1_INDEX, "%.0f%%"));
 	P1Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P1_INDEX));
 	P1Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P1_INDEX));
+	P1Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P1_INDEX));
+	P1Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P1Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
 	P1Lines.push_back(new Comment(""));
 	P1Lines.push_back(new Print("Tag Hex: %s", { &P1_TAG_STRING_INDEX }));
 	P1Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -133,6 +141,9 @@ void CodeMenu()
 	P2Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P2_INDEX, "%.0f%%"));
 	P2Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P2_INDEX));
 	P2Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P2_INDEX));
+	P2Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P2_INDEX));
+	P2Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P2Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
 	P2Lines.push_back(new Comment(""));
 	P2Lines.push_back(new Print("Tag Hex: %s", { &P2_TAG_STRING_INDEX }));
 	P2Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -145,6 +156,9 @@ void CodeMenu()
 	P3Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P3_INDEX, "%.0f%%"));
 	P3Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P3_INDEX));
 	P3Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P3_INDEX));
+	P3Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P3_INDEX));
+	P3Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P3Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
 	P3Lines.push_back(new Comment(""));
 	P3Lines.push_back(new Print("Tag Hex: %s", { &P3_TAG_STRING_INDEX }));
 	P3Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -157,6 +171,9 @@ void CodeMenu()
 	P4Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P4_INDEX, "%.0f%%"));
 	P4Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P4_INDEX));
 	P4Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P4_INDEX));
+	P4Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P4_INDEX));
+	P4Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P4Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
 	P4Lines.push_back(new Comment(""));
 	P4Lines.push_back(new Print("Tag Hex: %s", { &P4_TAG_STRING_INDEX }));
 	P4Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -232,7 +249,7 @@ void CodeMenu()
 #endif
 
 #if BUILD_TYPE == PROJECT_PLUS
-	MainLines.push_back(new Comment("Project+ Code Menu", &MENU_TITLE_CHECK_LOCATION));
+	MainLines.push_back(new Comment("Desiac's Testing Code Menu", &MENU_TITLE_CHECK_LOCATION));
 #else
 	MainLines.push_back(new Comment("Legacy TE 2.5 Code Menu", &MENU_TITLE_CHECK_LOCATION));
 #endif
@@ -299,23 +316,6 @@ void CodeMenu()
 
 
 	Page Main("Main", MainLines);
-	
-	
-	//MainLines.push_back(new Selection("Infinity War", { "OFF", "Same Stage", "Random Stage" }, 0, ENDLESS_FRIENDLIES_INDEX));
-	
-	//MainLines.push_back(new Toggle("Terminate Celebrations", false, AUTO_SKIP_TO_CSS_INDEX));
-	
-	
-	
-	
-	
-	
-	
-	//int KnucklesTemp;
-	//MainLines.push_back(new Toggle("Knuckles Friendlies", false, KnucklesTemp));
-	
-	
-
 	
 
 	//Unclepunch fps code
@@ -825,6 +825,13 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(0, Header);
 	//SHOULD_RESET_STAGE_COLLISIONS_FLAG_LOC
 	AddValueToByteArray(0, Header);
+
+	//Auto L-Cancelling
+	AddValueToByteArray(ALC_P1_INDEX, Header);
+	AddValueToByteArray(ALC_P2_INDEX, Header);
+	AddValueToByteArray(ALC_P3_INDEX, Header);
+	AddValueToByteArray(ALC_P4_INDEX, Header);
+	//
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
@@ -954,7 +961,7 @@ void ControlCodeMenu()
 	int NotLoaded = GetNextLabel();
 #if BUILD_TYPE == PROJECT_PLUS
 	LoadHalfToReg(Reg1, MENU_TITLE_CHECK_LOCATION + 7 + Line::COMMENT_LINE_TEXT_START);
-	If(Reg1, NOT_EQUAL_I_L, 0x2B20); //+
+	If(Reg1, NOT_EQUAL_I_L, 0x7320); //+
 	{
 		JumpToLabel(NotLoaded);
 	}EndIf();

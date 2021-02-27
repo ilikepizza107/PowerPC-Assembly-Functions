@@ -57,6 +57,11 @@ extern int P3_TAG_STRING_INDEX;
 extern int P4_TAG_STRING_INDEX;
 extern int TAG_COSTUME_TOGGLE_INDEX;
 extern int CROWD_CHEER_TOGGLE_INDEX;
+extern int ALC_P1_INDEX;
+extern int ALC_P2_INDEX;
+extern int ALC_P3_INDEX;
+extern int ALC_P4_INDEX;
+
 
 struct ConstantPair {
 	int address;
@@ -193,7 +198,12 @@ static const int SHOULD_DISPLAY_HUD_FLAG_LOC = CODE_MENU_NEED_TO_SAVE_CAMERA_MAT
 static const int SHOULD_RESET_HITBOX_DISPLAY_FLAG_LOC = SHOULD_DISPLAY_HUD_FLAG_LOC + 4; //4
 static const int SHOULD_RESET_STAGE_COLLISIONS_FLAG_LOC = SHOULD_RESET_HITBOX_DISPLAY_FLAG_LOC + 4; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = SHOULD_RESET_STAGE_COLLISIONS_FLAG_LOC + 4; //0x200
+static const int ALC_P1_LOC = SHOULD_RESET_STAGE_COLLISIONS_FLAG_LOC + 4; //4
+static const int ALC_P2_LOC = ALC_P1_LOC + 4; //4
+static const int ALC_P3_LOC = ALC_P2_LOC + 4; //4
+static const int ALC_P4_LOC = ALC_P3_LOC + 4; //4
+
+static const int DRAW_SETTINGS_BUFFER_LOC = ALC_P4_LOC + 4; //0x200
 
 static const int START_OF_CODE_MENU = DRAW_SETTINGS_BUFFER_LOC + 0x200;
 
@@ -253,11 +263,8 @@ static int CurrentOffset = START_OF_CODE_MENU;
 #define FRAMES_WAITED_DURING_SLOW_MOTION 3
 
 static vector<int> Defaults;
-#if BUILD_TYPE == PROJECT_PLUS
-static fstream MenuFile("C:\\Users\\johno\\Documents\\Modding\\Dolphin\\SD_Raws\\data.cmnu", fstream::out | fstream::binary);
-#else
-static fstream MenuFile("C:\\Users\\johno\\Documents\\Modding\\Dolphin\\SD_Raws\\cm.bin", fstream::out | fstream::binary);
-#endif
+static fstream MenuFile("G:\\Compile\\data.cmnu", fstream::out | fstream::binary);
+
 
 class Page;
 
