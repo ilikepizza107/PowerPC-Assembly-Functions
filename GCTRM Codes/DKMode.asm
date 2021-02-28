@@ -52,7 +52,6 @@ HOOK @ $80839010
 Size_Set:
 
   lwz r4, 0x0(r4) #HeadN node ID 
-  lis r0, 0x4000
   stw r0, 0x8(r1)
   stw r0, 0xC(r1)
   stw r0, 0x10(r1)
