@@ -2,7 +2,7 @@ Big Head Mode v1.0 [Eon]
 #Code Menu Variation by Desi
 
 .alias CodeMenuStart = 0x804E
-.alias CodeMenuHeader = 0x02B8       #Offset of word containing location of the player 1 toggle. Source is compiled with headers for this.
+.alias CodeMenuHeader = 0x02B8       #Offset of word containing location of the Big Head Mode. Source is compiled with headers for this.
 
 HOOK @ $80839010
 { 

@@ -63,6 +63,7 @@ extern int ALC_P3_INDEX;
 extern int ALC_P4_INDEX;
 extern int BIG_HEAD_INDEX;
 extern int RANDOM_ANGLE_INDEX;
+extern int WAR_MODE_INDEX;
 
 
 struct ConstantPair {
@@ -209,7 +210,12 @@ static const int BIG_HEAD_LOC = ALC_P4_LOC + 4; //4
 
 static const int RANDOM_ANGLE_LOC = BIG_HEAD_LOC + 4; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = RANDOM_ANGLE_LOC + 4; //0x200
+static const int WAR_MODE_LOC = RANDOM_ANGLE_LOC + 4; //4
+
+
+static const int DRAW_SETTINGS_BUFFER_LOC = WAR_MODE_LOC + 4; //0x200
+
+
 
 static const int START_OF_CODE_MENU = DRAW_SETTINGS_BUFFER_LOC + 0x200;
 

@@ -3,7 +3,7 @@ Random Angle Mode 1.2 [PyotrLuzhin, Eon]
 ###########################################################
 #Code Menu Variant by Desi
 .alias CodeMenuStart = 0x804E
-.alias CodeMenuHeader = 0x02BC       #Offset of word containing location of the player 1 toggle. Source is compiled with headers for this.
+.alias CodeMenuHeader = 0x02BC       #Offset of word containing location of the Random Angle Mode Toggle. Source is compiled with headers for this.
 HOOK @ $80767adc
 {
   lwz r0, 0x14(r3)

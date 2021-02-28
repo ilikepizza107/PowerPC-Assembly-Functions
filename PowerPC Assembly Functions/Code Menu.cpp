@@ -63,6 +63,7 @@ int ALC_P3_INDEX = -1;
 int ALC_P4_INDEX = -1;
 int BIG_HEAD_INDEX = -1;
 int RANDOM_ANGLE_INDEX = -1;
+int WAR_MODE_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use others for context
 
 //constant overrides
@@ -249,6 +250,7 @@ void CodeMenu()
 	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
 	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
+	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
 	SpecialModeLines.push_back(new Toggle("Big Head Mode", false, BIG_HEAD_INDEX));
 	SpecialModeLines.push_back(new Selection("Big Head Scale", { "Large", "Larger", "Largest", "Largerest" }, 0, EXTERNAL_INDEX));
 	Page SpecialModePage("Special Modes", SpecialModeLines);
@@ -847,6 +849,9 @@ void CreateMenu(Page MainPage)
 
 	//Random Angle Mode
 	AddValueToByteArray(RANDOM_ANGLE_INDEX, Header);
+
+	//War Mode Index
+	AddValueToByteArray(WAR_MODE_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
