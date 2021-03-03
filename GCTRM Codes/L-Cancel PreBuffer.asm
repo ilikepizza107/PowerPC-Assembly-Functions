@@ -161,7 +161,6 @@ L-Cancel Landing Lag and Success Rate and Score Display is Auto L-Cancel Option 
 
 .alias CodeMenuStart = 0x804E
 .alias CodeMenuHeader = 0x02A8       #Offset of word containing location of the player 1 toggle. Source is compiled with headers for this.
-.alias CodeMenuHeaderInputBuffer = 0x2C4
 
 HOOK @ $80874850 
 {
@@ -205,9 +204,7 @@ trueLcancel:
   addi r11, r11, 0xC
   bl applyFlash
   li r6, 1
-  lfs f0, -23448(r2)
-  fmuls f30, f30, f0
-  b calcStat
+  b applyLcancel
 
 checkForAutoLcancel: 
   lwz r11, 28(r31)          #\Obtain Player ID 
@@ -235,7 +232,7 @@ checkForAutoLcancel:
   lbz r11, 0xB(r6)     #Load Option Selection
   cmpwi r11, 0x1
   beq applyRedFlashNoCancel
-  b checkForInputBuffer
+  b calcStat
 
 applyRedFlashNoCancel:
   lis r0, 0xFF00      #Red Flash
@@ -245,7 +242,7 @@ applyRedFlashNoCancel:
   addi r11, r11, 0xC
   bl applyFlash
   li r6, 1
-  b checkForInputBuffer
+  b calcStat
 
 applyModifiedLCancelFlash:
   lhz r11, 0 (r6)
@@ -262,7 +259,7 @@ applyModifiedLCancelFlash:
   b calcStat
 
 applyLCancelRedFlash:
-  lis r0, 0xFF00    #RedFlash
+  lis r0, 0xFF00    RedFlash
   ori r0, r0, 0x0080
   bl 0x4  #set LR
   mflr r11 #Store Link Register in R11
@@ -270,25 +267,11 @@ applyLCancelRedFlash:
   bl applyFlash
   li r6, 0
 
-checkForInputBuffer:
-  lwz r11, 28(r31)          #\Obtain Player ID 
-  lwz r11, 40(r11)          #|
-  lwz r11, 16(r11)          #|
-  lbz r11, 85(r11)          #/
-  mulli r11, r11, 0x4       #Determine which player offset to load
-  lis r4, CodeMenuStart
-  ori r4, r4, CodeMenuHeaderInputBuffer    #Load Code Menu Header
-  lwzx r4, r4, r11
-  lbz r4, 0xB(r4)     #Load Option Selection
-  cmpwi r4, 0
-  beq calcStat
-  lis r0, 0xB000    #Apply Purple Flash indicating Input Buffer
-  ori r0, r0, 0xFF80
-  bl 0x4  #set LR
-  mflr r11 #Store Link Register in R11
-  addi r11, r11, 0xC
-  bl applyFlash
-  li r6, 0
+applyLcancel:  
+#load 0.5
+  lfs f0, -23448(r2)
+  fmuls f30, f30, f0
+  b calcStat
 
 #everything past this point is for the stat
 calcStat:

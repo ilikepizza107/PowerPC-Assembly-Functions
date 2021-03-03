@@ -64,6 +64,10 @@ int ALC_P4_INDEX = -1;
 int BIG_HEAD_INDEX = -1;
 int RANDOM_ANGLE_INDEX = -1;
 int WAR_MODE_INDEX = -1;
+int BUFFER_P1_INDEX = -1;
+int BUFFER_P2_INDEX = -1;
+int BUFFER_P3_INDEX = -1;
+int BUFFER_P4_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use others for context
 
 //constant overrides
@@ -126,6 +130,7 @@ void CodeMenu()
 	P1Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P1_INDEX, "%.0f%%"));
 	P1Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P1_INDEX));
 	P1Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P1_INDEX));
+	P1Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P1_INDEX));
 	P1Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P1_INDEX));
 	P1Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P1Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
@@ -144,6 +149,7 @@ void CodeMenu()
 	P2Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P2_INDEX, "%.0f%%"));
 	P2Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P2_INDEX));
 	P2Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P2_INDEX));
+	P2Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P2_INDEX));
 	P2Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P2_INDEX));
 	P2Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P2Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
@@ -159,6 +165,7 @@ void CodeMenu()
 	P3Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P3_INDEX, "%.0f%%"));
 	P3Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P3_INDEX));
 	P3Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P3_INDEX));
+	P3Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P3_INDEX));
 	P3Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P3_INDEX));
 	P3Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P3Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
@@ -174,6 +181,7 @@ void CodeMenu()
 	P4Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P4_INDEX, "%.0f%%"));
 	P4Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P4_INDEX));
 	P4Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P4_INDEX));
+	P4Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P4_INDEX));
 	P4Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P4_INDEX));
 	P4Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P4Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, EXTERNAL_INDEX));
@@ -852,6 +860,13 @@ void CreateMenu(Page MainPage)
 
 	//War Mode Index
 	AddValueToByteArray(WAR_MODE_INDEX, Header);
+
+	//Auto L-Cancelling
+	AddValueToByteArray(BUFFER_P1_INDEX, Header);
+	AddValueToByteArray(BUFFER_P2_INDEX, Header);
+	AddValueToByteArray(BUFFER_P3_INDEX, Header);
+	AddValueToByteArray(BUFFER_P4_INDEX, Header);
+
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
