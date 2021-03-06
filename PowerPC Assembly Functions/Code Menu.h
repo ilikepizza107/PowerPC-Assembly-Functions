@@ -68,6 +68,7 @@ extern int BUFFER_P1_INDEX;
 extern int BUFFER_P2_INDEX;
 extern int BUFFER_P3_INDEX;
 extern int BUFFER_P4_INDEX;
+extern int SCALE_INDEX;
 
 struct ConstantPair {
 	int address;
@@ -220,8 +221,9 @@ static const int BUFFER_P2_LOC = BUFFER_P1_LOC + 4; //4
 static const int BUFFER_P3_LOC = BUFFER_P2_LOC + 4; //4
 static const int BUFFER_P4_LOC = BUFFER_P3_LOC + 4; //4
 
+static const int SCALE_LOC = BUFFER_P4_LOC + 4; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = BUFFER_P4_LOC + 4; //0x200
+static const int DRAW_SETTINGS_BUFFER_LOC = SCALE_LOC + 4; //0x200
 
 
 

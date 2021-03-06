@@ -16,7 +16,7 @@ HOOK @ $80839010
   lwz r3, 0 (r3)
   lbz r3, 0xB(r3)
   cmpwi r3, 0x1
-  bne return
+  blt return
 
   #getCameraSubject(0)
   lwz r3, 0xD8(r31)
@@ -33,21 +33,20 @@ HOOK @ $80839010
   lis r3, CodeMenuStart
   ori r3, r3, CodeMenuHeader    #Load Code Menu Header
   lwz r3, 0 (r3)
-  lhz r5, 0 (r3)
-  add r3, r5, r3   #Load up next toggle (Modifier)
   lbz r3, 0xB(r3)
-  cmpwi r3, 0
   lis r0, 0x4000
-  beq Size_Set
-  cmpwi r3, 1
-  lis r0, 0x4025
-  beq Size_Set
+Large:
   cmpwi r3, 2
-  lis r0, 0x4050
-  beq Size_Set
+  bne Larger
+  lis r0, 0x4025
+Larger:
   cmpwi r3, 3
+  bne Largerest
+  lis r0, 0x4050
+Largerest:
+  cmpwi r3, 4
+  bne Size_Set
   lis r0, 0x4075
-  beq Size_Set
 
 Size_Set:
 

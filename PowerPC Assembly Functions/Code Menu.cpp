@@ -68,6 +68,7 @@ int BUFFER_P1_INDEX = -1;
 int BUFFER_P2_INDEX = -1;
 int BUFFER_P3_INDEX = -1;
 int BUFFER_P4_INDEX = -1;
+int SCALE_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use others for context
 
 //constant overrides
@@ -252,15 +253,16 @@ void CodeMenu()
 	DBZModeLines.push_back(new Floating("Vertical Acceleration", -100, 100, 1, .01, DBZ_MODE_ACCEL_Y_INDEX, "%.3f"));
 	Page DBZModePage("Flight Mode Settings", DBZModeLines);
 	
-	//main page
+	//Special Mode Settings
 	vector<Line*> SpecialModeLines;
 	SpecialModeLines.push_back(new Comment("Special Modes"));
 	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
 	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
 	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
-	SpecialModeLines.push_back(new Toggle("Big Head Mode", false, BIG_HEAD_INDEX));
-	SpecialModeLines.push_back(new Selection("Big Head Scale", { "Large", "Larger", "Largest", "Largerest" }, 0, EXTERNAL_INDEX));
+	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
+	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
 	Page SpecialModePage("Special Modes", SpecialModeLines);
 	//main page
 	vector<Line*> MainLines;
@@ -861,12 +863,14 @@ void CreateMenu(Page MainPage)
 	//War Mode Index
 	AddValueToByteArray(WAR_MODE_INDEX, Header);
 
-	//Auto L-Cancelling
+	//Input Buffer
 	AddValueToByteArray(BUFFER_P1_INDEX, Header);
 	AddValueToByteArray(BUFFER_P2_INDEX, Header);
 	AddValueToByteArray(BUFFER_P3_INDEX, Header);
 	AddValueToByteArray(BUFFER_P4_INDEX, Header);
 
+	//Scale Modifier
+	AddValueToByteArray(SCALE_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
