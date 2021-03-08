@@ -69,7 +69,8 @@ int BUFFER_P2_INDEX = -1;
 int BUFFER_P3_INDEX = -1;
 int BUFFER_P4_INDEX = -1;
 int SCALE_INDEX = -1;
-int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use others for context
+int SPEED_INDEX = -1;
+int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
 
 //constant overrides
 vector<ConstantPair> constantOverrides;
@@ -260,6 +261,7 @@ void CodeMenu()
 	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
 	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
+	SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
 	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
 	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
@@ -871,6 +873,9 @@ void CreateMenu(Page MainPage)
 
 	//Scale Modifier
 	AddValueToByteArray(SCALE_INDEX, Header);
+
+	//Scale Modifier
+	AddValueToByteArray(SPEED_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
