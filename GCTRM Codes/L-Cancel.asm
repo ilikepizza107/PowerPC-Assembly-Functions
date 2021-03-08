@@ -244,7 +244,7 @@ applyRedFlashNoCancel:
   mflr r11 #Store Link Register in R11
   addi r11, r11, 0xC
   bl applyFlash
-  li r6, 1
+  li r6, 0
   b checkForInputBuffer
 
 applyModifiedLCancelFlash:
