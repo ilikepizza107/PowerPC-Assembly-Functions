@@ -1285,8 +1285,20 @@ void ControlCodeMenu()
 	If(OpenFlagReg, EQUAL_I, CODE_MENU_OPEN); {
 		SetRegister(Reg2, -1); //stop all debug commands
 	}EndIf();
-	OR(Reg1, Reg1, Reg2);
-	STW(Reg1, Reg3, 0);
+
+	//Eon's Project+ 2.28 Fix
+	SetRegister(Reg4, 0);
+	While(Reg4, NOT_EQUAL_I, 32);
+	{
+		LWZX(Reg1, Reg3, Reg4);
+		OR(Reg1, Reg2, Reg1);
+		STWX(Reg1, Reg3, Reg4);
+		ADDI(Reg4, Reg4, 0x8);
+	}
+	EndWhile();
+	//Lines that were removed by Eon's P+ 2.28 Fix. 
+	//OR(Reg1, Reg1, Reg2);
+	//STW(Reg1, Reg3, 0);
 	//stop Z and start if in menu
 
 	ApplyMenuSetting(DEBUG_MODE_INDEX, 0x80583FFC + 3, Reg1, Reg2, 1);
