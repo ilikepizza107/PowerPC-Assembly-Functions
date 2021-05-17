@@ -1265,7 +1265,8 @@ void ControlCodeMenu()
 		Decrement(Reg4);
 		If(Reg4, LESS_OR_EQUAL_I, 0); {
 			If(Reg4, LESS_I, 0); {
-				SetRegister(Reg4, FIRST_FRAME_ADVANCE_NUM_WAIT_FRAMES - FRAME_ADVANCE_NUM_WAIT_FRAMES);
+				// SetRegister(Reg4, FIRST_FRAME_ADVANCE_NUM_WAIT_FRAMES - FRAME_ADVANCE_NUM_WAIT_FRAMES);
+				SetRegister(Reg4, 0);	//Suggested Fix
 			}EndIf();
 			ANDIS(Reg1, Reg1, ~0x0010); //allow frame advance
 			ADDI(Reg4, Reg4, FRAME_ADVANCE_NUM_WAIT_FRAMES);
@@ -1386,7 +1387,7 @@ void ControlCodeMenu()
 
 									SetRegister(Reg3, 0x80615520);
 									RLWINM(Reg4, Reg8, 2, 0, 31); //<< 2
-									ADD(Reg3, Reg3, Reg8);
+									ADD(Reg3, Reg3, Reg4);	//Reg8 changed to Reg4, P+ 2.28 fix
 									LWZ(Reg3, Reg3, 0x4C);
 
 									FCTIWZ(0, 1);
