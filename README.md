@@ -1,5 +1,5 @@
 # Purpose
-This fork primarily implements the ability to add characters the code menu without having to manually edit and recompile anything.
+This fork primarily implements the ability to add characters the P+EX code menu without having to manually edit and recompile anything.
 Adding new characters along with their IDs to "EX_Characters.txt" and running the program is all you need to do.
 Additionally, to avoid the need to manually specify output directories, all output files are generated in the same directory as the executable.
 
