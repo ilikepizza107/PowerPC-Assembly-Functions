@@ -271,6 +271,10 @@ void CodeEnd();
 
 void MakeGCT(string TextFilePath, string OldGCTFilePath, string NewGCTFilePath);
 
+// Credit to Kapedani for c++ implementation
+// Also credit to Fracture for the original ASMConvert script
+bool MakeASM(string TextFilePath, string OutputAsmPath);
+
 int GetHexFromFloat(float Value);
 int GetShiftNum(int endPos);
 int GetOpSegment(int val, int size, int pos);

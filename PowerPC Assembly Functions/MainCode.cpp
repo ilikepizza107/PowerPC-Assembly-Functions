@@ -21,6 +21,7 @@ using namespace std;
 int main()
 {
 	string OutputTextPath = ".\\ASM.txt";
+	string OutputAsmPath = ".\\CodeMenu.asm";
 
 #ifdef RIDLEY
 	// Builds a map from the predefined character and character ID lists.
@@ -192,4 +193,6 @@ int main()
 	//loadCppCodes(); writeInjectionsRepeat();
 
 	CodeEnd();
+
+	MakeASM(OutputTextPath, OutputAsmPath);
 }
