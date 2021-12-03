@@ -159,9 +159,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="AIDisplay.h" />
     <ClInclude Include="C++Injection.h" />
     <ClInclude Include="Code Menu.h" />

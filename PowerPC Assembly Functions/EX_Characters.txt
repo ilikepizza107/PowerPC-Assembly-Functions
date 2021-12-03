@@ -1,10 +1,3 @@
 #Add new lines in the following format:
 #	"Character Name" = ID
-#So, for example, the following line...
-#	"Daisy" = 80
-#...would add an entry for a character called Daisy with an ID of 80
-#Additionally, note that you can change the IDs for existing characters this way as well
-#For example, adding the line...
-#	"Mario" = 10
-#...would change Mario's ID from 0 to 10.
-#Finally, note that all ID values are in decimal. 
+#See README.md for further details.
