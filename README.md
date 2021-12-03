@@ -27,11 +27,19 @@ ID values are processed in decimal by default, but hex values (prefixed with "0x
 	
 ... would be functionally identical to the earlier Daisy example.
 
-Lastly, you can use quotes in character names by escaping them with a backslash ('\\'). So the line...
+You can also use quotes in character names by escaping them with a backslash ('\\'). So the line...
 
 	"\"Daisy\"" = 80
 
 ... would create a clone with the name "Daisy", *with quotes*.
+
+Lastly, adding a hashtag ('#') or forward slash ('/') to the beginning of a line will comment out that line, having the program disregard it completely. So the following lines...
+
+	#This is a comment
+	//So is this, as well as the next one
+	/"Daisy" = 80
+
+... will all be treated as comments and ignored by the program.
 
 ***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This includes Knuckles and Ridley, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in the base P+EX.
 
