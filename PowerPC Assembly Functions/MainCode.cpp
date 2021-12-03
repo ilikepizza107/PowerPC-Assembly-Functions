@@ -15,7 +15,6 @@
 #include "IkeClimbers.h"
 #include "AIDisplay.h"
 #include "C++Injection.h"
-#include <cctype>
 //#include "FPS Display.h"
 using namespace std;
 
@@ -40,8 +39,8 @@ int main()
 	ppexOut.open("EX_Characters_Changelog.txt");
 	if (ppexIn.is_open())
 	{
-		std::string currentLine;
-		std::string manipStr;
+		std::string currentLine = "";
+		std::string manipStr = "";
 		while (std::getline(ppexIn, currentLine))
 		{
 			// Disregard the current line if it's empty, or is marked as a comment
@@ -81,12 +80,12 @@ int main()
 					// Handles hex input for character id
 					if (manipStr.find("0x", delimLoc + 1) == delimLoc + 1)
 					{
-						newID = std::stoi(manipStr.substr(delimLoc + 1, std::string::npos), nullptr, 16);
+						newID = std::stoul(manipStr.substr(delimLoc + 1, std::string::npos), nullptr, 16);
 					}
 					// Handles dec input for character id. If this fails the program should abort.
 					else
 					{
-						newID = std::stoi(manipStr.substr(delimLoc + 1, std::string::npos));
+						newID = std::stoul(manipStr.substr(delimLoc + 1, std::string::npos));
 					}
 					// Insert new entry into list.
 					auto itr = zippedIDMap.insert(std::make_pair(newChar, newID));
