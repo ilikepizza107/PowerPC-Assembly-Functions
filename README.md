@@ -32,3 +32,8 @@ Lastly, you can use quotes in character names by escaping them with a backslash 
 	"\"Daisy\"" = 80
 
 ... would create a clone with the name "Daisy", *with quotes*.
+
+***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This includes Knuckles and Ridley, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in the base P+EX.
+
+# Other Changes
+The only other change present in this fork is the addition of a Character ID enum to "Code Menu.h". This is purely to make manually adding IDs a bit more straightforward, and doesn't alter the functionality of the program at all.
