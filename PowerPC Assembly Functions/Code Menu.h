@@ -106,8 +106,6 @@ const vector<u8> CODE_MENU_WIIMOTE_CONVERSION_TABLE = { 2, 3, 1, 0, 12, 31, 31, 
 //dpad same, + is start, A and B are A and B, C is Y, Z is Z, - is X
 const vector<u8> CODE_MENU_WIICHUCK_CONVERSION_TABLE = { 0, 1, 2, 3, 12, 31, 31, 31, 31, 31, 9, 8, 10, 4, 11, 31 };
 const vector<u8> CODE_MENU_CLASSIC_CONVERSION_TABLE = { 3, 0, 4, 10, 8, 11, 9, 4, 31, 5, 12, 31, 12, 6, 2, 1 }; //1 to 1
-#define RIDLEY
-#ifdef RIDLEY
 
 enum LAVA_CHARA_SLOT_IDS
 {
@@ -128,7 +126,7 @@ enum LAVA_CHARA_SLOT_IDS
 	LCSI_KIRBY = 6,
 	LCSI_KNUCKLES = 53,
 	LCSI_LINK = 2,
-	LCSI_LUCARIO  = 36,
+	LCSI_LUCARIO = 36,
 	LCSI_LUCAS = 27,
 	LCSI_LUIGI = 9,
 	LCSI_MARIO = 0,
@@ -158,6 +156,9 @@ enum LAVA_CHARA_SLOT_IDS
 	LCSI_ZELDA = 14,
 	LCSI_ZERO_SUIT_SAMUS = 4,
 };
+
+#define RIDLEY
+#ifdef RIDLEY
 
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
