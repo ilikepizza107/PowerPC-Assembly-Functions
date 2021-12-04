@@ -117,6 +117,71 @@ vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZA
 
 #endif
 
+bool backupFile(std::string fileToBackup, std::string backupSuffix)
+{
+	// Record result
+	bool result = 0;
+	// Initialize in and out streams
+	ifstream backupStreamIn;
+	ofstream backupStreamOut;
+	// Open and test in stream
+	backupStreamIn.open(fileToBackup, fstream::in | fstream::binary);
+	if (backupStreamIn.is_open())
+	{
+		// If successful, open and test output stream
+		backupStreamOut.open(fileToBackup + ".bak", fstream::out | fstream::binary);
+		if (backupStreamOut.is_open())
+		{
+			// If both streams are open and valid, backup the file's contents and record the success in result
+			backupStreamOut << backupStreamIn.rdbuf();
+			result = 1;
+		}
+		backupStreamOut.close();
+	}
+	backupStreamIn.close();
+	return result;
+}
+
+bool RunGCTRM = true;
+void initMenuFileStream()
+{
+	// Records whether we're in a proper build folder
+	// NOTE: Currently, this just checks for whether or not GCTRM is found, but I'd like to make the checking more robust in the future.
+	// I intend to use std::filesystem to check if the directories for the relevant files exist or not, but the library doesn't wanna play nice with my VS installation right now. This should all be fixed at some point, sooner rather than later if people are having problems with file writes failing.
+	bool buildFolderValid = 1;
+	ifstream fileChecks;
+	fileChecks.open(GCTRMExePath);
+	buildFolderValid = fileChecks.is_open();
+	fileChecks.close();
+
+	if (buildFolderValid)
+	{
+#ifdef MAKE_BACKUPS
+		backupFile(OutputAsmPath);
+		backupFile(OutputMenuPath);
+		// Makes backups of the GCT files corresponding to the specified GCTText files
+		// The substr stuff just replaces .txt with .GCT
+		backupFile(mainGCTTextfile.substr(0, mainGCTTextfile.rfind('.')) + ".GCT");
+		backupFile(boostGCTTextfile.substr(0, boostGCTTextfile.rfind('.')) + ".GCT");
+#endif
+		// Opens the MenuFile stream with the specified MenuPath
+		MenuFile.open(OutputMenuPath, fstream::out | fstream::binary);
+	}
+	// If buildFolder determined invalid
+	else
+	{
+		// Disable GCTRM
+		RunGCTRM = 0;
+		// And change MenuFile to output to the NoBuild directory instead of the specified one.
+#if DOLPHIN_BUILD
+		MenuFile.open(NoBuildOutputFolder + "\\dnet.cmnu", fstream::out | fstream::binary);
+#else
+		MenuFile.open(NoBuildOutputFolder + "\\data.cmnu", fstream::out | fstream::binary);
+#endif
+	}
+}
+
+
 
 void CodeMenu()
 {

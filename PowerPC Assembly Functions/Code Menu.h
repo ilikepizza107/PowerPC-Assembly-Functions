@@ -341,7 +341,48 @@ static int CurrentOffset = START_OF_CODE_MENU;
 #define FRAMES_WAITED_DURING_SLOW_MOTION 3
 
 static vector<int> Defaults;
-static fstream MenuFile(".\\data.cmnu", fstream::out | fstream::binary);
+
+// GCTRM Settings and Paths
+// Controls whether or not GCTRM is run.
+// Default value is 1 (set in Code Menu.cpp).
+// Note, if GCTRM isn't found at the location specified below, the program will just skip running it.
+extern bool RunGCTRM;
+// Specifies the base path to the build.
+// In the default configuration, this is expected to be the actual Project+ folder itself, with GCTRM, the pf folder, etc inside.
+const string BuildFolder = ".\\";
+// Specifies where to put files when no build is present (ie. when GCTRM isn't found).
+const string NoBuildOutputFolder = ".\\EX_Characters_Output";
+// Specifies path to GCTRM executable.
+// In the default configuration, this is directky
+const string GCTRMExePath = BuildFolder + "\\GCTRealMate.exe";
+// The stream for the MenuFile.
+// Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
+static fstream MenuFile;
+// Paths for output.
+// NOTE: In the event that GCTRM isn't run, the asm and cmnu files will be placed in the NoBuildOutputFolder as specified above.
+#if DOLPHIN_BUILD
+const std::string OutputAsmPath = BuildFolder + "\\Source\\Netplay\\Net-CodeMenu.asm";
+const std::string OutputMenuPath = BuildFolder + "\\pf\\menu3\\dnet.cmnu";
+const std::string mainGCTTextfile = BuildFolder + "\\NETPLAY.txt";
+const std::string boostGCTTextfile = BuildFolder + "\\NETBOOST.txt";
+#else
+const std::string OutputAsmPath = BuildFolder + "\\Source\\Project+\\CodeMenu.asm";
+const std::string OutputMenuPath = BuildFolder + "\\pf\\menu3\\data.cmnu";
+const std::string mainGCTTextfile = BuildFolder + "\\RSBE01.txt";
+const std::string boostGCTTextfile = BuildFolder + "\\BOOST.txt";
+#endif
+// Defines whether or not we make backups of the following files...
+// - CodeMenu.asm/Net-CodeMenu.asm
+// - data.cmnu/dnet.cmnu
+// - RSBE01.GCT/NETPLAY.GCT
+// - BOOST.GCT/NETBOOST.GCT
+// ... on initialization.
+// This is on by default, and should help mitigate data loss in case anything goes wrong.
+#define MAKE_BACKUPS
+// File backup function
+bool backupFile(std::string fileToBackup, std::string backupSuffix = ".bak");
+// Initializes MenuFile stream with appropriate target file, creates backups if MAKE_BACKUPS is defined
+void initMenuFileStream();
 
 
 class Page;

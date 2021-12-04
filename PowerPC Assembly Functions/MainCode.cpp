@@ -20,8 +20,8 @@ using namespace std;
 
 int main()
 {
-	string OutputTextPath = ".\\ASM.txt";
-	string OutputAsmPath = ".\\CodeMenu.asm";
+	initMenuFileStream();
+	string OutputTextPath = NoBuildOutputFolder + "\\ASM.txt";
 
 #ifdef RIDLEY
 	// Builds a map from the predefined character and character ID lists.
@@ -37,7 +37,7 @@ int main()
 	ppexIn.open("EX_Characters.txt");
 	// Initiate changelog file
 	std::ofstream ppexOut;
-	ppexOut.open("EX_Characters_Changelog.txt");
+	ppexOut.open(NoBuildOutputFolder + "\\EX_Characters_Changelog.txt");
 	if (ppexIn.is_open())
 	{
 		std::string currentLine = "";
@@ -194,5 +194,15 @@ int main()
 
 	CodeEnd();
 
-	MakeASM(OutputTextPath, OutputAsmPath);
+	// If we're supposed to run GCTRM, build the ASM in the relevant location and run GCTRM for the main and boost GCTs
+	if (RunGCTRM) {
+		MakeASM(OutputTextPath, OutputAsmPath);
+		system(("\"\"" + GCTRMExePath + "\"" + " -g -l \"" + mainGCTTextfile + "\"\"").c_str());
+		system(("\"\"" + GCTRMExePath + "\"" + " -g -l \"" + boostGCTTextfile + "\"\"").c_str());
+	}
+	// Otherwise, build the ASM in the NoBuild folder
+	else
+	{
+		MakeASM(OutputTextPath, NoBuildOutputFolder + "\\CodeMenu.asm");
+	}
 }
