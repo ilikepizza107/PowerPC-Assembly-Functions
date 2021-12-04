@@ -13,7 +13,7 @@ When used OUTSIDE of a build folder, the program will simply read EX_Characters.
 	- data.cmnu (or dnet.cmnu, if using the DOLPHIN version) (goes in pf/menu3/)
 	- EX_Characters_Changelog.txt
 
-When used INSIDE of a build folder, AND "GCTRealMate.exe" is present in that same folder, it will read EX_Characters.txt and apply character changes like normal, but will then place CodeMenu.asm and data.cmnu (or dnet.cmnu) where they belong (backing up the original files if present), and run GCTRM to compile RSBE01.GCT and BOOST.GCT. So you should expect to see the following in "EX_Characters_Output"...
+When used INSIDE of a build folder, AND "GCTRealMate.exe" is present in that same folder, it will read EX_Characters.txt and apply character changes like normal, but will then place CodeMenu.asm and data.cmnu (or dnet.cmnu) where they belong (backing up the original files if present), and run GCTRM to compile RSBE01.GCT and BOOST.GCT. So, after running the program, you should instead expect to see the following in "EX_Characters_Output"...
 
 	- ASM.txt
 	- EX_Characters_Changelog.txt
@@ -28,7 +28,7 @@ When used INSIDE of a build folder, AND "GCTRealMate.exe" is present in that sam
 	- data.cmnu (or dnet.cmnu, if using the DOLPHIN version) (the edited version of data.cmnu)
 	- data.cmnu.bak (or dnet.cmnu.bak) (a backup of the cmnu file that was present in this directory before this program was last run)
 	
-... and the following newly edited files in the base folder...
+... and the following newly edited files in the base folder:
 	
 	- codeset.txt
 	- log.txt
