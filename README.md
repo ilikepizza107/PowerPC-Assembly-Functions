@@ -36,6 +36,8 @@ When used INSIDE of a build folder, AND "GCTRealMate.exe" is present in that sam
 	- BOOST.GCT.bak (or NETBOOST.GCT if using the DOLPHIN version)
 	- RSBE01.GCT (or NETPLAY.GCT if using the DOLPHIN version)
 	- RSBE01.GCT.bak (or NETPLAY.GCT.bak if using the DOLPHIN version)
+	
+Note that regardless of use, inside or outside of a build directory, you MUST have an "EX_Characters_Output" folder in the same directory as the executable; otherwise, the program won't run properly. If you're having problems where the program isn't outputting anything, this is almost certainly the problem.
 
 # Adding to EX_Characters.txt
 New lines are added in the following format:
