@@ -1,7 +1,7 @@
 # Purpose
 This fork primarily implements the ability to add characters to the P+EX code menu without having to manually edit and recompile anything.
 Adding new characters along with their IDs to "EX_Characters.txt" and running the program is all you need to do.
-Additionally, to avoid the need to manually specify output directories, all output files are generated in the same directory as the executable. Note that a new file ("EX_Characters_Changelog.txt") will be generated when the program runs, outlining applied changes and the end state of the list.
+Additionally, to avoid the need to manually specify output directories, output files will generally be created in the "EX_Characters_Output" directory (see below notes for further details). Note that a new file ("EX_Characters_Changelog.txt") will be generated when the program runs, outlining applied changes and the end state of the list.
 
 # Notes For Use Without Code Editing
 If you're going to use this fork and don't intend to edit the code in Visual Studio at all, simply download the latest Release version, no need to download the whole repo. From there, this program may be used in one of two ways: INSIDE of a build folder (ie. such that the extracted files are where your "pf", "rp", and "Source" folders are), or OUTSIDE of a build folder (ie. anywhere else).
