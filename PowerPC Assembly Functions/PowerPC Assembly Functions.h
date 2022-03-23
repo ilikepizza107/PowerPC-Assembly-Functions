@@ -23,6 +23,7 @@ typedef unsigned char u8;
 #define DOLPHIN_BUILD false
 #define EON_DEBUG_BUILD false
 #define TOURNAMENT_ADDITION_BUILD false
+#define PROJECT_PLUS_EX_BUILD true
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
@@ -33,8 +34,10 @@ typedef unsigned char u8;
 
 const vector<float> DEFAULT_CAMERA_MATRIX = { 1,0,0,0, 0,1,0,0, 0,0,1,-64 };
 
-#if BUILD_TYPE == PROJECT_PLUS
+#if BUILD_TYPE == PROJECT_PLUS && PROJECT_PLUS_EX_BUILD == false
 const string MAIN_FOLDER = "Project+";
+#elif BUILD_TYPE == PROJECT_PLUS && PROJECT_PLUS_EX_BUILD == true
+const string MAIN_FOLDER = "P+EX/./.";
 #else
 const string MAIN_FOLDER = "LegacyTE";
 #endif
