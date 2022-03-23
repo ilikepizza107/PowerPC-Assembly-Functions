@@ -157,7 +157,9 @@ enum LAVA_CHARA_SLOT_IDS
 	LCSI_ZERO_SUIT_SAMUS = 4,
 };
 
-#if BUILD_TYPE == PROJECT_PLUS_EX
+#define RIDLEY
+#ifdef RIDLEY
+
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
 
@@ -346,7 +348,7 @@ static vector<int> Defaults;
 // Note, if GCTRM isn't found at the location specified below, the program will just skip running it.
 extern bool RunGCTRM;
 // Specifies the base path to the build.
-// In the default configuration, this is the actual build folder itself (eg. the "Project+" folder), containing GCTRM, the pf folder, etc.
+// In the default configuration, this is expected to be the actual Project+ folder itself, with GCTRM, the pf folder, etc inside.
 const string BuildFolder = ".\\";
 // Specifies where to put files when no build is present (ie. when GCTRM isn't found).
 const string NoBuildOutputFolder = ".\\EX_Characters_Output";
