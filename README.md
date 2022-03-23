@@ -18,7 +18,7 @@ When used INSIDE of a build folder, AND "GCTRealMate.exe" is present in that sam
 	- ASM.txt
 	- EX_Characters_Changelog.txt
 	
-... the following newly edited files in "Sources/Project+/"...
+... the following newly edited files in "Source/Project+/"...
 
 	- CodeMenu.asm (the edited code menu assembly file)
 	- CodeMenu.asm.bak (a backup of the assembly file that was present in this directory before this program was last run)
@@ -33,7 +33,7 @@ When used INSIDE of a build folder, AND "GCTRealMate.exe" is present in that sam
 	- codeset.txt
 	- log.txt
 	- BOOST.GCT (or NETBOOST.GCT if using the DOLPHIN version)
-	- BOOST.GCT.bak (or NETBOOST.GCT if using the DOLPHIN version)
+	- BOOST.GCT.bak (or NETBOOST.GCT.bak if using the DOLPHIN version)
 	- RSBE01.GCT (or NETPLAY.GCT if using the DOLPHIN version)
 	- RSBE01.GCT.bak (or NETPLAY.GCT.bak if using the DOLPHIN version)
 	
