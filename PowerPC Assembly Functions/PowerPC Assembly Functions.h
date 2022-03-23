@@ -19,7 +19,10 @@ typedef unsigned char u8;
 #define NORMAL 0
 #define PMEX 1
 #define PROJECT_PLUS 2
-#define BUILD_TYPE PROJECT_PLUS
+#define PROJECT_PLUS_EX 3
+// Specify build type here!
+// This controls the base folder for the build, and (if set to PROJECT_PLUS_EX) enables loading characters from "EX_Characters.txt"
+#define BUILD_TYPE PROJECT_PLUS_EX
 #define DOLPHIN_BUILD false
 #define EON_DEBUG_BUILD false
 #define TOURNAMENT_ADDITION_BUILD false
@@ -35,6 +38,8 @@ const vector<float> DEFAULT_CAMERA_MATRIX = { 1,0,0,0, 0,1,0,0, 0,0,1,-64 };
 
 #if BUILD_TYPE == PROJECT_PLUS
 const string MAIN_FOLDER = "Project+";
+#elif BUILD_TYPE == PROJECT_PLUS_EX
+const string MAIN_FOLDER = "P+EX/./.";
 #else
 const string MAIN_FOLDER = "LegacyTE";
 #endif

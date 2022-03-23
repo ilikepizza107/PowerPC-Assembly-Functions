@@ -23,7 +23,7 @@ int main()
 	initMenuFileStream();
 	string OutputTextPath = NoBuildOutputFolder + "\\ASM.txt";
 
-#ifdef RIDLEY
+#if BUILD_TYPE == PROJECT_PLUS_EX
 	// Builds a map from the predefined character and character ID lists.
 	// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
 	std::map<std::string, u16> zippedIDMap;
