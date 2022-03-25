@@ -196,7 +196,8 @@ int main()
 		}
 		else
 		{
-			ppexOut << "[ERROR] Couldn't open \"" << exCharInputFilename << "\"! Ensure that the file exists at the specified location and try again!\n";
+			std::cout << "[ERROR] Couldn't open \"" << exCharInputFilename << "\"! Ensure that the file is present in this folder and try again!\n";
+			ppexOut << "[ERROR] Couldn't open \"" << exCharInputFilename << "\"! Ensure that the file is present in this folder and try again!\n";
 		}
 		// Print the results.
 		std::cout << "\nFinal Character List:\n";
@@ -280,14 +281,12 @@ int main()
 		std::cout << "\n";
 		if (lava::offerCopyOverAndBackup(cmnuFilePath, cmnuFileAutoReplacePath))
 		{
-			std::cout << "\n";
 			ppexOut << "Note: Backed up \"" << cmnuFileAutoReplacePath << "\" and overwrote it with the newly built Code Menu.\n";
 		}
 		if (MakeASM(OutputTextPath, asmFilePath))
 		{
 			if (lava::offerCopyOverAndBackup(asmFilePath, asmFileAutoReplacePath))
 			{
-				std::cout << "\n";
 				ppexOut << "Note: Backed up \"" << asmFileAutoReplacePath << "\" and overwrote it with the newly built ASM.\n";
 			}
 			lava::handleAutoGCTRMProcess(ppexOut);
@@ -295,7 +294,9 @@ int main()
 	}
 	else
 	{
-		std::cerr << "[ERROR] The expected output folder (\"" << outputFolder << "\") couldn't be found in this folder. Ensure that the specified folder exists and try again.\n";
+		std::cerr << "[ERROR] The expected output folder (\"" << outputFolder << "\") couldn't be found in this folder. Ensure that the specified folder exists and try again.\n\n";
 	}
+	std::cout << "Press any key to exit.\n";
+	_getch();
 	return 0;
 }

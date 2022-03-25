@@ -167,6 +167,7 @@ namespace lava
 			{
 				std::cout << "Skipping copy.\n";
 			}
+			std::cout << "\n";
 		}
 
 		return backupSucceeded && copySucceeded;
@@ -195,6 +196,7 @@ namespace lava
 					system(commandFull.c_str());
 					logOutput << "Note: Backed up and rebuilt \"" << mainGCTFile << "\".\n";
 					logOutput << "Note: Backed up and rebuilt \"" << boostGCTFile << "\".\n";
+					std::cout << "\n";
 				}
 				else
 				{
