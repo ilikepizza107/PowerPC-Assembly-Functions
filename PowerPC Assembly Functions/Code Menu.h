@@ -109,52 +109,52 @@ const vector<u8> CODE_MENU_CLASSIC_CONVERSION_TABLE = { 3, 0, 4, 10, 8, 11, 9, 4
 
 enum LAVA_CHARA_SLOT_IDS
 {
-	LCSI_BOWSER = 12,
-	LCSI_CAPTAIN_FALCON = 10,
-	LCSI_CHARIZARD = 30,
-	LCSI_DEDEDE = 35,
-	LCSI_DIDDY_KONG = 28,
-	LCSI_DONKEY_KONG = 1,
-	LCSI_FALCO = 21,
-	LCSI_FOX = 7,
-	LCSI_GANONDORF = 22,
-	LCSI_GIGA_BOWSER = 44,
-	LCSI_ICE_CLIMBERS = 16,
-	LCSI_IKE = 37,
-	LCSI_IVYSAUR = 34,
-	LCSI_JIGGLYPUFF = 39,
-	LCSI_KIRBY = 6,
-	LCSI_KNUCKLES = 53,
-	LCSI_LINK = 2,
-	LCSI_LUCARIO = 36,
-	LCSI_LUCAS = 27,
-	LCSI_LUIGI = 9,
-	LCSI_MARIO = 0,
-	LCSI_MARTH = 19,
-	LCSI_META_KNIGHT = 24,
-	LCSI_MEWTWO = 51,
-	LCSI_MR_GAME_AND_WATCH = 20,
-	LCSI_NESS = 11,
-	LCSI_OLIMAR = 26,
-	LCSI_PEACH = 13,
-	LCSI_PIKACHU = 8,
-	LCSI_PIT = 25,
-	LCSI_ROB = 38,
-	LCSI_RIDLEY = 56,
-	LCSI_ROY = 50,
-	LCSI_SAMUS = 3,
-	LCSI_SHEIK = 15,
-	LCSI_SNAKE = 42,
-	LCSI_SONIC = 43,
-	LCSI_SOPO = 17,
-	LCSI_SQUIRTLE = 32,
-	LCSI_TOON_LINK = 40,
-	LCSI_WARIO = 23,
-	LCSI_WARIOMAN = 45,
-	LCSI_WOLF = 41,
-	LCSI_YOSHI = 5,
-	LCSI_ZELDA = 14,
-	LCSI_ZERO_SUIT_SAMUS = 4,
+	LCSI_BOWSER = 0x0C,
+	LCSI_CAPTAIN_FALCON = 0x0A,
+	LCSI_CHARIZARD = 0x1E,
+	LCSI_DEDEDE = 0x23,
+	LCSI_DIDDY_KONG = 0x1C,
+	LCSI_DONKEY_KONG = 0x01,
+	LCSI_FALCO = 0x15,
+	LCSI_FOX = 0x07,
+	LCSI_GANONDORF = 0x16,
+	LCSI_GIGA_BOWSER = 0x2C,
+	LCSI_ICE_CLIMBERS = 0x10,
+	LCSI_IKE = 0x25,
+	LCSI_IVYSAUR = 0x22,
+	LCSI_JIGGLYPUFF = 0x27,
+	LCSI_KIRBY = 0x06,
+	LCSI_KNUCKLES = 0x35,
+	LCSI_LINK = 0x02,
+	LCSI_LUCARIO = 0x24,
+	LCSI_LUCAS = 0x1B,
+	LCSI_LUIGI = 0x09,
+	LCSI_MARIO = 0x00,
+	LCSI_MARTH = 0x13,
+	LCSI_META_KNIGHT = 0x18,
+	LCSI_MEWTWO = 0x33,
+	LCSI_MR_GAME_AND_WATCH = 0x14,
+	LCSI_NESS = 0x0B,
+	LCSI_OLIMAR = 0x1A,
+	LCSI_PEACH = 0x0D,
+	LCSI_PIKACHU = 0x08,
+	LCSI_PIT = 0x19,
+	LCSI_ROB = 0x26,
+	LCSI_RIDLEY = 0x38,
+	LCSI_ROY = 0x32,
+	LCSI_SAMUS = 0x03,
+	LCSI_SHEIK = 0x0F,
+	LCSI_SNAKE = 0x2A,
+	LCSI_SONIC = 0x2B,
+	LCSI_SOPO = 0x11,
+	LCSI_SQUIRTLE = 0x20,
+	LCSI_TOON_LINK = 0x28,
+	LCSI_WARIO = 0x17,
+	LCSI_WARIOMAN = 0x2D,
+	LCSI_WOLF = 0x29,
+	LCSI_YOSHI = 0x05,
+	LCSI_ZELDA = 0x0E,
+	LCSI_ZERO_SUIT_SAMUS = 0x04,
 };
 
 // If this build is a P+EX Build, construct lists dynamically.
@@ -341,46 +341,34 @@ static int CurrentOffset = START_OF_CODE_MENU;
 
 static vector<int> Defaults;
 
-// GCTRM Settings and Paths
-// Controls whether or not GCTRM is run.
-// Default value is 1 (set in Code Menu.cpp).
-// Note, if GCTRM isn't found at the location specified below, the program will just skip running it.
-extern bool RunGCTRM;
-// Specifies the base path to the build.
-// In the default configuration, this is expected to be the actual Project+ folder itself, with GCTRM, the pf folder, etc inside.
-const string BuildFolder = ".\\";
-// Specifies where to put files when no build is present (ie. when GCTRM isn't found).
-const string NoBuildOutputFolder = ".\\EX_Characters_Output";
-// Specifies path to GCTRM executable.
-// In the default configuration, this is directky
-const string GCTRMExePath = BuildFolder + "\\GCTRealMate.exe";
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
-// Paths for output.
-// NOTE: In the event that GCTRM isn't run, the asm and cmnu files will be placed in the NoBuildOutputFolder as specified above.
-#if DOLPHIN_BUILD
-const std::string OutputAsmPath = BuildFolder + "\\Source\\Netplay\\Net-CodeMenu.asm";
-const std::string OutputMenuPath = BuildFolder + "\\pf\\menu3\\dnet.cmnu";
-const std::string mainGCTTextfile = BuildFolder + "\\NETPLAY.txt";
-const std::string boostGCTTextfile = BuildFolder + "\\NETBOOST.txt";
-#else
-const std::string OutputAsmPath = BuildFolder + "\\Source\\Project+\\CodeMenu.asm";
-const std::string OutputMenuPath = BuildFolder + "\\pf\\menu3\\data.cmnu";
-const std::string mainGCTTextfile = BuildFolder + "\\RSBE01.txt";
-const std::string boostGCTTextfile = BuildFolder + "\\BOOST.txt";
-#endif
-// Defines whether or not we make backups of the following files...
-// - CodeMenu.asm/Net-CodeMenu.asm
-// - data.cmnu/dnet.cmnu
-// - RSBE01.GCT/NETPLAY.GCT
-// - BOOST.GCT/NETBOOST.GCT
-// ... on initialization.
-// This is on by default, and should help mitigate data loss in case anything goes wrong.
-#define MAKE_BACKUPS
-// File backup function
-bool backupFile(std::string fileToBackup, std::string backupSuffix = ".bak");
-// Initializes MenuFile stream with appropriate target file, creates backups if MAKE_BACKUPS is defined
+
+// Un-comment the below line to switch the program to build Netplay versions of all output files.
+//#define DOLPHIN_BUILD
+// Code Menu Output Constants
+extern const std::string outputFolder;
+extern const std::string exCharInputFilename;
+extern const std::string changelogFileName;
+extern const std::string asmFileName;
+extern const std::string cmnuFileName;
+extern const std::string asmFilePath;
+extern const std::string cmnuFilePath;
+extern const std::string asmTextFilePath;
+extern const std::string asmFileAutoReplacePath;
+extern const std::string cmnuFileAutoReplacePath;
+// AutoGCTRM Constants
+extern const std::string BuildFolder;
+extern const std::string GCTRMExePath;
+extern const std::string GCTRMCommandBase;
+extern const std::string mainGCTName;
+extern const std::string mainGCTFile;
+extern const std::string mainGCTTextFile;
+extern const std::string boostGCTName;
+extern const std::string boostGCTFile;
+extern const std::string boostGCTTextFile;
+
 void initMenuFileStream();
 
 

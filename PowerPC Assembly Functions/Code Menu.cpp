@@ -110,75 +110,46 @@ int SHIELD_ALPHA_4 = -1;
 int tets = 0x935fe30C;
 
 #if PROJECT_PLUS_EX_BUILD == true
-
 vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Ridley", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
 
 vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_RIDLEY, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-
 #endif
 
-bool backupFile(std::string fileToBackup, std::string backupSuffix)
-{
-	// Record result
-	bool result = 0;
-	// Initialize in and out streams
-	ifstream backupStreamIn;
-	ofstream backupStreamOut;
-	// Open and test in stream
-	backupStreamIn.open(fileToBackup, fstream::in | fstream::binary);
-	if (backupStreamIn.is_open())
-	{
-		// If successful, open and test output stream
-		backupStreamOut.open(fileToBackup + ".bak", fstream::out | fstream::binary);
-		if (backupStreamOut.is_open())
-		{
-			// If both streams are open and valid, backup the file's contents and record the success in result
-			backupStreamOut << backupStreamIn.rdbuf();
-			result = 1;
-		}
-		backupStreamOut.close();
-	}
-	backupStreamIn.close();
-	return result;
-}
+const std::string outputFolder = "./Code_Menu_Output/";
+const std::string exCharInputFilename = "EX_Characters.txt";
+const std::string changelogFileName = "Code_Menu_Changelog.txt";
+const std::string BuildFolder = ".././";
+//const std::string BuildFolder = "C:/Users/MissionWhitaker/Documents/Dolphin Emulator/Wii/lava/P+EX/";
+const std::string GCTRMExePath = BuildFolder + "GCTRealMate.exe";
+const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l ";
 
-bool RunGCTRM = true;
+#if DOLPHIN_BUILD == true
+const std::string mainGCTName = "NETPLAY";
+const std::string boostGCTName = "NETBOOST";
+const std::string asmFileName = "Net-CodeMenu";
+const std::string cmnuFileName = "dnet";
+const std::string asmFileAutoReplacePath = BuildFolder + "Source/Netplay/" + asmFileName + ".asm";
+const std::string cmnuFileAutoReplacePath = BuildFolder + "pf/menu3/" + cmnuFileName + ".cmnu";
+#else
+const std::string mainGCTName = "RSBE01";
+const std::string boostGCTName = "BOOST";
+const std::string asmFileName = "CodeMenu";
+const std::string cmnuFileName = "data";
+const std::string asmFileAutoReplacePath = BuildFolder + "Source/Project+/" + asmFileName + ".asm";
+const std::string cmnuFileAutoReplacePath = BuildFolder + "pf/menu3/" + cmnuFileName + ".cmnu";
+#endif
+
+const std::string mainGCTFile = BuildFolder + mainGCTName + ".GCT";
+const std::string mainGCTTextFile = BuildFolder + mainGCTName + ".txt";
+const std::string boostGCTFile = BuildFolder + boostGCTName + ".GCT";
+const std::string boostGCTTextFile = BuildFolder + boostGCTName + ".txt";
+const std::string asmFilePath = outputFolder + asmFileName + ".asm";
+const std::string asmTextFilePath = outputFolder + asmFileName + ".txt";
+const std::string cmnuFilePath = outputFolder + cmnuFileName + ".cmnu";
+
 void initMenuFileStream()
 {
-	// Records whether we're in a proper build folder
-	// NOTE: Currently, this just checks for whether or not GCTRM is found, but I'd like to make the checking more robust in the future.
-	// I intend to use std::filesystem to check if the directories for the relevant files exist or not, but the library doesn't wanna play nice with my VS installation right now. This should all be fixed at some point, sooner rather than later if people are having problems with file writes failing.
-	bool buildFolderValid = 1;
-	ifstream fileChecks;
-	fileChecks.open(GCTRMExePath);
-	buildFolderValid = fileChecks.is_open();
-	fileChecks.close();
-
-	if (buildFolderValid)
-	{
-#ifdef MAKE_BACKUPS
-		backupFile(OutputAsmPath);
-		backupFile(OutputMenuPath);
-		// Makes backups of the GCT files corresponding to the specified GCTText files
-		// The substr stuff just replaces .txt with .GCT
-		backupFile(mainGCTTextfile.substr(0, mainGCTTextfile.rfind('.')) + ".GCT");
-		backupFile(boostGCTTextfile.substr(0, boostGCTTextfile.rfind('.')) + ".GCT");
-#endif
-		// Opens the MenuFile stream with the specified MenuPath
-		MenuFile.open(OutputMenuPath, fstream::out | fstream::binary);
-	}
-	// If buildFolder determined invalid
-	else
-	{
-		// Disable GCTRM
-		RunGCTRM = 0;
-		// And change MenuFile to output to the NoBuild directory instead of the specified one.
-#if DOLPHIN_BUILD
-		MenuFile.open(NoBuildOutputFolder + "\\dnet.cmnu", fstream::out | fstream::binary);
-#else
-		MenuFile.open(NoBuildOutputFolder + "\\data.cmnu", fstream::out | fstream::binary);
-#endif
-	}
+	MenuFile.open(cmnuFilePath, fstream::out | fstream::binary);
 }
 
 

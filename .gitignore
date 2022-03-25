@@ -259,9 +259,8 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-PowerPC Assembly Functions/EX_Characters_Output/ASM.txt
-PowerPC Assembly Functions/EX_Characters_Output/CodeMenu.asm
-PowerPC Assembly Functions/EX_Characters_Output/Net-CodeMenu.asm
-PowerPC Assembly Functions/EX_Characters_Output/data.cmnu
-PowerPC Assembly Functions/EX_Characters_Output/dnet.cmnu
-PowerPC Assembly Functions/EX_Characters_Output/EX_Characters_Changelog.txt
+PowerPC Assembly Functions/EX_Characters_Output/**
+PowerPC Assembly Functions/Code_Menu_Output/**
+PowerPC Assembly Functions/codeset.txt
+PowerPC Assembly Functions/log.txt
+!**/.gitkeep
