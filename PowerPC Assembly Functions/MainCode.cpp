@@ -25,24 +25,24 @@ int main()
 	if (lava::folderExists(outputFolder))
 	{
 		initMenuFileStream();
-		string OutputTextPath = asmTextFilePath;
+		string OutputTextPath = asmTextOutputFilePath;
 
-		std::ofstream ppexOut;
-		ppexOut.open(outputFolder + changelogFileName);
-		ppexOut << "PowerPC Assembly Functions (Code Menu Building Utility)\n";
-		ppexOut << "Current Menu Config: ";
-		std::cout << "Current Menu Config: ";
+		std::ofstream codeMenuLogOutput;
+		codeMenuLogOutput.open(outputFolder + changelogFileName);
+		codeMenuLogOutput << "PowerPC Assembly Functions (Code Menu Building Utility)\n";
+		codeMenuLogOutput << "Building \"" << cmnuFileName << "\" for ";
+		std::cout << "Building \"" << cmnuFileName << "\" for ";
 		switch (BUILD_TYPE)
 		{
 			case NORMAL:
 			{
-				ppexOut << "LegacyTE";
+				codeMenuLogOutput << "LegacyTE";
 				std::cout << "LegacyTE";
 				break;
 			}
 			case PMEX:
 			{
-				ppexOut << "Project M EX";
+				codeMenuLogOutput << "Project M EX";
 				std::cout << "Project M EX";
 				break;
 			}
@@ -50,52 +50,70 @@ int main()
 			{
 				if (PROJECT_PLUS_EX_BUILD == true)
 				{
-					ppexOut << "Project+ EX";
+					if (!USE_NEW_PPEX_DIR)
+					{
+						codeMenuLogOutput << "Pre v1.2 ";
+						std::cout << "Pre v1.2 ";
+					}
+					codeMenuLogOutput << "Project+ EX";
 					std::cout << "Project+ EX";
 				}
 				else
 				{
-					ppexOut << "Project+";
+					codeMenuLogOutput << "Project+";
 					std::cout << "Project+";
 				}
 				break;
 			}
 			default:
 			{
-				ppexOut << "Unknown";
+				codeMenuLogOutput << "Unknown";
 				std::cout << "Unknown";
 				break;
 			}
 		}
+		if (BUILD_NETPLAY_FILES == true)
+		{
+			codeMenuLogOutput << " Netplay";
+			std::cout << " Netplay";
+		}
 		if (DOLPHIN_BUILD == true)
 		{
-			ppexOut << " (Dolphin/Netplay)";
-			std::cout << " (Dolphin/Netplay)";
+			codeMenuLogOutput << " (Dolphin)";
+			std::cout << " (Dolphin)";
 		}
-		ppexOut << "\n";
+		codeMenuLogOutput << "\n";
 		std::cout << "\n";
+		if (DOLPHIN_BUILD == true)
+		{
+			codeMenuLogOutput << "Note: This code menu was configured for use with Dolphin only, and IS NOT COMPATIBLE with consoles!\n";
+			codeMenuLogOutput << "Attempting to use this code menu on console can (and likely will) damage your system.\n";
+			std::cout << "Note: This code menu was configured for use with Dolphin only, and IS NOT COMPATIBLE with consoles!\n";
+			std::cout << "Attempting to use this code menu on console can (and likely will) damage your system.\n";
+		}
+
 		if (TOURNAMENT_ADDITION_BUILD == true)
 		{
-			ppexOut << "Note: Tournament Addition Flag is ON!\n";
+			codeMenuLogOutput << "Note: Tournament Addition Flag is ON!\n";
 			std::cout << "Note: Tournament Addition Flag is ON!\n";
 		}
 		if (IS_DEBUGGING == true)
 		{
-			ppexOut << "Note: General Debug Flag is ON!\n";
+			codeMenuLogOutput << "Note: General Debug Flag is ON!\n";
 			std::cout << "Note: General Debug Flag is ON!\n";
 		}
 		if (EON_DEBUG_BUILD == true)
 		{
-			ppexOut << "Note: Eon's Debug Flag is ON!\n";
+			codeMenuLogOutput << "Note: Eon's Debug Flag is ON!\n";
 			std::cout << "Note: Eon's Debug Flag is ON!\n";
 		}
 
-		ppexOut << "\n";
+		codeMenuLogOutput << "\n";
 		std::cout << "\n";
 
-#if PROJECT_PLUS_EX_BUILD == true
-		ppexOut << "Adding Characters to Code Menu from \"" << exCharInputFilename << "\"...\n";
-		std::cout << "Adding Characters to Code Menu from \"" << exCharInputFilename << "\"...\n";
+#if COLLECT_EXTERNAL_EX_CHARACTERS == true
+		codeMenuLogOutput << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
+		std::cout << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
 		// Builds a map from the predefined character and character ID lists.
 		// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
 		std::map<std::string, u16> zippedIDMap;
@@ -105,16 +123,16 @@ int main()
 		}
 
 		// Read from character file
-		std::ifstream ppexIn;
-		ppexIn.open(exCharInputFilename);
+		std::ifstream exCharInputStream;
+		exCharInputStream.open(exCharInputFileName);
 		// Initiate changelog file
 		
-		if (ppexIn.is_open())
+		if (exCharInputStream.is_open())
 		{
 			std::string currentLine = "";
 			std::string manipStr = "";
 			unsigned long validEntryCount = 0;
-			while (std::getline(ppexIn, currentLine))
+			while (std::getline(exCharInputStream, currentLine))
 			{
 				// Disregard the current line if it's empty, or is marked as a comment
 				if (!currentLine.empty() && currentLine[0] != '#' && currentLine[0] != '/')
@@ -161,28 +179,28 @@ int main()
 							if (itr.second)
 							{
 								std::cout << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-								ppexOut << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+								codeMenuLogOutput << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
 							}
 							// Otherwise, announce what was changed.
 							else if (itr.first != zippedIDMap.end())
 							{
 								itr.first->second = characterSlotIDIn;
 								std::cout << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-								ppexOut << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+								codeMenuLogOutput << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
 							}
 						}
 						else
 						{
 							std::cerr << "[ERROR] Invalid Slot ID specified! The character \"" << characterNameIn << "\" will not be added to the Code Menu!\n";
-							ppexOut << "[ERROR] Invalid Slot ID specified! The character \"" << characterNameIn << "\" will not be added to the Code Menu!\n";
+							codeMenuLogOutput << "[ERROR] Invalid Slot ID specified! The character \"" << characterNameIn << "\" will not be added to the Code Menu!\n";
 						}
 					}
 				}
 			}
 			if (validEntryCount == 0)
 			{
-				std::cout << "[WARNING] \"" << exCharInputFilename << "\" was opened successfully, but no valid entries could be found.\n";
-				ppexOut << "[WARNING] \"" << exCharInputFilename << "\" was opened successfully, but no valid entries could be found.\n";
+				std::cout << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
+				codeMenuLogOutput << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
 			}
 
 			// Write the newly edited list back into the list vectors
@@ -196,23 +214,23 @@ int main()
 		}
 		else
 		{
-			std::cout << "[ERROR] Couldn't open \"" << exCharInputFilename << "\"! Ensure that the file is present in this folder and try again!\n";
-			ppexOut << "[ERROR] Couldn't open \"" << exCharInputFilename << "\"! Ensure that the file is present in this folder and try again!\n";
+			std::cout << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
+			codeMenuLogOutput << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
 		}
 		// Print the results.
 		std::cout << "\nFinal Character List:\n";
-		ppexOut << "\nFinal Character List:\n";
-		for (std::size_t i = 0; i != CHARACTER_LIST.size(); i++)
+		codeMenuLogOutput << "\nFinal Character List:\n";
+		for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
 		{
 			std::cout << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
-			ppexOut << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
+			codeMenuLogOutput << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
 		}
 
 		std::cout << "\n";
-		ppexOut << "\n";
+		codeMenuLogOutput << "\n";
 
 		// Close the changelog and character files.
-		ppexIn.close();
+		exCharInputStream.close();
 #endif
 
 		CodeStart(OutputTextPath);
@@ -279,22 +297,46 @@ int main()
 		CodeEnd();
 
 		std::cout << "\n";
-		if (lava::offerCopyOverAndBackup(cmnuFilePath, cmnuFileAutoReplacePath))
+		if (lava::fileExists(cmnuBuildLocationFilePath))
 		{
-			ppexOut << "Note: Backed up \"" << cmnuFileAutoReplacePath << "\" and overwrote it with the newly built Code Menu.\n";
-		}
-		if (MakeASM(OutputTextPath, asmFilePath))
-		{
-			if (lava::offerCopyOverAndBackup(asmFilePath, asmFileAutoReplacePath))
+			if (lava::offerCopyOverAndBackup(cmnuOutputFilePath, cmnuBuildLocationFilePath))
 			{
-				ppexOut << "Note: Backed up \"" << asmFileAutoReplacePath << "\" and overwrote it with the newly built ASM.\n";
+				codeMenuLogOutput << "Note: Backed up \"" << cmnuBuildLocationFilePath << "\" and overwrote it with the newly built Code Menu.\n";
 			}
-			lava::handleAutoGCTRMProcess(ppexOut);
+		}
+		else if (lava::folderExists(buildFolder + cmnuBuildLocationDirectory))
+		{
+			if (lava::offerCopy(cmnuOutputFilePath, cmnuBuildLocationFilePath))
+			{
+				codeMenuLogOutput << "Note: Copied newly built Code Menu to \"" << cmnuBuildLocationFilePath << "\".\n";
+			}
+		}
+		if (MakeASM(OutputTextPath, asmOutputFilePath))
+		{
+			if (lava::fileExists(asmBuildLocationFilePath))
+			{
+				if (lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath))
+				{
+					codeMenuLogOutput << "Note: Backed up \"" << asmBuildLocationFilePath << "\" and overwrote it with the newly built ASM.\n";
+				}
+			}
+			else if (lava::folderExists(buildFolder + asmBuildLocationDirectory))
+			{
+				if (lava::offerCopy(asmOutputFilePath, asmBuildLocationFilePath))
+				{
+					codeMenuLogOutput << "Note: Copied newly built ASM to \"" << asmBuildLocationFilePath << "\".\n";
+				}
+			}
+			if (lava::handleAutoGCTRMProcess(codeMenuLogOutput) && BUILD_NETPLAY_FILES)
+			{
+				codeMenuLogOutput << "Note: The built GCTs are configured for use in Dolphin Netplay only, and ARE NOT COMPATIBLE with consoles!\n";
+				codeMenuLogOutput << "Attempting to use them on console can (and likely will) damage your system.\n\n";
+			}
 		}
 	}
 	else
 	{
-		std::cerr << "[ERROR] The expected output folder (\"" << outputFolder << "\") couldn't be found in this folder. Ensure that the specified folder exists and try again.\n\n";
+		std::cerr << "[ERROR] The expected output folder (\"" << outputFolder << "\") couldn't be found in this folder. Ensure that the specified folder exists in the same folder as this program and try again.\n\n";
 	}
 	std::cout << "Press any key to exit.\n";
 	_getch();

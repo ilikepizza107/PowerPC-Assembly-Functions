@@ -107,6 +107,7 @@ const vector<u8> CODE_MENU_WIIMOTE_CONVERSION_TABLE = { 2, 3, 1, 0, 12, 31, 31, 
 const vector<u8> CODE_MENU_WIICHUCK_CONVERSION_TABLE = { 0, 1, 2, 3, 12, 31, 31, 31, 31, 31, 9, 8, 10, 4, 11, 31 };
 const vector<u8> CODE_MENU_CLASSIC_CONVERSION_TABLE = { 3, 0, 4, 10, 8, 11, 9, 4, 31, 5, 12, 31, 12, 6, 2, 1 }; //1 to 1
 
+// Enumeration of all predefined characters' Slot IDs.
 enum LAVA_CHARA_SLOT_IDS
 {
 	LCSI_BOWSER = 0x0C,
@@ -157,18 +158,43 @@ enum LAVA_CHARA_SLOT_IDS
 	LCSI_ZERO_SUIT_SAMUS = 0x04,
 };
 
-// If this build is a P+EX Build, construct lists dynamically.
-// This replaces the old #define RIDLEY directive, and is now located in "PowerPC Assembly Functions.h" with the BUILD_TYPE settings.
-#if PROJECT_PLUS_EX_BUILD == true
+// Declares existence of the two main character lists.
+// These are populated with predefined lists in "Code Menu.cpp".
+// If COLLECT_EXTERNAL_EX_CHARACTERS (in "PowerPC Assembly Functions.h") is set to true,
+// additional EX Character declarations will be collected from the file described by exCharInputFilename (see below).
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
-#elif BUILD_TYPE == PROJECT_PLUS
-const vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-const vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-#else
-const vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-const vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-#endif
+
+// The stream for the MenuFile.
+// Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
+static fstream MenuFile;
+void initMenuFileStream();
+
+// Logging and Input Constants
+extern const std::string outputFolder;
+extern const std::string exCharInputFileName;
+extern const std::string changelogFileName;
+// Code Menu Output Constants
+extern const std::string asmFileName;
+extern const std::string asmTextFileName;
+extern const std::string cmnuFileName;
+extern const std::string asmOutputFilePath;
+extern const std::string cmnuOutputFilePath;
+extern const std::string asmTextOutputFilePath;
+extern const std::string asmBuildLocationDirectory;
+extern const std::string cmnuBuildLocationDirectory;
+extern const std::string asmBuildLocationFilePath;
+extern const std::string cmnuBuildLocationFilePath;
+// AutoGCTRM Constants
+extern const std::string buildFolder;
+extern const std::string GCTRMExePath;
+extern const std::string GCTRMCommandBase;
+extern const std::string mainGCTName;
+extern const std::string mainGCTFile;
+extern const std::string mainGCTTextFile;
+extern const std::string boostGCTName;
+extern const std::string boostGCTFile;
+extern const std::string boostGCTTextFile;
 
 
 
@@ -341,35 +367,6 @@ static int CurrentOffset = START_OF_CODE_MENU;
 
 static vector<int> Defaults;
 
-// The stream for the MenuFile.
-// Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
-static fstream MenuFile;
-
-// Un-comment the below line to switch the program to build Netplay versions of all output files.
-//#define DOLPHIN_BUILD
-// Code Menu Output Constants
-extern const std::string outputFolder;
-extern const std::string exCharInputFilename;
-extern const std::string changelogFileName;
-extern const std::string asmFileName;
-extern const std::string cmnuFileName;
-extern const std::string asmFilePath;
-extern const std::string cmnuFilePath;
-extern const std::string asmTextFilePath;
-extern const std::string asmFileAutoReplacePath;
-extern const std::string cmnuFileAutoReplacePath;
-// AutoGCTRM Constants
-extern const std::string BuildFolder;
-extern const std::string GCTRMExePath;
-extern const std::string GCTRMCommandBase;
-extern const std::string mainGCTName;
-extern const std::string mainGCTFile;
-extern const std::string mainGCTTextFile;
-extern const std::string boostGCTName;
-extern const std::string boostGCTFile;
-extern const std::string boostGCTTextFile;
-
-void initMenuFileStream();
 
 
 class Page;

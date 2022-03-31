@@ -24,6 +24,15 @@ typedef unsigned char u8;
 #define EON_DEBUG_BUILD false
 #define TOURNAMENT_ADDITION_BUILD false
 #define PROJECT_PLUS_EX_BUILD true
+// Note: Only P+EX Builds should be using this, so setting PROJECT_PLUS_EX_BUILD to false will force this off as well.
+#define USE_NEW_PPEX_DIR (true && PROJECT_PLUS_EX_BUILD)
+// Note: Console builds can't use Netplay anyway, so setting DOLPHIN_BUILD to false will force this off as well.
+// This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.
+// As a result, attempting to run Netplay GCTs on console may brick your Wii. 
+#define BUILD_NETPLAY_FILES (false && DOLPHIN_BUILD)
+// Controls whether or not externally defined characters are added to the code menu.
+// Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
+#define COLLECT_EXTERNAL_EX_CHARACTERS true
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
@@ -34,13 +43,16 @@ typedef unsigned char u8;
 
 const vector<float> DEFAULT_CAMERA_MATRIX = { 1,0,0,0, 0,1,0,0, 0,0,1,-64 };
 
-#if BUILD_TYPE == PROJECT_PLUS && PROJECT_PLUS_EX_BUILD == false
-const string MAIN_FOLDER = "Project+";
-#elif BUILD_TYPE == PROJECT_PLUS && PROJECT_PLUS_EX_BUILD == true
-const string MAIN_FOLDER = "P+EX/./.";
+#if BUILD_TYPE == PROJECT_PLUS
+	#if USE_NEW_PPEX_DIR == true
+	const string MAIN_FOLDER = "P+EX/./.";
+	#else
+	const string MAIN_FOLDER = "Project+";
+#endif
 #else
 const string MAIN_FOLDER = "LegacyTE";
 #endif
+
 
 ///addresses start
 

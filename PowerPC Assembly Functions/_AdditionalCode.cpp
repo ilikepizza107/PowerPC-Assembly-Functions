@@ -172,30 +172,93 @@ namespace lava
 
 		return backupSucceeded && copySucceeded;
 	}
+	bool offerCopy(std::string fileToCopy, std::string fileToOverwrite)
+	{
+		bool copySucceeded = 0;
+
+		if (lava::fileExists(fileToCopy) && !lava::fileExists(fileToOverwrite))
+		{
+			std::cout << "Couldn't detect \"" << fileToOverwrite << "\".\n" << "Would you like to copy \"" << fileToCopy << "\" to that location?\n";
+			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
+			if (yesNoDecision('y', 'n'))
+			{
+				std::cout << "Copying over \"" << fileToCopy << "\"... ";
+				if (lava::copyFile(fileToCopy, fileToOverwrite, 1))
+				{
+					copySucceeded = 1;
+					std::cout << "Success!\n";
+				}
+				else
+				{
+					std::cerr << "Failure! Please ensure that the destination file is able to be written to!\n";
+				}
+			}
+			else
+			{
+				std::cout << "Skipping copy.\n";
+			}
+			std::cout << "\n";
+		}
+
+		return copySucceeded;
+	}
 	bool handleAutoGCTRMProcess(std::ostream& logOutput)
 	{
 		bool result = 0;
 
 		if (lava::fileExists(GCTRMExePath) && lava::fileExists(mainGCTTextFile) && lava::fileExists(boostGCTTextFile))
 		{
-			std::cout << "Detected \"" << GCTRMExePath << "\".\nWould you like to build \"" << mainGCTFile << "\" and \"" << boostGCTFile << "\"? ";
-			std::cout << "Backups will be made of the existing files.\n";
+			std::cout << "Detected \"" << GCTRMExePath << "\".\nWould you like to build \"" << mainGCTFile << "\" and \"" << boostGCTFile << "\"? Backups will be made of any existing files.\n";
+
+			bool mainGCTBackupNeeded = lava::fileExists(mainGCTFile);
+			// If no backup is needed, we can consider the backup resolved. If one is, we cannot.
+			bool mainGCTBackupResolved = !mainGCTBackupNeeded;
+			// Same as above.
+			bool boostGCTBackupNeeded = lava::fileExists(boostGCTFile);
+			bool boostGCTBackupResolved = !boostGCTBackupNeeded;
+
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
 			if (yesNoDecision('y', 'n'))
 			{
-				std::cout << "Backing up files... ";
-				if (lava::backupFile(mainGCTFile, ".bak", 1) && lava::backupFile(boostGCTFile, ".bak", 1))
+				if (mainGCTBackupNeeded || boostGCTBackupNeeded)
+				{
+					std::cout << "Backing up files... ";
+					if (mainGCTBackupNeeded)
+					{
+						mainGCTBackupResolved = lava::backupFile(mainGCTFile, ".bak", 1);
+					}
+					if (boostGCTBackupNeeded)
+					{
+						boostGCTBackupResolved = lava::backupFile(boostGCTFile, ".bak", 1);
+					}
+				}
+				if (mainGCTBackupResolved && boostGCTBackupResolved)
 				{
 					std::cout << "Success! Running GCTRM.\n";
 					result = 1;
 					std::string commandFull = "\"" + GCTRMCommandBase + "\"" + mainGCTTextFile + "\"\"";
 					std::cout << "\n" << commandFull << "\n";
 					system(commandFull.c_str());
+					if (mainGCTBackupNeeded)
+					{
+						logOutput << "Note: Backed up and rebuilt \"" << mainGCTFile << "\".\n";
+					}
+					else
+					{
+						logOutput << "Note: Built \"" << mainGCTFile << "\".\n";
+					}
+
 					commandFull = "\"" + GCTRMCommandBase + "\"" + boostGCTTextFile + "\"\"";
 					std::cout << "\n" << commandFull << "\n";
 					system(commandFull.c_str());
-					logOutput << "Note: Backed up and rebuilt \"" << mainGCTFile << "\".\n";
-					logOutput << "Note: Backed up and rebuilt \"" << boostGCTFile << "\".\n";
+					if (boostGCTBackupNeeded)
+					{
+						logOutput << "Note: Backed up and rebuilt \"" << boostGCTFile << "\".\n";
+					}
+					else
+					{
+						logOutput << "Note: Built \"" << boostGCTFile << "\".";
+					}
 					std::cout << "\n";
 				}
 				else
