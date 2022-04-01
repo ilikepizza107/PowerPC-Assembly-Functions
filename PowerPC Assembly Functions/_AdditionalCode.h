@@ -24,6 +24,9 @@ namespace lava
 	bool offerCopyOverAndBackup(std::string fileToCopy, std::string fileToOverwrite);
 	bool offerCopy(std::string fileToCopy, std::string fileToOverwrite);
 	bool handleAutoGCTRMProcess(std::ostream& logOutput);
+
+	// EX Character Functions
+	std::vector<std::pair<std::string, u16>> collectNameSlotIDPairs(std::string exCharInputFilePath, bool& fileOpened);
 }
 
 #endif

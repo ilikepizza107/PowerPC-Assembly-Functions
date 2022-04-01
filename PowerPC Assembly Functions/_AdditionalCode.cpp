@@ -273,4 +273,65 @@ namespace lava
 		}
 		return result;
 	}
+
+	std::vector<std::pair<std::string, u16>> collectNameSlotIDPairs(std::string exCharInputFilePath, bool& fileOpened)
+	{
+		std::vector<std::pair<std::string, u16>> result{};
+		fileOpened = 0;
+
+		// Read from character file
+		std::ifstream exCharInputStream;
+		exCharInputStream.open(exCharInputFilePath);
+
+		if (exCharInputStream.is_open())
+		{
+			fileOpened = 1;
+			std::string currentLine = "";
+			std::string manipStr = "";
+			while (std::getline(exCharInputStream, currentLine))
+			{
+				// Disregard the current line if it's empty, or is marked as a comment
+				if (!currentLine.empty() && currentLine[0] != '#' && currentLine[0] != '/')
+				{
+					// Clean the string
+					// Removes any space characters from outside of quotes. Note, quotes can be escaped with \\.
+					manipStr = "";
+					bool inQuote = 0;
+					bool doEscapeChar = 0;
+					for (std::size_t i = 0; i < currentLine.size(); i++)
+					{
+						if (currentLine[i] == '\"' && !doEscapeChar)
+						{
+							inQuote = !inQuote;
+						}
+						else if (currentLine[i] == '\\')
+						{
+							doEscapeChar = 1;
+						}
+						else if (inQuote || !std::isspace(currentLine[i]))
+						{
+							doEscapeChar = 0;
+							manipStr += currentLine[i];
+						}
+					}
+					// Determines the location of the delimiter, and ensures that there's something before and something after it.
+					// Line is obviously invalid if that fails, so we skip it.
+					std::size_t delimLoc = manipStr.find('=');
+					if (delimLoc != std::string::npos && delimLoc > 0 && delimLoc < (manipStr.size() - 1))
+					{
+						// Store character name portion of string
+						std::string characterNameIn = manipStr.substr(0, delimLoc);
+						// Initialize var for character id portion of string
+						u16 characterSlotIDIn = SHRT_MAX;
+						// Handles hex input for character id
+						characterSlotIDIn = lava::stringToNum(manipStr.substr(delimLoc + 1, std::string::npos), 1, SHRT_MAX);
+						// Insert new entry into list.
+						result.push_back(std::make_pair(characterNameIn, characterSlotIDIn));
+					}
+				}
+			}
+		}
+
+		return result;
+	}
 }

@@ -114,102 +114,60 @@ int main()
 #if COLLECT_EXTERNAL_EX_CHARACTERS == true
 		codeMenuLogOutput << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
 		std::cout << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
-		// Builds a map from the predefined character and character ID lists.
-		// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
-		std::map<std::string, u16> zippedIDMap;
-		for (int i = 0; i < CHARACTER_LIST.size(); i++)
-		{
-			zippedIDMap.insert(std::make_pair(CHARACTER_LIST[i], CHARACTER_ID_LIST[i]));
-		}
 
-		// Read from character file
-		std::ifstream exCharInputStream;
-		exCharInputStream.open(exCharInputFileName);
-		// Initiate changelog file
-		
-		if (exCharInputStream.is_open())
+		bool exCharInputOpenedSuccessfully = 0;
+		std::vector<std::pair<std::string, u16>> nameIDPairs = lava::collectNameSlotIDPairs(exCharInputFileName, exCharInputOpenedSuccessfully);
+		if (exCharInputOpenedSuccessfully)
 		{
-			std::string currentLine = "";
-			std::string manipStr = "";
-			unsigned long validEntryCount = 0;
-			while (std::getline(exCharInputStream, currentLine))
+			if (nameIDPairs.size())
 			{
-				// Disregard the current line if it's empty, or is marked as a comment
-				if (!currentLine.empty() && currentLine[0] != '#' && currentLine[0] != '/')
+				// Builds a map from the predefined character and character ID lists.
+				// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
+				std::map<std::string, u16> zippedIDMap;
+				for (int i = 0; i < CHARACTER_LIST.size(); i++)
 				{
-					// Clean the string
-					// Removes any space characters from outside of quotes. Note, quotes can be escaped with \\.
-					manipStr = "";
-					bool inQuote = 0;
-					bool doEscapeChar = 0;
-					for (std::size_t i = 0; i < currentLine.size(); i++)
+					zippedIDMap.insert(std::make_pair(CHARACTER_LIST[i], CHARACTER_ID_LIST[i]));
+				}
+				for (int i = 0; i < nameIDPairs.size(); i++)
+				{
+					std::pair<std::string, u16>* currPair = &nameIDPairs[i];
+					if (currPair->second != SHRT_MAX)
 					{
-						if (currentLine[i] == '\"' && !doEscapeChar)
+						auto itr = zippedIDMap.insert(*currPair);
+						// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
+						if (itr.second)
 						{
-							inQuote = !inQuote;
+							std::cout << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+							codeMenuLogOutput << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
 						}
-						else if (currentLine[i] == '\\')
+						// Otherwise, announce what was changed.
+						else if (itr.first != zippedIDMap.end())
 						{
-							doEscapeChar = 1;
-						}
-						else if (inQuote || !std::isspace(currentLine[i]))
-						{
-							doEscapeChar = 0;
-							manipStr += currentLine[i];
+							itr.first->second = currPair->second;
+							std::cout << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+							codeMenuLogOutput << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
 						}
 					}
-
-					// Determines the location of the delimiter, and ensures that there's something before and something after it.
-					// Line is obviously invalid if that fails, so we skip it.
-					std::size_t delimLoc = manipStr.find('=');
-					if (delimLoc != std::string::npos && delimLoc > 0 && delimLoc < (manipStr.size() - 1))
+					else
 					{
-						// Store character name portion of string
-						std::string characterNameIn = manipStr.substr(0, delimLoc);
-						// Initialize var for character id portion of string
-						u16 characterSlotIDIn = SHRT_MAX;
-						// Handles hex input for character id
-						characterSlotIDIn = lava::stringToNum(manipStr.substr(delimLoc + 1, std::string::npos), 1, SHRT_MAX);
-						if (characterSlotIDIn != SHRT_MAX)
-						{
-							validEntryCount++;
-							// Insert new entry into list.
-							auto itr = zippedIDMap.insert(std::make_pair(characterNameIn, characterSlotIDIn));
-							// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
-							if (itr.second)
-							{
-								std::cout << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-								codeMenuLogOutput << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-							}
-							// Otherwise, announce what was changed.
-							else if (itr.first != zippedIDMap.end())
-							{
-								itr.first->second = characterSlotIDIn;
-								std::cout << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-								codeMenuLogOutput << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-							}
-						}
-						else
-						{
-							std::cerr << "[ERROR] Invalid Slot ID specified! The character \"" << characterNameIn << "\" will not be added to the Code Menu!\n";
-							codeMenuLogOutput << "[ERROR] Invalid Slot ID specified! The character \"" << characterNameIn << "\" will not be added to the Code Menu!\n";
-						}
+						std::cerr << "[ERROR] Invalid Slot ID specified! The character \"" << currPair->first << "\" will not be added to the Code Menu!\n";
+						codeMenuLogOutput << "[ERROR] Invalid Slot ID specified! The character \"" << currPair->first << "\" will not be added to the Code Menu!\n";
 					}
 				}
+
+				// Write the newly edited list back into the list vectors
+				CHARACTER_LIST.clear();
+				CHARACTER_ID_LIST.clear();
+				for (auto itr = zippedIDMap.begin(); itr != zippedIDMap.end(); itr++)
+				{
+					CHARACTER_LIST.push_back(itr->first);
+					CHARACTER_ID_LIST.push_back(itr->second);
+				}
 			}
-			if (validEntryCount == 0)
+			else
 			{
 				std::cout << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
 				codeMenuLogOutput << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
-			}
-
-			// Write the newly edited list back into the list vectors
-			CHARACTER_LIST.clear();
-			CHARACTER_ID_LIST.clear();
-			for (auto itr = zippedIDMap.begin(); itr != zippedIDMap.end(); itr++)
-			{
-				CHARACTER_LIST.push_back(itr->first);
-				CHARACTER_ID_LIST.push_back(itr->second);
 			}
 		}
 		else
@@ -217,7 +175,7 @@ int main()
 			std::cout << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
 			codeMenuLogOutput << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
 		}
-		// Print the results.
+		//Print the results.
 		std::cout << "\nFinal Character List:\n";
 		codeMenuLogOutput << "\nFinal Character List:\n";
 		for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
@@ -228,9 +186,6 @@ int main()
 
 		std::cout << "\n";
 		codeMenuLogOutput << "\n";
-
-		// Close the changelog and character files.
-		exCharInputStream.close();
 #endif
 
 		CodeStart(OutputTextPath);
