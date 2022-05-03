@@ -21,7 +21,7 @@ using namespace std;
 
 int main()
 {
-	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility)\n";
+	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
 	if (lava::folderExists(outputFolder))
 	{
 		initMenuFileStream();
@@ -29,7 +29,7 @@ int main()
 
 		std::ofstream codeMenuLogOutput;
 		codeMenuLogOutput.open(outputFolder + changelogFileName);
-		codeMenuLogOutput << "PowerPC Assembly Functions (Code Menu Building Utility)\n";
+		codeMenuLogOutput << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
 		codeMenuLogOutput << "Building \"" << cmnuFileName << "\" for ";
 		std::cout << "Building \"" << cmnuFileName << "\" for ";
 		switch (BUILD_TYPE)

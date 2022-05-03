@@ -8,6 +8,8 @@
 
 namespace lava
 {
+	const std::string version = "v1.0.0";
+
 	// General Utility
 	int stringToNum(const std::string& stringIn, bool allowNeg = 1, int defaultVal = INT_MAX);
 	std::string numToHexStringWithPadding(std::size_t numIn, std::size_t paddingLength);
