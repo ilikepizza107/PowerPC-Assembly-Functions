@@ -261,6 +261,7 @@ __pycache__/
 *.pyc
 PowerPC Assembly Functions/EX_Characters_Output/**
 PowerPC Assembly Functions/Code_Menu_Output/**
+PowerPC Assembly Functions/Junk/**
 PowerPC Assembly Functions/codeset.txt
 PowerPC Assembly Functions/log.txt
 !**/.gitkeep
