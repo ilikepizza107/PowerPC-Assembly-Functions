@@ -69,19 +69,7 @@ void LoadCodeMenu()
 	int reg1 = 31;
 	int reg2 = 30;
 
-	// Switches loaded code menu for Dolphin Builds
-	// Credit to Kapedani
-#if DOLPHIN_BUILD
-	string codeMenuLocation = "/menu3/dnet.cmnu";
-#else
-	string codeMenuLocation = "/menu3/data.cmnu";
-#endif
-
-#if BUILD_TYPE == PROJECT_PLUS
-	LoadFile(codeMenuLocation, START_OF_CODE_MENU_HEADER, reg1, reg2, false);
-#else
-	LoadFile(MAIN_FOLDER + "/cm.bin", START_OF_CODE_MENU_HEADER, reg1, reg2);
-#endif
+	LoadFile(MAIN_FOLDER + "/" + cmnuBuildLocationDirectory + cmnuFileName, START_OF_CODE_MENU_HEADER, reg1, reg2);
 
 	/*SetRegister(reg1, STRING_BUFFER);
 

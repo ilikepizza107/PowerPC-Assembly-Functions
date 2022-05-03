@@ -107,68 +107,94 @@ const vector<u8> CODE_MENU_WIIMOTE_CONVERSION_TABLE = { 2, 3, 1, 0, 12, 31, 31, 
 const vector<u8> CODE_MENU_WIICHUCK_CONVERSION_TABLE = { 0, 1, 2, 3, 12, 31, 31, 31, 31, 31, 9, 8, 10, 4, 11, 31 };
 const vector<u8> CODE_MENU_CLASSIC_CONVERSION_TABLE = { 3, 0, 4, 10, 8, 11, 9, 4, 31, 5, 12, 31, 12, 6, 2, 1 }; //1 to 1
 
+// Enumeration of all predefined characters' Slot IDs.
 enum LAVA_CHARA_SLOT_IDS
 {
-	LCSI_BOWSER = 12,
-	LCSI_CAPTAIN_FALCON = 10,
-	LCSI_CHARIZARD = 30,
-	LCSI_DEDEDE = 35,
-	LCSI_DIDDY_KONG = 28,
-	LCSI_DONKEY_KONG = 1,
-	LCSI_FALCO = 21,
-	LCSI_FOX = 7,
-	LCSI_GANONDORF = 22,
-	LCSI_GIGA_BOWSER = 44,
-	LCSI_ICE_CLIMBERS = 16,
-	LCSI_IKE = 37,
-	LCSI_IVYSAUR = 34,
-	LCSI_JIGGLYPUFF = 39,
-	LCSI_KIRBY = 6,
-	LCSI_KNUCKLES = 53,
-	LCSI_LINK = 2,
-	LCSI_LUCARIO = 36,
-	LCSI_LUCAS = 27,
-	LCSI_LUIGI = 9,
-	LCSI_MARIO = 0,
-	LCSI_MARTH = 19,
-	LCSI_META_KNIGHT = 24,
-	LCSI_MEWTWO = 51,
-	LCSI_MR_GAME_AND_WATCH = 20,
-	LCSI_NESS = 11,
-	LCSI_OLIMAR = 26,
-	LCSI_PEACH = 13,
-	LCSI_PIKACHU = 8,
-	LCSI_PIT = 25,
-	LCSI_ROB = 38,
-	LCSI_RIDLEY = 56,
-	LCSI_ROY = 50,
-	LCSI_SAMUS = 3,
-	LCSI_SHEIK = 15,
-	LCSI_SNAKE = 42,
-	LCSI_SONIC = 43,
-	LCSI_SOPO = 17,
-	LCSI_SQUIRTLE = 32,
-	LCSI_TOON_LINK = 40,
-	LCSI_WARIO = 23,
-	LCSI_WARIOMAN = 45,
-	LCSI_WOLF = 41,
-	LCSI_YOSHI = 5,
-	LCSI_ZELDA = 14,
-	LCSI_ZERO_SUIT_SAMUS = 4,
+	LCSI_BOWSER = 0x0C,
+	LCSI_CAPTAIN_FALCON = 0x0A,
+	LCSI_CHARIZARD = 0x1E,
+	LCSI_DEDEDE = 0x23,
+	LCSI_DIDDY_KONG = 0x1C,
+	LCSI_DONKEY_KONG = 0x01,
+	LCSI_FALCO = 0x15,
+	LCSI_FOX = 0x07,
+	LCSI_GANONDORF = 0x16,
+	LCSI_GIGA_BOWSER = 0x2C,
+	LCSI_ICE_CLIMBERS = 0x10,
+	LCSI_IKE = 0x25,
+	LCSI_IVYSAUR = 0x22,
+	LCSI_JIGGLYPUFF = 0x27,
+	LCSI_KIRBY = 0x06,
+	LCSI_KNUCKLES = 0x35,
+	LCSI_LINK = 0x02,
+	LCSI_LUCARIO = 0x24,
+	LCSI_LUCAS = 0x1B,
+	LCSI_LUIGI = 0x09,
+	LCSI_MARIO = 0x00,
+	LCSI_MARTH = 0x13,
+	LCSI_META_KNIGHT = 0x18,
+	LCSI_MEWTWO = 0x33,
+	LCSI_MR_GAME_AND_WATCH = 0x14,
+	LCSI_NESS = 0x0B,
+	LCSI_OLIMAR = 0x1A,
+	LCSI_PEACH = 0x0D,
+	LCSI_PIKACHU = 0x08,
+	LCSI_PIT = 0x19,
+	LCSI_ROB = 0x26,
+	LCSI_RIDLEY = 0x38,
+	LCSI_ROY = 0x32,
+	LCSI_SAMUS = 0x03,
+	LCSI_SHEIK = 0x0F,
+	LCSI_SNAKE = 0x2A,
+	LCSI_SONIC = 0x2B,
+	LCSI_SOPO = 0x11,
+	LCSI_SQUIRTLE = 0x20,
+	LCSI_TOON_LINK = 0x28,
+	LCSI_WARIO = 0x17,
+	LCSI_WARIOMAN = 0x2D,
+	LCSI_WOLF = 0x29,
+	LCSI_YOSHI = 0x05,
+	LCSI_ZELDA = 0x0E,
+	LCSI_ZERO_SUIT_SAMUS = 0x04,
 };
 
-// If this build is a P+EX Build, construct lists dynamically.
-// This replaces the old #define RIDLEY directive, and is now located in "PowerPC Assembly Functions.h" with the BUILD_TYPE settings.
-#if PROJECT_PLUS_EX_BUILD == true
+// Declares existence of the two main character lists.
+// These are populated with predefined lists in "Code Menu.cpp".
+// If COLLECT_EXTERNAL_EX_CHARACTERS (in "PowerPC Assembly Functions.h") is set to true,
+// additional EX Character declarations will be collected from the file described by exCharInputFilename (see below).
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
-#elif BUILD_TYPE == PROJECT_PLUS
-const vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-const vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-#else
-const vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-const vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-#endif
+
+// The stream for the MenuFile.
+// Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
+static fstream MenuFile;
+void initMenuFileStream();
+
+// Logging and Input Constants
+extern const std::string outputFolder;
+extern const std::string exCharInputFileName;
+extern const std::string changelogFileName;
+// Code Menu Output Constants
+extern const std::string asmFileName;
+extern const std::string asmTextFileName;
+extern const std::string cmnuFileName;
+extern const std::string asmOutputFilePath;
+extern const std::string cmnuOutputFilePath;
+extern const std::string asmTextOutputFilePath;
+extern const std::string asmBuildLocationDirectory;
+extern const std::string cmnuBuildLocationDirectory;
+extern const std::string asmBuildLocationFilePath;
+extern const std::string cmnuBuildLocationFilePath;
+// AutoGCTRM Constants
+extern const std::string buildFolder;
+extern const std::string GCTRMExePath;
+extern const std::string GCTRMCommandBase;
+extern const std::string mainGCTName;
+extern const std::string mainGCTFile;
+extern const std::string mainGCTTextFile;
+extern const std::string boostGCTName;
+extern const std::string boostGCTFile;
+extern const std::string boostGCTTextFile;
 
 
 
@@ -341,47 +367,6 @@ static int CurrentOffset = START_OF_CODE_MENU;
 
 static vector<int> Defaults;
 
-// GCTRM Settings and Paths
-// Controls whether or not GCTRM is run.
-// Default value is 1 (set in Code Menu.cpp).
-// Note, if GCTRM isn't found at the location specified below, the program will just skip running it.
-extern bool RunGCTRM;
-// Specifies the base path to the build.
-// In the default configuration, this is expected to be the actual Project+ folder itself, with GCTRM, the pf folder, etc inside.
-const string BuildFolder = ".\\";
-// Specifies where to put files when no build is present (ie. when GCTRM isn't found).
-const string NoBuildOutputFolder = ".\\EX_Characters_Output";
-// Specifies path to GCTRM executable.
-// In the default configuration, this is directky
-const string GCTRMExePath = BuildFolder + "\\GCTRealMate.exe";
-// The stream for the MenuFile.
-// Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
-static fstream MenuFile;
-// Paths for output.
-// NOTE: In the event that GCTRM isn't run, the asm and cmnu files will be placed in the NoBuildOutputFolder as specified above.
-#if DOLPHIN_BUILD
-const std::string OutputAsmPath = BuildFolder + "\\Source\\Netplay\\Net-CodeMenu.asm";
-const std::string OutputMenuPath = BuildFolder + "\\pf\\menu3\\dnet.cmnu";
-const std::string mainGCTTextfile = BuildFolder + "\\NETPLAY.txt";
-const std::string boostGCTTextfile = BuildFolder + "\\NETBOOST.txt";
-#else
-const std::string OutputAsmPath = BuildFolder + "\\Source\\Project+\\CodeMenu.asm";
-const std::string OutputMenuPath = BuildFolder + "\\pf\\menu3\\data.cmnu";
-const std::string mainGCTTextfile = BuildFolder + "\\RSBE01.txt";
-const std::string boostGCTTextfile = BuildFolder + "\\BOOST.txt";
-#endif
-// Defines whether or not we make backups of the following files...
-// - CodeMenu.asm/Net-CodeMenu.asm
-// - data.cmnu/dnet.cmnu
-// - RSBE01.GCT/NETPLAY.GCT
-// - BOOST.GCT/NETBOOST.GCT
-// ... on initialization.
-// This is on by default, and should help mitigate data loss in case anything goes wrong.
-#define MAKE_BACKUPS
-// File backup function
-bool backupFile(std::string fileToBackup, std::string backupSuffix = ".bak");
-// Initializes MenuFile stream with appropriate target file, creates backups if MAKE_BACKUPS is defined
-void initMenuFileStream();
 
 
 class Page;
