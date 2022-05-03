@@ -440,7 +440,7 @@ public:
 
 	int* Index = nullptr;
 	u32 numArgs;
-	u32 Value;
+	u32 Value = 0xFFFFFFFF;
 	u32 Default;
 	u32 Max;
 	u32 Min;
