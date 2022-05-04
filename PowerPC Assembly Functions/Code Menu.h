@@ -171,7 +171,7 @@ enum LAVA_CHARA_SLOT_IDS
 // Declares existence of the two main character lists.
 // These are populated with predefined lists in "Code Menu.cpp".
 // If COLLECT_EXTERNAL_EX_CHARACTERS (in "PowerPC Assembly Functions.h") is set to true,
-// additional EX Character declarations will be collected from the file described by exCharInputFilename (see below).
+// additional EX Character declarations will be collected from the file described by exCharInputFilename (see "Code Menu.cpp").
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
 
