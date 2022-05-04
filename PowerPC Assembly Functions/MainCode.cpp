@@ -82,6 +82,11 @@ int main()
 			codeMenuLogOutput << " (Dolphin)";
 			std::cout << " (Dolphin)";
 		}
+		else
+		{
+			codeMenuLogOutput << " (Console)";
+			std::cout << " (Console)";
+		}
 		codeMenuLogOutput << "\n";
 		std::cout << "\n";
 		if (DOLPHIN_BUILD == true)
