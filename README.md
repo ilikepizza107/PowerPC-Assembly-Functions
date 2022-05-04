@@ -24,7 +24,7 @@ If you're going to use this fork and don't intend to edit the code at all, simpl
 
 Review the character list in the produced changelog to ensure that your characters were added correctly. If they were, place the produced files in their appropiate locations, run GCTRM to update your .gct files, and you should be good to go.
 
-## Note On Automatic File Placement and GCTRM
+## Info On Automatic File Placement and GCTRM
 
 If you place the included "PowerPC Assembly Functions" folder in its entirety into your build folder (ie. such that the entire folder is where your "pf", "rp", and "Source" folders are), the program will additionally offer to copy the produced files into their appropriate locations (as well as backup any existing files). If the program also detects the GCTRM executable and the necessary code files ("RSBE01.txt" and "BOOST.txt" for offline builds, or "NETPLAY.txt" and "NETBOOST.txt" for netplay builds), the program will also offer to run GCTRM for you, backing up and updating your .GCTs automatically.
 
