@@ -1,45 +1,38 @@
-# Purpose
-This fork primarily implements the ability to add characters to the P+EX code menu without having to manually edit and recompile anything.
-Adding new characters along with their IDs to "EX_Characters.txt" and running the program is all you need to do.
-Additionally, to avoid the need to manually specify output directories, output files will generally be created in the "EX_Characters_Output" directory (see below notes for further details). Note that a new file ("EX_Characters_Changelog.txt") will be generated when the program runs, outlining applied changes and the end state of the list.
+# PowerPC Assembly Functions (Code Menu Building Utility)
+A fork of the P+EX code menu which implements the ability to add characters to the ode menu without having to manually edit and recompile anything.
+Adding new characters along with their IDs to the provided "EX_Characters.txt" and running the program is all you need to do.
+Additionally, to avoid the need to manually specify output directories, output files will be created in the "Code_Menu_Output" directory (see below notes for further details). Note that a new file ("Code_Menu_Changelog.txt") will be generated when the program runs, outlining applied changes and the end state of the list.
 
-# Notes For Use Without Code Editing
-If you're going to use this fork and don't intend to edit the code in Visual Studio at all, simply download the latest Release version, no need to download the whole repo. From there, this program may be used in one of two ways: INSIDE of a build folder (ie. such that the extracted files are where your "pf", "rp", and "Source" folders are), or OUTSIDE of a build folder (ie. anywhere else).
+## Instructions For Use Without Code Editing
 
-When used OUTSIDE of a build folder, the program will simply read EX_Characters.txt, apply the relevant character changes, and emit the following files into the "EX_Characters_Output" folder:
-
-	- ASM.txt
+If you're going to use this fork and don't intend to edit the code at all, simply download the [latest Release version](https://github.com/QuickLava/PowerPC-Assembly-Functions/releases), no need to download the source code. From there, extract the provided "PowerPC Assembly Functions", add new character entries as described below, then run the executable appropriate for your build:
+- "PowerPC Assembly Functions.exe": Builds a code menu for console P+EX, producing the following files in the output folder:
+	- data.cmnu (goes in pf/menu3/)
+	- CodeMenu.txt
 	- CodeMenu.asm (the above ASM.txt converted into assembly, goes in Source/Project+/)
-	- data.cmnu (or dnet.cmnu, if using the DOLPHIN version) (goes in pf/menu3/)
-	- EX_Characters_Changelog.txt
+	- Code_Menu_Changelog.txt
+- "PowerPC Assembly Functions.exe (Dolphin)": Builds a code menu for offline Dolphin P+EX, producing the following files in the output folder:
+	- data.cmnu (goes in pf/menu3/)
+	- CodeMenu.txt
+	- CodeMenu.asm (the above ASM.txt converted into assembly, goes in Source/Project+/)
+	- Code_Menu_Changelog.txt
+- "PowerPC Assembly Functions.exe (Netplay)": Builds a code menu for netplay Dolphin P+EX, producing the following files in the output folder:
+	- dnet.cmnu (goes in pf/menu3/)
+	- Net-CodeMenu.txt
+	- Net-CodeMenu.asm (the above ASM.txt converted into assembly, goes in Source/Project+/)
+	- Net-Code_Menu_Changelog.txt
 
-When used INSIDE of a build folder, AND "GCTRealMate.exe" is present in that same folder, it will read EX_Characters.txt and apply character changes like normal, but will then place CodeMenu.asm and data.cmnu (or dnet.cmnu) where they belong (backing up the original files if present), and run GCTRM to compile RSBE01.GCT and BOOST.GCT. So, after running the program, you should instead expect to see the following in "EX_Characters_Output"...
+Review the character list in the produced changelog to ensure that your characters were added correctly. If they were, place the produced files in their appropiate locations, run GCTRM to update your .gct files, and you should be good to go.
 
-	- ASM.txt
-	- EX_Characters_Changelog.txt
-	
-... the following newly edited files in "Source/Project+/"...
+## Note On Automatic File Placement and GCTRM
 
-	- CodeMenu.asm (the edited code menu assembly file)
-	- CodeMenu.asm.bak (a backup of the assembly file that was present in this directory before this program was last run)
-	
-... the following newly edited files in "pf/menu3/"...
+If you place the included "PowerPC Assembly Functions" folder in its entirety into your build folder (ie. such that the entire folder is where your "pf", "rp", and "Source" folders are), the program will additionally offer to copy the produced files into their appropriate locations (as well as backup any existing files). If the program also detects the GCTRM executable and the necessary code files ("RSBE01.txt" and "BOOST.txt" for offline builds, or "NETPLAY.txt" and "NETBOOST.txt" for netplay builds), the program will also offer to run GCTRM for you, backing up and updating your .GCTs automatically.
 
-	- data.cmnu (or dnet.cmnu, if using the DOLPHIN version) (the edited version of data.cmnu)
-	- data.cmnu.bak (or dnet.cmnu.bak) (a backup of the cmnu file that was present in this directory before this program was last run)
-	
-... and the following newly edited files in the base folder:
-	
-	- codeset.txt
-	- log.txt
-	- BOOST.GCT (or NETBOOST.GCT if using the DOLPHIN version)
-	- BOOST.GCT.bak (or NETBOOST.GCT.bak if using the DOLPHIN version)
-	- RSBE01.GCT (or NETPLAY.GCT if using the DOLPHIN version)
-	- RSBE01.GCT.bak (or NETPLAY.GCT.bak if using the DOLPHIN version)
-	
-Note that regardless of use, inside or outside of a build directory, you MUST have an "EX_Characters_Output" folder in the same directory as the executable; otherwise, the program won't run properly. If you're having problems where the program isn't outputting anything, this is almost certainly the problem.
+Note: If the program offers to copy your files into the appropriate locations, but *doesn't* prompt you to run GCTRM, it's because it couldn't find the necessary code files in the build folder. This is especially prone to happenning when trying to run the "Netplay" executable without having "NETPLAY.txt" or "NETBOOST.txt" files in your build folder, as these files do not come with some versions of P+EX. Make sure those exist in your build folder, then run the program again.
 
-# Adding to EX_Characters.txt
+Note: Unlike previous releases of this program, you need to copy the full "PowerPC Assembly Functions" folder in its entirety into your build folder in order to enable these automation features.
+
+## Adding to EX_Characters.txt
 New lines are added in the following format:
 
 	"Character Name" = ID
@@ -79,7 +72,11 @@ Lastly, adding a hashtag ('#') or forward slash ('/') to the beginning of a line
 ***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This includes Knuckles and Ridley, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in the base P+EX.
 
 # Other Changes
-A Character ID enum has been added to "Code Menu.h". This is purely to make manually adding IDs a bit more straightforward, and doesn't alter the functionality of the program at all.
+- A Character Slot ID enum has been added to "Code Menu.h". This is purely to make manually adding IDs a bit more straightforward, and doesn't alter the functionality of the program at all.
 
-Additionally, ControlCodes.cpp has been edited such that Dolphin builds will read "dnet.cmnu" as its code menu, not "data.cmnu". Credit to Kapedani.
+- The top of "PowerPC Assembly Functions.h" now features some additional configuration options. Of particular note is the "MAIN_FOLDER" value, which determines what the expected name of the build folder will be. Another useful option is the "COLLECT_EXTERNAL_EX_CHARACTERS" toggle, which enables or disables reading in characters from external text files. Note that this is actually useable on non P+EX builds as well.
+
+- "Code Menu.cpp" is now where default character lists and most other string constants (eg. those that govern file names, autoGCTRM and fileplacement, etc.) are now defined.
+
+- "ControlCodes.cpp" has been edited to dynamically piece together the path to code menu from the string constants defined in "PowerPC Assembly Functions.cpp" and in "Code Menu.cpp".
 
