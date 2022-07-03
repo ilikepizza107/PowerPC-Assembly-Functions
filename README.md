@@ -1,5 +1,5 @@
 # PowerPC Assembly Functions (Code Menu Building Utility)
-A fork of the P+EX code menu which implements the ability to add characters to the ode menu without having to manually edit and recompile anything.
+A fork of the P+EX code menu which implements the ability to add characters to the code menu without having to manually edit and recompile anything.
 Adding new characters along with their IDs to the provided "EX_Characters.txt" and running the program is all you need to do.
 Additionally, to avoid the need to manually specify output directories, output files will be created in the "Code_Menu_Output" directory (see below notes for further details). Note that a new file ("Code_Menu_Changelog.txt") will be generated when the program runs, outlining applied changes and the end state of the list.
 
