@@ -71,6 +71,29 @@ Lastly, adding a hashtag ('#') or forward slash ('/') to the beginning of a line
 
 ***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This includes Knuckles and Ridley, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in the base P+EX.
 
+## Instructions for Hands-free Execution
+
+The program supports 4 boolean command line arguments which can be used to force the interactive choices offered by the program to automatically take on certain values. In order, these are:
+- CMNUOverride
+- ASMOverride
+- GCTOverride
+- PressButtonToCloseDisable
+
+The first three can be set to either 1 or 0 to force the associated decision to process a value of "Yes" or "No" respectively, or they may be set to "-" to leave the interactive choice intact.
+
+The final argument can be set to 1 to remove the need to press a key to close the program after it finishes running.
+
+So, using the console executable for instance, the following program call...
+
+> "PowerPC Assembly Functions (Console).exe" 1 0 0 1
+
+... would force the program to replace the CMNU file, not replace the ASM or GCT Files, and skip the "press key to exit" prompt, all without any interaction from the user. Another example would be the following call...
+
+> "PowerPC Assembly Functions (Console).exe" - - 1 0
+
+... which would leave the choices for replacing the CMNU and ASM files intact, but would force the GCT files to be built, and leave the "press key to exit" prompt in place.
+
+
 # Other Changes
 - A Character Slot ID enum has been added to "Code Menu.h". This is purely to make manually adding IDs a bit more straightforward, and doesn't alter the functionality of the program at all.
 
