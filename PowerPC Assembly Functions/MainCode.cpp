@@ -19,8 +19,93 @@
 //#include "FPS Display.h"
 using namespace std;
 
-int main()
+int main(int argc, char** argv)
 {
+	if (argc > 1)
+	{
+		for (unsigned long i = 1; i < argc && i < lava::argumentIDs::argumentCount; i++)
+		{
+			if (std::strcmp("-", argv[i]) != 0)
+			{
+				try
+				{
+					bool decisionVal = !(std::stoi(argv[i]) == 0);
+					switch (i)
+					{
+						case lava::argumentIDs::aI_CMNU:
+						{
+							lava::CMNUCopyOverride = decisionVal;
+							std::cout << "[C.ARG] Forcing CMNU decision to: ";
+							break;
+						}
+						case lava::argumentIDs::aI_ASM:
+						{
+							lava::ASMCopyOverride = decisionVal;
+							std::cout << "[C.ARG] Forcing ASM decision to: ";
+							break;
+						}
+						case lava::argumentIDs::aI_GCT:
+						{
+							lava::GCTBuildOverride = decisionVal;
+							std::cout << "[C.ARG] Forcing GCT decision to: ";
+							break;
+						}
+						case lava::argumentIDs::aI_CLOSE:
+						{
+							lava::CloseOnFinishBypass = decisionVal;
+							std::cout << "[C.ARG] Bypass push button to close?: ";
+							break;
+						}
+						default:
+						{
+							break;
+						}
+					}
+					if (decisionVal)
+					{
+						std::cout << "Yes\n";
+					}
+					else
+					{
+						std::cout << "No\n";
+					}
+				}
+				catch (std::exception e)
+				{
+					std::cerr << "[ERROR] Invalid argument value (\"" << argv[i] << "\") provided. ";
+					switch (i)
+					{
+						case lava::argumentIDs::aI_CMNU:
+						{
+							std::cerr << "CMNU";
+							break;
+						}
+						case lava::argumentIDs::aI_ASM:
+						{
+							std::cerr << "ASM";
+							break;
+						}
+						case lava::argumentIDs::aI_GCT:
+						{
+							std::cerr << "GCT";
+							break;
+						}
+						case lava::argumentIDs::aI_CLOSE:
+						{
+							std::cerr << "Push button to close";
+							break;
+						}
+						default:
+						{
+							break;
+						}
+					}
+					std::cerr << " argument not processed!\n";
+				}
+			}
+		}
+	}
+
 	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
 	if (lava::folderExists(outputFolder))
 	{
@@ -259,14 +344,14 @@ int main()
 		std::cout << "\n";
 		if (lava::fileExists(cmnuBuildLocationFilePath))
 		{
-			if (lava::offerCopyOverAndBackup(cmnuOutputFilePath, cmnuBuildLocationFilePath))
+			if (lava::offerCopyOverAndBackup(cmnuOutputFilePath, cmnuBuildLocationFilePath, lava::CMNUCopyOverride))
 			{
 				codeMenuLogOutput << "Note: Backed up \"" << cmnuBuildLocationFilePath << "\" and overwrote it with the newly built Code Menu.\n";
 			}
 		}
 		else if (lava::folderExists(buildFolder + cmnuBuildLocationDirectory))
 		{
-			if (lava::offerCopy(cmnuOutputFilePath, cmnuBuildLocationFilePath))
+			if (lava::offerCopy(cmnuOutputFilePath, cmnuBuildLocationFilePath, lava::CMNUCopyOverride))
 			{
 				codeMenuLogOutput << "Note: Copied newly built Code Menu to \"" << cmnuBuildLocationFilePath << "\".\n";
 			}
@@ -275,19 +360,19 @@ int main()
 		{
 			if (lava::fileExists(asmBuildLocationFilePath))
 			{
-				if (lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath))
+				if (lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride))
 				{
 					codeMenuLogOutput << "Note: Backed up \"" << asmBuildLocationFilePath << "\" and overwrote it with the newly built ASM.\n";
 				}
 			}
 			else if (lava::folderExists(buildFolder + asmBuildLocationDirectory))
 			{
-				if (lava::offerCopy(asmOutputFilePath, asmBuildLocationFilePath))
+				if (lava::offerCopy(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride))
 				{
 					codeMenuLogOutput << "Note: Copied newly built ASM to \"" << asmBuildLocationFilePath << "\".\n";
 				}
 			}
-			if (lava::handleAutoGCTRMProcess(codeMenuLogOutput) && BUILD_NETPLAY_FILES)
+			if (lava::handleAutoGCTRMProcess(codeMenuLogOutput, lava::GCTBuildOverride) && BUILD_NETPLAY_FILES)
 			{
 				codeMenuLogOutput << "Note: The built GCTs are configured for use in Dolphin Netplay only, and ARE NOT COMPATIBLE with consoles!\n";
 				codeMenuLogOutput << "Attempting to use them on console can (and likely will) damage your system.\n\n";
@@ -298,7 +383,10 @@ int main()
 	{
 		std::cerr << "[ERROR] The expected output folder (\"" << outputFolder << "\") couldn't be found in this folder. Ensure that the specified folder exists in the same folder as this program and try again.\n\n";
 	}
-	std::cout << "Press any key to exit.\n";
-	_getch();
+	if (lava::CloseOnFinishBypass == INT_MAX || lava::CloseOnFinishBypass == 0)
+	{
+		std::cout << "Press any key to exit.\n";
+		_getch();
+	}
 	return 0;
 }

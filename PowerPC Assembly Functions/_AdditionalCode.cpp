@@ -3,6 +3,11 @@
 
 namespace lava
 {
+	int CMNUCopyOverride = INT_MAX;
+	int ASMCopyOverride = INT_MAX;
+	int GCTBuildOverride = INT_MAX;
+	int CloseOnFinishBypass = INT_MAX;
+
 	int stringToNum(const std::string& stringIn, bool allowNeg, int defaultVal)
 	{
 		int result = defaultVal;
@@ -130,7 +135,7 @@ namespace lava
 		}
 		return (keyIn == yesKey);
 	}
-	bool offerCopyOverAndBackup(std::string fileToCopy, std::string fileToOverwrite)
+	bool offerCopyOverAndBackup(std::string fileToCopy, std::string fileToOverwrite, int decisionOverride)
 	{
 		bool backupSucceeded = 0;
 		bool copySucceeded = 0;
@@ -141,7 +146,7 @@ namespace lava
 				"Would you like to copy \"" << fileToCopy << "\" over it? " <<
 				"A backup will be made of the existing file.\n";
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
-			if (yesNoDecision('y', 'n'))
+			if ((decisionOverride == INT_MAX && yesNoDecision('y', 'n')) || (decisionOverride != INT_MAX && decisionOverride != 0))
 			{
 				std::cout << "Making backup... ";
 				if (lava::backupFile(fileToOverwrite, ".bak", 1))
@@ -172,7 +177,7 @@ namespace lava
 
 		return backupSucceeded && copySucceeded;
 	}
-	bool offerCopy(std::string fileToCopy, std::string fileToOverwrite)
+	bool offerCopy(std::string fileToCopy, std::string fileToOverwrite, int decisionOverride)
 	{
 		bool copySucceeded = 0;
 
@@ -180,7 +185,7 @@ namespace lava
 		{
 			std::cout << "Couldn't detect \"" << fileToOverwrite << "\".\n" << "Would you like to copy \"" << fileToCopy << "\" to that location?\n";
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
-			if (yesNoDecision('y', 'n'))
+			if ((decisionOverride == INT_MAX && yesNoDecision('y', 'n')) || (decisionOverride != INT_MAX && decisionOverride != 0))
 			{
 				std::cout << "Copying over \"" << fileToCopy << "\"... ";
 				if (lava::copyFile(fileToCopy, fileToOverwrite, 1))
@@ -202,7 +207,7 @@ namespace lava
 
 		return copySucceeded;
 	}
-	bool handleAutoGCTRMProcess(std::ostream& logOutput)
+	bool handleAutoGCTRMProcess(std::ostream& logOutput, int decisionOverride)
 	{
 		bool result = 0;
 
@@ -218,7 +223,7 @@ namespace lava
 			bool boostGCTBackupResolved = !boostGCTBackupNeeded;
 
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
-			if (yesNoDecision('y', 'n'))
+			if ((decisionOverride == INT_MAX && yesNoDecision('y', 'n')) || (decisionOverride != INT_MAX && decisionOverride != 0))
 			{
 				if (mainGCTBackupNeeded || boostGCTBackupNeeded)
 				{
