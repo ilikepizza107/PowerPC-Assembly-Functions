@@ -241,14 +241,7 @@ namespace lava
 				{
 					std::cout << "Success! Running GCTRM.\n";
 					result = 1;
-
-					std::string commandFull = "\"" + GCTRMCommandBase;
-					if (decisionOverride != INT_MAX && decisionOverride != 0)
-					{
-						commandFull += "-q ";
-					}
-					commandFull += "\"" + mainGCTTextFile + "\"\"";
-
+					std::string commandFull = "\"" + GCTRMCommandBase + "\"" + mainGCTTextFile + "\"\"";
 					std::cout << "\n" << commandFull << "\n";
 					system(commandFull.c_str());
 					if (mainGCTBackupNeeded)
@@ -260,13 +253,7 @@ namespace lava
 						logOutput << "Note: Built \"" << mainGCTFile << "\".\n";
 					}
 
-					commandFull = "\"" + GCTRMCommandBase;
-					if (decisionOverride != INT_MAX && decisionOverride != 0)
-					{
-						commandFull += "-q ";
-					}
-					commandFull += "\"" + boostGCTTextFile + "\"\"";
-
+					commandFull = "\"" + GCTRMCommandBase + "\"" + boostGCTTextFile + "\"\"";
 					std::cout << "\n" << commandFull << "\n";
 					system(commandFull.c_str());
 					if (boostGCTBackupNeeded)
