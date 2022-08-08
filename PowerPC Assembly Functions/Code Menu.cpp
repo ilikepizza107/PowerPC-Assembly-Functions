@@ -137,7 +137,7 @@ const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";
-const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l ";
+const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 
 // !!Important Note on cmnuFileName and cmnuBuildLocationDirectory!!
 // These variables are also referenced in "Control Codes.cpp"'s "LoadCodeMenu" function,
