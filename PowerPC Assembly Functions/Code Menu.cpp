@@ -118,13 +118,21 @@ int tets = 0x935fe30C;
 	//	- Knuckles (P+): Slot ID 53 (0x35)
 	vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
 	vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-	#elif PROJECT_PLUS_EX_BUILD == true
-	// Character Lists for Project+ EX
+	#elif PROJECT_PLUS_EX_BUILD == true && USE_NEW_PPEX_DIR == false
+	// Character Lists for Project+ EX Version 1.1 and below
 	// Additions relative to vanilla Project M are:
 	//	- Knuckles (P+): Slot ID 53 (0x35)
 	//	- Ridley (P+EX): Slot ID 56 (0x38)
 	vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Ridley", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
 	vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_RIDLEY, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
+	#elif PROJECT_PLUS_EX_BUILD == true && USE_NEW_PPEX_DIR == true
+	// Character Lists for Project+ EX Version 1.2 and above
+	// Additions relative to vanilla Project M are:
+	//	- Knuckles (P+): Slot ID 53 (0x35)
+	//	- Ridley (P+EX): Slot ID 56 (0x38)
+	//	- Waluigi (P+EX): Slot ID 57 (0x39)
+	vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Ridley", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Waluigi", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus"};
+	vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_RIDLEY, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WALUIGI, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
 	#endif
 #else
 // Default Character Lists
