@@ -140,6 +140,11 @@ int main(int argc, char** argv)
 						codeMenuLogOutput << "Pre v1.2 ";
 						std::cout << "Pre v1.2 ";
 					}
+					else
+					{
+						codeMenuLogOutput << "Post v1.2 ";
+						std::cout << "Post v1.2 ";
+					}
 					codeMenuLogOutput << "Project+ EX";
 					std::cout << "Project+ EX";
 				}
@@ -174,12 +179,29 @@ int main(int argc, char** argv)
 		}
 		codeMenuLogOutput << "\n";
 		std::cout << "\n";
+		if (PROJECT_PLUS_EX_BUILD == true)
+		{
+			if (USE_NEW_PPEX_DIR == true)
+			{
+				codeMenuLogOutput << "Note: This code menu was configured for P+EX builds on v1.2 or later, using the \"P+EX\" base directory!\n";
+				codeMenuLogOutput << "\tIt will not work for builds using the old \"Project+\" directory!\n";
+				std::cout << "Note: This code menu was built for P+EX builds on v1.2 or later, using the \"P+EX\" base directory!\n";
+				std::cout << "\tIt will not work for builds using the old \"Project+\" directory!\n";
+			}
+			else
+			{
+				codeMenuLogOutput << "Note: This code menu was configured for P+EX builds on v1.1 or earlier, using the \"Project+\" base directory!\n";
+				codeMenuLogOutput << "\tIt will not work for builds using the new \"P+EX\" directory!\n";
+				std::cout << "Note: This code menu was built for P+EX builds on v1.1 or earlier, using the \"Project+\" base directory!\n";
+				std::cout << "\tIt will not work for builds using the new \"P+EX\" directory!\n";
+			}
+		}
 		if (DOLPHIN_BUILD == true)
 		{
 			codeMenuLogOutput << "Note: This code menu was configured for use with Dolphin only, and IS NOT COMPATIBLE with consoles!\n";
-			codeMenuLogOutput << "Attempting to use this code menu on console can (and likely will) damage your system.\n";
+			codeMenuLogOutput << "\tAttempting to use this code menu on console can (and likely will) damage your system.\n";
 			std::cout << "Note: This code menu was configured for use with Dolphin only, and IS NOT COMPATIBLE with consoles!\n";
-			std::cout << "Attempting to use this code menu on console can (and likely will) damage your system.\n";
+			std::cout << "\tAttempting to use this code menu on console can (and likely will) damage your system.\n";
 		}
 
 		if (TOURNAMENT_ADDITION_BUILD == true)
