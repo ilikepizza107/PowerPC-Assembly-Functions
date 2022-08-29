@@ -25,7 +25,7 @@ typedef unsigned char u8;
 #define TOURNAMENT_ADDITION_BUILD false
 #define PROJECT_PLUS_EX_BUILD true
 // Note: Only P+EX Builds should be using this, so setting PROJECT_PLUS_EX_BUILD to false will force this off as well.
-#define USE_NEW_PPEX_DIR (false && PROJECT_PLUS_EX_BUILD)
+#define USE_NEW_PPEX_DIR (true && PROJECT_PLUS_EX_BUILD)
 // Note: Console builds can't use Netplay anyway, so setting DOLPHIN_BUILD to false will force this off as well.
 // This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.
 // As a result, attempting to run Netplay GCTs on console may brick your Wii. 
