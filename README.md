@@ -69,7 +69,7 @@ Lastly, adding a hashtag ('#') or forward slash ('/') to the beginning of a line
 
 ... will all be treated as comments and ignored by the program.
 
-***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This includes Knuckles and Ridley, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in the base P+EX.
+***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This currently includes Knuckles, Ridley, and Waluigi, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in the base P+EX.
 
 ## Instructions for Hands-free Execution
 
