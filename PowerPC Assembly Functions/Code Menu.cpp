@@ -141,6 +141,11 @@ vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dede
 vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
 #endif
 
+// Options File Functions
+pugi::xml_document MenuOptionsTree = pugi::xml_document();
+std::stack<pugi::xml_node*> menuOptionsTreeNodeStack{};
+
+
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
 const std::string buildFolder = ".././";
@@ -210,7 +215,32 @@ void initMenuFileStream()
 	MenuFile.open(cmnuOutputFilePath, fstream::out | fstream::binary);
 }
 
+// Options File Functions}
+bool dumpMenuOptionTree(std::string filepathIn)
+{
+	MenuOptionsTree.save_file(filepathIn.c_str());
+	return std::filesystem::is_regular_file(filepathIn);
+}
+std::vector<const char*> split(const std::string& joinedStringIn)
+{
+	std::vector<const char*> result{};
 
+	unsigned long currStringIndex = 0x00;
+	for (unsigned long i = 0; i < joinedStringIn.size(); i++)
+	{
+		if (joinedStringIn[i] == 0x00)
+		{
+			result.push_back(joinedStringIn.data() + currStringIndex);
+			currStringIndex = i + 1;
+		}
+	}
+	if (currStringIndex < joinedStringIn.size())
+	{
+		result.push_back(joinedStringIn.data() + currStringIndex);
+	}
+
+	return result;
+}
 
 void CodeMenu()
 {
@@ -1001,8 +1031,15 @@ void CreateMenu(Page MainPage)
 
 	copy(Header.begin(), Header.end(), ostreambuf_iterator<char>(MenuFile));
 
+	int currPageIndex = 0;
 	for (auto x : Pages) {
+		pugi::xml_node pageNode = MenuOptionsTree.append_child("codeMenuPage");
+		pugi::xml_attribute pageNameAttr = pageNode.append_attribute("name");
+		pageNameAttr.set_value(std::string("Page " + std::to_string(currPageIndex)).c_str());
+		menuOptionsTreeNodeStack.push(&pageNode);
 		x->WritePage();
+		menuOptionsTreeNodeStack.pop();
+		currPageIndex++;
 	}
 }
 

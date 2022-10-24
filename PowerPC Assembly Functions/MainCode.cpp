@@ -116,6 +116,8 @@ int main(int argc, char** argv)
 		initMenuFileStream();
 		string OutputTextPath = asmTextOutputFilePath;
 
+		
+
 		std::ofstream codeMenuLogOutput;
 		codeMenuLogOutput.open(outputFolder + changelogFileName);
 		codeMenuLogOutput << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
@@ -368,6 +370,9 @@ int main(int argc, char** argv)
 		CodeEnd();
 
 		std::cout << "\n";
+
+		dumpMenuOptionTree(cmnuOptionsOutputFilePath);
+
 		if (std::filesystem::is_regular_file(cmnuBuildLocationFilePath))
 		{
 			if (lava::offerCopyOverAndBackup(cmnuOutputFilePath, cmnuBuildLocationFilePath, lava::CMNUCopyOverride))

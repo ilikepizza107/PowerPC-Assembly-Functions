@@ -3,6 +3,10 @@
 #include "stdafx.h"
 #include "PowerPC Assembly Functions.h"
 
+#include <stack>
+#include <filesystem>
+#include "pugi/pugixml.hpp"
+
 //active codes
 extern int MENU_TITLE_CHECK_LOCATION;
 extern int DI_DRAW_INDEX;
@@ -179,6 +183,12 @@ extern vector<u16> CHARACTER_ID_LIST;
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
 void initMenuFileStream();
+
+// Options File Functions
+extern pugi::xml_document MenuOptionsTree;
+extern std::stack<pugi::xml_node*> menuOptionsTreeNodeStack;
+bool dumpMenuOptionTree(std::string filepathIn);
+std::vector<const char*> split(const std::string& joinedStringIn);
 
 // Logging and Input Constants
 extern const std::string outputFolder;
@@ -670,8 +680,29 @@ public:
 		AddValueToByteArray(NumChangedLines, output);
 		AddValueToByteArray(PrintLowHold, output);
 		copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
+		pugi::xml_node* currBaseNode = menuOptionsTreeNodeStack.top();
 		for (auto x : Lines) {
 			x->WriteLineData();
+			if (x->type == SELECTION_LINE)
+			{
+				std::vector<const char*> deconstructedText = split(x->Text);
+				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuLine");
+				pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+				lineNameAttr.set_value(deconstructedText[0]);
+				pugi::xml_attribute defaultValAttr = lineNode.append_attribute("defaultValue");
+				defaultValAttr.set_value(std::to_string(x->Default).c_str());
+				menuOptionsTreeNodeStack.push(&lineNode);
+				if (deconstructedText.size() > 1)
+				{
+					for (unsigned long i = 1; i < deconstructedText.size(); i++)
+					{
+						pugi::xml_node optionNode = lineNode.append_child("option");
+						pugi::xml_attribute optionValueAttr = optionNode.append_attribute("value");
+						optionValueAttr.set_value(deconstructedText[i]);
+					}
+				}
+				menuOptionsTreeNodeStack.pop();
+			}
 		}
 	}
 
