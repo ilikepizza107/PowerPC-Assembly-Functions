@@ -184,12 +184,14 @@ void initMenuFileStream();
 extern const std::string outputFolder;
 extern const std::string exCharInputFileName;
 extern const std::string changelogFileName;
+extern const std::string optionsFilename;
 // Code Menu Output Constants
 extern const std::string asmFileName;
 extern const std::string asmTextFileName;
 extern const std::string cmnuFileName;
 extern const std::string asmOutputFilePath;
 extern const std::string cmnuOutputFilePath;
+extern const std::string cmnuOptionsOutputFilePath;
 extern const std::string asmTextOutputFilePath;
 extern const std::string asmBuildLocationDirectory;
 extern const std::string cmnuBuildLocationDirectory;

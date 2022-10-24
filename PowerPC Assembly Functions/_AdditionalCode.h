@@ -5,6 +5,8 @@
 #include <conio.h>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
+#include "pugi/pugixml.hpp"
 
 namespace lava
 {

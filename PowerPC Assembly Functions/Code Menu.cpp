@@ -156,6 +156,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 // Constant Confiuguration Block for Project+ Based Builds
 	#if BUILD_NETPLAY_FILES == true
 	const std::string changelogFileName = "Net-Code_Menu_Changelog.txt";
+	const std::string optionsFilename = "Net-Code_Menu_Options.txt";
 	const std::string mainGCTName = "NETPLAY";
 	const std::string boostGCTName = "NETBOOST";
 	const std::string asmFileName = "Net-CodeMenu.asm";
@@ -165,6 +166,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 	const std::string cmnuBuildLocationDirectory = "pf/menu3/";
 	#elif BUILD_NETPLAY_FILES == false
 	const std::string changelogFileName = "Code_Menu_Changelog.txt";
+	const std::string optionsFilename = "Code_Menu_Options.txt";
 	const std::string mainGCTName = "RSBE01";
 	const std::string boostGCTName = "BOOST";
 	const std::string asmFileName = "CodeMenu.asm";
@@ -182,6 +184,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 //		- asmTextFileName
 //		- asmBuildLocationDirectory
 const std::string changelogFileName = "Code_Menu_Changelog.txt";
+const std::string optionsFilename = "Code_Menu_Options.txt";
 const std::string mainGCTName = "RSBE01";
 const std::string boostGCTName = "";
 const std::string asmFileName = "";
@@ -198,6 +201,7 @@ const std::string boostGCTTextFile = buildFolder + boostGCTName + ".txt";
 const std::string asmOutputFilePath = outputFolder + asmFileName;
 const std::string asmTextOutputFilePath = outputFolder + asmTextFileName;
 const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
+const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
 const std::string asmBuildLocationFilePath = buildFolder + asmBuildLocationDirectory + asmFileName;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
 
