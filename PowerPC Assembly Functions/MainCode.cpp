@@ -107,6 +107,10 @@ int main(int argc, char** argv)
 	}
 
 	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
+	if (!std::filesystem::is_directory(outputFolder))
+	{
+		std::filesystem::create_directories(outputFolder);
+	}
 	if (std::filesystem::is_directory(outputFolder))
 	{
 		initMenuFileStream();
@@ -403,7 +407,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		std::cerr << "[ERROR] The expected output folder (\"" << outputFolder << "\") couldn't be found in this folder. Ensure that the specified folder exists in the same folder as this program and try again.\n\n";
+		std::cerr << "[ERROR] The expected output folder (\"" << outputFolder << "\") couldn't be found or created in this folder. Ensure that the specified folder exists in the same folder as this program and try again.\n\n";
 	}
 	if (lava::CloseOnFinishBypass == INT_MAX || lava::CloseOnFinishBypass == 0)
 	{
