@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 	}
 
 	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
-	if (lava::folderExists(outputFolder))
+	if (std::filesystem::is_directory(outputFolder))
 	{
 		initMenuFileStream();
 		string OutputTextPath = asmTextOutputFilePath;
@@ -364,14 +364,14 @@ int main(int argc, char** argv)
 		CodeEnd();
 
 		std::cout << "\n";
-		if (lava::fileExists(cmnuBuildLocationFilePath))
+		if (std::filesystem::is_regular_file(cmnuBuildLocationFilePath))
 		{
 			if (lava::offerCopyOverAndBackup(cmnuOutputFilePath, cmnuBuildLocationFilePath, lava::CMNUCopyOverride))
 			{
 				codeMenuLogOutput << "Note: Backed up \"" << cmnuBuildLocationFilePath << "\" and overwrote it with the newly built Code Menu.\n";
 			}
 		}
-		else if (lava::folderExists(buildFolder + cmnuBuildLocationDirectory))
+		else if (std::filesystem::is_directory(buildFolder + cmnuBuildLocationDirectory))
 		{
 			if (lava::offerCopy(cmnuOutputFilePath, cmnuBuildLocationFilePath, lava::CMNUCopyOverride))
 			{
@@ -380,14 +380,14 @@ int main(int argc, char** argv)
 		}
 		if (MakeASM(OutputTextPath, asmOutputFilePath))
 		{
-			if (lava::fileExists(asmBuildLocationFilePath))
+			if (std::filesystem::is_regular_file(asmBuildLocationFilePath))
 			{
 				if (lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride))
 				{
 					codeMenuLogOutput << "Note: Backed up \"" << asmBuildLocationFilePath << "\" and overwrote it with the newly built ASM.\n";
 				}
 			}
-			else if (lava::folderExists(buildFolder + asmBuildLocationDirectory))
+			else if (std::filesystem::is_directory(buildFolder + asmBuildLocationDirectory))
 			{
 				if (lava::offerCopy(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride))
 				{

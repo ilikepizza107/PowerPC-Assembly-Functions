@@ -50,44 +50,6 @@ namespace lava
 		return result;
 	}
 
-	bool fileExists(std::string filepathIn)
-	{
-		std::ifstream result(filepathIn);
-		return result.is_open();
-	}
-	bool folderExists(std::string folderpathIn)
-	{
-		// Record result
-		bool result = 0;
-		// Ensure that the provided folder path ends with a slash
-		if (folderpathIn.back() != '/' && folderpathIn.back() != '\\')
-		{
-			folderpathIn.push_back('/');
-		}
-		// Define location of test file to be opened within specified path
-		std::string testFileLoc = folderpathIn + "__test__";
-		// Attempt to open file at the testFileLoc.
-		std::ofstream test(testFileLoc, std::ios_base::out | std::ios_base::ate);
-		// If the file opens...
-		if (test.is_open())
-		{
-			// ... we know the directory exists, so our result is true.
-			result = 1;
-			// We opened at the end of the file (using ::ate), so if our position is 0, the file is empty.
-			if (test.tellp() == 0)
-			{
-				// We assume that the file was created by this function and didn't previously exist, so we delete it.
-				test.close();
-				remove(testFileLoc.c_str());
-			}
-			// If the position isn't 0 then we know for sure the file wasn't created by this function, so we'll leave it.
-			else
-			{
-				test.close();
-			}
-		}
-		return result;
-	}
 	bool copyFile(std::string sourceFile, std::string targetFile, bool overwriteExistingFile)
 	{
 		// Record result
@@ -101,7 +63,7 @@ namespace lava
 			sourceFileStream.open(sourceFile, std::ios_base::in | std::ios_base::binary);
 			if (sourceFileStream.is_open())
 			{
-				if (overwriteExistingFile || !fileExists(targetFile))
+				if (overwriteExistingFile || !std::filesystem::is_regular_file(targetFile))
 				{
 					// If successful, open and test output stream
 					targetFileStream.open(targetFile, std::ios_base::out | std::ios_base::binary);
@@ -140,7 +102,7 @@ namespace lava
 		bool backupSucceeded = 0;
 		bool copySucceeded = 0;
 
-		if (lava::fileExists(fileToCopy) && lava::fileExists(fileToOverwrite))
+		if (std::filesystem::is_regular_file(fileToCopy) && std::filesystem::is_regular_file(fileToOverwrite))
 		{
 			std::cout << "Detected \"" << fileToOverwrite << "\".\n" <<
 				"Would you like to copy \"" << fileToCopy << "\" over it? " <<
@@ -181,7 +143,7 @@ namespace lava
 	{
 		bool copySucceeded = 0;
 
-		if (lava::fileExists(fileToCopy) && !lava::fileExists(fileToOverwrite))
+		if (std::filesystem::is_regular_file(fileToCopy) && !std::filesystem::is_regular_file(fileToOverwrite))
 		{
 			std::cout << "Couldn't detect \"" << fileToOverwrite << "\".\n" << "Would you like to copy \"" << fileToCopy << "\" to that location?\n";
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
@@ -211,15 +173,15 @@ namespace lava
 	{
 		bool result = 0;
 
-		if (lava::fileExists(GCTRMExePath) && lava::fileExists(mainGCTTextFile) && lava::fileExists(boostGCTTextFile))
+		if (std::filesystem::is_regular_file(GCTRMExePath) && std::filesystem::is_regular_file(mainGCTTextFile) && std::filesystem::is_regular_file(boostGCTTextFile))
 		{
 			std::cout << "Detected \"" << GCTRMExePath << "\".\nWould you like to build \"" << mainGCTFile << "\" and \"" << boostGCTFile << "\"? Backups will be made of any existing files.\n";
 
-			bool mainGCTBackupNeeded = lava::fileExists(mainGCTFile);
+			bool mainGCTBackupNeeded = std::filesystem::is_regular_file(mainGCTFile);
 			// If no backup is needed, we can consider the backup resolved. If one is, we cannot.
 			bool mainGCTBackupResolved = !mainGCTBackupNeeded;
 			// Same as above.
-			bool boostGCTBackupNeeded = lava::fileExists(boostGCTFile);
+			bool boostGCTBackupNeeded = std::filesystem::is_regular_file(boostGCTFile);
 			bool boostGCTBackupResolved = !boostGCTBackupNeeded;
 
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";

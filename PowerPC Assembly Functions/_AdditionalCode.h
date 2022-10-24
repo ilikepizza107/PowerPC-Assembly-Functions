@@ -30,8 +30,6 @@ namespace lava
 	std::string numToDecStringWithPadding(std::size_t numIn, std::size_t paddingLength);
 
 	// File System Management
-	bool fileExists(std::string filepathIn);
-	bool folderExists(std::string folderpathIn);
 	bool copyFile(std::string sourceFile, std::string targetFile, bool overwriteExistingFile = 0);
 	bool backupFile(std::string fileToBackup, std::string backupSuffix = ".bak", bool overwriteExistingBackup = 0);
 
