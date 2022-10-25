@@ -171,7 +171,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 	const std::string cmnuBuildLocationDirectory = "pf/menu3/";
 	#elif BUILD_NETPLAY_FILES == false
 	const std::string changelogFileName = "Code_Menu_Changelog.txt";
-	const std::string optionsFilename = "Code_Menu_Options.txt";
+	const std::string optionsFilename = "Code_Menu_Options.xml";
 	const std::string mainGCTName = "RSBE01";
 	const std::string boostGCTName = "BOOST";
 	const std::string asmFileName = "CodeMenu.asm";
@@ -1031,11 +1031,19 @@ void CreateMenu(Page MainPage)
 
 	copy(Header.begin(), Header.end(), ostreambuf_iterator<char>(MenuFile));
 
+	pugi::xml_node commentNode = MenuOptionsTree.prepend_child(pugi::node_comment);
+	commentNode.set_value("PowerPC Assembly Functions (Code Menu Building Utility)");
+	pugi::xml_node menuBaseNode = MenuOptionsTree.append_child("codeMenu");
+	pugi::xml_attribute menuNameAttr = menuBaseNode.append_attribute("name");
+	menuNameAttr.set_value(cmnuFileName.c_str());
+	menuOptionsTreeNodeStack.push(&menuBaseNode);
+
+
 	int currPageIndex = 0;
 	for (auto x : Pages) {
-		pugi::xml_node pageNode = MenuOptionsTree.append_child("codeMenuPage");
+		pugi::xml_node pageNode = menuOptionsTreeNodeStack.top()->append_child("codeMenuPage");
 		pugi::xml_attribute pageNameAttr = pageNode.append_attribute("name");
-		pageNameAttr.set_value(std::string("Page " + std::to_string(currPageIndex)).c_str());
+		pageNameAttr.set_value(x->PageName.c_str());
 		menuOptionsTreeNodeStack.push(&pageNode);
 		x->WritePage();
 		menuOptionsTreeNodeStack.pop();

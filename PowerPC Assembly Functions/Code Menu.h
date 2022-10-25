@@ -657,8 +657,11 @@ public:
 class Page
 {
 public:
+	string PageName = "";
+
 	Page(string Name, vector<Line*> Lines) {
 		CalledFromLine = SubMenu(Name, this);
+		PageName = Name;
 		this->Lines = Lines;
 		Size = NUM_WORD_ELEMS * 4;
 		for (auto x : Lines) {
@@ -683,10 +686,12 @@ public:
 		pugi::xml_node* currBaseNode = menuOptionsTreeNodeStack.top();
 		for (auto x : Lines) {
 			x->WriteLineData();
-			if (x->type == SELECTION_LINE)
+			std::vector<const char*> deconstructedText = split(x->Text);
+			switch (x->type)
 			{
-				std::vector<const char*> deconstructedText = split(x->Text);
-				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuLine");
+			case SELECTION_LINE:
+			{
+				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuSelection");
 				pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
 				lineNameAttr.set_value(deconstructedText[0]);
 				pugi::xml_attribute defaultValAttr = lineNode.append_attribute("defaultValue");
@@ -702,6 +707,38 @@ public:
 					}
 				}
 				menuOptionsTreeNodeStack.pop();
+				break;
+			}
+			case INTEGER_LINE:
+			{
+				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuInteger");
+				pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+				lineNameAttr.set_value(deconstructedText[0]);
+				pugi::xml_attribute defaultValAttr = lineNode.append_attribute("defaultValue");
+				defaultValAttr.set_value(std::to_string(x->Default).c_str());
+				pugi::xml_attribute minValAttr = lineNode.append_attribute("minValue");
+				minValAttr.set_value(std::to_string(x->Min).c_str());
+				pugi::xml_attribute maxValAttr = lineNode.append_attribute("maxValue");
+				maxValAttr.set_value(std::to_string(x->Max).c_str());
+				break;
+			}
+			case FLOATING_LINE:
+			{
+				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuFloat");
+				pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+				lineNameAttr.set_value(deconstructedText[0]);
+				pugi::xml_attribute defaultValAttr = lineNode.append_attribute("defaultValue");
+				defaultValAttr.set_value(std::to_string(*(float*)(&x->Default)).c_str());
+				pugi::xml_attribute minValAttr = lineNode.append_attribute("minValue");
+				minValAttr.set_value(std::to_string(*(float*)(&x->Min)).c_str());
+				pugi::xml_attribute maxValAttr = lineNode.append_attribute("maxValue");
+				maxValAttr.set_value(std::to_string(*(float*)(&x->Max)).c_str());
+				break;
+			}
+			default:
+			{
+				break;
+			}
 			}
 		}
 	}

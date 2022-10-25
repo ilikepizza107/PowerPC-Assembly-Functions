@@ -116,8 +116,6 @@ int main(int argc, char** argv)
 		initMenuFileStream();
 		string OutputTextPath = asmTextOutputFilePath;
 
-		
-
 		std::ofstream codeMenuLogOutput;
 		codeMenuLogOutput.open(outputFolder + changelogFileName);
 		codeMenuLogOutput << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
