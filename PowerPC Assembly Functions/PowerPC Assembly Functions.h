@@ -291,6 +291,7 @@ void MakeGCT(string TextFilePath, string OldGCTFilePath, string NewGCTFilePath);
 bool MakeASM(string TextFilePath, string OutputAsmPath);
 
 int GetHexFromFloat(float Value);
+float GetFloatFromHex(int Value);
 int GetShiftNum(int endPos);
 int GetOpSegment(int val, int size, int pos);
 void WriteMenuTextToFile(string Text);

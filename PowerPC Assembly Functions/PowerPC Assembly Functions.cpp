@@ -120,6 +120,11 @@ int GetHexFromFloat(float Value)
 	int *b = (int *)&Value;
 	return *b;
 }
+float GetFloatFromHex(int Value)
+{
+	float *f = (float*)&Value;
+	return *f;
+}
 
 int GetShiftNum(int endPos)
 {

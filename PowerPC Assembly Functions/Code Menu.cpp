@@ -141,11 +141,6 @@ vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dede
 vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
 #endif
 
-// Options File Functions
-pugi::xml_document MenuOptionsTree = pugi::xml_document();
-std::stack<pugi::xml_node*> menuOptionsTreeNodeStack{};
-
-
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
 const std::string buildFolder = ".././";
@@ -215,10 +210,121 @@ void initMenuFileStream()
 	MenuFile.open(cmnuOutputFilePath, fstream::out | fstream::binary);
 }
 
-// Options File Functions}
+// Options File Functions
+void recursivelyFindPages(const Page& currBasePageIn, std::vector<const Page*>& collectedPointers)
+{
+	for (unsigned long i = 0; i < currBasePageIn.Lines.size(); i++)
+	{
+		const Line* currLine = currBasePageIn.Lines[i];
+		if (currLine->type == SUB_MENU_LINE)
+		{
+			bool pointerNotPreviouslyCollected = 1;
+			for (unsigned long u = 0; pointerNotPreviouslyCollected && u < collectedPointers.size(); u++)
+			{
+				pointerNotPreviouslyCollected &= collectedPointers[u] != currLine->SubMenuPtr;
+			}
+			if (pointerNotPreviouslyCollected)
+			{
+				collectedPointers.push_back(currLine->SubMenuPtr);
+				recursivelyFindPages(*currLine->SubMenuPtr, collectedPointers);
+			}
+		}
+	}
+}
+bool buildOptionsTree(const Page& mainPageIn)
+{
+	bool result = 1;
+
+	pugi::xml_document MenuOptionsTree;
+
+	pugi::xml_node commentNode = MenuOptionsTree.append_child(pugi::node_comment);
+	commentNode.set_value("PowerPC Assembly Functions (Code Menu Building Utility)");
+	commentNode = MenuOptionsTree.append_child(pugi::node_comment);
+	commentNode.set_value("Important Note: Only change values noted as editable! Changing anything else will not work!");
+
+	pugi::xml_node menuBaseNode = MenuOptionsTree.append_child("codeMenu");
+	pugi::xml_attribute menuNameAttr = menuBaseNode.append_attribute("name");
+	menuNameAttr.set_value(cmnuFileName.c_str());
+
+	menuBaseNode.append_child("buildBaseFolder").append_attribute("value").set_value(MAIN_FOLDER.c_str());
+	menuBaseNode.append_child("cmnuPath").append_attribute("value").set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
+
+	std::vector<const Page*> Pages{ &mainPageIn };
+	recursivelyFindPages(mainPageIn, Pages);
+
+	for (unsigned long i = 0; i < Pages.size(); i++) 
+	{
+		const Page* currPage = Pages[i];
+
+		pugi::xml_node pageNode = menuBaseNode.append_child("codeMenuPage");
+		pugi::xml_attribute pageNameAttr = pageNode.append_attribute("name");
+		pageNameAttr.set_value(currPage->PageName.c_str());
+
+		for (unsigned long u = 0; u < currPage->Lines.size(); u++)
+		{
+			const Line* currLine = currPage->Lines[u];
+
+			std::vector<const char*> deconstructedText = split(currLine->Text);
+			switch (currLine->type)
+			{
+				case SELECTION_LINE:
+				{
+					pugi::xml_node lineNode = pageNode.append_child("codeMenuSelection");
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+					lineNameAttr.set_value(deconstructedText[0]);
+					pugi::xml_node defaultValNode = lineNode.append_child("defaultOption");
+					defaultValNode.append_attribute("index").set_value(std::to_string(currLine->Default).c_str());
+					defaultValNode.append_attribute("editable").set_value("true");
+					for (unsigned long i = 1; i < deconstructedText.size(); i++)
+					{
+						pugi::xml_node optionNode = lineNode.append_child("option");
+						pugi::xml_attribute optionValueAttr = optionNode.append_attribute("value");
+						optionValueAttr.set_value(deconstructedText[i]);
+					}
+					break;
+				}
+				case INTEGER_LINE:
+				{
+					pugi::xml_node lineNode = pageNode.append_child("codeMenuInteger");
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+					lineNameAttr.set_value(deconstructedText[0]);
+					pugi::xml_node minValNode = lineNode.append_child("minValue");
+					minValNode.append_attribute("value").set_value(std::to_string(currLine->Min).c_str());
+					pugi::xml_node defaultValNode = lineNode.append_child("defaultValue");
+					defaultValNode.append_attribute("value").set_value(std::to_string(currLine->Default).c_str());
+					defaultValNode.append_attribute("editable").set_value("true");
+					pugi::xml_node maxValNode = lineNode.append_child("maxValue");
+					maxValNode.append_attribute("value").set_value(std::to_string(currLine->Max).c_str());
+					break;
+				}
+				case FLOATING_LINE:
+				{
+					pugi::xml_node lineNode = pageNode.append_child("codeMenuFloat");
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+					lineNameAttr.set_value(deconstructedText[0]);
+					pugi::xml_node minValNode = lineNode.append_child("minValue");
+					minValNode.append_attribute("value").set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
+					pugi::xml_node defaultValNode = lineNode.append_child("defaultValue");
+					defaultValNode.append_attribute("value").set_value(std::to_string(GetFloatFromHex(currLine->Default)).c_str());
+					defaultValNode.append_attribute("editable").set_value("true");
+					pugi::xml_node maxValNode = lineNode.append_child("maxValue");
+					maxValNode.append_attribute("value").set_value(std::to_string(GetFloatFromHex(currLine->Max)).c_str());
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
+		}
+	}
+
+	MenuOptionsTree.save_file(cmnuOptionsOutputFilePath.c_str());
+
+	return result;
+}
 bool dumpMenuOptionTree(std::string filepathIn)
 {
-	MenuOptionsTree.save_file(filepathIn.c_str());
 	return std::filesystem::is_regular_file(filepathIn);
 }
 std::vector<const char*> split(const std::string& joinedStringIn)
@@ -241,6 +347,11 @@ std::vector<const char*> split(const std::string& joinedStringIn)
 
 	return result;
 }
+
+
+
+
+
 
 void CodeMenu()
 {
@@ -821,6 +932,8 @@ void ActualCodes()
 
 void CreateMenu(Page MainPage)
 {
+	buildOptionsTree(MainPage);
+
 	//make pages
 	CurrentOffset = START_OF_CODE_MENU;
 	vector<Page*> Pages(1, &MainPage);
@@ -1031,23 +1144,8 @@ void CreateMenu(Page MainPage)
 
 	copy(Header.begin(), Header.end(), ostreambuf_iterator<char>(MenuFile));
 
-	pugi::xml_node commentNode = MenuOptionsTree.prepend_child(pugi::node_comment);
-	commentNode.set_value("PowerPC Assembly Functions (Code Menu Building Utility)");
-	pugi::xml_node menuBaseNode = MenuOptionsTree.append_child("codeMenu");
-	pugi::xml_attribute menuNameAttr = menuBaseNode.append_attribute("name");
-	menuNameAttr.set_value(cmnuFileName.c_str());
-	menuOptionsTreeNodeStack.push(&menuBaseNode);
-
-
-	int currPageIndex = 0;
 	for (auto x : Pages) {
-		pugi::xml_node pageNode = menuOptionsTreeNodeStack.top()->append_child("codeMenuPage");
-		pugi::xml_attribute pageNameAttr = pageNode.append_attribute("name");
-		pageNameAttr.set_value(x->PageName.c_str());
-		menuOptionsTreeNodeStack.push(&pageNode);
 		x->WritePage();
-		menuOptionsTreeNodeStack.pop();
-		currPageIndex++;
 	}
 }
 

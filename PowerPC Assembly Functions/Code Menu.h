@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "PowerPC Assembly Functions.h"
 
-#include <stack>
 #include <filesystem>
 #include "pugi/pugixml.hpp"
 
@@ -185,8 +184,11 @@ static fstream MenuFile;
 void initMenuFileStream();
 
 // Options File Functions
-extern pugi::xml_document MenuOptionsTree;
-extern std::stack<pugi::xml_node*> menuOptionsTreeNodeStack;
+class Page; // Page Class Forward Decl.
+
+
+void recursivelyFindPages(const Page& currBasePageIn, std::vector<const Page*>& collectedPointers);
+bool buildOptionsTree(const Page& mainPageIn);
 bool dumpMenuOptionTree(std::string filepathIn);
 std::vector<const char*> split(const std::string& joinedStringIn);
 
@@ -658,6 +660,19 @@ class Page
 {
 public:
 	string PageName = "";
+	u32 CurrentLineOffset;
+	u32 Size;
+	u32 PrevPageOffset = 0;
+	u32 NumChangedLines = 0;
+	u32 PrintLowHold = 0;
+	vector<Line*> Lines;
+	SubMenu CalledFromLine;
+	static const int NUM_WORD_ELEMS = 4;
+	static const int CURRENT_LINE_OFFSET = 0;
+	static const int PREV_PAGE = CURRENT_LINE_OFFSET + 4;
+	static const int NUM_CHANGED_LINES = PREV_PAGE + 4;
+	static const int PRINT_LOW_HOLD = NUM_CHANGED_LINES + 4;
+	static const int FIRST_LINE_OFFSET = NUM_WORD_ELEMS * 4;
 
 	Page(string Name, vector<Line*> Lines) {
 		CalledFromLine = SubMenu(Name, this);
@@ -683,63 +698,8 @@ public:
 		AddValueToByteArray(NumChangedLines, output);
 		AddValueToByteArray(PrintLowHold, output);
 		copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
-		pugi::xml_node* currBaseNode = menuOptionsTreeNodeStack.top();
 		for (auto x : Lines) {
 			x->WriteLineData();
-			std::vector<const char*> deconstructedText = split(x->Text);
-			switch (x->type)
-			{
-			case SELECTION_LINE:
-			{
-				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuSelection");
-				pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
-				lineNameAttr.set_value(deconstructedText[0]);
-				pugi::xml_attribute defaultValAttr = lineNode.append_attribute("defaultValue");
-				defaultValAttr.set_value(std::to_string(x->Default).c_str());
-				menuOptionsTreeNodeStack.push(&lineNode);
-				if (deconstructedText.size() > 1)
-				{
-					for (unsigned long i = 1; i < deconstructedText.size(); i++)
-					{
-						pugi::xml_node optionNode = lineNode.append_child("option");
-						pugi::xml_attribute optionValueAttr = optionNode.append_attribute("value");
-						optionValueAttr.set_value(deconstructedText[i]);
-					}
-				}
-				menuOptionsTreeNodeStack.pop();
-				break;
-			}
-			case INTEGER_LINE:
-			{
-				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuInteger");
-				pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
-				lineNameAttr.set_value(deconstructedText[0]);
-				pugi::xml_attribute defaultValAttr = lineNode.append_attribute("defaultValue");
-				defaultValAttr.set_value(std::to_string(x->Default).c_str());
-				pugi::xml_attribute minValAttr = lineNode.append_attribute("minValue");
-				minValAttr.set_value(std::to_string(x->Min).c_str());
-				pugi::xml_attribute maxValAttr = lineNode.append_attribute("maxValue");
-				maxValAttr.set_value(std::to_string(x->Max).c_str());
-				break;
-			}
-			case FLOATING_LINE:
-			{
-				pugi::xml_node lineNode = currBaseNode->append_child("codeMenuFloat");
-				pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
-				lineNameAttr.set_value(deconstructedText[0]);
-				pugi::xml_attribute defaultValAttr = lineNode.append_attribute("defaultValue");
-				defaultValAttr.set_value(std::to_string(*(float*)(&x->Default)).c_str());
-				pugi::xml_attribute minValAttr = lineNode.append_attribute("minValue");
-				minValAttr.set_value(std::to_string(*(float*)(&x->Min)).c_str());
-				pugi::xml_attribute maxValAttr = lineNode.append_attribute("maxValue");
-				maxValAttr.set_value(std::to_string(*(float*)(&x->Max)).c_str());
-				break;
-			}
-			default:
-			{
-				break;
-			}
-			}
 		}
 	}
 
@@ -772,20 +732,6 @@ public:
 			}
 		}
 	}
-
-	u32 CurrentLineOffset;
-	u32 Size;
-	u32 PrevPageOffset = 0;
-	u32 NumChangedLines = 0;
-	u32 PrintLowHold = 0;
-	vector<Line*> Lines;
-	SubMenu CalledFromLine;
-	static const int NUM_WORD_ELEMS = 4;
-	static const int CURRENT_LINE_OFFSET = 0;
-	static const int PREV_PAGE = CURRENT_LINE_OFFSET + 4;
-	static const int NUM_CHANGED_LINES = PREV_PAGE + 4;
-	static const int PRINT_LOW_HOLD = NUM_CHANGED_LINES + 4;
-	static const int FIRST_LINE_OFFSET = NUM_WORD_ELEMS * 4;
 };
 
 void PrintChar(int SettingsPtrReg, int CharReg);
