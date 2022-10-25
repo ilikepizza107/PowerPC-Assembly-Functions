@@ -246,8 +246,13 @@ bool buildOptionsTree(const Page& mainPageIn)
 	pugi::xml_attribute menuNameAttr = menuBaseNode.append_attribute("name");
 	menuNameAttr.set_value(cmnuFileName.c_str());
 
-	menuBaseNode.append_child("buildBaseFolder").append_attribute("value").set_value(MAIN_FOLDER.c_str());
-	menuBaseNode.append_child("cmnuPath").append_attribute("value").set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
+	pugi::xml_node buildBaseFolderNode = menuBaseNode.append_child("buildBaseFolder");
+	buildBaseFolderNode.append_attribute("value").set_value(MAIN_FOLDER.c_str());
+	buildBaseFolderNode.append_attribute("editable").set_value("true");
+
+	pugi::xml_node cmnuPathNode = menuBaseNode.append_child("cmnuPath");
+	cmnuPathNode.append_attribute("value").set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
+	cmnuPathNode.append_attribute("editable").set_value("true");
 
 	std::vector<const Page*> Pages{ &mainPageIn };
 	recursivelyFindPages(mainPageIn, Pages);
