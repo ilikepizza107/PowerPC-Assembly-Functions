@@ -251,6 +251,44 @@ void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPoi
 		}
 	}
 }
+void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes)
+{
+	for (pugi::xml_node_iterator menuItr = optionsTree.begin(); menuItr != optionsTree.end(); menuItr++)
+	{
+		if (menuItr->name() == xmlTagConstants::codeMenuTag)
+		{
+			for (pugi::xml_node_iterator pageItr = menuItr->begin(); pageItr != menuItr->end(); pageItr++)
+			{
+				if (pageItr->name() == xmlTagConstants::pageTag)
+				{
+					for (pugi::xml_attribute_iterator pageAttrItr = pageItr->attributes_begin(); pageAttrItr != pageItr->attributes_end(); pageAttrItr++)
+					{
+						if (pageAttrItr->name() == xmlTagConstants::nameTag)
+						{
+							collectedNodes[pageAttrItr->value()] = *pageItr;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes)
+{
+	for (pugi::xml_node_iterator lineItr = pageNode.begin(); lineItr != pageNode.end(); lineItr++)
+	{
+		if (lineItr->name() == xmlTagConstants::selectionTag || lineItr->name() == xmlTagConstants::floatTag || lineItr->name() == xmlTagConstants::intTag)
+		{
+			for (pugi::xml_attribute_iterator lineAttrItr = lineItr->attributes_begin(); lineAttrItr != lineItr->attributes_end(); lineAttrItr++)
+			{
+				if (lineAttrItr->name() == xmlTagConstants::nameTag)
+				{
+					collectedNodes[lineAttrItr->value()] = *lineItr;
+				}
+			}
+		}
+	}
+}
 bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 {
 	bool result = 1;
@@ -345,6 +383,136 @@ bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 	}
 
 	MenuOptionsTree.save_file(xmlPathOut.c_str());
+
+	return result;
+}
+bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut)
+{
+	bool result = 0;
+
+	if (std::filesystem::is_regular_file(xmlPathOut))
+	{
+		pugi::xml_document optionsDocumentIn;
+		if (optionsDocumentIn.load_file(xmlPathOut.c_str()))
+		{
+			result = 1;
+
+			std::vector<Page*> Pages{ &mainPageIn };
+			recursivelyFindPages(mainPageIn, Pages);
+
+			std::map<std::string, pugi::xml_node> pageNodeMap;
+			findPagesInOptionsTree(optionsDocumentIn, pageNodeMap);
+
+			for (unsigned long i = 0; i < Pages.size(); i++)
+			{
+				Page* currPage = Pages[i];
+
+				auto pageFindItr = pageNodeMap.find(currPage->PageName);
+				if (pageFindItr != pageNodeMap.end())
+				{
+					std::map<std::string, pugi::xml_node> lineNodeMap;
+					findLinesInPageNode(pageFindItr->second, lineNodeMap);
+
+					for (unsigned long u = 0; u < currPage->Lines.size(); u++)
+					{
+						Line* currLine = currPage->Lines[u];
+
+						std::vector<const char*> deconstructedText = split(currLine->Text);
+
+						auto lineFindItr = lineNodeMap.find(deconstructedText[0]);
+						if (lineFindItr != lineNodeMap.end())
+						{
+							switch (currLine->type)
+							{
+							case SELECTION_LINE:
+							{
+								bool defaultValueFound = 0;
+								for (pugi::xml_node_iterator childItr = lineFindItr->second.begin(); 
+									!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
+								{
+									if (childItr->name() == xmlTagConstants::selectionDefaultTag)
+									{
+										for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+											!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+										{
+											if (attrItr->name() == xmlTagConstants::indexTag)
+											{
+												defaultValueFound = 1;
+												u32 valueIn = attrItr->as_uint(currLine->Default);
+												valueIn = std::min(std::max(0u, valueIn), deconstructedText.size() - 2);
+												if (valueIn != currLine->Default)
+												{
+													int test = 1;
+												}
+												currLine->Default = valueIn;
+												currLine->Value = valueIn;
+											}
+										}
+									}
+								}
+								break;
+							}
+							case INTEGER_LINE:
+							{
+								bool defaultValueFound = 0;
+								for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
+									!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
+								{
+									if (childItr->name() == xmlTagConstants::valueDefaultTag)
+									{
+										for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+											!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+										{
+											if (attrItr->name() == xmlTagConstants::indexTag)
+											{
+												defaultValueFound = 1;
+												int valueIn = attrItr->as_int(currLine->Default);
+												valueIn = std::min(std::max(valueIn, (int)currLine->Min), (int)currLine->Max);
+												currLine->Default = valueIn;
+												currLine->Value = valueIn;
+											}
+										}
+									}
+								}
+								break;
+							}
+							case FLOATING_LINE:
+							{
+								bool defaultValueFound = 0;
+								for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
+									!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
+								{
+									if (childItr->name() == xmlTagConstants::valueDefaultTag)
+									{
+										for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+											!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+										{
+											if (attrItr->name() == xmlTagConstants::valueTag)
+											{
+												defaultValueFound = 1;
+												float valueIn = attrItr->as_float(GetFloatFromHex(currLine->Default));
+												float maxVal = GetFloatFromHex(currLine->Max);
+												float minVal = GetFloatFromHex(currLine->Min);
+												valueIn = std::min(std::max(valueIn, minVal), maxVal);
+												currLine->Default = GetHexFromFloat(valueIn);
+												currLine->Value = currLine->Default;
+											}
+										}
+									}
+								}
+								break;
+							}
+							default:
+							{
+								break;
+							}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	return result;
 }
@@ -956,6 +1124,7 @@ void ActualCodes()
 
 void CreateMenu(Page MainPage)
 {
+	applyMenuOptionTree(MainPage, cmnuOptionsOutputFilePath);
 	buildOptionsTree(MainPage, cmnuOptionsOutputFilePath);
 
 	//make pages

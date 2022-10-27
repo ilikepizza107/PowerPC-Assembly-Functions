@@ -4,6 +4,7 @@
 #include "PowerPC Assembly Functions.h"
 
 #include <filesystem>
+#include <map>
 #include "pugi/pugixml.hpp"
 
 //active codes
@@ -234,7 +235,10 @@ namespace xmlTagConstants
 class Page; // Page Class Forward Decl.
 
 void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers);
+void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes);
+void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
 bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut);
+bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut);
 bool dumpMenuOptionTree(std::string filepathIn);
 std::vector<const char*> split(const std::string& joinedStringIn);
 
