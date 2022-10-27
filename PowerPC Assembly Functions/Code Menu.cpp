@@ -306,11 +306,11 @@ bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 
 	pugi::xml_node buildBaseFolderNode = menuBaseNode.append_child(xmlTagConstants::buildBaseFolderTag.c_str());
 	buildBaseFolderNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(MAIN_FOLDER.c_str());
-	buildBaseFolderNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+	//buildBaseFolderNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
 
 	pugi::xml_node cmnuPathNode = menuBaseNode.append_child(xmlTagConstants::cmnuPathTag.c_str());
 	cmnuPathNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
-	cmnuPathNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+	//cmnuPathNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
 
 	std::vector<Page*> Pages{ &mainPageIn };
 	recursivelyFindPages(mainPageIn, Pages);
