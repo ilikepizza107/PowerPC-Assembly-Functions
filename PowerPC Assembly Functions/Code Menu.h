@@ -183,15 +183,6 @@ extern vector<u16> CHARACTER_ID_LIST;
 static fstream MenuFile;
 void initMenuFileStream();
 
-// Options File Functions
-class Page; // Page Class Forward Decl.
-
-
-void recursivelyFindPages(const Page& currBasePageIn, std::vector<const Page*>& collectedPointers);
-bool buildOptionsTree(const Page& mainPageIn);
-bool dumpMenuOptionTree(std::string filepathIn);
-std::vector<const char*> split(const std::string& joinedStringIn);
-
 // Logging and Input Constants
 extern const std::string outputFolder;
 extern const std::string exCharInputFileName;
@@ -219,6 +210,33 @@ extern const std::string mainGCTTextFile;
 extern const std::string boostGCTName;
 extern const std::string boostGCTFile;
 extern const std::string boostGCTTextFile;
+
+// Options File Functions
+namespace xmlTagConstants
+{
+	extern const std::string codeMenuTag;
+	extern const std::string nameTag;
+	extern const std::string indexTag;
+	extern const std::string valueTag;
+	extern const std::string valueMinTag;
+	extern const std::string valueMaxTag;
+	extern const std::string valueDefaultTag;
+	extern const std::string editableTag;
+	extern const std::string buildBaseFolderTag;
+	extern const std::string cmnuPathTag;
+	extern const std::string pageTag;
+	extern const std::string selectionTag;
+	extern const std::string selectionDefaultTag;
+	extern const std::string selectionOptionTag;
+	extern const std::string intTag;
+	extern const std::string floatTag;
+}
+class Page; // Page Class Forward Decl.
+
+void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers);
+bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut);
+bool dumpMenuOptionTree(std::string filepathIn);
+std::vector<const char*> split(const std::string& joinedStringIn);
 
 
 

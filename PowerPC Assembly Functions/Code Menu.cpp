@@ -211,7 +211,27 @@ void initMenuFileStream()
 }
 
 // Options File Functions
-void recursivelyFindPages(const Page& currBasePageIn, std::vector<const Page*>& collectedPointers)
+namespace xmlTagConstants
+{
+	const std::string codeMenuTag = "codeMenu";
+	const std::string nameTag = "name";
+	const std::string indexTag = "index";
+	const std::string valueTag = "value";
+	const std::string valueMinTag = "minValue";
+	const std::string valueMaxTag = "maxValue";
+	const std::string valueDefaultTag = "defaultValue";
+	const std::string editableTag = "editable";
+	const std::string buildBaseFolderTag = "buildBaseFolder";
+	const std::string cmnuPathTag = "cmnuPath";
+	const std::string pageTag = "codeMenuPage";
+	const std::string selectionTag = "codeMenuSelection";
+	const std::string selectionDefaultTag = "defaultOption";
+	const std::string selectionOptionTag = "option";
+	const std::string intTag = "codeMenuInt";
+	const std::string floatTag = "codeMenuFloat";
+}
+
+void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers)
 {
 	for (unsigned long i = 0; i < currBasePageIn.Lines.size(); i++)
 	{
@@ -231,7 +251,7 @@ void recursivelyFindPages(const Page& currBasePageIn, std::vector<const Page*>& 
 		}
 	}
 }
-bool buildOptionsTree(const Page& mainPageIn)
+bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 {
 	bool result = 1;
 
@@ -242,27 +262,27 @@ bool buildOptionsTree(const Page& mainPageIn)
 	commentNode = MenuOptionsTree.append_child(pugi::node_comment);
 	commentNode.set_value("Important Note: Only change values noted as editable! Changing anything else will not work!");
 
-	pugi::xml_node menuBaseNode = MenuOptionsTree.append_child("codeMenu");
-	pugi::xml_attribute menuNameAttr = menuBaseNode.append_attribute("name");
+	pugi::xml_node menuBaseNode = MenuOptionsTree.append_child(xmlTagConstants::codeMenuTag.c_str());
+	pugi::xml_attribute menuNameAttr = menuBaseNode.append_attribute(xmlTagConstants::nameTag.c_str());
 	menuNameAttr.set_value(cmnuFileName.c_str());
 
-	pugi::xml_node buildBaseFolderNode = menuBaseNode.append_child("buildBaseFolder");
-	buildBaseFolderNode.append_attribute("value").set_value(MAIN_FOLDER.c_str());
-	buildBaseFolderNode.append_attribute("editable").set_value("true");
+	pugi::xml_node buildBaseFolderNode = menuBaseNode.append_child(xmlTagConstants::buildBaseFolderTag.c_str());
+	buildBaseFolderNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(MAIN_FOLDER.c_str());
+	buildBaseFolderNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
 
-	pugi::xml_node cmnuPathNode = menuBaseNode.append_child("cmnuPath");
-	cmnuPathNode.append_attribute("value").set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
-	cmnuPathNode.append_attribute("editable").set_value("true");
+	pugi::xml_node cmnuPathNode = menuBaseNode.append_child(xmlTagConstants::cmnuPathTag.c_str());
+	cmnuPathNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
+	cmnuPathNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
 
-	std::vector<const Page*> Pages{ &mainPageIn };
+	std::vector<Page*> Pages{ &mainPageIn };
 	recursivelyFindPages(mainPageIn, Pages);
 
 	for (unsigned long i = 0; i < Pages.size(); i++) 
 	{
 		const Page* currPage = Pages[i];
 
-		pugi::xml_node pageNode = menuBaseNode.append_child("codeMenuPage");
-		pugi::xml_attribute pageNameAttr = pageNode.append_attribute("name");
+		pugi::xml_node pageNode = menuBaseNode.append_child(xmlTagConstants::pageTag.c_str());
+		pugi::xml_attribute pageNameAttr = pageNode.append_attribute(xmlTagConstants::nameTag.c_str());
 		pageNameAttr.set_value(currPage->PageName.c_str());
 
 		for (unsigned long u = 0; u < currPage->Lines.size(); u++)
@@ -274,46 +294,46 @@ bool buildOptionsTree(const Page& mainPageIn)
 			{
 				case SELECTION_LINE:
 				{
-					pugi::xml_node lineNode = pageNode.append_child("codeMenuSelection");
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::selectionTag.c_str());
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					pugi::xml_node defaultValNode = lineNode.append_child("defaultOption");
-					defaultValNode.append_attribute("index").set_value(std::to_string(currLine->Default).c_str());
-					defaultValNode.append_attribute("editable").set_value("true");
+					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::selectionDefaultTag.c_str());
+					defaultValNode.append_attribute(xmlTagConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
+					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
 					for (unsigned long i = 1; i < deconstructedText.size(); i++)
 					{
-						pugi::xml_node optionNode = lineNode.append_child("option");
-						pugi::xml_attribute optionValueAttr = optionNode.append_attribute("value");
+						pugi::xml_node optionNode = lineNode.append_child(xmlTagConstants::selectionOptionTag.c_str());
+						pugi::xml_attribute optionValueAttr = optionNode.append_attribute(xmlTagConstants::valueTag.c_str());
 						optionValueAttr.set_value(deconstructedText[i]);
 					}
 					break;
 				}
 				case INTEGER_LINE:
 				{
-					pugi::xml_node lineNode = pageNode.append_child("codeMenuInteger");
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::intTag.c_str());
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					pugi::xml_node minValNode = lineNode.append_child("minValue");
-					minValNode.append_attribute("value").set_value(std::to_string(currLine->Min).c_str());
-					pugi::xml_node defaultValNode = lineNode.append_child("defaultValue");
-					defaultValNode.append_attribute("value").set_value(std::to_string(currLine->Default).c_str());
-					defaultValNode.append_attribute("editable").set_value("true");
-					pugi::xml_node maxValNode = lineNode.append_child("maxValue");
-					maxValNode.append_attribute("value").set_value(std::to_string(currLine->Max).c_str());
+					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
+					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Min).c_str());
+					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
+					defaultValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
+					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+					pugi::xml_node maxValNode = lineNode.append_child(xmlTagConstants::valueMaxTag.c_str());
+					maxValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Max).c_str());
 					break;
 				}
 				case FLOATING_LINE:
 				{
-					pugi::xml_node lineNode = pageNode.append_child("codeMenuFloat");
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute("name");
+					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::floatTag.c_str());
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					pugi::xml_node minValNode = lineNode.append_child("minValue");
-					minValNode.append_attribute("value").set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
-					pugi::xml_node defaultValNode = lineNode.append_child("defaultValue");
-					defaultValNode.append_attribute("value").set_value(std::to_string(GetFloatFromHex(currLine->Default)).c_str());
-					defaultValNode.append_attribute("editable").set_value("true");
-					pugi::xml_node maxValNode = lineNode.append_child("maxValue");
-					maxValNode.append_attribute("value").set_value(std::to_string(GetFloatFromHex(currLine->Max)).c_str());
+					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
+					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
+					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
+					defaultValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Default)).c_str());
+					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+					pugi::xml_node maxValNode = lineNode.append_child(xmlTagConstants::valueMaxTag.c_str());
+					maxValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Max)).c_str());
 					break;
 				}
 				default:
@@ -324,7 +344,7 @@ bool buildOptionsTree(const Page& mainPageIn)
 		}
 	}
 
-	MenuOptionsTree.save_file(cmnuOptionsOutputFilePath.c_str());
+	MenuOptionsTree.save_file(xmlPathOut.c_str());
 
 	return result;
 }
@@ -352,7 +372,6 @@ std::vector<const char*> split(const std::string& joinedStringIn)
 
 	return result;
 }
-
 
 
 
@@ -937,7 +956,7 @@ void ActualCodes()
 
 void CreateMenu(Page MainPage)
 {
-	buildOptionsTree(MainPage);
+	buildOptionsTree(MainPage, cmnuOptionsOutputFilePath);
 
 	//make pages
 	CurrentOffset = START_OF_CODE_MENU;
