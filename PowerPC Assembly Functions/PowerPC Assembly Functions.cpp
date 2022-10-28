@@ -2,6 +2,16 @@
 #include "PowerPC Assembly Functions.h"
 #include <iostream>
 
+#if BUILD_TYPE == PROJECT_PLUS
+	#if USE_NEW_PPEX_DIR == true
+		string MAIN_FOLDER = "P+EX/./.";
+	#else
+		string MAIN_FOLDER = "Project+";
+	#endif
+#else
+	string MAIN_FOLDER = "LegacyTE";
+#endif
+
 //converts char hex digit to decimal
 int HexToDec(char x)
 {

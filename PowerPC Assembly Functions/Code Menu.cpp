@@ -306,7 +306,7 @@ bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 
 	pugi::xml_node buildBaseFolderNode = menuBaseNode.append_child(xmlTagConstants::buildBaseFolderTag.c_str());
 	buildBaseFolderNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(MAIN_FOLDER.c_str());
-	//buildBaseFolderNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+	buildBaseFolderNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
 
 	pugi::xml_node cmnuPathNode = menuBaseNode.append_child(xmlTagConstants::cmnuPathTag.c_str());
 	cmnuPathNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
@@ -396,6 +396,30 @@ bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut)
 		if (optionsDocumentIn.load_file(xmlPathOut.c_str()))
 		{
 			result = 1;
+
+			for (pugi::xml_node_iterator menuItr = optionsDocumentIn.begin(); menuItr != optionsDocumentIn.end(); menuItr++)
+			{
+				if (menuItr->name() == xmlTagConstants::codeMenuTag)
+				{
+					for (pugi::xml_node_iterator childItr = menuItr->begin(); childItr != menuItr->end(); childItr++)
+					{
+						if (childItr->name() == xmlTagConstants::buildBaseFolderTag)
+						{
+							bool foundValue = 0;
+							for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+								!foundValue && attrItr != childItr->attributes_end(); attrItr++)
+							{
+								if (attrItr->name() == xmlTagConstants::valueTag)
+								{
+									foundValue = 1;
+									MAIN_FOLDER = attrItr->as_string(MAIN_FOLDER);
+								}
+							}
+						}
+					}
+				}
+			}
+
 
 			std::vector<Page*> Pages{ &mainPageIn };
 			recursivelyFindPages(mainPageIn, Pages);

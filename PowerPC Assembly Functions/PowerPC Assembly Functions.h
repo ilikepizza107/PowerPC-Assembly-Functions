@@ -43,16 +43,7 @@ typedef unsigned char u8;
 
 const vector<float> DEFAULT_CAMERA_MATRIX = { 1,0,0,0, 0,1,0,0, 0,0,1,-64 };
 
-#if BUILD_TYPE == PROJECT_PLUS
-	#if USE_NEW_PPEX_DIR == true
-	const string MAIN_FOLDER = "P+EX/./.";
-	#else
-	const string MAIN_FOLDER = "Project+";
-#endif
-#else
-const string MAIN_FOLDER = "LegacyTE";
-#endif
-
+extern string MAIN_FOLDER;
 
 ///addresses start
 
