@@ -29,6 +29,7 @@ typedef unsigned char u8;
 #define PPEX_LC_NULL 0
 #define PPEX_LC_RIDLEY 1
 #define PPEX_LC_WALUIGI 2
+#define PPEX_LC_DARKSAMUS 3
 #if PROJECT_PLUS_EX_BUILD
 	#define PPEX_LATEST_CHAR PPEX_LC_WALUIGI // Use this to determine which version of the character list gets used in "Code Menu.cpp"
 #else
