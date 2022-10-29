@@ -139,15 +139,15 @@ int main(int argc, char** argv)
 			{
 				if (PROJECT_PLUS_EX_BUILD == true)
 				{
-					if (!USE_NEW_PPEX_DIR)
-					{
-						codeMenuLogOutput << "Pre v1.2 ";
-						std::cout << "Pre v1.2 ";
-					}
-					else
+					if (PPEX_LATEST_CHAR >= PPEX_LC_WALUIGI)
 					{
 						codeMenuLogOutput << "Post v1.2 ";
 						std::cout << "Post v1.2 ";
+					}
+					else
+					{
+						codeMenuLogOutput << "Pre v1.2 ";
+						std::cout << "Pre v1.2 ";
 					}
 					codeMenuLogOutput << "Project+ EX";
 					std::cout << "Project+ EX";
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
 		std::cout << "\n";
 		if (PROJECT_PLUS_EX_BUILD == true)
 		{
-			if (USE_NEW_PPEX_DIR == true)
+			if (PPEX_USE_NEW_DIR == true)
 			{
 				codeMenuLogOutput << "Note: This code menu was configured for P+EX builds on v1.2 or later, using the \"P+EX\" base directory!\n";
 				codeMenuLogOutput << "\tIt will not work for builds using the old \"Project+\" directory!\n";

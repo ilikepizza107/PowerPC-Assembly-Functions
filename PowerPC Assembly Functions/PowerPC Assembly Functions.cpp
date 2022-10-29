@@ -3,10 +3,10 @@
 #include <iostream>
 
 #if BUILD_TYPE == PROJECT_PLUS
-	#if USE_NEW_PPEX_DIR == true
-		string MAIN_FOLDER = "P+EX/./.";
+	#if PPEX_USE_NEW_DIR // If we're post PPEX v1.2, which is when Waluigi was added... 
+		string MAIN_FOLDER = "P+EX/./."; // ... use "P+EX" base directory, as is the default for all versions after that.
 	#else
-		string MAIN_FOLDER = "Project+";
+		string MAIN_FOLDER = "Project+"; // Otherwise, use the old "Project+" directory.
 	#endif
 #else
 	string MAIN_FOLDER = "LegacyTE";

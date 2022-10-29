@@ -23,9 +23,19 @@ typedef unsigned char u8;
 #define DOLPHIN_BUILD false
 #define EON_DEBUG_BUILD false
 #define TOURNAMENT_ADDITION_BUILD false
+
+// P+EX Configuration Macros
 #define PROJECT_PLUS_EX_BUILD true
-// Note: Only P+EX Builds should be using this, so setting PROJECT_PLUS_EX_BUILD to false will force this off as well.
-#define USE_NEW_PPEX_DIR (true && PROJECT_PLUS_EX_BUILD)
+#define PPEX_LC_NULL 0
+#define PPEX_LC_RIDLEY 1
+#define PPEX_LC_WALUIGI 2
+#if PROJECT_PLUS_EX_BUILD
+	#define PPEX_LATEST_CHAR PPEX_LC_WALUIGI // Use this to determine which version of the character list gets used in "Code Menu.cpp"
+#else
+	#define PPEX_LATEST_CHAR PPEX_LC_NULL
+#endif
+#define PPEX_USE_NEW_DIR (PPEX_LATEST_CHAR >= PPEX_LC_WALUIGI)
+
 // Note: Console builds can't use Netplay anyway, so setting DOLPHIN_BUILD to false will force this off as well.
 // This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.
 // As a result, attempting to run Netplay GCTs on console may brick your Wii. 
