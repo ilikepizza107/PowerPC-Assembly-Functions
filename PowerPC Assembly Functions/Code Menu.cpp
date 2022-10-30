@@ -269,6 +269,7 @@ namespace xmlTagConstants
 	const std::string editableTag = "editable";
 	const std::string buildBaseFolderTag = "buildBaseFolder";
 	const std::string cmnuPathTag = "cmnuPath";
+	const std::string characterListVerTag = "characterListVersion";
 	const std::string pageTag = "codeMenuPage";
 	const std::string selectionTag = "codeMenuSelection";
 	const std::string selectionDefaultTag = "defaultOption";
@@ -277,6 +278,7 @@ namespace xmlTagConstants
 	const std::string floatTag = "codeMenuFloat";
 }
 
+pugi::xml_document menuOptionsTree{};
 void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers)
 {
 	for (unsigned long i = 0; i < currBasePageIn.Lines.size(); i++)
@@ -335,7 +337,7 @@ void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, p
 		}
 	}
 }
-bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
+bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 {
 	bool result = 1;
 
@@ -353,6 +355,12 @@ bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 	pugi::xml_node buildBaseFolderNode = menuBaseNode.append_child(xmlTagConstants::buildBaseFolderTag.c_str());
 	buildBaseFolderNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(MAIN_FOLDER.c_str());
 	buildBaseFolderNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+
+	commentNode = menuBaseNode.append_child(pugi::node_comment);
+	commentNode.set_value("0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+, 4: P+EX 1.0, 5: P+EX 1.2");
+	pugi::xml_node characterListVersionNode = menuBaseNode.append_child(xmlTagConstants::characterListVerTag.c_str());
+	characterListVersionNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(characterListVersion).c_str());
+	characterListVersionNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
 
 	pugi::xml_node cmnuPathNode = menuBaseNode.append_child(xmlTagConstants::cmnuPathTag.c_str());
 	cmnuPathNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
@@ -432,151 +440,68 @@ bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 
 	return result;
 }
-bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut)
+
+void applyCharacterListSettingFromMenuOptionsTree(const pugi::xml_document& xmlDocumentIn)
 {
-	bool result = 0;
-
-	if (std::filesystem::is_regular_file(xmlPathOut))
+	bool foundValue = 0;
+	for (pugi::xml_node_iterator menuItr = xmlDocumentIn.begin();
+		!foundValue && menuItr != xmlDocumentIn.end(); menuItr++)
 	{
-		pugi::xml_document optionsDocumentIn;
-		if (optionsDocumentIn.load_file(xmlPathOut.c_str()))
+		if (menuItr->name() == xmlTagConstants::codeMenuTag)
 		{
-			result = 1;
-
-			for (pugi::xml_node_iterator menuItr = optionsDocumentIn.begin(); menuItr != optionsDocumentIn.end(); menuItr++)
+			for (pugi::xml_node_iterator childItr = menuItr->begin();
+				!foundValue && childItr != menuItr->end(); childItr++)
 			{
-				if (menuItr->name() == xmlTagConstants::codeMenuTag)
+				if (childItr->name() == xmlTagConstants::characterListVerTag)
 				{
-					for (pugi::xml_node_iterator childItr = menuItr->begin(); childItr != menuItr->end(); childItr++)
+					for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+						!foundValue && attrItr != childItr->attributes_end(); attrItr++)
 					{
-						if (childItr->name() == xmlTagConstants::buildBaseFolderTag)
+						if (attrItr->name() == xmlTagConstants::valueTag)
 						{
-							bool foundValue = 0;
-							for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-								!foundValue && attrItr != childItr->attributes_end(); attrItr++)
-							{
-								if (attrItr->name() == xmlTagConstants::valueTag)
-								{
-									foundValue = 1;
-									MAIN_FOLDER = attrItr->as_string(MAIN_FOLDER);
-								}
-							}
+							foundValue = 1;
+							int foundValue = std::clamp(attrItr->as_int(characterListVersion),
+								(int)characterListVersions::clv_vBRAWL, (int)characterListVersions::clv_PPEX_WALUIGI);
+							characterListVersion = foundValue;
 						}
 					}
 				}
 			}
+		}
+	}
+}
+bool applyCharacterListSettingFromMenuOptionsTree(std::string xmlPathIn)
+{
+	bool result = 0;
 
+	pugi::xml_document tempDoc;
+	if (loadMenuOptionsTree(xmlPathIn, tempDoc))
+	{
+		result = 1;
+		applyCharacterListSettingFromMenuOptionsTree(tempDoc);
+	}
 
-			std::vector<Page*> Pages{ &mainPageIn };
-			recursivelyFindPages(mainPageIn, Pages);
+	return result;
+}
 
-			std::map<std::string, pugi::xml_node> pageNodeMap;
-			findPagesInOptionsTree(optionsDocumentIn, pageNodeMap);
-
-			for (unsigned long i = 0; i < Pages.size(); i++)
+void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn)
+{
+	for (pugi::xml_node_iterator menuItr = xmlDocumentIn.begin(); menuItr != xmlDocumentIn.end(); menuItr++)
+	{
+		if (menuItr->name() == xmlTagConstants::codeMenuTag)
+		{
+			for (pugi::xml_node_iterator childItr = menuItr->begin(); childItr != menuItr->end(); childItr++)
 			{
-				Page* currPage = Pages[i];
-
-				auto pageFindItr = pageNodeMap.find(currPage->PageName);
-				if (pageFindItr != pageNodeMap.end())
+				if (childItr->name() == xmlTagConstants::buildBaseFolderTag)
 				{
-					std::map<std::string, pugi::xml_node> lineNodeMap;
-					findLinesInPageNode(pageFindItr->second, lineNodeMap);
-
-					for (unsigned long u = 0; u < currPage->Lines.size(); u++)
+					bool foundValue = 0;
+					for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+						!foundValue && attrItr != childItr->attributes_end(); attrItr++)
 					{
-						Line* currLine = currPage->Lines[u];
-
-						std::vector<const char*> deconstructedText = splitLineContentString(currLine->Text);
-
-						auto lineFindItr = lineNodeMap.find(deconstructedText[0]);
-						if (lineFindItr != lineNodeMap.end())
+						if (attrItr->name() == xmlTagConstants::valueTag)
 						{
-							switch (currLine->type)
-							{
-							case SELECTION_LINE:
-							{
-								bool defaultValueFound = 0;
-								for (pugi::xml_node_iterator childItr = lineFindItr->second.begin(); 
-									!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
-								{
-									if (childItr->name() == xmlTagConstants::selectionDefaultTag)
-									{
-										for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-											!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
-										{
-											if (attrItr->name() == xmlTagConstants::indexTag)
-											{
-												defaultValueFound = 1;
-												u32 valueIn = attrItr->as_uint(currLine->Default);
-												valueIn = std::min(std::max(0u, valueIn), deconstructedText.size() - 2);
-												if (valueIn != currLine->Default)
-												{
-													int test = 1;
-												}
-												currLine->Default = valueIn;
-												currLine->Value = valueIn;
-											}
-										}
-									}
-								}
-								break;
-							}
-							case INTEGER_LINE:
-							{
-								bool defaultValueFound = 0;
-								for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
-									!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
-								{
-									if (childItr->name() == xmlTagConstants::valueDefaultTag)
-									{
-										for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-											!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
-										{
-											if (attrItr->name() == xmlTagConstants::indexTag)
-											{
-												defaultValueFound = 1;
-												int valueIn = attrItr->as_int(currLine->Default);
-												valueIn = std::min(std::max(valueIn, (int)currLine->Min), (int)currLine->Max);
-												currLine->Default = valueIn;
-												currLine->Value = valueIn;
-											}
-										}
-									}
-								}
-								break;
-							}
-							case FLOATING_LINE:
-							{
-								bool defaultValueFound = 0;
-								for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
-									!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
-								{
-									if (childItr->name() == xmlTagConstants::valueDefaultTag)
-									{
-										for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-											!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
-										{
-											if (attrItr->name() == xmlTagConstants::valueTag)
-											{
-												defaultValueFound = 1;
-												float valueIn = attrItr->as_float(GetFloatFromHex(currLine->Default));
-												float maxVal = GetFloatFromHex(currLine->Max);
-												float minVal = GetFloatFromHex(currLine->Min);
-												valueIn = std::min(std::max(valueIn, minVal), maxVal);
-												currLine->Default = GetHexFromFloat(valueIn);
-												currLine->Value = currLine->Default;
-											}
-										}
-									}
-								}
-								break;
-							}
-							default:
-							{
-								break;
-							}
-							}
+							foundValue = 1;
+							MAIN_FOLDER = attrItr->as_string(MAIN_FOLDER);
 						}
 					}
 				}
@@ -584,12 +509,150 @@ bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut)
 		}
 	}
 
+	std::vector<Page*> Pages{ &mainPageIn };
+	recursivelyFindPages(mainPageIn, Pages);
+
+	std::map<std::string, pugi::xml_node> pageNodeMap;
+	findPagesInOptionsTree(xmlDocumentIn, pageNodeMap);
+
+	for (unsigned long i = 0; i < Pages.size(); i++)
+	{
+		Page* currPage = Pages[i];
+
+		auto pageFindItr = pageNodeMap.find(currPage->PageName);
+		if (pageFindItr != pageNodeMap.end())
+		{
+			std::map<std::string, pugi::xml_node> lineNodeMap;
+			findLinesInPageNode(pageFindItr->second, lineNodeMap);
+
+			for (unsigned long u = 0; u < currPage->Lines.size(); u++)
+			{
+				Line* currLine = currPage->Lines[u];
+
+				std::vector<const char*> deconstructedText = splitLineContentString(currLine->Text);
+
+				auto lineFindItr = lineNodeMap.find(deconstructedText[0]);
+				if (lineFindItr != lineNodeMap.end())
+				{
+					switch (currLine->type)
+					{
+						case SELECTION_LINE:
+						{
+							bool defaultValueFound = 0;
+							for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
+								!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
+							{
+								if (childItr->name() == xmlTagConstants::selectionDefaultTag)
+								{
+									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+										!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+									{
+										if (attrItr->name() == xmlTagConstants::indexTag)
+										{
+											defaultValueFound = 1;
+											u32 valueIn = attrItr->as_uint(currLine->Default);
+											valueIn = std::min(std::max(0u, valueIn), deconstructedText.size() - 2);
+											if (valueIn != currLine->Default)
+											{
+												int test = 1;
+											}
+											currLine->Default = valueIn;
+											currLine->Value = valueIn;
+										}
+									}
+								}
+							}
+							break;
+						}
+						case INTEGER_LINE:
+						{
+							bool defaultValueFound = 0;
+							for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
+								!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
+							{
+								if (childItr->name() == xmlTagConstants::valueDefaultTag)
+								{
+									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+										!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+									{
+										if (attrItr->name() == xmlTagConstants::indexTag)
+										{
+											defaultValueFound = 1;
+											int valueIn = attrItr->as_int(currLine->Default);
+											valueIn = std::min(std::max(valueIn, (int)currLine->Min), (int)currLine->Max);
+											currLine->Default = valueIn;
+											currLine->Value = valueIn;
+										}
+									}
+								}
+							}
+							break;
+						}
+						case FLOATING_LINE:
+						{
+							bool defaultValueFound = 0;
+							for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
+								!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
+							{
+								if (childItr->name() == xmlTagConstants::valueDefaultTag)
+								{
+									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
+										!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+									{
+										if (attrItr->name() == xmlTagConstants::valueTag)
+										{
+											defaultValueFound = 1;
+											float valueIn = attrItr->as_float(GetFloatFromHex(currLine->Default));
+											float maxVal = GetFloatFromHex(currLine->Max);
+											float minVal = GetFloatFromHex(currLine->Min);
+											valueIn = std::min(std::max(valueIn, minVal), maxVal);
+											currLine->Default = GetHexFromFloat(valueIn);
+											currLine->Value = currLine->Default;
+										}
+									}
+								}
+							}
+							break;
+						}
+						default:
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn)
+{
+	bool result = 0;
+
+	pugi::xml_document tempDoc;
+	if (loadMenuOptionsTree(xmlPathIn, tempDoc))
+	{
+		result = 1;
+		applyDefaultValuesFromMenuOptionsTree(mainPageIn, tempDoc);
+	}
+
 	return result;
 }
-bool dumpMenuOptionTree(std::string filepathIn)
+
+bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument)
 {
-	return std::filesystem::is_regular_file(filepathIn);
+	bool result = 0;
+
+	if (std::filesystem::is_regular_file(xmlPathIn))
+	{
+		if (destinationDocument.load_file(xmlPathIn.c_str()))
+		{
+			result = 1;
+		}
+	}
+
+	return result;
 }
+
 std::vector<const char*> splitLineContentString(const std::string& joinedStringIn)
 {
 	std::vector<const char*> result{};
@@ -1194,8 +1257,8 @@ void ActualCodes()
 
 void CreateMenu(Page MainPage)
 {
-	applyMenuOptionTree(MainPage, cmnuOptionsOutputFilePath);
-	buildOptionsTree(MainPage, cmnuOptionsOutputFilePath);
+	applyDefaultValuesFromMenuOptionsTree(MainPage, cmnuOptionsOutputFilePath);
+	buildMenuOptionsTreeFromMenu(MainPage, cmnuOptionsOutputFilePath);
 
 	//make pages
 	CurrentOffset = START_OF_CODE_MENU;

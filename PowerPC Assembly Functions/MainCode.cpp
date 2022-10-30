@@ -106,8 +106,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-	buildCharacterIDLists();
-
 	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
 	if (!std::filesystem::is_directory(outputFolder))
 	{
@@ -117,6 +115,10 @@ int main(int argc, char** argv)
 	{
 		initMenuFileStream();
 		string OutputTextPath = asmTextOutputFilePath;
+
+		loadMenuOptionsTree(cmnuOptionsOutputFilePath, menuOptionsTree);
+		applyCharacterListSettingFromMenuOptionsTree(menuOptionsTree);
+		buildCharacterIDLists();
 
 		std::ofstream codeMenuLogOutput;
 		codeMenuLogOutput.open(outputFolder + changelogFileName);
@@ -343,8 +345,6 @@ int main(int argc, char** argv)
 		CodeEnd();
 
 		std::cout << "\n";
-
-		dumpMenuOptionTree(cmnuOptionsOutputFilePath);
 
 		if (std::filesystem::is_regular_file(cmnuBuildLocationFilePath))
 		{

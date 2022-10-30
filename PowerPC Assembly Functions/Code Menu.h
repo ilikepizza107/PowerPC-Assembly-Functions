@@ -264,6 +264,7 @@ namespace xmlTagConstants
 	extern const std::string editableTag;
 	extern const std::string buildBaseFolderTag;
 	extern const std::string cmnuPathTag;
+	extern const std::string characterListVerTag;
 	extern const std::string pageTag;
 	extern const std::string selectionTag;
 	extern const std::string selectionDefaultTag;
@@ -273,12 +274,21 @@ namespace xmlTagConstants
 }
 class Page; // Page Class Forward Decl.
 
+extern pugi::xml_document menuOptionsTree;
+
 void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers);
 void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes);
 void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
-bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut);
-bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut);
-bool dumpMenuOptionTree(std::string filepathIn);
+bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
+
+void applyCharacterListSettingFromMenuOptionsTree(const pugi::xml_document& xmlDocumentIn);
+bool applyCharacterListSettingFromMenuOptionsTree(std::string xmlPathIn);
+
+void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn);
+bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn);
+
+bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument);
+
 std::vector<const char*> splitLineContentString(const std::string& joinedStringIn);
 
 
