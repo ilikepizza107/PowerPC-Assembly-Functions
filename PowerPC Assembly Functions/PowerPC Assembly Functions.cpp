@@ -2,14 +2,18 @@
 #include "PowerPC Assembly Functions.h"
 #include <iostream>
 
-#if BUILD_TYPE == PROJECT_PLUS
-	#if PPEX_USE_NEW_DIR // If we're post PPEX v1.2, which is when Waluigi was added... 
-		string MAIN_FOLDER = "P+EX/./."; // ... use "P+EX" base directory, as is the default for all versions after that.
-	#else
-		string MAIN_FOLDER = "Project+"; // Otherwise, use the old "Project+" directory.
+
+#if BUILD_TYPE == PROJECT_PLUS // If the program is configured by default for P+ builds...
+	#if PROJECT_PLUS_EX_BUILD // ... and this is a P+EX build... 
+		long characterListVersion = characterListVersions::clv_PPEX_WALUIGI; // ... we'll default to the current version's character list,
+		string MAIN_FOLDER = "P+EX/./."; // and use the "P+EX" base directory.
+	#else // Otherwise...
+		long characterListVersion = characterListVersions::clv_PPLUS; // ... we'll use the regular P+ Character List,
+		string MAIN_FOLDER = "Project+"; // and use the "Project+" directory.
 	#endif
-#else
-	string MAIN_FOLDER = "LegacyTE";
+#else // If it's not for P+ builds...
+	long characterListVersion = characterListVersions::clv_PROJECTM; // ... then we'll default to the Project M character list,
+	string MAIN_FOLDER = "LegacyTE"; // and use the LegacyTE directory (this can be changed, this is just what it was originally).)
 #endif
 
 //converts char hex digit to decimal

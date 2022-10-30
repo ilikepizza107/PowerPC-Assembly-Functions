@@ -106,6 +106,8 @@ int main(int argc, char** argv)
 		}
 	}
 
+	buildCharacterIDLists();
+
 	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
 	if (!std::filesystem::is_directory(outputFolder))
 	{
@@ -139,16 +141,6 @@ int main(int argc, char** argv)
 			{
 				if (PROJECT_PLUS_EX_BUILD == true)
 				{
-					if (PPEX_LATEST_CHAR >= PPEX_LC_WALUIGI)
-					{
-						codeMenuLogOutput << "Post v1.2 ";
-						std::cout << "Post v1.2 ";
-					}
-					else
-					{
-						codeMenuLogOutput << "Pre v1.2 ";
-						std::cout << "Pre v1.2 ";
-					}
 					codeMenuLogOutput << "Project+ EX";
 					std::cout << "Project+ EX";
 				}
@@ -183,23 +175,6 @@ int main(int argc, char** argv)
 		}
 		codeMenuLogOutput << "\n";
 		std::cout << "\n";
-		if (PROJECT_PLUS_EX_BUILD == true)
-		{
-			if (PPEX_USE_NEW_DIR == true)
-			{
-				codeMenuLogOutput << "Note: This code menu was configured for P+EX builds on v1.2 or later, using the \"P+EX\" base directory!\n";
-				codeMenuLogOutput << "\tIt will not work for builds using the old \"Project+\" directory!\n";
-				std::cout << "Note: This code menu was built for P+EX builds on v1.2 or later, using the \"P+EX\" base directory!\n";
-				std::cout << "\tIt will not work for builds using the old \"Project+\" directory!\n";
-			}
-			else
-			{
-				codeMenuLogOutput << "Note: This code menu was configured for P+EX builds on v1.1 or earlier, using the \"Project+\" base directory!\n";
-				codeMenuLogOutput << "\tIt will not work for builds using the new \"P+EX\" directory!\n";
-				std::cout << "Note: This code menu was built for P+EX builds on v1.1 or earlier, using the \"Project+\" base directory!\n";
-				std::cout << "\tIt will not work for builds using the new \"P+EX\" directory!\n";
-			}
-		}
 		if (DOLPHIN_BUILD == true)
 		{
 			codeMenuLogOutput << "Note: This code menu was configured for use with Dolphin only, and IS NOT COMPATIBLE with consoles!\n";

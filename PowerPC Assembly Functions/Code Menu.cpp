@@ -110,47 +110,82 @@ int SHIELD_ALPHA_4 = -1;
 int tets = 0x935fe30C;
 
 
-#if BUILD_TYPE == PROJECT_PLUS
-// Character List Confiuguration Block for Project+ Based Builds
-	#if PROJECT_PLUS_EX_BUILD == false
-	// Character Lists for Project+ (Non-EX)
-	// Additions relative to vanilla Project M are:
-	//	- Knuckles (P+): Slot ID 53 (0x35)
-	vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-	vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-	#elif PROJECT_PLUS_EX_BUILD == true
-		#if PPEX_LATEST_CHAR >= PPEX_LC_DARKSAMUS
-		// Character Lists for a future Project+ EX Version 
-		// Additions relative to vanilla Project M are:
-		//	- Knuckles (P+): Slot ID 53 (0x35)
-		//	- Ridley (P+EX): Slot ID 56 (0x38)
-		//	- Waluigi (P+EX): Slot ID 57 (0x39)
-		//  - Dark Samus (P+EX): Slot ID 64 (0x40)
-		vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dark Samus", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Ridley", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Waluigi", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus"};
-		vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DARK_SAMUS, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_RIDLEY, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WALUIGI, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-		#elif PPEX_LATEST_CHAR >= PPEX_LC_WALUIGI
-		// Character Lists for Project+ EX Version 1.2 and above
-		// Additions relative to vanilla Project M are:
-		//	- Knuckles (P+): Slot ID 53 (0x35)
-		//	- Ridley (P+EX): Slot ID 56 (0x38)
-		//	- Waluigi (P+EX): Slot ID 57 (0x39)
-		vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Ridley", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Waluigi", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-		vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_RIDLEY, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WALUIGI, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-		#else
-		// Character Lists for Project+ EX Version 1.1 and below
-		// Additions relative to vanilla Project M are:
-		//	- Knuckles (P+): Slot ID 53 (0x35)
-		//	- Ridley (P+EX): Slot ID 56 (0x38)
-		vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Knuckles", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Ridley", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-		vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_KNUCKLES, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_RIDLEY, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-		#endif
-	#endif
-#else
-// Default Character Lists
-// Reflects vanilla Project M's character set, no additions relative to vanilla PM
-vector<string> CHARACTER_LIST = { "Bowser", "Captain Falcon", "Charizard", "Dedede", "Diddy Kong", "Donkey Kong", "Falco", "Fox", "Ganondorf", "Giga Bowser", "Ice Climbers", "Ike", "Ivysaur", "Jigglypuff", "Kirby", "Link", "Lucario", "Lucas", "Luigi", "Mario", "Marth", "Meta Knight", "Mewtwo", "Mr. Game and Watch", "Ness", "Olimar", "Peach", "Pikachu", "Pit", "R.O.B.", "Roy", "Samus", "Sheik", "Snake", "Sonic", "Sopo", "Squirtle", "Toon Link", "Wario", "Warioman", "Wolf", "Yoshi", "Zelda", "Zero Suit Samus" };
-vector<u16> CHARACTER_ID_LIST = { LCSI_BOWSER, LCSI_CAPTAIN_FALCON, LCSI_CHARIZARD, LCSI_DEDEDE, LCSI_DIDDY_KONG, LCSI_DONKEY_KONG, LCSI_FALCO, LCSI_FOX, LCSI_GANONDORF, LCSI_GIGA_BOWSER, LCSI_ICE_CLIMBERS, LCSI_IKE, LCSI_IVYSAUR, LCSI_JIGGLYPUFF, LCSI_KIRBY, LCSI_LINK, LCSI_LUCARIO, LCSI_LUCAS, LCSI_LUIGI, LCSI_MARIO, LCSI_MARTH, LCSI_META_KNIGHT, LCSI_MEWTWO, LCSI_MR_GAME_AND_WATCH, LCSI_NESS, LCSI_OLIMAR, LCSI_PEACH, LCSI_PIKACHU, LCSI_PIT, LCSI_ROB, LCSI_ROY, LCSI_SAMUS, LCSI_SHEIK, LCSI_SNAKE, LCSI_SONIC, LCSI_SOPO, LCSI_SQUIRTLE, LCSI_TOON_LINK, LCSI_WARIO, LCSI_WARIOMAN, LCSI_WOLF, LCSI_YOSHI, LCSI_ZELDA, LCSI_ZERO_SUIT_SAMUS };
-#endif
+vector<string> CHARACTER_LIST{};
+vector<u16> CHARACTER_ID_LIST{};
+void buildCharacterIDLists()
+{
+	std::map<std::string, u16> characterNameToIDMap =
+	{
+		{"Bowser", LCSI_BOWSER},
+		{"Captain Falcon", LCSI_CAPTAIN_FALCON},
+		{"Charizard", LCSI_CHARIZARD},
+		{"Dedede", LCSI_DEDEDE},
+		{"Diddy Kong", LCSI_DIDDY_KONG},
+		{"Donkey Kong", LCSI_DONKEY_KONG},
+		{"Falco", LCSI_FALCO},
+		{"Fox", LCSI_FOX},
+		{"Ganondorf", LCSI_GANONDORF},
+		{"Ice Climbers", LCSI_ICE_CLIMBERS},
+		{"Ike", LCSI_IKE},
+		{"Ivysaur", LCSI_IVYSAUR},
+		{"Jigglypuff", LCSI_JIGGLYPUFF},
+		{"Kirby", LCSI_KIRBY},
+		{"Link", LCSI_LINK},
+		{"Lucario", LCSI_LUCARIO},
+		{"Lucas", LCSI_LUCAS},
+		{"Luigi", LCSI_LUIGI},
+		{"Mario", LCSI_MARIO},
+		{"Marth", LCSI_MARTH},
+		{"Meta Knight", LCSI_META_KNIGHT},
+		{"Mr. Game and Watch", LCSI_MR_GAME_AND_WATCH},
+		{"Ness", LCSI_NESS},
+		{"Olimar", LCSI_OLIMAR},
+		{"Peach", LCSI_PEACH},
+		{"Pikachu", LCSI_PIKACHU},
+		{"Pit", LCSI_PIT},
+		{"R.O.B.", LCSI_ROB},
+		{"Samus", LCSI_SAMUS},
+		{"Sheik", LCSI_SHEIK},
+		{"Snake", LCSI_SNAKE},
+		{"Sonic", LCSI_SONIC},
+		{"Squirtle", LCSI_SQUIRTLE},
+		{"Toon Link", LCSI_TOON_LINK},
+		{"Wario", LCSI_WARIO},
+		{"Wolf", LCSI_WOLF},
+		{"Yoshi", LCSI_YOSHI},
+		{"Zelda", LCSI_ZELDA},
+		{"Zero Suit Samus", LCSI_ZERO_SUIT_SAMUS }
+	};
+	if (characterListVersion >= characterListVersions::clv_vBRAWL_SPECIAL_CHARS)
+	{
+		characterNameToIDMap.emplace("Giga Bowser", LCSI_GIGA_BOWSER);
+		characterNameToIDMap.emplace("Sopo", LCSI_SOPO);
+		characterNameToIDMap.emplace("Warioman", LCSI_WARIOMAN);
+	}
+	if (characterListVersion >= characterListVersions::clv_PROJECTM)
+	{
+		characterNameToIDMap.emplace("Mewtwo", LCSI_MEWTWO);
+		characterNameToIDMap.emplace("Roy", LCSI_ROY);
+	}
+	if (characterListVersion >= characterListVersions::clv_PPLUS)
+	{
+		characterNameToIDMap.emplace("Knuckles", LCSI_KNUCKLES);
+	}
+	if (characterListVersion >= characterListVersions::clv_PPEX_RIDLEY)
+	{
+		characterNameToIDMap.emplace("Ridley", LCSI_RIDLEY);
+	}
+	if (characterListVersion >= characterListVersions::clv_PPEX_WALUIGI)
+	{
+		characterNameToIDMap.emplace("Waluigi", LCSI_WALUIGI);
+	}
+	if (characterListVersion >= characterListVersions::clv_PPEX_DARK_SAMUS)
+	{
+		characterNameToIDMap.emplace("Dark Samus", LCSI_DARK_SAMUS);
+	}
+
+	unzipMapToVectors(characterNameToIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
+}
 
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
@@ -338,7 +373,7 @@ bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut)
 		{
 			const Line* currLine = currPage->Lines[u];
 
-			std::vector<const char*> deconstructedText = split(currLine->Text);
+			std::vector<const char*> deconstructedText = splitLineContentString(currLine->Text);
 			switch (currLine->type)
 			{
 				case SELECTION_LINE:
@@ -452,7 +487,7 @@ bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut)
 					{
 						Line* currLine = currPage->Lines[u];
 
-						std::vector<const char*> deconstructedText = split(currLine->Text);
+						std::vector<const char*> deconstructedText = splitLineContentString(currLine->Text);
 
 						auto lineFindItr = lineNodeMap.find(deconstructedText[0]);
 						if (lineFindItr != lineNodeMap.end())
@@ -555,7 +590,7 @@ bool dumpMenuOptionTree(std::string filepathIn)
 {
 	return std::filesystem::is_regular_file(filepathIn);
 }
-std::vector<const char*> split(const std::string& joinedStringIn)
+std::vector<const char*> splitLineContentString(const std::string& joinedStringIn)
 {
 	std::vector<const char*> result{};
 

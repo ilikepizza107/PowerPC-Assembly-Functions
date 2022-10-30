@@ -172,12 +172,51 @@ enum LAVA_CHARA_SLOT_IDS
 	LCSI_ALLOY_GREEN = 0x6D,
 };
 
+template <typename T1, typename T2>
+bool zipVectorsToMap(const std::vector<T1>& vec1, const std::vector<T2>& vec2, std::map<T1, T2>& destinationMap)
+{
+	bool result = 0;
+
+	if (vec1.size() == vec2.size())
+	{
+		result = 1;
+		for (std::size_t i = 0; i < vec1.size(); i++)
+		{
+			auto res = result.emplace(vec1[i], vec2[i]);
+			if (res.second == 1)
+			{
+				res.first->second = vec2[i];
+			}
+		}
+	}
+
+	return result;
+}
+template <typename T1, typename T2>
+void unzipMapToVectors(const std::map<T1, T2>& sourceMap, std::vector<T1>& vec1, std::vector<T2>& vec2)
+{
+	if (vec1.size() < sourceMap.size())
+	{
+		vec1.reserve(sourceMap.size());
+	}
+	if (vec2.size() < sourceMap.size())
+	{
+		vec2.reserve(sourceMap.size());
+	}
+	for (auto itr = sourceMap.begin(); itr != sourceMap.end(); itr++)
+	{
+		vec1.push_back(itr->first);
+		vec2.push_back(itr->second);
+	}
+}
+
 // Declares existence of the two main character lists.
-// These are populated with predefined lists in "Code Menu.cpp".
+// These are populated in setCharacterIDLists() (see "Code Menu.cpp").
 // If COLLECT_EXTERNAL_EX_CHARACTERS (in "PowerPC Assembly Functions.h") is set to true,
 // additional EX Character declarations will be collected from the file described by exCharInputFilename (see "Code Menu.cpp").
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
+void buildCharacterIDLists();
 
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
@@ -240,7 +279,7 @@ void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, p
 bool buildOptionsTree(Page& mainPageIn, std::string xmlPathOut);
 bool applyMenuOptionTree(Page& mainPageIn, std::string xmlPathOut);
 bool dumpMenuOptionTree(std::string filepathIn);
-std::vector<const char*> split(const std::string& joinedStringIn);
+std::vector<const char*> splitLineContentString(const std::string& joinedStringIn);
 
 
 

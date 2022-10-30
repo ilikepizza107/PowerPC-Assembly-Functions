@@ -24,26 +24,31 @@ typedef unsigned char u8;
 #define EON_DEBUG_BUILD false
 #define TOURNAMENT_ADDITION_BUILD false
 
+// Character List Config Constants
+// Defines different base versions of the character lists. 
+// Set the characterListVersion variable equal to one of these values to include all characters up to and including that version.
+// Eg. "clv_PROJECTM" includes all of vBrawl's characters, the special characters adapted for playability in PM, and the two PM newcomers.
+enum characterListVersions
+{
+	clv_vBRAWL = 0,
+	clv_vBRAWL_SPECIAL_CHARS,
+	clv_PROJECTM,
+	clv_PPLUS,
+	clv_PPEX_RIDLEY,
+	clv_PPEX_WALUIGI,
+	clv_PPEX_DARK_SAMUS
+};
+extern long characterListVersion;
 // P+EX Configuration Macros
 #define PROJECT_PLUS_EX_BUILD true
-#define PPEX_LC_NULL 0
-#define PPEX_LC_RIDLEY 1
-#define PPEX_LC_WALUIGI 2
-#define PPEX_LC_DARKSAMUS 3
-#if PROJECT_PLUS_EX_BUILD
-	#define PPEX_LATEST_CHAR PPEX_LC_WALUIGI // Use this to determine which version of the character list gets used in "Code Menu.cpp"
-#else
-	#define PPEX_LATEST_CHAR PPEX_LC_NULL
-#endif
-#define PPEX_USE_NEW_DIR (PPEX_LATEST_CHAR >= PPEX_LC_WALUIGI)
+// Controls whether or not externally defined characters are added to the code menu character list.
+// Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
+#define COLLECT_EXTERNAL_EX_CHARACTERS true
 
 // Note: Console builds can't use Netplay anyway, so setting DOLPHIN_BUILD to false will force this off as well.
 // This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.
 // As a result, attempting to run Netplay GCTs on console may brick your Wii. 
 #define BUILD_NETPLAY_FILES (false && DOLPHIN_BUILD)
-// Controls whether or not externally defined characters are added to the code menu.
-// Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
-#define COLLECT_EXTERNAL_EX_CHARACTERS true
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
