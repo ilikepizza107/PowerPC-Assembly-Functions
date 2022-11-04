@@ -31,6 +31,7 @@ int SAVE_STATES_INDEX = -1;
 int SAVE_REPLAY_ANYWHERE_INDEX = -1;
 int AUTO_SKIP_TO_CSS_INDEX = -1;
 int CODE_MENU_ACTIVATION_SETTING_INDEX = -1;
+int CSS_VERSION_SETTING_INDEX = -1;
 int PERCENT_SELECT_VALUE_P1_INDEX = -1;
 int PERCENT_SELECT_ACTIVATOR_P1_INDEX = -1;
 int PERCENT_SELECT_VALUE_P2_INDEX = -1;
@@ -414,7 +415,7 @@ void CodeMenu()
 #endif
 
 	MainLines.push_back(new Selection("Code Menu Activation", { "Default", "PM 3.6", "OFF" }, 0, CODE_MENU_ACTIVATION_SETTING_INDEX));
-
+	MainLines.push_back(new Selection("CSS Roster Version", { "Default", "Project+", "PM 3.6" }, 0, CSS_VERSION_SETTING_INDEX));
 	
 	//MainLines.push_back(new Print("%s", {&tets}));
 	
@@ -975,6 +976,9 @@ void CreateMenu(Page MainPage)
 
 	//Scale Modifier
 	AddValueToByteArray(SPEED_INDEX, Header);
+
+	// CSS VER Modifier
+	AddValueToByteArray(CSS_VERSION_SETTING_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
