@@ -36,6 +36,7 @@ extern int SAVE_STATES_INDEX;
 extern int SAVE_REPLAY_ANYWHERE_INDEX;
 extern int AUTO_SKIP_TO_CSS_INDEX;
 extern int CODE_MENU_ACTIVATION_SETTING_INDEX;
+extern int CSS_VERSION_SETTING_INDEX;
 extern int PERCENT_SELECT_VALUE_P1_INDEX;
 extern int PERCENT_SELECT_ACTIVATOR_P1_INDEX;
 extern int PERCENT_SELECT_VALUE_P2_INDEX;
@@ -399,7 +400,9 @@ static const int SCALE_LOC = BUFFER_P4_LOC + 4; //4
 
 static const int SPEED_LOC = SCALE_LOC + 4; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = SPEED_LOC + 4; //0x200
+static const int CSS_VER_LOC = SPEED_LOC + 4; //4
+
+static const int DRAW_SETTINGS_BUFFER_LOC = CSS_VER_LOC + 4; //0x200
 
 
 
