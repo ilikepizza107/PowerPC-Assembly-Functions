@@ -219,6 +219,11 @@ extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
 void buildCharacterIDLists();
 
+extern vector<string> ROSTER_LIST;
+extern vector<string> ROSTER_FILENAME_LIST;
+void buildRosterLists();
+
+
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
@@ -227,6 +232,7 @@ void initMenuFileStream();
 // Logging and Input Constants
 extern const std::string outputFolder;
 extern const std::string exCharInputFileName;
+extern const std::string rosterInputFileName;
 extern const std::string changelogFileName;
 extern const std::string optionsFilename;
 // Code Menu Output Constants

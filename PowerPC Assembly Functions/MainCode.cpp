@@ -119,6 +119,7 @@ int main(int argc, char** argv)
 		loadMenuOptionsTree(cmnuOptionsOutputFilePath, menuOptionsTree);
 		applyCharacterListSettingFromMenuOptionsTree(menuOptionsTree);
 		buildCharacterIDLists();
+		buildRosterLists();
 
 		std::ofstream codeMenuLogOutput;
 		codeMenuLogOutput.open(outputFolder + changelogFileName);
@@ -204,82 +205,162 @@ int main(int argc, char** argv)
 		codeMenuLogOutput << "\n";
 		std::cout << "\n";
 
-#if COLLECT_EXTERNAL_EX_CHARACTERS == true
-		codeMenuLogOutput << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
-		std::cout << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
-
-		bool exCharInputOpenedSuccessfully = 0;
-		std::vector<std::pair<std::string, u16>> nameIDPairs = lava::collectNameSlotIDPairs(exCharInputFileName, exCharInputOpenedSuccessfully);
-		if (exCharInputOpenedSuccessfully)
+		if (COLLECT_EXTERNAL_ROSTERS == true)
 		{
-			if (nameIDPairs.size())
-			{
-				// Builds a map from the predefined character and character ID lists.
-				// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
-				std::map<std::string, u16> zippedIDMap;
-				for (int i = 0; i < CHARACTER_LIST.size(); i++)
-				{
-					zippedIDMap.insert(std::make_pair(CHARACTER_LIST[i], CHARACTER_ID_LIST[i]));
-				}
-				for (int i = 0; i < nameIDPairs.size(); i++)
-				{
-					std::pair<std::string, u16>* currPair = &nameIDPairs[i];
-					if (currPair->second != SHRT_MAX)
-					{
-						auto itr = zippedIDMap.insert(*currPair);
-						// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
-						if (itr.second)
-						{
-							std::cout << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-							codeMenuLogOutput << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-						}
-						// Otherwise, announce what was changed.
-						else if (itr.first != zippedIDMap.end())
-						{
-							itr.first->second = currPair->second;
-							std::cout << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-							codeMenuLogOutput << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-						}
-					}
-					else
-					{
-						std::cerr << "[ERROR] Invalid Slot ID specified! The character \"" << currPair->first << "\" will not be added to the Code Menu!\n";
-						codeMenuLogOutput << "[ERROR] Invalid Slot ID specified! The character \"" << currPair->first << "\" will not be added to the Code Menu!\n";
-					}
-				}
+			codeMenuLogOutput << "Adding Rosters to Code Menu from \"" << rosterInputFileName << "\"...\n";
+			std::cout << "Adding Rosters to Code Menu from \"" << rosterInputFileName << "\"...\n";
 
-				// Write the newly edited list back into the list vectors
-				CHARACTER_LIST.clear();
-				CHARACTER_ID_LIST.clear();
-				for (auto itr = zippedIDMap.begin(); itr != zippedIDMap.end(); itr++)
+			bool rosterInputOpenedSuccessfully = 0;
+			std::vector<std::pair<std::string, std::string>> rosterNameFileNamePairs = lava::collectedRosterNamePathPairs(rosterInputFileName, rosterInputOpenedSuccessfully);
+			if (rosterInputOpenedSuccessfully)
+			{
+				if (rosterNameFileNamePairs.size())
 				{
-					CHARACTER_LIST.push_back(itr->first);
-					CHARACTER_ID_LIST.push_back(itr->second);
+					std::vector<std::pair<std::string, std::string>> zippedRosterVec{};
+					std::map<std::string, std::size_t> rosterNameToIndexMap{};
+					for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
+					{
+						zippedRosterVec.push_back(std::make_pair(ROSTER_LIST[i], ROSTER_FILENAME_LIST[i]));
+						rosterNameToIndexMap.insert(std::make_pair(ROSTER_LIST[i], i));
+					}
+					for (int i = 0; i < rosterNameFileNamePairs.size(); i++)
+					{
+						std::pair<std::string, std::string>* currPair = &rosterNameFileNamePairs[i];
+						if (currPair->second.size())
+						{
+							auto itr = rosterNameToIndexMap.find(currPair->first);
+							if (itr == rosterNameToIndexMap.end())
+							{
+								zippedRosterVec.push_back(*currPair);
+								rosterNameToIndexMap.insert(std::make_pair(currPair->first, zippedRosterVec.size() - 1));
+								std::cout << "[ADDED] " << currPair->first << " (Filename: " << currPair->second << ")\n";
+								codeMenuLogOutput << "[ADDED] " << currPair->first << " (Filename: " << currPair->second << ")\n";
+							}
+							// Otherwise, announce what was changed.
+							else
+							{
+								zippedRosterVec[itr->second].second = currPair->second;
+								std::cout << "[CHANGED] " << itr->first << " (Filename: " << currPair->second << ")\n";
+								codeMenuLogOutput << "[CHANGED] " << itr->first << " (Filename: " << currPair->second << ")\n";
+							}
+						}
+						else
+						{
+							std::cerr << "[ERROR] Invalid Filename specified! The roster \"" << currPair->first << "\" will not be added to the Code Menu!\n";
+							codeMenuLogOutput << "[ERROR] Invalid Filename specified! The roster \"" << currPair->first << "\" will not be added to the Code Menu!\n";
+						}
+					}
+
+					// Write the newly edited list back into the list vectors
+					ROSTER_LIST.clear();
+					ROSTER_FILENAME_LIST.clear();
+					for (auto itr = zippedRosterVec.cbegin(); itr != zippedRosterVec.cend(); itr++)
+					{
+						ROSTER_LIST.push_back(itr->first);
+						ROSTER_FILENAME_LIST.push_back(itr->second);
+					}
+				}
+				else
+				{
+					std::cout << "[WARNING] \"" << rosterInputFileName << "\" was opened successfully, but no valid roster entries could be found.\n";
+					codeMenuLogOutput << "[WARNING] \"" << rosterInputFileName << "\" was opened successfully, but no valid roster entries could be found.\n";
 				}
 			}
 			else
 			{
-				std::cout << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
-				codeMenuLogOutput << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
+				std::cout << "[ERROR] Couldn't open \"" << rosterInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
+				codeMenuLogOutput << "[ERROR] Couldn't open \"" << rosterInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
 			}
-		}
-		else
-		{
-			std::cout << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
-			codeMenuLogOutput << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
-		}
-		//Print the results.
-		std::cout << "\nFinal Character List:\n";
-		codeMenuLogOutput << "\nFinal Character List:\n";
-		for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
-		{
-			std::cout << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
-			codeMenuLogOutput << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
-		}
+			//Print the results.
+			std::cout << "\nFinal Roster List:\n";
+			codeMenuLogOutput << "\nFinal Roster List:\n";
+			for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
+			{
+				std::cout << "\t" << ROSTER_LIST[i] << " (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
+				codeMenuLogOutput << "\t" << ROSTER_LIST[i] << " (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
+			}
 
-		std::cout << "\n";
-		codeMenuLogOutput << "\n";
-#endif
+			std::cout << "\n";
+			codeMenuLogOutput << "\n";
+		}
+		if (COLLECT_EXTERNAL_EX_CHARACTERS == true)
+		{
+			codeMenuLogOutput << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
+			std::cout << "Adding Characters to Code Menu from \"" << exCharInputFileName << "\"...\n";
+
+			bool exCharInputOpenedSuccessfully = 0;
+			std::vector<std::pair<std::string, u16>> nameIDPairs = lava::collectNameSlotIDPairs(exCharInputFileName, exCharInputOpenedSuccessfully);
+			if (exCharInputOpenedSuccessfully)
+			{
+				if (nameIDPairs.size())
+				{
+					// Builds a map from the predefined character and character ID lists.
+					// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
+					std::map<std::string, u16> zippedIDMap;
+					for (int i = 0; i < CHARACTER_LIST.size(); i++)
+					{
+						zippedIDMap.insert(std::make_pair(CHARACTER_LIST[i], CHARACTER_ID_LIST[i]));
+					}
+					for (int i = 0; i < nameIDPairs.size(); i++)
+					{
+						std::pair<std::string, u16>* currPair = &nameIDPairs[i];
+						if (currPair->second != SHRT_MAX)
+						{
+							auto itr = zippedIDMap.insert(*currPair);
+							// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
+							if (itr.second)
+							{
+								std::cout << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+								codeMenuLogOutput << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+							}
+							// Otherwise, announce what was changed.
+							else if (itr.first != zippedIDMap.end())
+							{
+								itr.first->second = currPair->second;
+								std::cout << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+								codeMenuLogOutput << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+							}
+						}
+						else
+						{
+							std::cerr << "[ERROR] Invalid Slot ID specified! The character \"" << currPair->first << "\" will not be added to the Code Menu!\n";
+							codeMenuLogOutput << "[ERROR] Invalid Slot ID specified! The character \"" << currPair->first << "\" will not be added to the Code Menu!\n";
+						}
+					}
+
+					// Write the newly edited list back into the list vectors
+					CHARACTER_LIST.clear();
+					CHARACTER_ID_LIST.clear();
+					for (auto itr = zippedIDMap.begin(); itr != zippedIDMap.end(); itr++)
+					{
+						CHARACTER_LIST.push_back(itr->first);
+						CHARACTER_ID_LIST.push_back(itr->second);
+					}
+				}
+				else
+				{
+					std::cout << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
+					codeMenuLogOutput << "[WARNING] \"" << exCharInputFileName << "\" was opened successfully, but no valid character entries could be found.\n";
+				}
+			}
+			else
+			{
+				std::cout << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
+				codeMenuLogOutput << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
+			}
+			//Print the results.
+			std::cout << "\nFinal Character List:\n";
+			codeMenuLogOutput << "\nFinal Character List:\n";
+			for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
+			{
+				std::cout << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
+				codeMenuLogOutput << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
+			}
+
+			std::cout << "\n";
+			codeMenuLogOutput << "\n";
+		}
+		
 
 		CodeStart(OutputTextPath);
 		//place all ASM code here

@@ -40,6 +40,9 @@ namespace lava
 
 	// EX Character Functions
 	std::vector<std::pair<std::string, u16>> collectNameSlotIDPairs(std::string exCharInputFilePath, bool& fileOpened);
+
+	// EX Roster Functions
+	std::vector<std::pair<std::string, std::string>> collectedRosterNamePathPairs(std::string exRosterInputFilePath, bool& fileOpened);
 }
 
 #endif

@@ -188,8 +188,21 @@ void buildCharacterIDLists()
 	unzipMapToVectors(characterNameToIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
 }
 
+vector<string> ROSTER_LIST{};
+vector<string> ROSTER_FILENAME_LIST{};
+void buildRosterLists()
+{
+	std::map<std::string, std::string> rosterNameToFileIDMap =
+	{
+		{"Default", "CSSRoster.dat"}
+	};
+
+	unzipMapToVectors(rosterNameToFileIDMap, ROSTER_LIST, ROSTER_FILENAME_LIST);
+}
+
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
+const std::string rosterInputFileName = "Rosters.txt";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";
 const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
@@ -885,7 +898,10 @@ void CodeMenu()
 #endif
 
 	MainLines.push_back(new Selection("Code Menu Activation", { "Default", "PM 3.6", "OFF" }, 0, CODE_MENU_ACTIVATION_SETTING_INDEX));
-	MainLines.push_back(new Selection("CSS Roster Version", { "Default", "Project+", "PM 3.6" }, 0, CSS_VERSION_SETTING_INDEX));
+	if (ROSTER_LIST.size() > 1)
+	{
+		MainLines.push_back(new Selection("CSS Roster Version", ROSTER_LIST, 0, CSS_VERSION_SETTING_INDEX));
+	}
 	
 	//MainLines.push_back(new Print("%s", {&tets}));
 	

@@ -45,6 +45,7 @@ extern long characterListVersion;
 // Controls whether or not externally defined characters are added to the code menu character list.
 // Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
 #define COLLECT_EXTERNAL_EX_CHARACTERS true
+#define COLLECT_EXTERNAL_ROSTERS true
 
 // Note: Console builds can't use Netplay anyway, so setting DOLPHIN_BUILD to false will force this off as well.
 // This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.

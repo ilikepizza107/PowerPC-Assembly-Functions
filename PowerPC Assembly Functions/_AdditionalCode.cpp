@@ -301,4 +301,62 @@ namespace lava
 
 		return result;
 	}
+	std::vector<std::pair<std::string, std::string>> collectedRosterNamePathPairs(std::string exRosterInputFilePath, bool& fileOpened)
+	{
+		std::vector<std::pair<std::string, std::string>> result{};
+		fileOpened = 0;
+
+		// Read from character file
+		std::ifstream exCharInputStream;
+		exCharInputStream.open(exRosterInputFilePath);
+
+		if (exCharInputStream.is_open())
+		{
+			fileOpened = 1;
+			std::string currentLine = "";
+			std::string manipStr = "";
+			while (std::getline(exCharInputStream, currentLine))
+			{
+				// Disregard the current line if it's empty, or is marked as a comment
+				if (!currentLine.empty() && currentLine[0] != '#' && currentLine[0] != '/')
+				{
+					// Clean the string
+					// Removes any space characters from outside of quotes. Note, quotes can be escaped with \\.
+					manipStr = "";
+					bool inQuote = 0;
+					bool doEscapeChar = 0;
+					for (std::size_t i = 0; i < currentLine.size(); i++)
+					{
+						if (currentLine[i] == '\"' && !doEscapeChar)
+						{
+							inQuote = !inQuote;
+						}
+						else if (currentLine[i] == '\\')
+						{
+							doEscapeChar = 1;
+						}
+						else if (inQuote || !std::isspace(currentLine[i]))
+						{
+							doEscapeChar = 0;
+							manipStr += currentLine[i];
+						}
+					}
+					// Determines the location of the delimiter, and ensures that there's something before and something after it.
+					// Line is obviously invalid if that fails, so we skip it.
+					std::size_t delimLoc = manipStr.find('=');
+					if (delimLoc != std::string::npos && delimLoc > 0 && delimLoc < (manipStr.size() - 1))
+					{
+						// Store roster name portion of string
+						std::string rosterNameIn = manipStr.substr(0, delimLoc);
+						// Store roster filename portion of string
+						std::string fileNameIn = manipStr.substr(delimLoc + 1, std::string::npos);
+						// Insert new entry into list.
+						result.push_back(std::make_pair(rosterNameIn, fileNameIn));
+					}
+				}
+			}
+		}
+
+		return result;
+	}
 }
