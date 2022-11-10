@@ -41,11 +41,11 @@ enum characterListVersions
 };
 extern long characterListVersion;
 // P+EX Configuration Macros
-#define PROJECT_PLUS_EX_BUILD true
-// Controls whether or not externally defined characters are added to the code menu character list.
+#define PROJECT_PLUS_EX_BUILD (true && (BUILD_TYPE == PROJECT_PLUS))
+// Controls whether or not externally defined character and rosters are added to the code menu character list.
 // Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
-#define COLLECT_EXTERNAL_EX_CHARACTERS true
-#define COLLECT_EXTERNAL_ROSTERS true
+#define COLLECT_EXTERNAL_EX_CHARACTERS (true && PROJECT_PLUS_EX_BUILD)
+#define COLLECT_EXTERNAL_ROSTERS (true && PROJECT_PLUS_EX_BUILD)
 
 // Note: Console builds can't use Netplay anyway, so setting DOLPHIN_BUILD to false will force this off as well.
 // This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.

@@ -1,5 +1,3 @@
 #Add new lines in the following format:
 #	"Roster Name" = "Roster Filename"
 #See README.md for further details.
-"Project+" = "CSSRoster1.dat"
-"PM 3.6" = "CSSRoster2.dat"
