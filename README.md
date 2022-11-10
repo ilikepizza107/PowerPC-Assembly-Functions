@@ -69,7 +69,26 @@ Lastly, adding a hashtag ('#') or forward slash ('/') to the beginning of a line
 
 ... will all be treated as comments and ignored by the program.
 
-***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This currently includes Knuckles, Ridley, and Waluigi, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in the base P+EX.
+***Important Note***: Characters in this file are added *in addition to* the characters present in stock P+EX. This currently includes Knuckles, Ridley, and Waluigi, and in the future will include any other characters added to the base build. This means that the only characters you need to add to this file are ones not present in base P+EX.
+
+## Adding to EX_Rosters.txt
+New lines are added in the following format:
+
+	"Roster Name" = "Roster Filename"
+	
+So, for example, the following line...
+
+	"Project+" = "CSSRosterPPlus.dat"
+	
+...would add an entry to the CSS Version Switcher labeled "Project+", which would load "pf/BrawlEx/CSSRosterPPlus.dat" in place of the normal "CSSRoster.dat".
+
+Note that filenames here are really just paths relative to the "pf/BrawlEx/" folder in a build. It's perfectly valid to specify rosters like the following, for instance:
+
+	"In A Subfolder" = "Folder/CSSRoster.dat"
+	"In A Super-folder" = "../CSSRoster.dat"
+	"In A Sibling Folder" = "../Sibling/CSSRoster.dat"
+	
+Lastly, be aware that the formatting rules on escape characters and comment characters noted in the section about adding to "EX_Characters.txt" apply to entries in this file as well.
 
 ## Instructions for Hands-free Execution
 
