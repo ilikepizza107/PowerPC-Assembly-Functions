@@ -211,18 +211,19 @@ void unzipMapToVectors(const std::map<T1, T2>& sourceMap, std::vector<T1>& vec1,
 	}
 }
 
-// Declares existence of the two main character lists.
-// These are populated in setCharacterIDLists() (see "Code Menu.cpp").
+// Declares existence of the two main character lists, populated by the function below.
 // If COLLECT_EXTERNAL_EX_CHARACTERS (in "PowerPC Assembly Functions.h") is set to true,
 // additional EX Character declarations will be collected from the file described by exCharInputFilename (see "Code Menu.cpp").
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
 void buildCharacterIDLists();
 
+// Declares existence of the two main roster lists, populated by the function below.
+// If COLLECT_EXTERNAL_ROSTERS (in "PowerPC Assembly Functions.h") is set to true,
+// additional Rostser declarations will be collected from the file described by rosterInputFilename (see "Code Menu.cpp").
 extern vector<string> ROSTER_LIST;
 extern vector<string> ROSTER_FILENAME_LIST;
 void buildRosterLists();
-
 
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
