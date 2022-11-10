@@ -13,12 +13,11 @@ void cssRosterChange() // Adapted from CSS Roster Change via Code Menu [QuickLav
 		constexpr unsigned long CSSRosterFolderPortionLength = 0x9; // Used to move past the "/BrawlEx/" portion of the Roster File Path
 
 		ASMStart(0x80682928); // Hooks the second instruction of "__ct/[muSelCharTask]/mu_selchar.o".
-		SetRegister(reg1, CSS_VER_LOC); // Load the location of the CSS Roster Line's Address
-		LWZ(reg1, reg1, 0x00); // Load that address into our first register
-		LWZ(reg2, reg1, 0x08); // Look 0x08 past that address to get the selected index of the CSS Roster Line
+		SetRegister(reg1, CSS_VERSION_SETTING_INDEX); // Load the location of the CSS Roster Line into our first register.
+		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index of the CSS Roster Line
 
-		SetRegister(reg1, CSSRosterPathAddress); // Load the location of the CSSRoster File's Path in Memory into the first register
-		ADDI(reg1, reg1, CSSRosterFolderPortionLength); // Move past the folder portion of that string, so we don't overwrite it.
+		// Load the address we'll write the new filename to (the CSSRoster Path's address, plus the length of its folder portion so we don't overwrite it)
+		SetRegister(reg1, CSSRosterPathAddress + CSSRosterFolderPortionLength);
 
 		for (std::size_t i = 0; i < ROSTER_FILENAME_LIST.size(); i++) // For each Roster Filename...
 		{
