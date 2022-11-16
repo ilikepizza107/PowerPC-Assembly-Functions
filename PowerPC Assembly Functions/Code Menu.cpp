@@ -216,7 +216,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 // Constant Confiuguration Block for Project+ Based Builds
 	#if BUILD_NETPLAY_FILES == true
 	const std::string changelogFileName = "Net-Code_Menu_Changelog.txt";
-	const std::string optionsFilename = "Net-Code_Menu_Options.txt";
+	const std::string optionsFilename = "Net-Code_Menu_Options.xml";
 	const std::string mainGCTName = "NETPLAY";
 	const std::string boostGCTName = "NETBOOST";
 	const std::string asmFileName = "Net-CodeMenu.asm";
@@ -244,7 +244,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 //		- asmTextFileName
 //		- asmBuildLocationDirectory
 const std::string changelogFileName = "Code_Menu_Changelog.txt";
-const std::string optionsFilename = "Code_Menu_Options.txt";
+const std::string optionsFilename = "Code_Menu_Options.xml";
 const std::string mainGCTName = "RSBE01";
 const std::string boostGCTName = "";
 const std::string asmFileName = "";
@@ -565,7 +565,7 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 										{
 											defaultValueFound = 1;
 											u32 valueIn = attrItr->as_uint(currLine->Default);
-											valueIn = std::min(std::max(0u, valueIn), deconstructedText.size() - 2);
+											valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
 											if (valueIn != currLine->Default)
 											{
 												int test = 1;
