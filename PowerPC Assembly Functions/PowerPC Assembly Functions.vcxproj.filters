@@ -90,6 +90,12 @@
     <ClInclude Include="_CSSRosterChange.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_ThemeChange.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="_lavaBytes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">
@@ -162,6 +168,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_CSSRosterChange.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_ThemeChange.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_lavaBytes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -190,6 +190,8 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="_AdditionalCode.h" />
     <ClInclude Include="_CSSRosterChange.h" />
+    <ClInclude Include="_lavaBytes.h" />
+    <ClInclude Include="_ThemeChange.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AIDisplay.cpp" />
@@ -226,6 +228,13 @@
     <ClCompile Include="Tag Based Costumes.cpp" />
     <ClCompile Include="_AdditionalCode.cpp" />
     <ClCompile Include="_CSSRosterChange.cpp" />
+    <ClCompile Include="_lavaBytes.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="_ThemeChange.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -32,6 +32,7 @@ int SAVE_REPLAY_ANYWHERE_INDEX = -1;
 int AUTO_SKIP_TO_CSS_INDEX = -1;
 int CODE_MENU_ACTIVATION_SETTING_INDEX = -1;
 int CSS_VERSION_SETTING_INDEX = -1;
+int THEME_SETTING_INDEX = -1;
 int PERCENT_SELECT_VALUE_P1_INDEX = -1;
 int PERCENT_SELECT_ACTIVATOR_P1_INDEX = -1;
 int PERCENT_SELECT_VALUE_P2_INDEX = -1;
@@ -200,9 +201,24 @@ void buildRosterLists()
 	unzipMapToVectors(rosterNameToFileIDMap, ROSTER_LIST, ROSTER_FILENAME_LIST);
 }
 
+vector<string> THEME_LIST;
+vector<string> THEME_SUFFIX_LIST;
+void buildThemeLists()
+{
+	std::map<std::string, std::string> themeNameToSuffixMap =
+	{
+		{"Default", "sc"},
+		{"Test", "pp"},
+	};
+
+	unzipMapToVectors(themeNameToSuffixMap, THEME_LIST, THEME_SUFFIX_LIST);
+}
+
+
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
 const std::string rosterInputFileName = "EX_Rosters.txt";
+const std::string themeInputFileName = "EX_Themes.txt";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";
 const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
@@ -902,6 +918,11 @@ void CodeMenu()
 	{
 		MainLines.push_back(new Selection("CSS Roster Version", ROSTER_LIST, 0, CSS_VERSION_SETTING_INDEX));
 	}
+
+	if (THEME_LIST.size() > 1)
+	{
+		MainLines.push_back(new Selection("Active Theme", THEME_LIST, 0, THEME_SETTING_INDEX));
+	}
 	
 	//MainLines.push_back(new Print("%s", {&tets}));
 	
@@ -1468,6 +1489,9 @@ void CreateMenu(Page MainPage)
 
 	// CSS VER Modifier
 	AddValueToByteArray(CSS_VERSION_SETTING_INDEX, Header);
+
+	// Theme Setting
+	AddValueToByteArray(THEME_SETTING_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);

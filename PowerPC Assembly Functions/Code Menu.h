@@ -37,6 +37,7 @@ extern int SAVE_REPLAY_ANYWHERE_INDEX;
 extern int AUTO_SKIP_TO_CSS_INDEX;
 extern int CODE_MENU_ACTIVATION_SETTING_INDEX;
 extern int CSS_VERSION_SETTING_INDEX;
+extern int THEME_SETTING_INDEX;
 extern int PERCENT_SELECT_VALUE_P1_INDEX;
 extern int PERCENT_SELECT_ACTIVATOR_P1_INDEX;
 extern int PERCENT_SELECT_VALUE_P2_INDEX;
@@ -225,6 +226,10 @@ extern vector<string> ROSTER_LIST;
 extern vector<string> ROSTER_FILENAME_LIST;
 void buildRosterLists();
 
+extern vector<string> THEME_LIST;
+extern vector<string> THEME_SUFFIX_LIST;
+void buildThemeLists();
+
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
@@ -234,6 +239,7 @@ void initMenuFileStream();
 extern const std::string outputFolder;
 extern const std::string exCharInputFileName;
 extern const std::string rosterInputFileName;
+extern const std::string themeInputFileName;
 extern const std::string changelogFileName;
 extern const std::string optionsFilename;
 // Code Menu Output Constants
@@ -409,7 +415,9 @@ static const int SPEED_LOC = SCALE_LOC + 4; //4
 
 static const int CSS_VER_LOC = SPEED_LOC + 4; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = CSS_VER_LOC + 4; //0x200
+static const int THEME_LOC = CSS_VER_LOC + 4; //4
+
+static const int DRAW_SETTINGS_BUFFER_LOC = THEME_LOC + 4; //0x200
 
 
 

@@ -17,6 +17,7 @@
 #include "C++Injection.h"
 #include "_AdditionalCode.h"
 #include "_CSSRosterChange.h"
+#include "_ThemeChange.h"
 //#include "FPS Display.h"
 using namespace std;
 
@@ -121,6 +122,7 @@ int main(int argc, char** argv)
 		applyCharacterListSettingFromMenuOptionsTree(menuOptionsTree);
 		buildCharacterIDLists();
 		buildRosterLists();
+		buildThemeLists();
 
 		std::ofstream codeMenuLogOutput;
 		codeMenuLogOutput.open(outputFolder + changelogFileName);
@@ -388,7 +390,7 @@ int main(int argc, char** argv)
 
 		//LXPGreenOverlayFix();
 
-		CodeMenu(); tagBasedCostumes(); cssRosterChange();
+		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange();
 
 		//musicPercentCode();
 
