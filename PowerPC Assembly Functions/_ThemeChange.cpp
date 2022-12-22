@@ -51,7 +51,7 @@ void menuMainChange()
 
 		constexpr unsigned long menuMainAddr1 = 0x817F62BC;
 
-		const std::string menuDirectory = "menu2/";
+		const std::string menuDirectory = "/menu2/";
 		constexpr unsigned long menuMainAddr2 = 0x806FB248;
 
 		ASMStart(0x806cbfa0); // Hooks the fifth instruction of "start/[muMenuMain]/mu_main.o".
@@ -186,7 +186,7 @@ void titleChange()
 
 		constexpr unsigned long titleAddr1 = 0x817F63A1;
 
-		const std::string menuDirectory = "menu2/";
+		const std::string menuDirectory = "/menu2/";
 		constexpr unsigned long titleAddr2 = 0x806FF9A0;
 
 		ASMStart(0x806ca14c); // Hooks " next/[adList<Ul,42>]/sc_fig_get_demo.o".
