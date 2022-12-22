@@ -208,7 +208,6 @@ void buildThemeLists()
 	std::map<std::string, std::string> themeNameToSuffixMap =
 	{
 		{"Default", "sc"},
-		{"Test", "pp"},
 	};
 
 	unzipMapToVectors(themeNameToSuffixMap, THEME_LIST, THEME_SUFFIX_LIST);

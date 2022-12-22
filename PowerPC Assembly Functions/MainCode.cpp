@@ -208,6 +208,84 @@ int main(int argc, char** argv)
 		codeMenuLogOutput << "\n";
 		std::cout << "\n";
 
+		if (COLLECT_EXTERNAL_THEMES == true)
+		{
+			codeMenuLogOutput << "Adding Themes to Code Menu from \"" << themeInputFileName << "\"...\n";
+			std::cout << "Adding Themes to Code Menu from \"" << themeInputFileName << "\"...\n";
+
+			bool themeInputOpenedSuccesfully = 0;
+			std::vector<std::pair<std::string, std::string>> themeNameFileNamePairs = lava::collectedRosterNamePathPairs(themeInputFileName, themeInputOpenedSuccesfully);
+			if (themeInputOpenedSuccesfully)
+			{
+				if (themeNameFileNamePairs.size())
+				{
+					std::vector<std::pair<std::string, std::string>> zippedThemeVec{};
+					std::map<std::string, std::size_t> themeNameToIndexMap{};
+					for (std::size_t i = 0; i < THEME_LIST.size(); i++)
+					{
+						zippedThemeVec.push_back(std::make_pair(THEME_LIST[i], THEME_SUFFIX_LIST[i]));
+						themeNameToIndexMap.insert(std::make_pair(THEME_LIST[i], i));
+					}
+					for (int i = 0; i < themeNameFileNamePairs.size(); i++)
+					{
+						std::pair<std::string, std::string>* currPair = &themeNameFileNamePairs[i];
+						if (currPair->second.size())
+						{
+							auto itr = themeNameToIndexMap.find(currPair->first);
+							if (itr == themeNameToIndexMap.end())
+							{
+								zippedThemeVec.push_back(*currPair);
+								themeNameToIndexMap.insert(std::make_pair(currPair->first, zippedThemeVec.size() - 1));
+								std::cout << "[ADDED] " << currPair->first << " (Prefix: " << currPair->second << ")\n";
+								codeMenuLogOutput << "[ADDED] " << currPair->first << " (Prefix: " << currPair->second << ")\n";
+							}
+							// Otherwise, announce what was changed.
+							else
+							{
+								zippedThemeVec[itr->second].second = currPair->second;
+								std::cout << "[CHANGED] " << itr->first << " (Prefix: " << currPair->second << ")\n";
+								codeMenuLogOutput << "[CHANGED] " << itr->first << " (Prefix: " << currPair->second << ")\n";
+							}
+						}
+						else
+						{
+							std::cerr << "[ERROR] Invalid prefix specified! The theme \"" << currPair->first << "\" will not be added to the Code Menu!\n";
+							codeMenuLogOutput << "[ERROR] Invalid prefix specified! The theme \"" << currPair->first << "\" will not be added to the Code Menu!\n";
+						}
+					}
+
+					// Write the newly edited list back into the list vectors
+					THEME_LIST.clear();
+					THEME_SUFFIX_LIST.clear();
+					for (auto itr = zippedThemeVec.cbegin(); itr != zippedThemeVec.cend(); itr++)
+					{
+						THEME_LIST.push_back(itr->first);
+						THEME_SUFFIX_LIST.push_back(itr->second);
+					}
+				}
+				else
+				{
+					std::cout << "[WARNING] \"" << themeInputFileName << "\" was opened successfully, but no valid theme entries could be found.\n";
+					codeMenuLogOutput << "[WARNING] \"" << themeInputFileName << "\" was opened successfully, but no valid theme entries could be found.\n";
+				}
+			}
+			else
+			{
+				std::cout << "[ERROR] Couldn't open \"" << themeInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
+				codeMenuLogOutput << "[ERROR] Couldn't open \"" << themeInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
+			}
+			//Print the results.
+			std::cout << "\nFinal Theme List:\n";
+			codeMenuLogOutput << "\nFinal Theme List:\n";
+			for (std::size_t i = 0; i < THEME_LIST.size(); i++)
+			{
+				std::cout << "\t" << THEME_LIST[i] << " (Prefix: " << THEME_SUFFIX_LIST[i] << ")\n";
+				codeMenuLogOutput << "\t" << THEME_LIST[i] << " (Prefix: " << THEME_SUFFIX_LIST[i] << ")\n";
+			}
+
+			std::cout << "\n";
+			codeMenuLogOutput << "\n";
+		}
 		if (COLLECT_EXTERNAL_ROSTERS == true)
 		{
 			codeMenuLogOutput << "Adding Rosters to Code Menu from \"" << rosterInputFileName << "\"...\n";

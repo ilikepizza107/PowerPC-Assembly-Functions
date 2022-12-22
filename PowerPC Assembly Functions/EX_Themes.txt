@@ -1,0 +1,4 @@
+#Add new lines in the following format:
+#	"Theme Name" = "Theme Prefix"
+#See README.md for further details.
+"Test From File" = "pp"
