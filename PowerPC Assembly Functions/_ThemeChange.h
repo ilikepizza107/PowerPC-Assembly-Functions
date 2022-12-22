@@ -1,10 +1,7 @@
 #ifndef THEME_CHANGE_ASM_H
 #define THEME_CHANGE_ASM_H
 
-#include "_lavaBytes.h"
-#include "PowerPC Assembly Functions.h"
-#include "Code Menu.h"
-#include "stdafx.h"
+#include "_AdditionalCode.h"
 
 void themeChange();
 void menuMainChange();

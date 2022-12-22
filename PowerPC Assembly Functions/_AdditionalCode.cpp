@@ -241,6 +241,41 @@ namespace lava
 		return result;
 	}
 
+	void WriteByteVec(const unsigned char* Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite)
+	{
+		SetRegister(addressReg, Address); // Load destination address into register
+
+		unsigned long fullWordCount = numToWrite / 4; // Get the number of 4 byte words we can make from the given vec.
+		unsigned long currWord = 0;
+		unsigned long offsetIntoBytes = 0;
+
+		// For each word we can make...
+		for (unsigned long i = 0; i < fullWordCount; i++)
+		{
+			// ... grab it, then store it in our manip register.
+			currWord = lava::bytesToFundamental<unsigned long>(Bytes + offsetIntoBytes);
+			SetRegister(manipReg, currWord);
+			// Then write a command which stores the packed word into the desired location.
+			STW(manipReg, addressReg, offsetIntoBytes);
+			offsetIntoBytes += 0x04;
+		}
+		// For the remaining few bytes...
+		for (offsetIntoBytes; offsetIntoBytes < numToWrite; offsetIntoBytes++)
+		{
+			// ... just write them one by one, no other choice really.
+			SetRegister(manipReg, Bytes[offsetIntoBytes]);
+			STB(manipReg, addressReg, offsetIntoBytes);
+		}
+	}
+	void WriteByteVec(std::vector<unsigned char> Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite)
+	{
+		WriteByteVec((const unsigned char*)Bytes.data(), Address, addressReg, manipReg, std::min<std::size_t>(Bytes.size(), numToWrite));
+	}
+	void WriteByteVec(std::string Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite)
+	{
+		WriteByteVec((const unsigned char*)Bytes.data(), Address, addressReg, manipReg, std::min<std::size_t>(Bytes.size(), numToWrite));
+	}
+
 	std::vector<std::pair<std::string, u16>> collectNameSlotIDPairs(std::string exCharInputFilePath, bool& fileOpened)
 	{
 		std::vector<std::pair<std::string, u16>> result{};

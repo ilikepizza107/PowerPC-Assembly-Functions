@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "_CSSRosterChange.h"
 
 void cssRosterChange() // Adapted from CSS Roster Change via Code Menu [QuickLava]
