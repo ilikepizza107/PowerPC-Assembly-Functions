@@ -26,8 +26,11 @@ namespace lava
 
 	// General Utility
 	int stringToNum(const std::string& stringIn, bool allowNeg = 1, int defaultVal = INT_MAX);
-	std::string numToHexStringWithPadding(std::size_t numIn, std::size_t paddingLength);
-	std::string numToDecStringWithPadding(std::size_t numIn, std::size_t paddingLength);
+	std::string numToHexStringWithPadding(unsigned long long numIn, unsigned char paddingLength);
+	std::string numToDecStringWithPadding(unsigned long long numIn, unsigned char paddingLength);
+	std::string numToDecStringWithPadding(signed long long numIn, unsigned char paddingLength);
+	std::string doubleToStringWithPadding(double dblIn, unsigned char paddingLength, unsigned long precisionIn = 2);
+	std::string floatToStringWithPadding(float fltIn, unsigned char paddingLength, unsigned long precisionIn = 2);
 
 	// File System Management
 	bool copyFile(std::string sourceFile, std::string targetFile, bool overwriteExistingFile = 0);

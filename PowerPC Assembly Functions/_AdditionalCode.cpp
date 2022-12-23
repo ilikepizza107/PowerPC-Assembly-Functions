@@ -25,7 +25,7 @@ namespace lava
 		}
 		return result;
 	}
-	std::string numToHexStringWithPadding(std::size_t numIn, std::size_t paddingLength)
+	std::string numToHexStringWithPadding(unsigned long long numIn, unsigned char paddingLength)
 	{
 		std::stringstream convBuff;
 		convBuff << std::hex << numIn;
@@ -40,7 +40,7 @@ namespace lava
 		}
 		return result;
 	}
-	std::string numToDecStringWithPadding(std::size_t numIn, std::size_t paddingLength)
+	std::string numToDecStringWithPadding(unsigned long long numIn, unsigned char paddingLength)
 	{
 		std::string result = std::to_string(numIn);
 		if (result.size() < paddingLength)
@@ -48,6 +48,34 @@ namespace lava
 			result = std::string(paddingLength - result.size(), '0') + result;
 		}
 		return result;
+	}
+	std::string numToDecStringWithPadding(signed long long numIn, unsigned char paddingLength)
+	{
+		std::string result = std::to_string(numIn);
+		if (result.size() < paddingLength)
+		{
+			result = std::string(paddingLength - result.size(), '0') + result;
+		}
+		return result;
+	}
+	std::string doubleToStringWithPadding(double dblIn, unsigned char paddingLength, unsigned long precisionIn)
+	{
+		std::string result = "";
+
+		std::ostringstream out;
+		out.precision(precisionIn);
+		out << std::fixed << dblIn;
+		result = out.str();
+		if (result.size() < paddingLength)
+		{
+			result = std::string(paddingLength - result.size(), '0') + result;
+		}
+
+		return result;
+	}
+	std::string floatToStringWithPadding(float fltIn, unsigned char paddingLength, unsigned long precisionIn)
+	{
+		return doubleToStringWithPadding(fltIn, paddingLength, precisionIn);
 	}
 
 	bool copyFile(std::string sourceFile, std::string targetFile, bool overwriteExistingFile)

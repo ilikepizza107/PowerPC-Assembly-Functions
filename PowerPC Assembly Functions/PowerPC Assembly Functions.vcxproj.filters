@@ -96,6 +96,9 @@
     <ClInclude Include="_lavaBytes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_lavaOutputSplitter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">
@@ -174,6 +177,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_lavaBytes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_lavaOutputSplitter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
