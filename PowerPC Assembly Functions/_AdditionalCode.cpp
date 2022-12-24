@@ -269,9 +269,12 @@ namespace lava
 		return result;
 	}
 
-	void WriteByteVec(const unsigned char* Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite)
+	void WriteByteVec(const unsigned char* Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator)
 	{
-		SetRegister(addressReg, Address); // Load destination address into register
+		if (Address != ULONG_MAX)
+		{
+			SetRegister(addressReg, Address); // Load destination address into register
+		}
 
 		unsigned long fullWordCount = numToWrite / 4; // Get the number of 4 byte words we can make from the given vec.
 		unsigned long currWord = 0;
@@ -294,14 +297,19 @@ namespace lava
 			SetRegister(manipReg, Bytes[offsetIntoBytes]);
 			STB(manipReg, addressReg, offsetIntoBytes);
 		}
+		if (appendNullTerminator)
+		{
+			SetRegister(manipReg, 0x00);
+			STB(manipReg, addressReg, offsetIntoBytes);
+		}
 	}
-	void WriteByteVec(std::vector<unsigned char> Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite)
+	void WriteByteVec(std::vector<unsigned char> Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator)
 	{
-		WriteByteVec((const unsigned char*)Bytes.data(), Address, addressReg, manipReg, std::min<std::size_t>(Bytes.size(), numToWrite));
+		WriteByteVec((const unsigned char*)Bytes.data(), Address, addressReg, manipReg, std::min<std::size_t>(Bytes.size(), numToWrite), appendNullTerminator);
 	}
-	void WriteByteVec(std::string Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite)
+	void WriteByteVec(std::string Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator)
 	{
-		WriteByteVec((const unsigned char*)Bytes.data(), Address, addressReg, manipReg, std::min<std::size_t>(Bytes.size(), numToWrite));
+		WriteByteVec((const unsigned char*)Bytes.data(), Address, addressReg, manipReg, std::min<std::size_t>(Bytes.size(), numToWrite), appendNullTerminator);
 	}
 
 	std::vector<std::pair<std::string, u16>> collectNameSlotIDPairs(std::string exCharInputFilePath, bool& fileOpened)
