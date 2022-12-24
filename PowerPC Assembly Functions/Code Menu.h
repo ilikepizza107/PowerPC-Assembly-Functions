@@ -226,7 +226,24 @@ extern vector<string> ROSTER_LIST;
 extern vector<string> ROSTER_FILENAME_LIST;
 void buildRosterLists();
 
+// Options File Functions
+namespace themeConstants
+{
+	enum themePathIndices
+	{
+		tpi_TITLE = 0,
+		tpi_SELCHAR1,
+		tpi_SELCHAR2,
+		tpi_SELMAP,
+		tpi_SELEVENT,
+		tpi_MENUMAIN,
+		tpi__PATH_COUNT
+	};
+
+	extern const std::string codeMenuTag;
+}
 extern vector<string> THEME_LIST;
+extern std::vector<array<string, themeConstants::tpi__PATH_COUNT>> THEME_PATH_ARR_LIST;
 extern vector<string> THEME_SUFFIX_LIST;
 void buildThemeLists();
 

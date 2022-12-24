@@ -171,6 +171,35 @@ void titleChange()
 	}
 }
 
+void interceptMenuFilepathRef(unsigned long pathRegister, std::vector<std::string> replacementPathsList, unsigned long defaultPathAddress)
+{
+	int reg1 = pathRegister;
+	int reg2 = 12;
+
+	// Ensure that there is a path provided for every registered theme.
+	assert(THEME_LIST.size() <= replacementPathsList.size());
+
+	SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
+	LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
+
+	for (std::size_t i = 0; i < replacementPathsList.size(); i++) // For each Theme...
+	{
+		If(reg2, EQUAL_I, i); // ... add a case for that index.
+		{
+			// When we reach the appropriate case, write the corresponding replacement path into the staging area.
+			lava::WriteByteVec(replacementPathsList[i], stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
+			// Signal that we've reached an appropriate case, ensuring we exit this if block.
+			SetRegister(reg2, -1);
+		}EndIf();
+	}
+	// If we didn't reach an appropriate case...
+	If(reg2, NOT_EQUAL_I, -1);
+	{
+		// ... fallback to the default address for this path.
+		SetRegister(reg1, defaultPathAddress);
+	}EndIf();
+}
+
 void selMapChangeV2()
 {
 	// If Themes are enabled

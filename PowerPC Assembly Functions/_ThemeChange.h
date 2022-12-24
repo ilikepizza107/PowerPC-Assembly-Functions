@@ -12,6 +12,8 @@ void selMapChange();
 void selEventChange();
 void titleChange();
 
+void interceptMenuFilepathRef(unsigned long pathRegister, std::string replacementPath, unsigned long defaultPathAddress);
+
 void selMapChangeV2();
 void selEventChangeV2();
 void selCharChangeV2();

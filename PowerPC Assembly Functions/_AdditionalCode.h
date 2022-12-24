@@ -52,6 +52,9 @@ namespace lava
 
 	// EX Roster Functions
 	std::vector<std::pair<std::string, std::string>> collectedRosterNamePathPairs(std::string exRosterInputFilePath, bool& fileOpened);
+
+	// EX Theme Functions
+
 }
 
 #endif
