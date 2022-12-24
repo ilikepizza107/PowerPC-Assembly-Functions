@@ -3,11 +3,18 @@
 
 #include "_AdditionalCode.h"
 
+constexpr unsigned long stringStagingLocation = 0x800002B0;
+
 void themeChange();
 void menuMainChange();
 void selCharChange();
 void selMapChange();
 void selEventChange();
 void titleChange();
+
+void selMapChangeV2();
+void selEventChangeV2();
+void selCharChangeV2();
+void titleChangeV2();
 
 #endif
