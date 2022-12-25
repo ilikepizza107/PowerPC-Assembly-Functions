@@ -2,9 +2,37 @@
 
 void themeChange()
 {
-	menuMainChange(); selCharChangeV2(); selMapChangeV2(); selEventChangeV2(); titleChangeV2();
+	menuMainChange(); selCharChange(); selMapChange(); selEventChange(); titleChange();
 }
+void editFilepathConstant(std::string fileDirectory, std::string baseFilename, unsigned long pathRegister, unsigned long defaultPathAddress1, unsigned long defaultPathAddress2)
+{
+	int reg1 = pathRegister;
+	int reg2 = 12;
 
+	// Pre-write the default versions of the filename and filepath into their respective locations.
+	// This should ensure that, even if we somehow don't activate one of the cases below, a valid value is written in place.
+	// Additionally, since we don't respecify the instructions for writing the entire paths in every case, the code should be shorter overall.
+	lava::WriteByteVec(THEME_SUFFIX_LIST[0] + baseFilename, defaultPathAddress1, reg1, reg2, SIZE_MAX, 1);
+	lava::WriteByteVec(fileDirectory + THEME_SUFFIX_LIST[0] + baseFilename, defaultPathAddress2, reg1, reg2, SIZE_MAX, 1);
+
+	SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
+	LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
+
+	// Note, we can start at index 1 because we've already written index 0 as the default above!
+	for (std::size_t i = 1; i < THEME_SUFFIX_LIST.size(); i++) // For each additional Theme...
+	{
+		If(reg2, EQUAL_I, i); // ... add a case for that index.
+		{
+			if (THEME_SUFFIX_LIST[i].size() == 0x02)
+			{
+				// Write the appropriate prefix in place for the filename and the filepath.
+				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), defaultPathAddress1, reg1, reg2, SIZE_MAX, 0);
+				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), defaultPathAddress2 + fileDirectory.size(), reg1, reg2, SIZE_MAX, 0);
+			}
+			SetRegister(reg2, -1); // Null out reg2 to signal we reached an appropriate case.
+		}EndIf();
+	}
+}
 void menuMainChange()
 {
 	// If Themes are enabled
@@ -13,35 +41,22 @@ void menuMainChange()
 		int reg1 = 31;
 		int reg2 = 12;
 
+		const std::string menuDirectory = "/menu2/";
+		const std::string filenameBase = "_menumain.pac";
 		constexpr unsigned long menuMainAddr1 = 0x817F62BC;
-
-		const std::string menuDirectory = "menu2/";
 		constexpr unsigned long menuMainAddr2 = 0x806FB248;
 
+		// Fix to ensure menumain's default prefix is "mu".
+		// We overwrite the default prefix in this case specifically, but we restore it afterwards to avoid affecting anything else.
+		std::string tempDefaultPrefix = THEME_SUFFIX_LIST[0];
+		THEME_SUFFIX_LIST[0] = "mu";
+
 		ASMStart(0x806cbfa0); // Hooks the fifth instruction of "start/[muMenuMain]/mu_main.o".
-		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
-		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
-
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
-		{
-			If(reg2, EQUAL_I, i); // ... add a case for that index.
-			{
-				if (i == 0) // Correction to ensure the default case uses the right prefix for menuMain.
-				{
-					lava::WriteByteVec("mu", menuMainAddr1, reg1, reg2, 2);
-					lava::WriteByteVec("mu", menuDirectory.size() + menuMainAddr2, reg1, reg2, 2);
-				}
-				else
-				{
-					lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), menuMainAddr1, reg1, reg2, 2);
-					lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), menuDirectory.size() + menuMainAddr2, reg1, reg2, 2);
-				}
-				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
-
-			}EndIf();
-		}
-
+		editFilepathConstant(menuDirectory, filenameBase, reg1, menuMainAddr1, menuMainAddr2);
 		ASMEnd(0x7c7f1b78); // Restore the instruction replaced by the branch; mr	r31, r3.
+
+		// Restore original default theme prefix.
+		THEME_SUFFIX_LIST[0] = tempDefaultPrefix; 
 	}
 }
 void selCharChange()
@@ -52,31 +67,17 @@ void selCharChange()
 		int reg1 = 4;
 		int reg2 = 12;
 
-		constexpr unsigned long selCharAddr1 = 0x817F6365;
-		constexpr unsigned long selChar2Addr1 = 0x817F634D;
-
 		const std::string menuDirectory = "/menu2/";
+		const std::string filenameBase1 = "_selcharacter.pac";
+		const std::string filenameBase2 = "_selcharacter2.pac";
+		constexpr unsigned long selCharAddr1 = 0x817F6365;
 		constexpr unsigned long selCharAddr2 = 0x806FF2EC;
+		constexpr unsigned long selChar2Addr1 = 0x817F634D;
 		constexpr unsigned long selChar2Addr2 = 0x806FF308;
 
 		ASMStart(0x806c8730); // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
-		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
-		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
-
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
-		{
-			If(reg2, EQUAL_I, i); // ... add a case for that index.
-			{
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), selCharAddr1, reg1, reg2, 2);
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), menuDirectory.size() + selCharAddr2, reg1, reg2, 2);
-
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), selChar2Addr1, reg1, reg2, 2);
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), menuDirectory.size() + selChar2Addr2, reg1, reg2, 2);
-
-				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
-			}EndIf();
-		}
-
+		editFilepathConstant(menuDirectory, filenameBase1, reg1, selCharAddr1, selCharAddr2);
+		editFilepathConstant(menuDirectory, filenameBase2, reg1, selChar2Addr1, selChar2Addr2);
 		ASMEnd(0x3880002b); // Restore the instruction replaced by the branch; li	r4, 43.
 	}
 }
@@ -88,25 +89,13 @@ void selMapChange()
 		int reg1 = 31;
 		int reg2 = 12;
 
-		constexpr unsigned long selMapAddr1 = 0x817F637C;
-
 		const std::string menuDirectory = "/menu2/";
+		const std::string filenameBase = "_selmap.pac";
+		constexpr unsigned long selMapAddr1 = 0x817F637C;
 		constexpr unsigned long selMapAddr2 = 0x806FF3F0;
 
 		ASMStart(0x806c8d88); // Hooks the fifth instruction of "start/[scSelStage]/sc_sel_stage.o".
-		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
-		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
-
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
-		{
-			If(reg2, EQUAL_I, i); // ... add a case for that index.
-			{
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), selMapAddr1, reg1, reg2, 2);
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), menuDirectory.size() + selMapAddr2, reg1, reg2, 2);
-				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
-			}EndIf();
-		}
-
+		editFilepathConstant(menuDirectory, filenameBase, reg1, selMapAddr1, selMapAddr2);
 		ASMEnd(0x7c7f1b78); // Restore the instruction replaced by the branch; mr	r31, r3.
 	}
 }
@@ -118,25 +107,13 @@ void selEventChange()
 		int reg1 = 30;
 		int reg2 = 12;
 
-		constexpr unsigned long selEventAddr1 = 0x817F638D;
-
 		const std::string menuDirectory = "/menu2/";
+		const std::string filenameBase = "_sel_event.pac";
+		constexpr unsigned long selEventAddr1 = 0x817F638D;
 		constexpr unsigned long selEventAddr2 = 0x806FD0B8;
 
 		ASMStart(0x806c44b4); // Hooks the fifth instruction of "start/[scSelEvent]/sc_sel_event.o".
-		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
-		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
-
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
-		{
-			If(reg2, EQUAL_I, i); // ... add a case for that index.
-			{
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), selEventAddr1, reg1, reg2, 2);
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), menuDirectory.size() + selEventAddr2, reg1, reg2, 2);
-				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
-			}EndIf();
-		}
-
+		editFilepathConstant(menuDirectory, filenameBase, reg1, selEventAddr1, selEventAddr2);
 		ASMEnd(0x7c7e1b78); // Restore the instruction replaced by the branch; mr	r30, r3.
 	}
 }
@@ -148,29 +125,21 @@ void titleChange()
 		int reg1 = 6;
 		int reg2 = 12;
 
-		constexpr unsigned long titleAddr1 = 0x817F63A1;
-
 		const std::string menuDirectory = "/menu2/";
+		const std::string filenameBase = "_title.pac";
+		constexpr unsigned long titleAddr1 = 0x817F63A1;
 		constexpr unsigned long titleAddr2 = 0x806FF9A0;
 
 		ASMStart(0x806ca14c); // Hooks " next/[adList<Ul,42>]/sc_fig_get_demo.o".
-		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
-		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
-
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
-		{
-			If(reg2, EQUAL_I, i); // ... add a case for that index.
-			{
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), titleAddr1, reg1, reg2, 2);
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), menuDirectory.size() + titleAddr2, reg1, reg2, 2);
-				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
-			}EndIf();
-		}
-
+		editFilepathConstant(menuDirectory, filenameBase, reg1, titleAddr1, titleAddr2);
 		ASMEnd(0x80df0378); // Restore the instruction replaced by the branch; lwz	r6, 0x0378 (r31).
 	}
 }
 
+void themeChangeV2()
+{
+	menuMainChange(); selCharChangeV2(); selMapChangeV2(); selEventChangeV2(); titleChangeV2();
+}
 void interceptMenuFilepathRef(unsigned long pathRegister, std::vector<std::string> replacementPathsList, unsigned long defaultPathAddress)
 {
 	int reg1 = pathRegister;
@@ -199,7 +168,6 @@ void interceptMenuFilepathRef(unsigned long pathRegister, std::vector<std::strin
 		SetRegister(reg1, defaultPathAddress);
 	}EndIf();
 }
-
 void selMapChangeV2()
 {
 	// If Themes are enabled
