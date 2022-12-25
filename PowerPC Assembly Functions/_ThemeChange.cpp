@@ -12,22 +12,22 @@ void editFilepathConstant(std::string fileDirectory, std::string baseFilename, u
 	// Pre-write the default versions of the filename and filepath into their respective locations.
 	// This should ensure that, even if we somehow don't activate one of the cases below, a valid value is written in place.
 	// Additionally, since we don't respecify the instructions for writing the entire paths in every case, the code should be shorter overall.
-	lava::WriteByteVec(THEME_SUFFIX_LIST[0] + baseFilename, defaultPathAddress1, reg1, reg2, SIZE_MAX, 1);
-	lava::WriteByteVec(fileDirectory + THEME_SUFFIX_LIST[0] + baseFilename, defaultPathAddress2, reg1, reg2, SIZE_MAX, 1);
+	lava::WriteByteVec(THEME_PREFIX_LIST[0] + baseFilename, defaultPathAddress1, reg1, reg2, SIZE_MAX, 1);
+	lava::WriteByteVec(fileDirectory + THEME_PREFIX_LIST[0] + baseFilename, defaultPathAddress2, reg1, reg2, SIZE_MAX, 1);
 
 	SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
 	LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
 
 	// Note, we can start at index 1 because we've already written index 0 as the default above!
-	for (std::size_t i = 1; i < THEME_SUFFIX_LIST.size(); i++) // For each additional Theme...
+	for (std::size_t i = 1; i < THEME_PREFIX_LIST.size(); i++) // For each additional Theme...
 	{
 		If(reg2, EQUAL_I, i); // ... add a case for that index.
 		{
-			if (THEME_SUFFIX_LIST[i].size() == 0x02)
+			if (THEME_PREFIX_LIST[i].size() == 0x02)
 			{
 				// Write the appropriate prefix in place for the filename and the filepath.
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), defaultPathAddress1, reg1, reg2, SIZE_MAX, 0);
-				lava::WriteByteVec(THEME_SUFFIX_LIST[i].substr(0, 2), defaultPathAddress2 + fileDirectory.size(), reg1, reg2, SIZE_MAX, 0);
+				lava::WriteByteVec(THEME_PREFIX_LIST[i].substr(0, 2), defaultPathAddress1, reg1, reg2, SIZE_MAX, 0);
+				lava::WriteByteVec(THEME_PREFIX_LIST[i].substr(0, 2), defaultPathAddress2 + fileDirectory.size(), reg1, reg2, SIZE_MAX, 0);
 			}
 			SetRegister(reg2, -1); // Null out reg2 to signal we reached an appropriate case.
 		}EndIf();
@@ -48,15 +48,15 @@ void menuMainChange()
 
 		// Fix to ensure menumain's default prefix is "mu".
 		// We overwrite the default prefix in this case specifically, but we restore it afterwards to avoid affecting anything else.
-		std::string tempDefaultPrefix = THEME_SUFFIX_LIST[0];
-		THEME_SUFFIX_LIST[0] = "mu";
+		std::string tempDefaultPrefix = THEME_PREFIX_LIST[0];
+		THEME_PREFIX_LIST[0] = "mu";
 
 		ASMStart(0x806cbfa0); // Hooks the fifth instruction of "start/[muMenuMain]/mu_main.o".
 		editFilepathConstant(menuDirectory, filenameBase, reg1, menuMainAddr1, menuMainAddr2);
 		ASMEnd(0x7c7f1b78); // Restore the instruction replaced by the branch; mr	r31, r3.
 
 		// Restore original default theme prefix.
-		THEME_SUFFIX_LIST[0] = tempDefaultPrefix; 
+		THEME_PREFIX_LIST[0] = tempDefaultPrefix; 
 	}
 }
 void selCharChange()
@@ -183,11 +183,11 @@ void selMapChangeV2()
 		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
 
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
+		for (std::size_t i = 0; i < THEME_PREFIX_LIST.size(); i++) // For each Theme...
 		{
 			If(reg2, EQUAL_I, i); // ... add a case for that index.
 			{
-				lava::WriteByteVec("/menu2/" + THEME_SUFFIX_LIST[i].substr(0, 2) + "_selmap.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
+				lava::WriteByteVec("/menu2/" + THEME_PREFIX_LIST[i].substr(0, 2) + "_selmap.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
 				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
 			}EndIf();
 		}
@@ -213,11 +213,11 @@ void selEventChangeV2()
 		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
 
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
+		for (std::size_t i = 0; i < THEME_PREFIX_LIST.size(); i++) // For each Theme...
 		{
 			If(reg2, EQUAL_I, i); // ... add a case for that index.
 			{
-				lava::WriteByteVec("/menu2/" + THEME_SUFFIX_LIST[i].substr(0, 2) + "_sel_event.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
+				lava::WriteByteVec("/menu2/" + THEME_PREFIX_LIST[i].substr(0, 2) + "_sel_event.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
 				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
 			}EndIf();
 		}
@@ -245,11 +245,11 @@ void selCharChangeV2()
 		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
 
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
+		for (std::size_t i = 0; i < THEME_PREFIX_LIST.size(); i++) // For each Theme...
 		{
 			If(reg2, EQUAL_I, i); // ... add a case for that index.
 			{
-				lava::WriteByteVec("/menu2/" + THEME_SUFFIX_LIST[i].substr(0, 2) + "_selcharacter.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
+				lava::WriteByteVec("/menu2/" + THEME_PREFIX_LIST[i].substr(0, 2) + "_selcharacter.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
 				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
 			}EndIf();
 		}
@@ -265,11 +265,11 @@ void selCharChangeV2()
 		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
 
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
+		for (std::size_t i = 0; i < THEME_PREFIX_LIST.size(); i++) // For each Theme...
 		{
 			If(reg2, EQUAL_I, i); // ... add a case for that index.
 			{
-				lava::WriteByteVec("/menu2/" + THEME_SUFFIX_LIST[i].substr(0, 2) + "_selcharacter2.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
+				lava::WriteByteVec("/menu2/" + THEME_PREFIX_LIST[i].substr(0, 2) + "_selcharacter2.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
 				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
 			}EndIf();
 		}
@@ -294,11 +294,11 @@ void titleChangeV2()
 		SetRegister(reg1, THEME_SETTING_INDEX); // Load the location of the Theme Setting line into our first register.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index.
 
-		for (std::size_t i = 0; i < THEME_SUFFIX_LIST.size(); i++) // For each Theme...
+		for (std::size_t i = 0; i < THEME_PREFIX_LIST.size(); i++) // For each Theme...
 		{
 			If(reg2, EQUAL_I, i); // ... add a case for that index.
 			{
-				lava::WriteByteVec("/menu2/" + THEME_SUFFIX_LIST[i].substr(0, 2) + "_title.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
+				lava::WriteByteVec("/menu2/" + THEME_PREFIX_LIST[i].substr(0, 2) + "_title.pac", stringStagingLocation, reg1, reg2, SIZE_MAX, 1);
 				SetRegister(reg2, -1); // Load the location of the Theme Setting line into our first register.
 			}EndIf();
 		}

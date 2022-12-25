@@ -202,15 +202,15 @@ void buildRosterLists()
 }
 
 vector<string> THEME_LIST;
-vector<string> THEME_SUFFIX_LIST;
+vector<string> THEME_PREFIX_LIST;
 void buildThemeLists()
 {
-	std::map<std::string, std::string> themeNameToSuffixMap =
+	std::map<std::string, std::string> themeNameToPrefixMap =
 	{
 		{"Default", "sc"},
 	};
 
-	unzipMapToVectors(themeNameToSuffixMap, THEME_LIST, THEME_SUFFIX_LIST);
+	unzipMapToVectors(themeNameToPrefixMap, THEME_LIST, THEME_PREFIX_LIST);
 }
 
 

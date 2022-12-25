@@ -211,7 +211,7 @@ int main(int argc, char** argv)
 					std::map<std::string, std::size_t> themeNameToIndexMap{};
 					for (std::size_t i = 0; i < THEME_LIST.size(); i++)
 					{
-						zippedThemeVec.push_back(std::make_pair(THEME_LIST[i], THEME_SUFFIX_LIST[i]));
+						zippedThemeVec.push_back(std::make_pair(THEME_LIST[i], THEME_PREFIX_LIST[i]));
 						themeNameToIndexMap.insert(std::make_pair(THEME_LIST[i], i));
 					}
 					for (int i = 0; i < themeNameFileNamePairs.size(); i++)
@@ -243,11 +243,11 @@ int main(int argc, char** argv)
 
 					// Write the newly edited list back into the list vectors
 					THEME_LIST.clear();
-					THEME_SUFFIX_LIST.clear();
+					THEME_PREFIX_LIST.clear();
 					for (auto itr = zippedThemeVec.cbegin(); itr != zippedThemeVec.cend(); itr++)
 					{
 						THEME_LIST.push_back(itr->first);
-						THEME_SUFFIX_LIST.push_back(itr->second);
+						THEME_PREFIX_LIST.push_back(itr->second);
 					}
 				}
 				else
@@ -265,7 +265,7 @@ int main(int argc, char** argv)
 			logOutput << "\nFinal Theme List:\n";
 			for (std::size_t i = 0; i < THEME_LIST.size(); i++)
 			{
-				logOutput << "\t" << THEME_LIST[i] << " (Prefix: " << THEME_SUFFIX_LIST[i] << ")\n";
+				logOutput << "\t" << THEME_LIST[i] << " (Prefix: " << THEME_PREFIX_LIST[i] << ")\n";
 			}
 
 			logOutput << "\n";

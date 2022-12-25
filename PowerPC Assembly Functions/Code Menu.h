@@ -244,7 +244,7 @@ namespace themeConstants
 }
 extern vector<string> THEME_LIST;
 extern std::vector<array<string, themeConstants::tpi__PATH_COUNT>> THEME_PATH_ARR_LIST;
-extern vector<string> THEME_SUFFIX_LIST;
+extern vector<string> THEME_PREFIX_LIST;
 void buildThemeLists();
 
 // The stream for the MenuFile.
