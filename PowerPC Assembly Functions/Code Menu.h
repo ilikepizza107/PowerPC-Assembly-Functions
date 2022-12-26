@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <map>
+#include <array>
 #include "pugi/pugixml.hpp"
 
 //active codes
@@ -232,7 +233,7 @@ namespace themeConstants
 	enum themePathIndices
 	{
 		tpi_TITLE = 0,
-		tpi_SELCHAR1,
+		tpi_SELCHAR,
 		tpi_SELCHAR2,
 		tpi_SELMAP,
 		tpi_SELEVENT,
@@ -240,12 +241,24 @@ namespace themeConstants
 		tpi__PATH_COUNT
 	};
 
-	extern const std::string codeMenuTag;
+	extern const std::string nameTag;
+	extern const std::string themeTag;
+	extern const std::string themeFileTag;
+	extern const std::string prefixTag;
+
+	extern std::array<std::string, tpi__PATH_COUNT> filenames;
 }
 extern vector<string> THEME_LIST;
-extern std::vector<array<string, themeConstants::tpi__PATH_COUNT>> THEME_PATH_ARR_LIST;
 extern vector<string> THEME_PREFIX_LIST;
 void buildThemeLists();
+
+struct menuTheme
+{
+	std::string name = "";
+	std::array<std::string, themeConstants::tpi__PATH_COUNT> prefixes{};
+	menuTheme();
+};
+extern std::vector<menuTheme> THEME_SPEC_LIST;
 
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().

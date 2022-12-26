@@ -23,15 +23,23 @@ void editFilepathConstant(std::string fileDirectory, std::string baseFilename, u
 	{
 		If(reg2, EQUAL_I, i); // ... add a case for that index.
 		{
+			std::string temporaryPrefixString = THEME_PREFIX_LIST[0].substr(0, 2) + baseFilename.substr(0, 2);
 			if (THEME_PREFIX_LIST[i].size() == 0x02)
 			{
-				// Write the appropriate prefix in place for the filename and the filepath.
-				lava::WriteByteVec(THEME_PREFIX_LIST[i].substr(0, 2), defaultPathAddress1, reg1, reg2, SIZE_MAX, 0);
-				lava::WriteByteVec(THEME_PREFIX_LIST[i].substr(0, 2), defaultPathAddress2 + fileDirectory.size(), reg1, reg2, SIZE_MAX, 0);
+				temporaryPrefixString = THEME_PREFIX_LIST[i].substr(0, 2) + baseFilename.substr(0,2);
 			}
+			SetRegister(reg1, temporaryPrefixString.substr(0, 4));
 			SetRegister(reg2, -1); // Null out reg2 to signal we reached an appropriate case.
 		}EndIf();
 	}
+
+	If(reg2, EQUAL_I, -1);
+	{
+		SetRegister(reg2, defaultPathAddress1);
+		STW(reg1, reg2, 0);
+		SetRegister(reg2, defaultPathAddress2);
+		STW(reg1, reg2, fileDirectory.size());
+	}EndIf();
 }
 void menuMainChange()
 {

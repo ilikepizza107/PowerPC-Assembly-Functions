@@ -54,7 +54,7 @@ namespace lava
 	std::vector<std::pair<std::string, std::string>> collectedRosterNamePathPairs(std::string exRosterInputFilePath, bool& fileOpened);
 
 	// EX Theme Functions
-
+	std::vector<menuTheme> collectThemesFromXML(std::string exThemeInputFilePath, bool& fileOpened);
 }
 
 #endif

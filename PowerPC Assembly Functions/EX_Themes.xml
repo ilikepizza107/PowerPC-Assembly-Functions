@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menuTheme name="Test From XML">
+	<themeFile name="mu_menumain.pac" replacementPrefix="pp_"/>
+	<themeFile name="sc_selcharacter.pac" replacementPrefix="pp_"/>
+	<themeFile name="sc_selcharacter2.pac" replacementPrefix="pp_"/>
+	<themeFile name="sc_selmap.pac" replacementPrefix="pp_"/>
+	<themeFile name="sc_sel_event.pac" replacementPrefix="pp_"/>
+	<themeFile name="sc_title.pac" replacementPrefix="pp_"/>
+</menuTheme>

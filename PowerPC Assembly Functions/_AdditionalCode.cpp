@@ -430,4 +430,59 @@ namespace lava
 
 		return result;
 	}
+	std::vector<menuTheme> collectThemesFromXML(std::string exThemeInputFilePath, bool& fileOpened)
+	{
+		fileOpened = 0;
+
+		std::vector<menuTheme> result{};
+
+		pugi::xml_document themeDoc;
+		if (std::filesystem::is_regular_file(exThemeInputFilePath))
+		{
+			if (themeDoc.load_file(exThemeInputFilePath.c_str()))
+			{
+				fileOpened = 1;
+				for (pugi::xml_node_iterator themeItr = themeDoc.begin(); themeItr != themeDoc.end(); themeItr++)
+				{
+					if (themeItr->name() == themeConstants::themeTag)
+					{
+						menuTheme tempTheme;
+						for (pugi::xml_attribute_iterator themeAttrItr = themeItr->attributes_begin(); themeAttrItr != themeItr->attributes_end(); themeAttrItr++)
+						{
+							if (themeAttrItr->name() == themeConstants::nameTag)
+							{
+								tempTheme.name = themeAttrItr->as_string();
+							}
+						}
+						for (pugi::xml_node_iterator themeFileItr = themeItr->begin(); themeFileItr != themeItr->end(); themeFileItr++)
+						{
+							if (themeFileItr->name() == themeConstants::themeFileTag)
+							{
+								std::size_t filenameIndex = SIZE_MAX;
+
+								for (pugi::xml_attribute_iterator themeFileAttrItr = themeFileItr->attributes_begin(); themeFileAttrItr != themeFileItr->attributes_end(); themeFileAttrItr++)
+								{
+									if (themeFileAttrItr->name() == themeConstants::nameTag)
+									{
+										auto filenameItr = std::find(themeConstants::filenames.begin(), themeConstants::filenames.end(), themeFileAttrItr->as_string());
+										if (filenameItr != themeConstants::filenames.end())
+										{
+											filenameIndex = filenameItr - themeConstants::filenames.begin();
+										}
+									}
+									else if (filenameIndex != SIZE_MAX && themeFileAttrItr->name() == themeConstants::prefixTag)
+									{
+										tempTheme.prefixes[filenameIndex] = themeFileAttrItr->as_string().substr(0, 3);
+									}
+								}
+							}
+						}
+						result.push_back(tempTheme);
+					}
+				}
+			}
+		}
+
+		return result;
+	}
 }

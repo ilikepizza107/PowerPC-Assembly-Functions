@@ -125,6 +125,9 @@ int main(int argc, char** argv)
 		buildRosterLists();
 		buildThemeLists();
 
+		bool filenameValid = 0;
+		THEME_SPEC_LIST = lava::collectThemesFromXML("EX_Themes.xml", filenameValid);
+
 		std::shared_ptr<std::ofstream> soloLogFileOutput = std::make_shared<std::ofstream>(outputFolder + changelogFileName);
 		*soloLogFileOutput << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
 

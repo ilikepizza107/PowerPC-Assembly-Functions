@@ -201,6 +201,15 @@ void buildRosterLists()
 	unzipMapToVectors(rosterNameToFileIDMap, ROSTER_LIST, ROSTER_FILENAME_LIST);
 }
 
+namespace themeConstants
+{
+	const std::string nameTag = "name";
+	const std::string themeTag = "menuTheme";
+	const std::string themeFileTag = "themeFile";
+	const std::string prefixTag = "replacementPrefix";
+
+	std::array<std::string, tpi__PATH_COUNT> filenames{};
+}
 vector<string> THEME_LIST;
 vector<string> THEME_PREFIX_LIST;
 void buildThemeLists()
@@ -209,9 +218,28 @@ void buildThemeLists()
 	{
 		{"Default", "sc"},
 	};
-
 	unzipMapToVectors(themeNameToPrefixMap, THEME_LIST, THEME_PREFIX_LIST);
+
+	// Push Default Menu Theme
+	THEME_SPEC_LIST.push_back(menuTheme());
+	themeConstants::filenames[themeConstants::tpi_MENUMAIN] = "mu_menumain.pac";
+	themeConstants::filenames[themeConstants::tpi_SELCHAR] = "sc_selcharacter.pac";
+	themeConstants::filenames[themeConstants::tpi_SELCHAR2] = "sc_selcharacter2.pac";
+	themeConstants::filenames[themeConstants::tpi_SELMAP] = "sc_selmap.pac";
+	themeConstants::filenames[themeConstants::tpi_SELEVENT] = "sc_sel_event.pac";
+	themeConstants::filenames[themeConstants::tpi_TITLE] = "sc_title.pac";
 }
+menuTheme::menuTheme()
+{
+	prefixes[themeConstants::tpi_MENUMAIN] = "mu_";
+	prefixes[themeConstants::tpi_SELCHAR] = "sc_";
+	prefixes[themeConstants::tpi_SELCHAR2] = "sc_";
+	prefixes[themeConstants::tpi_SELMAP] = "sc_";
+	prefixes[themeConstants::tpi_SELEVENT] = "sc_";
+	prefixes[themeConstants::tpi_TITLE] = "sc_";
+}
+std::vector<menuTheme> THEME_SPEC_LIST{};
+
 
 
 const std::string outputFolder = "./Code_Menu_Output/";
