@@ -125,9 +125,6 @@ int main(int argc, char** argv)
 		buildRosterLists();
 		buildThemeLists();
 
-		bool filenameValid = 0;
-		THEME_SPEC_LIST = lava::collectThemesFromXML("EX_Themes.xml", filenameValid);
-
 		std::shared_ptr<std::ofstream> soloLogFileOutput = std::make_shared<std::ofstream>(outputFolder + changelogFileName);
 		*soloLogFileOutput << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
 
@@ -205,52 +202,66 @@ int main(int argc, char** argv)
 			logOutput << "Adding Themes to Code Menu from \"" << themeInputFileName << "\"...\n";
 
 			bool themeInputOpenedSuccesfully = 0;
-			std::vector<std::pair<std::string, std::string>> themeNameFileNamePairs = lava::collectedRosterNamePathPairs(themeInputFileName, themeInputOpenedSuccesfully);
+			std::vector<menuTheme> tempThemeList = lava::collectThemesFromXML(themeInputFileName, themeInputOpenedSuccesfully);
+
 			if (themeInputOpenedSuccesfully)
 			{
-				if (themeNameFileNamePairs.size())
+				// If we actually retrieved any valid themes from the file, process them!
+				if (!tempThemeList.empty())
 				{
-					std::vector<std::pair<std::string, std::string>> zippedThemeVec{};
+					// Create a map for quickly finding whether existing theme names are taken, and track their respective positions.
 					std::map<std::string, std::size_t> themeNameToIndexMap{};
+					// And a vector for storing the themes we've collected in order.
+					std::vector<std::pair<std::string, menuTheme>> zippedThemeVec{};
+
+					// Add all of our predefined themes to these containers before we process the newly collected ones. 
 					for (std::size_t i = 0; i < THEME_LIST.size(); i++)
 					{
-						zippedThemeVec.push_back(std::make_pair(THEME_LIST[i], THEME_PREFIX_LIST[i]));
+						zippedThemeVec.push_back(std::make_pair(THEME_LIST[i], THEME_SPEC_LIST[i]));
 						themeNameToIndexMap.insert(std::make_pair(THEME_LIST[i], i));
 					}
-					for (int i = 0; i < themeNameFileNamePairs.size(); i++)
+
+					// For each newly collected theme...
+					for (int i = 0; i < tempThemeList.size(); i++)
 					{
-						std::pair<std::string, std::string>* currPair = &themeNameFileNamePairs[i];
-						if (currPair->second.size())
+						menuTheme* currTheme = &tempThemeList[i];
+
+						// ... check to see if a theme of the same name already exists in our map.
+						auto itr = themeNameToIndexMap.find(currTheme->name);
+
+						// If one by that name doesn't already exist...
+						if (itr == themeNameToIndexMap.end())
 						{
-							auto itr = themeNameToIndexMap.find(currPair->first);
-							if (itr == themeNameToIndexMap.end())
-							{
-								zippedThemeVec.push_back(*currPair);
-								themeNameToIndexMap.insert(std::make_pair(currPair->first, zippedThemeVec.size() - 1));
-								logOutput << "[ADDED] " << currPair->first << " (Prefix: " << currPair->second << ")\n";
-							}
-							// Otherwise, announce what was changed.
-							else
-							{
-								zippedThemeVec[itr->second].second = currPair->second;
-								logOutput << "[CHANGED] " << itr->first << " (Prefix: " << currPair->second << ")\n";
-							}
+							// ... add it to the map and vector so we can keep track of them going forward...
+							themeNameToIndexMap.insert(std::make_pair(currTheme->name, i));
+							zippedThemeVec.push_back(std::make_pair(currTheme->name, *currTheme));
+							// ... and announce that a theme has been successfully collected.
+							logOutput << "[ADDED]";
 						}
+						// Otherwise, if a theme by that name *does* already exist...
 						else
 						{
-							logOutput.setStandardOutputStream(lava::outputSplitter::sOS_CERR);
-							logOutput << "[ERROR] Invalid prefix specified! The theme \"" << currPair->first << "\" will not be added to the Code Menu!\n";
-							logOutput.setStandardOutputStream(lava::outputSplitter::sOS_COUT);
+							// ... overwrite the theme currently associated with that name...
+							zippedThemeVec[itr->second].second = *currTheme;
+							// ... and announce that a theme has been changed.
+							logOutput << "[CHANGED]";
+						}
+						// Describe the processed theme.
+						logOutput << " \"" << currTheme->name << "\", Replacement Prefixes Are:\n";
+						for (std::size_t u = 0; u < currTheme->prefixes.size(); u++)
+						{
+							logOutput << "\t\"" << themeConstants::filenames[u] << "\": \"" << currTheme->prefixes[u] << "\"\n";
 						}
 					}
 
-					// Write the newly edited list back into the list vectors
+					// Once we're done, clear out the old theme lists...
 					THEME_LIST.clear();
-					THEME_PREFIX_LIST.clear();
-					for (auto itr = zippedThemeVec.cbegin(); itr != zippedThemeVec.cend(); itr++)
+					THEME_SPEC_LIST.clear();
+					// ... and add re-populate them with the data we just processed.
+					for (std::size_t i = 0; i < zippedThemeVec.size(); i++)
 					{
-						THEME_LIST.push_back(itr->first);
-						THEME_PREFIX_LIST.push_back(itr->second);
+						THEME_LIST.push_back(zippedThemeVec[i].first);
+						THEME_SPEC_LIST.push_back(zippedThemeVec[i].second);
 					}
 				}
 				else
@@ -268,7 +279,11 @@ int main(int argc, char** argv)
 			logOutput << "\nFinal Theme List:\n";
 			for (std::size_t i = 0; i < THEME_LIST.size(); i++)
 			{
-				logOutput << "\t" << THEME_LIST[i] << " (Prefix: " << THEME_PREFIX_LIST[i] << ")\n";
+				logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
+				for (std::size_t u = 0; u < THEME_SPEC_LIST[i].prefixes.size(); u++)
+				{
+					logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
+				}
 			}
 
 			logOutput << "\n";
@@ -300,13 +315,13 @@ int main(int argc, char** argv)
 							{
 								zippedRosterVec.push_back(*currPair);
 								rosterNameToIndexMap.insert(std::make_pair(currPair->first, zippedRosterVec.size() - 1));
-								logOutput << "[ADDED] " << currPair->first << " (Filename: " << currPair->second << ")\n";
+								logOutput << "[ADDED] \"" << currPair->first << "\" (Filename: " << currPair->second << ")\n";
 							}
 							// Otherwise, announce what was changed.
 							else
 							{
 								zippedRosterVec[itr->second].second = currPair->second;
-								logOutput << "[CHANGED] " << itr->first << " (Filename: " << currPair->second << ")\n";
+								logOutput << "[CHANGED] \"" << itr->first << "\" (Filename: " << currPair->second << ")\n";
 							}
 						}
 						else
@@ -341,7 +356,7 @@ int main(int argc, char** argv)
 			logOutput << "\nFinal Roster List:\n";
 			for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
 			{
-				logOutput << "\t" << ROSTER_LIST[i] << " (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
+				logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
 			}
 
 			logOutput << "\n";
@@ -372,13 +387,13 @@ int main(int argc, char** argv)
 							// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
 							if (itr.second)
 							{
-								logOutput << "[ADDED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+								logOutput << "[ADDED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
 							}
 							// Otherwise, announce what was changed.
 							else if (itr.first != zippedIDMap.end())
 							{
 								itr.first->second = currPair->second;
-								logOutput << "[CHANGED] " << itr.first->first << " (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+								logOutput << "[CHANGED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
 							}
 						}
 						else
@@ -413,7 +428,7 @@ int main(int argc, char** argv)
 			logOutput << "\nFinal Character List:\n";
 			for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
 			{
-				logOutput << "\t" << CHARACTER_LIST[i] << " (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
+				logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
 			}
 
 			logOutput << "\n";

@@ -222,25 +222,28 @@ void buildCharacterIDLists();
 
 // Declares existence of the two main roster lists, populated by the function below.
 // If COLLECT_EXTERNAL_ROSTERS (in "PowerPC Assembly Functions.h") is set to true,
-// additional Rostser declarations will be collected from the file described by rosterInputFilename (see "Code Menu.cpp").
+// additional Roster declarations will be collected from the file described by rosterInputFilename (see "Code Menu.cpp").
 extern vector<string> ROSTER_LIST;
 extern vector<string> ROSTER_FILENAME_LIST;
 void buildRosterLists();
 
-// Options File Functions
+// Declares existence of two main theme lists, populated by the function below.
+// If COLLECT_EXTERNAL_THEMES (in "PowerPC Assembly Functions.h") is set to true,
+// additional Theme declarations will be collected from the file described by themeInputFilename (see "Code Menu.cpp").
 namespace themeConstants
 {
 	enum themePathIndices
 	{
-		tpi_TITLE = 0,
+		tpi_MENUMAIN = 0,
 		tpi_SELCHAR,
 		tpi_SELCHAR2,
 		tpi_SELMAP,
 		tpi_SELEVENT,
-		tpi_MENUMAIN,
+		tpi_TITLE,
 		tpi__PATH_COUNT
 	};
 
+	constexpr unsigned long prefixLength = 0x03;
 	extern const std::string nameTag;
 	extern const std::string themeTag;
 	extern const std::string themeFileTag;
@@ -248,22 +251,25 @@ namespace themeConstants
 
 	extern std::array<std::string, tpi__PATH_COUNT> filenames;
 }
-extern vector<string> THEME_LIST;
-extern vector<string> THEME_PREFIX_LIST;
-void buildThemeLists();
-
 struct menuTheme
 {
 	std::string name = "";
 	std::array<std::string, themeConstants::tpi__PATH_COUNT> prefixes{};
-	menuTheme();
+	menuTheme(std::string name = "");
 };
+void initializeThemeConstants();
+void buildThemeLists();
+std::string getThemeFileBaseName(themeConstants::themePathIndices fileIndex);
+std::string getThemeFileDefaultPrefix(themeConstants::themePathIndices fileIndex);
+extern vector<string> THEME_LIST;
 extern std::vector<menuTheme> THEME_SPEC_LIST;
 
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
 void initMenuFileStream();
+
+
 
 // Logging and Input Constants
 extern const std::string outputFolder;

@@ -472,7 +472,7 @@ namespace lava
 									}
 									else if (filenameIndex != SIZE_MAX && themeFileAttrItr->name() == themeConstants::prefixTag)
 									{
-										tempTheme.prefixes[filenameIndex] = themeFileAttrItr->as_string().substr(0, 3);
+										tempTheme.prefixes[filenameIndex] = themeFileAttrItr->as_string().substr(0, themeConstants::prefixLength);
 									}
 								}
 							}

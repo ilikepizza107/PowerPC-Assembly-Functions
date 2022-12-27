@@ -210,18 +210,9 @@ namespace themeConstants
 
 	std::array<std::string, tpi__PATH_COUNT> filenames{};
 }
-vector<string> THEME_LIST;
-vector<string> THEME_PREFIX_LIST;
-void buildThemeLists()
+void initializeThemeConstants()
 {
-	std::map<std::string, std::string> themeNameToPrefixMap =
-	{
-		{"Default", "sc"},
-	};
-	unzipMapToVectors(themeNameToPrefixMap, THEME_LIST, THEME_PREFIX_LIST);
-
-	// Push Default Menu Theme
-	THEME_SPEC_LIST.push_back(menuTheme());
+	themeConstants::filenames.fill("");
 	themeConstants::filenames[themeConstants::tpi_MENUMAIN] = "mu_menumain.pac";
 	themeConstants::filenames[themeConstants::tpi_SELCHAR] = "sc_selcharacter.pac";
 	themeConstants::filenames[themeConstants::tpi_SELCHAR2] = "sc_selcharacter2.pac";
@@ -229,23 +220,43 @@ void buildThemeLists()
 	themeConstants::filenames[themeConstants::tpi_SELEVENT] = "sc_sel_event.pac";
 	themeConstants::filenames[themeConstants::tpi_TITLE] = "sc_title.pac";
 }
-menuTheme::menuTheme()
+menuTheme::menuTheme(std::string name)
 {
-	prefixes[themeConstants::tpi_MENUMAIN] = "mu_";
-	prefixes[themeConstants::tpi_SELCHAR] = "sc_";
-	prefixes[themeConstants::tpi_SELCHAR2] = "sc_";
-	prefixes[themeConstants::tpi_SELMAP] = "sc_";
-	prefixes[themeConstants::tpi_SELEVENT] = "sc_";
-	prefixes[themeConstants::tpi_TITLE] = "sc_";
+	prefixes[themeConstants::tpi_MENUMAIN] = getThemeFileDefaultPrefix(themeConstants::tpi_MENUMAIN);
+	prefixes[themeConstants::tpi_SELCHAR] = getThemeFileDefaultPrefix(themeConstants::tpi_SELCHAR);
+	prefixes[themeConstants::tpi_SELCHAR2] = getThemeFileDefaultPrefix(themeConstants::tpi_SELCHAR2);
+	prefixes[themeConstants::tpi_SELMAP] = getThemeFileDefaultPrefix(themeConstants::tpi_SELMAP);
+	prefixes[themeConstants::tpi_SELEVENT] = getThemeFileDefaultPrefix(themeConstants::tpi_SELEVENT);
+	prefixes[themeConstants::tpi_TITLE] = getThemeFileDefaultPrefix(themeConstants::tpi_TITLE);
 }
+void buildThemeLists()
+{
+	initializeThemeConstants();
+	std::map<std::string, menuTheme> themeNameToThemeSpecMap =
+	{
+		{"Default", menuTheme("Default")},
+	};
+	unzipMapToVectors(themeNameToThemeSpecMap, THEME_LIST, THEME_SPEC_LIST);
+}
+std::string getThemeFileBaseName(themeConstants::themePathIndices fileIndex)
+{
+	return themeConstants::filenames[fileIndex].substr(themeConstants::prefixLength, std::string::npos);
+}
+std::string getThemeFileDefaultPrefix(themeConstants::themePathIndices fileIndex)
+{
+	return themeConstants::filenames[fileIndex].substr(0, themeConstants::prefixLength);
+}
+vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
+
+
 
 
 
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
 const std::string rosterInputFileName = "EX_Rosters.txt";
-const std::string themeInputFileName = "EX_Themes.txt";
+const std::string themeInputFileName = "EX_Themes.xml";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";
 const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
