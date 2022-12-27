@@ -90,6 +90,49 @@ Note that filenames here are really just paths relative to the "pf/BrawlEx/" fol
 	
 Lastly, be aware that the formatting rules on escape characters and comment characters noted in the section about adding to "EX_Characters.txt" apply to entries in this file as well.
 
+## Adding to EX_Themes.xml
+Declare new theme entries within the XML file using the following format:
+
+    <menuTheme name = "YOUR_NAME_HERE!">
+    </menuTheme>
+
+In which "name" is the label that will be displayed within the Code Menu itself. Note that here, special characters like quotes may not be escaped with a back slash ('\'), but rather must use a proper [XML Escape String](https://www.ibm.com/docs/en/was-liberty/base?topic=SSEQTP_liberty/com.ibm.websphere.wlp.doc/ae/rwlp_xml_escape.htm). So, for example, if you wanted your theme to be labeled "Test", *with quotation marks*, you'd specify your menuTheme entry as follows:
+
+    <menuTheme name = "&quot;Test&quot;">
+    </menuTheme>
+
+To declare a file which will be affected by a given theme, you would add a themeFile entry like so:
+
+    <menuTheme name = "&quot;Test&quot;">
+    	<themeFile name = "sc_selcharacter.pac" replacementPrefix = "ex_" />
+    </menuTheme>
+
+The "name" field in a themeFile entry denotes which of the theme-able files this entry pertains to. At present, there are 6 theme-able files:
+- "mu_menumain.pac"
+- "sc_selcharacter.pac"
+- "sc_selcharacter2.pac"
+- "sc_selmap.pac"
+- "sc_sel_event.pac"
+- "sc_title.pac"
+
+Be aware that *only* the above files are currently supported! Specifying a name not listed here simply won't do anything, as theme support needs to be implemented on a per-file basis!
+
+The "replacementPrefix" field in the above themeFile entry denotes a three-character long prefix that is used to overwrite the beginning of the associated filename, directing the game to load a different file. So, for instance, in the above example, the replacement prefix "ex_" will be applied to the filename "sc_selcharacter.pac". As a result, rather than look for the file "sc_selcharacter.pac" as it normally would, the game will *instead* attempt to locate and load the file "ex_selcharacter.pac". Note that multiple themeFile entries may be specified in a single menuTheme; so the following declaration, for instance, is perfectly valid:
+
+    <menuTheme name = "&quot;Test&quot;">
+    	<themeFile name = "sc_selcharacter.pac" replacementPrefix = "ex_" />
+    	<themeFile name = "sc_selcharacter2.pac" replacementPrefix = "ex_" />
+    	<themeFile name = "sc_selmap.pac" replacementPrefix = "pp_" />
+    	<themeFile name = "sc_title.pac" replacementPrefix = "ez_" />
+    </menuTheme>
+
+Notice that it's completely valid to specify themeFile entries which use different prefixes. So long as the corresponding files exist in their respective locations, the game should be able to load them with no issue. Also be aware that, currently, all prefixes strictly *need* to be exactly three characters long! This restriction may be lifted at a later date, at which point this file will be updated to reflect that change, but for now take care to ensure that specified prefixes are the appropriate length!
+
+Additionally, note that any alternate file specified in this way will be loaded from the same directory as its original counterpart! So, for instance, our "ex_selcharacter.pac" file *must* be located in "/pf/menu2/" along with "sc_selcharacter.pac" in order for the game to successfully find it!
+
+*Lastly, and perhaps most importantly, be aware that if the game attempts to load a menu file which doesn't exist on the SD Card, it* ***will*** *crash! Pay close attention that any alternate files you specify in this way are named correctly, and that they are located in the appropriate locations in your build!*
+
+
 ## Instructions for Hands-free Execution
 
 The program supports 4 boolean command line arguments which can be used to force the interactive choices offered by the program to automatically take on certain values. In order, these are:
