@@ -439,7 +439,8 @@ namespace lava
 		pugi::xml_document themeDoc;
 		if (std::filesystem::is_regular_file(exThemeInputFilePath))
 		{
-			if (themeDoc.load_file(exThemeInputFilePath.c_str()))
+			pugi::xml_parse_result res = themeDoc.load_file(exThemeInputFilePath.c_str());
+			if (res.status == pugi::xml_parse_status::status_ok || res.status == pugi::xml_parse_status::status_no_document_element)
 			{
 				fileOpened = 1;
 				for (pugi::xml_node_iterator themeItr = themeDoc.begin(); themeItr != themeDoc.end(); themeItr++)
