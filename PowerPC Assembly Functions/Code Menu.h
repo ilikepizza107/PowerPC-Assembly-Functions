@@ -77,6 +77,8 @@ extern int BUFFER_P3_INDEX;
 extern int BUFFER_P4_INDEX;
 extern int SCALE_INDEX;
 extern int SPEED_INDEX;
+extern int DASH_ATTACK_ITEM_GRAB_INDEX;
+
 
 struct ConstantPair {
 	int address;
@@ -453,7 +455,9 @@ static const int CSS_VER_LOC = SPEED_LOC + 4; //4
 
 static const int THEME_LOC = CSS_VER_LOC + 4; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = THEME_LOC + 4; //0x200
+static const int DASH_ATTACK_ITEM_GRAB_LOC = THEME_LOC + 4; //4
+
+static const int DRAW_SETTINGS_BUFFER_LOC = DASH_ATTACK_ITEM_GRAB_LOC + 4; //0x200
 
 
 

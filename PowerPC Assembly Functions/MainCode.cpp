@@ -19,6 +19,7 @@
 #include "_lavaOutputSplitter.h"
 #include "_CSSRosterChange.h"
 #include "_ThemeChange.h"
+#include "_DashAttackItemGrab.h"
 //#include "FPS Display.h"
 using namespace std;
 
@@ -460,7 +461,7 @@ int main(int argc, char** argv)
 
 		//LXPGreenOverlayFix();
 
-		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange();
+		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); dashAttackItemGrab();
 
 		//musicPercentCode();
 
