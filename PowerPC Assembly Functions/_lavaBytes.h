@@ -1,5 +1,5 @@
 #ifndef LAVA_BYTES_V1_H
-#define LAVA_BTTES_V1_H
+#define LAVA_BYTES_V1_H
 
 #include <sstream>
 #include <vector>
