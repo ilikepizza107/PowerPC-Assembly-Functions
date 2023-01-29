@@ -73,6 +73,9 @@ int SPEED_INDEX = -1;
 int CSS_VERSION_SETTING_INDEX = -1;
 int THEME_SETTING_INDEX = -1;
 int DASH_ATTACK_ITEM_GRAB_INDEX = -1;
+int TRIP_TOGGLE_INDEX = -1;
+int TRIP_RATE_MULTIPLIER_INDEX = -1;
+int TRIP_INTERVAL_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
 
 //constant overrides
@@ -642,9 +645,9 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 								if (childItr->name() == xmlTagConstants::valueDefaultTag)
 								{
 									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-										!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+										!defaultValueFound && attrItr != childItr->attributes_end(); attrItr++)
 									{
-										if (attrItr->name() == xmlTagConstants::indexTag)
+										if (attrItr->name() == xmlTagConstants::valueTag)
 										{
 											defaultValueFound = 1;
 											int valueIn = attrItr->as_int(currLine->Default);
@@ -666,7 +669,7 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 								if (childItr->name() == xmlTagConstants::valueDefaultTag)
 								{
 									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-										!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
+										!defaultValueFound && attrItr != childItr->attributes_end(); attrItr++)
 									{
 										if (attrItr->name() == xmlTagConstants::valueTag)
 										{
@@ -881,6 +884,9 @@ void CodeMenu()
 	constantOverrides.emplace_back(0x80B88534, KNOCKBACK_DECAY_MULTIPLIER_INDEX);
 	ConstantsLines.push_back(new Selection("Staling Toggle", { "Default", "ON", "OFF" }, 0, STALING_TOGGLE_INDEX));
 	ConstantsLines.push_back(new Selection("Dash Attack Item Grab Toggle", { "OFF", "ON" }, 0, DASH_ATTACK_ITEM_GRAB_INDEX));
+	ConstantsLines.push_back(new Selection("Tripping Toggle", { "OFF", "ON" }, 0, TRIP_TOGGLE_INDEX));
+	ConstantsLines.push_back(new Floating("Tripping Rate", 0, 100, 1.0, 1.0, TRIP_RATE_MULTIPLIER_INDEX, "%.2f%"));
+	ConstantsLines.push_back(new Selection("Tripping Cooldown Toggle", { "ON", "OFF" }, 0, TRIP_INTERVAL_INDEX));
 	Page ConstantsPage("Gameplay Modifiers", ConstantsLines);
 
 	//DBZ Mode settings
@@ -1536,6 +1542,13 @@ void CreateMenu(Page MainPage)
 
 	// Dash Attack Item Grab Setting
 	AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
+
+	// Tripping Toggle
+	AddValueToByteArray(TRIP_TOGGLE_INDEX, Header);
+	// Tripping Rate Multiplier
+	AddValueToByteArray(TRIP_RATE_MULTIPLIER_INDEX, Header);
+	// Tripping Cooldown Toggle
+	AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
