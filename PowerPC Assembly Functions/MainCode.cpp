@@ -462,7 +462,7 @@ int main(int argc, char** argv)
 
 		//LXPGreenOverlayFix();
 
-		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); dashAttackItemGrab(); tripRateModifier();
+		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); // dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();
 

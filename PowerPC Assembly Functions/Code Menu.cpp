@@ -883,10 +883,10 @@ void CodeMenu()
 	ConstantsLines.push_back(new Floating("Knockback Decay Rate", -999, 999, 0.051, .001, KNOCKBACK_DECAY_MULTIPLIER_INDEX, "%.3f"));
 	constantOverrides.emplace_back(0x80B88534, KNOCKBACK_DECAY_MULTIPLIER_INDEX);
 	ConstantsLines.push_back(new Selection("Staling Toggle", { "Default", "ON", "OFF" }, 0, STALING_TOGGLE_INDEX));
-	ConstantsLines.push_back(new Selection("Dash Attack Item Grab Toggle", { "OFF", "ON" }, 0, DASH_ATTACK_ITEM_GRAB_INDEX));
-	ConstantsLines.push_back(new Selection("Tripping Toggle", { "OFF", "ON" }, 0, TRIP_TOGGLE_INDEX));
-	ConstantsLines.push_back(new Floating("Tripping Rate", 0, 100, 1.0, 1.0, TRIP_RATE_MULTIPLIER_INDEX, "%.2f%"));
-	ConstantsLines.push_back(new Selection("Tripping Cooldown Toggle", { "ON", "OFF" }, 0, TRIP_INTERVAL_INDEX));
+	//ConstantsLines.push_back(new Selection("Dash Attack Item Grab Toggle", { "OFF", "ON" }, 0, DASH_ATTACK_ITEM_GRAB_INDEX));
+	//ConstantsLines.push_back(new Selection("Tripping Toggle", { "OFF", "ON" }, 0, TRIP_TOGGLE_INDEX));
+	//ConstantsLines.push_back(new Floating("Tripping Rate", 0, 100, 1.0, 1.0, TRIP_RATE_MULTIPLIER_INDEX, "%.2f%"));
+	//ConstantsLines.push_back(new Selection("Tripping Cooldown Toggle", { "ON", "OFF" }, 0, TRIP_INTERVAL_INDEX));
 	Page ConstantsPage("Gameplay Modifiers", ConstantsLines);
 
 	//DBZ Mode settings
@@ -1540,15 +1540,15 @@ void CreateMenu(Page MainPage)
 	// Theme Setting
 	AddValueToByteArray(THEME_SETTING_INDEX, Header);
 
-	// Dash Attack Item Grab Setting
-	AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
-
-	// Tripping Toggle
-	AddValueToByteArray(TRIP_TOGGLE_INDEX, Header);
-	// Tripping Rate Multiplier
-	AddValueToByteArray(TRIP_RATE_MULTIPLIER_INDEX, Header);
-	// Tripping Cooldown Toggle
-	AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
+	//// Dash Attack Item Grab Setting
+	//AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
+	//
+	//// Tripping Toggle
+	//AddValueToByteArray(TRIP_TOGGLE_INDEX, Header);
+	//// Tripping Rate Multiplier
+	//AddValueToByteArray(TRIP_RATE_MULTIPLIER_INDEX, Header);
+	//// Tripping Cooldown Toggle
+	//AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
