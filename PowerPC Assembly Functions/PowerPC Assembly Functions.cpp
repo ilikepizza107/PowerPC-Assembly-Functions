@@ -16,6 +16,73 @@
 	string MAIN_FOLDER = "LegacyTE"; // and use the LegacyTE directory (this can be changed, this is just what it was originally).)
 #endif
 
+fstream WPtr;
+std::vector<ledger::codeLedgerEntry> codeLedger = {};
+std::size_t ledger::codeLedgerEntry::length()
+{
+	return (codeStartPos != SIZE_MAX && codeEndPos != SIZE_MAX && codeEndPos > codeStartPos) ? codeEndPos - codeStartPos : SIZE_MAX;
+}
+bool ledger::openLedgerEntry(std::string codeName)
+{
+	bool result = 0;
+
+	if (codeLedger.empty() || codeLedger.back().codeEndPos != SIZE_MAX)
+	{
+		codeLedger.push_back(ledger::codeLedgerEntry(codeName, WPtr.tellp()));
+		result = 1;
+	}
+	else
+	{
+		std::cerr << "[ERROR] Failed to open code ledger entry (\"" << codeName << "\"):\n" <<
+			"\tPrevious entry (\"" << codeLedger.back().codeName << "\") isn't closed!\n";
+	}
+
+	return result;
+}
+bool ledger::closeLedgerEntry()
+{
+	bool result = 0;
+
+	if (!codeLedger.empty() && codeLedger.back().codeEndPos == SIZE_MAX)
+	{
+		codeLedger.back().codeEndPos = WPtr.tellp();
+		result = 1;
+	}
+	else
+	{
+		std::cerr << "[ERROR] Failed to close code ledger entry (\"" << codeLedger.back().codeName << "\"):\n" <<
+			"\tIt's already closed!\n";
+	}
+
+	return result;
+}
+bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::vector<char>& codeIn)
+{
+	// Write Code Name and Hashtags
+	output << std::string(std::max((int)codeNameIn.size(), 20), '#') << "\n";
+	output << codeNameIn << "\n";
+	output << std::string(std::max((int)codeNameIn.size(), 20), '#') << "\n";
+
+	// Write Code Body
+	std::size_t position = 0;
+	std::size_t numLines = codeIn.size() / 0x10;
+	for (std::size_t i = 0; i < numLines; i++)
+	{
+		output << "* ";
+		output.write(codeIn.data() + position, 0x08);
+		output << " ";
+		output.write(codeIn.data() + position + 0x08, 0x08);
+		output << "\n";
+		position += 0x10;
+	}
+	if ((position + 1) < codeIn.size())
+	{
+		std::cerr << "[ERROR] Code Alignment Incorrect!\n";
+	}
+
+	return output.good();
+}
+
 //converts char hex digit to decimal
 int HexToDec(char x)
 {
@@ -125,6 +192,56 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 	else {
 		cout << "Unable to open ASM file, check the OutputAsmPath";
 		return false;
+	}
+
+	ofstream neoASMFile("./Code_Menu_Output/CodeMenu_New.asm");
+	if (!codeLedger.empty() && neoASMFile.is_open())
+	{
+		std::vector<char> temp{};
+		temp.reserve(0x200);
+
+		std::string tempName = "";
+		unsigned long unknownCount = 0x00;
+		unsigned long unnamedCount = 0x00;
+
+		textFile.seekg(0);
+		for (unsigned long i = 0; i < codeLedger.size(); i++)
+		{
+			ledger::codeLedgerEntry* currEntry = &codeLedger[i];
+			if (textFile.tellg() < currEntry->codeStartPos)
+			{
+				tempName = "Unattested Code " + std::to_string(unknownCount);
+				std::size_t unattestedLength = currEntry->codeStartPos - textFile.tellg();
+				temp.resize(unattestedLength);
+				textFile.read(temp.data(), unattestedLength);
+
+				ledger::writeCodeToASMStream(neoASMFile, tempName, temp);
+				
+				neoASMFile << "\n";
+				unknownCount++;
+			}
+
+			tempName = currEntry->codeName;
+			if (tempName.empty())
+			{
+				tempName = "Unnamed Code " + std::to_string(unnamedCount);
+				unnamedCount++;
+			}
+			std::size_t entryLength = currEntry->length();
+			if (entryLength != SIZE_MAX)
+			{
+				temp.resize(entryLength);
+				textFile.seekg(currEntry->codeStartPos);
+				textFile.read(temp.data(), entryLength);
+
+				ledger::writeCodeToASMStream(neoASMFile, tempName, temp);
+				neoASMFile << "\n";
+			}
+		}
+	}
+	else
+	{
+		std::cerr << "[ERROR] Couldn't open ASM File!\n";
 	}
 }
 
@@ -474,8 +591,10 @@ void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg)
 //keeps track of how many lines are written
 //writes extra 00000000 or 60000000 00000000 at end as necessary
 //assumes ba = 0x80000000
-void ASMStart(int BranchAddress)
+void ASMStart(int BranchAddress, std::string name)
 {
+	ledger::openLedgerEntry(name);
+
 	int OpWord = (0xC2 << 24);
 	if(BranchAddress >= 0x81000000)
 	{
@@ -510,6 +629,8 @@ void ASMEnd()
 	WPtr.seekp(ASMStartAddress - 8);
 	WriteIntToFile(numLines);
 	WPtr.seekp(HoldPos);
+
+	ledger::closeLedgerEntry();
 }
 
 void ASMEnd(int Replacement)

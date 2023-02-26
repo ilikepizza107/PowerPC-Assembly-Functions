@@ -269,8 +269,28 @@ const int MENU_SELECTED_TAG_OFFSET = 0x164;
 #define TERMINATE_REPLAY_VALUE 0x06000000
 ///constants end
 
+namespace ledger
+{
+	struct codeLedgerEntry
+	{
+		std::string codeName = "";
+		std::streampos codeStartPos = SIZE_MAX;
+		std::streampos codeEndPos = SIZE_MAX;
+
+		codeLedgerEntry(std::string codeNameIn, std::streampos codeStartPosIn) : codeName(codeNameIn), codeStartPos(codeStartPosIn) {};
+		std::size_t length();
+	};
+
+	bool openLedgerEntry(std::string codeName);
+	bool closeLedgerEntry();
+
+	bool writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::vector<char>& codeIn);
+}
+
+
 ///variables start
-static fstream WPtr;
+extern fstream WPtr;
+extern std::vector<ledger::codeLedgerEntry> codeLedger;
 static char OpHexBuffer[10] = {};//used for writing 8 char assembly hex to file
 static u32 OpHex = 0;//for writing ops to file
 static int IfStartPos[MAX_IFS] = {};
@@ -323,7 +343,7 @@ void LoadWordToReg(int DestReg, int Reg, int Address);
 void LoadHalfToReg(int DestReg, int Reg, int Address);
 void LoadByteToReg(int DestReg, int Reg, int Address);
 void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg);
-void ASMStart(int BranchAddress);
+void ASMStart(int BranchAddress, std::string name = "");
 void ASMEnd(int Replacement);
 void ASMEnd();
 void Label(int LabelNum);
