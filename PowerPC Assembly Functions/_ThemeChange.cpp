@@ -78,7 +78,7 @@ void menuMainChange()
 		constexpr unsigned long menuMainAddr1 = 0x817F62BC;
 		constexpr unsigned long menuMainAddr2 = 0x806FB248;
 
-		ASMStart(0x806cbfa0); // Hooks the fifth instruction of "start/[muMenuMain]/mu_main.o".
+		ASMStart(0x806cbfa0, "Theme Changer (menumain) " + version +" [QuickLava]"); // Hooks the fifth instruction of "start/[muMenuMain]/mu_main.o".
 		editFilepathConstant(menuDirectory, filenameBase, reg1, menuMainAddr1, menuMainAddr2, themeConstants::tpi_MENUMAIN);
 		ASMEnd(0x7c7f1b78); // Restore the instruction replaced by the branch; mr	r31, r3.
 	}
@@ -99,7 +99,7 @@ void selCharChange()
 		constexpr unsigned long selChar2Addr1 = 0x817F634D;
 		constexpr unsigned long selChar2Addr2 = 0x806FF308;
 
-		ASMStart(0x806c8730); // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
+		ASMStart(0x806c8730, "Theme Changer (selchar) " + version + " [QuickLava]"); // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
 		editFilepathConstant(menuDirectory, filenameBase1, reg1, selCharAddr1, selCharAddr2, themeConstants::tpi_SELCHAR);
 		editFilepathConstant(menuDirectory, filenameBase2, reg1, selChar2Addr1, selChar2Addr2, themeConstants::tpi_SELCHAR2);
 		ASMEnd(0x3880002b); // Restore the instruction replaced by the branch; li	r4, 43.
@@ -118,7 +118,7 @@ void selMapChange()
 		constexpr unsigned long selMapAddr1 = 0x817F637C;
 		constexpr unsigned long selMapAddr2 = 0x806FF3F0;
 
-		ASMStart(0x806c8d88); // Hooks the fifth instruction of "start/[scSelStage]/sc_sel_stage.o".
+		ASMStart(0x806c8d88, "Theme Changer (selmap) " + version + " [QuickLava]"); // Hooks the fifth instruction of "start/[scSelStage]/sc_sel_stage.o".
 		editFilepathConstant(menuDirectory, filenameBase, reg1, selMapAddr1, selMapAddr2, themeConstants::tpi_SELMAP);
 		ASMEnd(0x7c7f1b78); // Restore the instruction replaced by the branch; mr	r31, r3.
 	}
@@ -136,7 +136,7 @@ void selEventChange()
 		constexpr unsigned long selEventAddr1 = 0x817F638D;
 		constexpr unsigned long selEventAddr2 = 0x806FD0B8;
 
-		ASMStart(0x806c44b4); // Hooks the fifth instruction of "start/[scSelEvent]/sc_sel_event.o".
+		ASMStart(0x806c44b4, "Theme Changer (selevent) " + version + " [QuickLava]"); // Hooks the fifth instruction of "start/[scSelEvent]/sc_sel_event.o".
 		editFilepathConstant(menuDirectory, filenameBase, reg1, selEventAddr1, selEventAddr2, themeConstants::tpi_SELEVENT);
 		ASMEnd(0x7c7e1b78); // Restore the instruction replaced by the branch; mr	r30, r3.
 	}
@@ -154,7 +154,7 @@ void titleChange()
 		constexpr unsigned long titleAddr1 = 0x817F63A1;
 		constexpr unsigned long titleAddr2 = 0x806FF9A0;
 
-		ASMStart(0x806ca14c); // Hooks " next/[adList<Ul,42>]/sc_fig_get_demo.o".
+		ASMStart(0x806ca14c, "Theme Changer (title) " + version + " [QuickLava]"); // Hooks " next/[adList<Ul,42>]/sc_fig_get_demo.o".
 		editFilepathConstant(menuDirectory, filenameBase, reg1, titleAddr1, titleAddr2, themeConstants::tpi_TITLE);
 		ASMEnd(0x80df0378); // Restore the instruction replaced by the branch; lwz	r6, 0x0378 (r31).
 	}

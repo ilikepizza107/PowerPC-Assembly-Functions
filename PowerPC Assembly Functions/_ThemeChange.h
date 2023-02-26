@@ -5,6 +5,8 @@
 
 //constexpr unsigned long stringStagingLocation = 0x800002B0;
 
+const std::string version = "v1.0.0";
+
 void themeChange();
 void editFilepathConstant(std::string fileDirectory, std::string baseFilename, unsigned long pathRegister, unsigned long defaultPathAddress1, unsigned long defaultPathAddress2, themeConstants::themePathIndices relevantFile);
 void menuMainChange();
