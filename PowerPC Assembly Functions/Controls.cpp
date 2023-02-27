@@ -43,7 +43,8 @@ void MenuControlCodes()
 void preventMenuCloseRaceCondition() {
 	//r3 = menu ptr
 	//r4 + 0xC = buttons
-	ASMStart(0x8069fe88, "Prevent Menu Close Race Condition");
+	ASMStart(0x8069fe88, "[CM: Controls] Prevent Menu Close Race Condition", 
+		"Prevents munu from closing unintentionally by setting buttons to 0 if the menu is open");
 	SaveRegisters();
 
 	int reg1 = 31;
@@ -87,7 +88,7 @@ void PortRumbleColorChange()
 	//r3 = name list object
 	//set r17 to 0xFF if rumble is on
 	//can use r17-r31
-	ASMStart(0x8069f83c, "Port Rumble Color Change 1");
+	ASMStart(0x8069f83c, "[CM: Controls] Port Rumble Color Change 1");
 
 	int reg1 = 31;
 	int reg2 = 30;
@@ -110,7 +111,8 @@ void PortRumbleColorChange()
 	//make "player #" change color if highlighted
 	//r3 = name list object
 	//can use r4, r31
-	ASMStart(0x806a04f0, "Port Rumble Color Change 2 (Player# Changes Color if Highlighted)");
+	ASMStart(0x806a04f0, "[CM: Controls] Port Rumble Color Change 2", 
+		"make \"player #\" change color if highlighted");
 
 	reg1 = 31;
 	reg2 = 4;
@@ -135,7 +137,7 @@ void PortRumbleColorChange()
 void TogglePortRumble()
 {
 	//r6 is inputs
-	ASMStart(0x8069fecc, "Toggle Port Rumble");
+	ASMStart(0x8069fecc, "[CM: Controls] Toggle Port Rumble");
 
 	LBZ(4, 3, 0x60);
 	If(4, LESS_OR_EQUAL_I, 1); {
@@ -161,7 +163,8 @@ void ResetTagUsedList()
 {
 	//set r4 = 42 when done
 
-	ASMStart(0x806828e0, "Reset Tag Used List");
+	ASMStart(0x806828e0, "[CM: Controls] Reset Tag Used List", 
+		"resets the tag in use flags when the CSS is loaded");
 
 	int Reg1 = 3;
 	int Reg2 = 4;
@@ -188,7 +191,8 @@ void StopSelectionOfUsedNames()
 	//set r25 = 1 if shouldn't select, else do nothing
 	//set r27 = 3 if shouldn't select, else do nothing
 
-	ASMStart(0x806a004c, "Stop Selection of Used Names");
+	ASMStart(0x806a004c, "[CM: Controls] Stop Selection of Used Names", 
+		"stops names that are being edited from being selected");
 
 	int Reg1 = 3;
 	int Reg2 = 5;
@@ -216,7 +220,8 @@ void GreyOutUsedNames()
 	//r24 == menu ptr
 	//set r5 to 1 if should be greyed, else 0
 
-	ASMStart(0x8069f9e4, "Gray Out Used Names");
+	ASMStart(0x8069f9e4, "[CM: Controls] Gray Out Used Names", 
+		"grays out names that are being edited\nstops names from being grayed if editing");
 
 	int Reg1 = 20;
 	int Reg2 = 19;
@@ -246,7 +251,8 @@ void SkipSizeCheck()
 	//r29 + 0x1FC == menu ptr
 	//r3 has size of name list
 
-	ASMStart(0x8069b840, "Skip Size Check");
+	ASMStart(0x8069b840, "[CM: Controls] Skip Size Check",
+		"skips the name list size check when replacing a name");
 
 	int Reg1 = 19;
 
@@ -266,7 +272,8 @@ void OpenNameEntry()
 {
 	//r23 + 0x1FC == menu ptr
 
-	ASMStart(0x8068a0f4, "Open Name Entry");
+	ASMStart(0x8068a0f4, "[CM: Controls] Open Name Entry", 
+		"closes the name list and opens the name entry menu");
 
 	int Reg1 = 28;
 	//only use if flag is set
@@ -294,7 +301,8 @@ void NameIsFound()
 {
 	//r29 + 0x1FC == menu ptr
 
-	ASMStart(0x8069b868, "Name Is Found");
+	ASMStart(0x8069b868, "[CM: Controls] Name Is Found", 
+		"clears the flag used to reopen the name list if name already exists");
 
 	int Reg1 = 19;
 
@@ -312,7 +320,8 @@ void ReplaceName()
 	//set r19 to 0 based tag index
 	//r29 + 0x1FC == menu ptr
 
-	ASMStart(0x8069b87c, "Replace Name");
+	ASMStart(0x8069b87c, "[CM: Controls] Replace Name", 
+		"if the replace flag is set, overwrites the selected tag with the new one\nsets the flag to reopen name list");
 
 	int Reg1 = 3;
 	int Reg2 = 4;
@@ -367,7 +376,8 @@ void ReplaceName()
 //stops the call to qsort that messes up the order of the names
 void StopNameListReordering()
 {
-	ASMStart(0x8069f378, "Stop Name List Reordering");
+	ASMStart(0x8069f378, "[CM: Controls] Stop Name List Reordering", 
+		"stops the call to qsort that messes up the order of the names");
 	ASMEnd();
 }
 
@@ -388,7 +398,8 @@ void OpenNameList()
 	//r4 should equal 0
 	//r5 should equal position in name list
 
-	ASMStart(0x8069b9f8, "Open Name List");
+	ASMStart(0x8069b9f8, "[CM: Controls] Open Name List", 
+		"opens the name list");
 
 	int Reg1 = 3;
 	//use after call to close
@@ -447,7 +458,8 @@ void FixCursorSetting()
 	//r24 + 0x1FC == menu ptr
 	//use r5
 
-	ASMStart(0x8068a278, "Fix Cursor Setting");
+	ASMStart(0x8068a278, "[CM: Controls] Fix Cursor Setting", 
+		"makes the name list cursor work");
 
 	LBZ(5, 24, MENU_STATE_INFO_OFFSET + 8 + 0x1FC);
 	If(5, EQUAL_I, 1); //should change settings
@@ -466,7 +478,8 @@ void FixCursorSetting()
 //sets the state of the menu to "open", and clears any other state data
 void SetMenuOpen()
 {
-	ASMStart(0x8069f254, "Set Menu Open");
+	ASMStart(0x8069f254, "[CM: Controls] Set Menu Open", 
+		"sets the state of the menu to \"open\", and clears any other state data");
 
 	SetRegister(11, 0x01000000);
 	STW(11, 3, MENU_STATE_INFO_OFFSET);
@@ -480,7 +493,8 @@ void SetMenuOpen()
 //if not 0, the menu is open
 void SetIfMenuOpen()
 {
-	ASMStart(0x8069feac, "Set If Menu Open");
+	ASMStart(0x8069feac, "[CM: Controls] Set If Menu Open", 
+		"stores the ptr to the menu the port is attatched to\nif not 0, the menu is open");
 
 	int Reg1 = 26;
 	int Reg2 = 28;
@@ -533,7 +547,7 @@ void PinTag(int MenuPtrReg, int TempReg1, int TempReg2, int TempReg3)
 }
 
 void clearMenuState() {
-	ASMStart(0x806a0714, "Clear Menu State");
+	ASMStart(0x806a0714, "[CM: Controls] Clear Menu State");
 
 	int reg1 = 4;
 	int reg2 = 5;
@@ -561,7 +575,7 @@ void ControlMenuState()
 	//r26 == PLAY_BUTTON_LOC_START - 4
 
 	//ASMStart(0x8002973c);
-	ASMStart(0x80029738, "Control Menu State");
+	ASMStart(0x80029738, "[CM: Controls] Control Menu State");
 	
 	int Reg1 = 31;
 	int Reg2 = 30;
@@ -901,7 +915,7 @@ void ControlMenuState()
 
 void WriteMenu()
 {
-	ASMStart(0x8069f684, "Write Menu");
+	ASMStart(0x8069f684, "[CM: Controls] Write Menu");
 	//r30 is write location
 	//r5 is position in menu
 	//r6 is menu ptr
@@ -1052,7 +1066,7 @@ void WriteMenu()
 
 void SetMenuData()
 {
-	ASMStart(0x806a0154, "Set Menu Data");
+	ASMStart(0x806a0154, "[CM: Controls] Set Menu Data");
 
 	int Reg1 = 4;
 	int Reg2 = 3;

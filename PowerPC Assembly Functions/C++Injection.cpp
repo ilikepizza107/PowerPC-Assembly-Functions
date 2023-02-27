@@ -7,7 +7,7 @@ const int INITIALIZER_ADDRESS = 0x80d00000;
 //const int DATA_ADDRESS = 0x804E2200;
 
 void loadCppCodes() {
-	ASMStart(0x8002d4f8, "Load CPP Codes");
+	ASMStart(0x8002d4f8, "[CM: C++Injection] Load CPP Codes");
 	SaveRegisters();
 
 	LoadFile("codes.bin", CODE_ADDRESS, 31, 30);
@@ -22,7 +22,7 @@ void loadCppCodes() {
 }
 
 void writeInjectionsRepeat() {
-	ASMStart(0x80023d54, "Write Injections Repeat");
+	ASMStart(0x80023d54, "[CM: C++Injection] Write Injections Repeat");
 	//ASMStart(0x80023d5c);
 	SaveRegisters();
 

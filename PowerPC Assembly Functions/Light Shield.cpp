@@ -52,7 +52,7 @@ void shieldScale() {
 
 	int modulePtrReg = 30;
 
-	ASMStart(0x80874ca0);
+	ASMStart(0x80874ca0, "[CM: Light Shield] shieldScale");
 	SaveRegisters(2);
 
 	getAnalogShieldValue(modulePtrReg);
@@ -83,7 +83,7 @@ void shieldDegeneration() {
 
 	int modulePtrReg = 31;
 
-	ASMStart(0x807ad4dc);
+	ASMStart(0x807ad4dc, "[CM: Light Shield] shieldDegeneration");
 	SaveRegisters(2);
 
 	getAnalogShieldValue(modulePtrReg);
@@ -109,7 +109,7 @@ void shieldDamage() {
 
 	int modulePtrReg = 3;
 
-	ASMStart(0x80840540);
+	ASMStart(0x80840540, "[CM: Light Shield] shieldDamage");
 	SaveRegisters({0,2});
 
 	FMR(2, 1);
@@ -140,7 +140,7 @@ void shieldStun() {
 	int modulePtrReg = 31;
 	int stunResultReg = 28;
 
-	ASMStart(0x80875400);
+	ASMStart(0x80875400, "[CM: Light Shield] shieldStun");
 	SaveRegisters(3);
 
 	getAnalogShieldValue(modulePtrReg);
@@ -195,7 +195,7 @@ void shieldDefenderPushback() {
 
 	int modulePtrReg = 31;
 
-	ASMStart(0x808755ac);
+	ASMStart(0x808755ac, "[CM: Light Shield] shieldDefenderPushback");
 	SaveRegisters({0, 2, 3});
 
 	FMR(3, 1);
@@ -257,7 +257,7 @@ void shieldAttackerPushback() {
 
 	int modulePtrReg = 29;
 
-	ASMStart(0x808401f0);
+	ASMStart(0x808401f0, "[CM: Light Shield] shieldAttackerPushback");
 	SaveRegisters({0});
 
 	getAnalogShieldValue(modulePtrReg);

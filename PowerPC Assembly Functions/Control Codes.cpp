@@ -27,7 +27,7 @@ void ControlCodes()
 void FixPercentSelector() {
 	//can use r4-r6
 	//r30 is ptr
-	ASMStart(0x800e0ce4, "Fix Percent Selector 1");
+	ASMStart(0x800e0ce4, "[CM: Control Codes] Fix Percent Selector 1");
 
 	int reg1 = 4;
 	int reg2 = 5;
@@ -42,7 +42,7 @@ void FixPercentSelector() {
 
 	//can use r18 and up
 	//r3 is ptr
-	ASMStart(0x800e15a4, "Fix Percent Selector 2");
+	ASMStart(0x800e15a4, "[CM: Control Codes] Fix Percent Selector 2");
 
 	reg1 = 19;
 	reg2 = 20;
@@ -63,7 +63,7 @@ void FixPercentSelector() {
 
 void LoadCodeMenu()
 {
-	ASMStart(0x8002d4f4, "Load Code Menu");
+	ASMStart(0x8002d4f4, "[CM: Control Codes] Load Code Menu");
 	SaveRegisters();
 
 	int reg1 = 31;
@@ -172,7 +172,7 @@ void setRotationQueuePlayers() {
 }
 
 void saveRotationQueueForReplay() {
-	ASMStart(0x806d1770, "Save Rotation Queue For Replay");
+	ASMStart(0x806d1770, "[CM: Control Codes] Save Rotation Queue For Replay");
 
 	int reg1 = 3;
 	int reg2 = 4;
@@ -191,7 +191,7 @@ void StartMatch()
 {
 	saveRotationQueueForReplay();
 
-	ASMStart(0x806cf15c, "Start Match");
+	ASMStart(0x806cf15c, "[CM: Control Codes] Start Match");
 	SaveRegisters();
 
 	int reg1 = 31;
@@ -239,7 +239,7 @@ void StartMatch()
 
 
 void orderRotationQueueByMatchPlacing() {
-	ASMStart(0x806d4c14, "Order Rotation Queue By Match Placing");
+	ASMStart(0x806d4c14, "[CM: Control Codes] Order Rotation Queue By Match Placing");
 	SaveRegisters({ 1 });
 
 	//[[0x80623318 + 0x244 * port(0 based)] + 0x44] = stocks
@@ -376,7 +376,7 @@ void EndMatch()
 	orderRotationQueueByMatchPlacing();
 
 	//r3 is scene manager thing
-	ASMStart(0x806d4850, "End Match");
+	ASMStart(0x806d4850, "[CM: Control Codes] End Match");
 	SaveRegisters();
 
 	int reg1 = 31;
@@ -539,7 +539,7 @@ void EndMatch()
 
 void Draw()
 {
-	ASMStart(0x8000e588, "Draw");
+	ASMStart(0x8000e588, "[CM: Control Codes] Draw");
 	vector<int> FPRegs(21);
 	iota(FPRegs.begin(), FPRegs.end(), 0);
 	SaveRegisters(FPRegs);
@@ -563,7 +563,7 @@ void DeleteCharacterBufferOnTransform()
 	//r3 is thing
 	//r4 is new module index
 	//[r3 + 0xA] = old index
-	ASMStart(0x808205bc, "Delete Character Buffer on Transform");
+	ASMStart(0x808205bc, "[CM: Control Codes] Delete Character Buffer on Transform");
 	SaveRegisters(14);
 
 	int BaseModuleTableReg = 31;
@@ -645,7 +645,7 @@ void AddNewCharacterBuffer()
 	int IsPopoReg = 14;
 	int Quit = GetNextLabel();
 
-	ASMStart(0x8081f4b4, "Add New Character Buffer");
+	ASMStart(0x8081f4b4, "[CM: Control Codes] Add New Character Buffer");
 	SaveRegisters(14);
 
 	LoadWordToReg(28, IS_IN_GAME_FLAG);
@@ -767,7 +767,7 @@ void DeleteCharacterBuffer()
 {
 	//r4 is module ptr
 	//can use r31
-	ASMStart(0x8082f3f4, "Delete Character Buffer");
+	ASMStart(0x8082f3f4, "[CM: Control Codes] Delete Character Buffer");
 	LoadWordToReg(31, IS_IN_GAME_FLAG);
 	If(31, EQUAL_I, 1); {
 		SaveRegisters();

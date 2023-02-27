@@ -2,7 +2,7 @@
 #include "IkeClimbers.h"
 
 void getInput() {
-	ASMStart(0x8083ae38);
+	ASMStart(0x8083ae38, "[CM: IkeClimbers] getInput");
 
 	LWZ(4, 3, 0x110); //fighter id
 	If(4, EQUAL_I, 0x22); { //Ike
@@ -26,7 +26,7 @@ void getInput() {
 }
 
 void getOwner() {
-	ASMStart(0x8083ae24);
+	ASMStart(0x8083ae24, "[CM: IkeClimbers] getOwner");
 
 	LWZ(4, 3, 0x110); //fighter id
 	If(4, EQUAL_I, 0x22); { //Ike
@@ -49,7 +49,7 @@ void getOwner() {
 }
 
 void stopImageLoadCrash() {
-	ASMStart(0x80014af8);
+	ASMStart(0x80014af8, "[CM: IkeClimbers] stopImageLoadCrash");
 
 	If(4, EQUAL_I, 0); {
 		BLR();
@@ -59,7 +59,7 @@ void stopImageLoadCrash() {
 }
 
 void stopParamCrash() {
-	ASMStart(0x8084fee0);
+	ASMStart(0x8084fee0, "[CM: IkeClimbers] stopParamCrash");
 
 	If(4, EQUAL_I, 0xF); {
 		SetRegister(4, 0x22);
@@ -73,7 +73,7 @@ void setData() {
 	//stopParamCrash();
 
 	//use r27+
-	ASMStart(0x8082e7a0);
+	ASMStart(0x8082e7a0, "[CM: IkeClimbers] setData");
 
 	int reg1 = 27;
 	int reg2 = 28;

@@ -999,7 +999,7 @@ void CodeMenu()
 	//Unclepunch fps code
 	vector<unsigned int> x = { 3254926684, 3, 2288895028, 946012161, 2557330484, 2283733000, 1610612736, 0, 3254926716, 6, 2288895029, 946012161, 2557330485, 738394172, 1098907672, 2288895028, 2959983670, 945815552, 2557330484, 2557330485, 2147549204, 0 };
 
-	ledger::openLedgerEntry("FPS Code [UnclePunch]");
+	ledger::openLedgerEntry("[CM: Code Menu] FPS Code [UnclePunch]");
 	for(auto a: x) {
 		WriteIntToFile(a);
 	}
@@ -1124,7 +1124,7 @@ void printMenuSetters() {
 }
 
 void stopAnouncer() {
-	ASMStart(0x809580b4, "Stop Announcer");
+	ASMStart(0x809580b4, "[CM: Code Menu] Stop Announcer");
 	//SaveRegisters();
 	
 	int reg1 = 4;
@@ -1143,7 +1143,7 @@ void endlessFriendlies() {
 
 	//r3 + 0x5D is flag
 	//r3 + 0x28 ^ 0x20 is port num (0 based)
-	ASMStart(0x809489ec, "Endless Friendlies");
+	ASMStart(0x809489ec, "[CM: Code Menu] Endless Friendlies");
 	SaveRegisters();
 
 	int reg1 = 31;
@@ -1230,7 +1230,7 @@ void ActualCodes()
 	if(ALT_STAGE_BEHAVIOR_INDEX != -1) {
 		//ASMStart(0x8094a168);
 #if BUILD_TYPE == PROJECT_PLUS
-		ASMStart(0x8010f990, "Alt Stage Behavior");
+		ASMStart(0x8010f990, "[CM: Code Menu] Alt Stage Behavior");
 #else
 		ASMStart(0x8094bf60);
 #endif
@@ -1306,7 +1306,7 @@ void ActualCodes()
 	}
 
 	if (CROWD_CHEER_TOGGLE_INDEX != -1) {
-		ASMStart(0x8081AD54, "Crowd Cheer Toggle");
+		ASMStart(0x8081AD54, "[CM: Code Menu] Crowd Cheer Toggle");
 		SaveRegisters();
 
 		int reg1 = 31;
@@ -1323,7 +1323,7 @@ void ActualCodes()
 	}
 
 	if (STALING_TOGGLE_INDEX != -1) {
-		ASMStart(0x808e00a4, "Staling Toggle");
+		ASMStart(0x808e00a4, "[CM: Code Menu] Staling Toggle");
 		
 		LoadWordToReg(6, STALING_TOGGLE_INDEX + Line::VALUE);
 		If(6, EQUAL_I, 1); {
@@ -1579,7 +1579,7 @@ void CreateMenu(Page MainPage)
 }
 
 void constantOverride() {
-	ASMStart(0x80023d60, "Constant Overrides");
+	ASMStart(0x80023d60, "[CM: Code Menu] Constant Overrides");
 
 	int reg1 = 4;
 	int reg2 = 5;
@@ -1595,7 +1595,7 @@ void constantOverride() {
 
 void ControlCodeMenu()
 {
-	ASMStart(0x80029574, "Control Code Menu");
+	ASMStart(0x80029574, "[CM: Code Menu] Control Code Menu");
 	vector<int> FPRegs(14);
 	iota(FPRegs.begin(), FPRegs.end(), 0);
 	SaveRegisters(FPRegs);
@@ -2767,7 +2767,7 @@ void printFPS() {
 
 void PrintCodeMenu()
 {
-	ASMStart(0x80017928, "Print Code Menu");
+	ASMStart(0x80017928, "[CM: Code Menu] Print Code Menu");
 	vector<int> FPRegs(14);
 	iota(FPRegs.begin(), FPRegs.end(), 0);
 	SaveRegisters(FPRegs);
@@ -2840,7 +2840,7 @@ void PrimeCodeMenu()
 {
 	GeckoIf(0x8119969c, EQUAL, 0x9421fff0);
 	//r3 + 0x40 has location
-	ASMStart(0x8119969c, "Prime Code Menu");
+	ASMStart(0x8119969c, "[CM: Code Menu] Prime Code Menu");
 	SaveRegisters();
 
 	int Reg1 = 31;

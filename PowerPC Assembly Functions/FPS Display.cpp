@@ -10,7 +10,7 @@ void FPSDisplay() {
 
 
 
-	ASMStart(0x8001792c);
+	ASMStart(0x8001792c, "[CM: FPS Display] FPSDisplay");
 	SaveRegisters(15);
 
 	int reg1 = 31;

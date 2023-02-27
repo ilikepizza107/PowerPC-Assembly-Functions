@@ -46,7 +46,7 @@ void TriggerIASAOverlay()
 	//use r25-r31
 	//r4 is ptr to anim cmd
 	//r27 is module ptr
-	ASMStart(0x8077aff0);
+	ASMStart(0x8077aff0, "[CM: IASA Overlay] TriggerIASAOverlay");
 
 	int reg1 = 31;
 	int reg2 = 30;

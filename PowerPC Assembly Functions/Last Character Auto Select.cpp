@@ -14,7 +14,7 @@ void SetCharacter()
 	//r30 is putCoin argument
 	//[r30 + 0xA0] is setHand argument
 	//r26 is setCharKind argument
-	ASMStart(0x80689b18);
+	ASMStart(0x80689b18, "[CM: Last Character Auto Select] SetCharacter");
 	SaveRegisters();
 
 	//get data from port num
@@ -42,7 +42,7 @@ void SetCharacter()
 
 void SetCorrectColor()
 {
-	ASMStart(0x80696f8c);
+	ASMStart(0x80696f8c, "[CM: Last Character Auto Select] SetCorrectColor");
 
 	If(5, EQUAL_I_L, 0xC0DE); {
 		LWZ(29, 3, 0x1BC);
