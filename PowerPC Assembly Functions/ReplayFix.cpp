@@ -20,7 +20,7 @@ void ReplayFix()
 void FixSinglePlayer() {
 	//r4 has flag
 	//can use r30
-	ASMStart(0x8009c984);
+	ASMStart(0x8009c984, "[CM: ReplayFix] FixSinglePlayer");
 
 	SetRegister(30, IS_VERSUS_LOC);
 	STW(4, 30, 0);
@@ -31,7 +31,8 @@ void FixSinglePlayer() {
 //stops the ASL value from classic or versus from interfering with taining mode
 void ClearASLData()
 {
-	ASMStart(0x806f14c8);
+	ASMStart(0x806f14c8, "[CM: ReplayFix] ClearASLData",
+		"stops the ASL value from classic or versus from interfering with taining mode");
 	SaveRegisters();
 
 	int Reg1 = 31;
@@ -63,7 +64,8 @@ void ClearASLData()
 //cleans up some settings that might have been changed during playback
 void EndReplay()
 {
-	ASMStart(0x8004acc8);
+	ASMStart(0x8004acc8, "[CM: ReplayFix] EndReplay", 
+		"cleans up some settings that might have been changed during playback");
 	//don't change r0
 	int Reg1 = 3;
 	int Reg2 = 31;
@@ -84,14 +86,16 @@ void EndReplay()
 void FixAutoLCancel()
 {
 	//save the current auto L-Cancel setting and use the recorded one
-	ASMStart(0x80874598);
+	ASMStart(0x80874598, "[CM: ReplayFix] FixAutoLCancel 1", 
+		"save the current auto L-Cancel setting and use the recorded one");
 	int Reg1 = 4;
 
 	WriteIntToFile(0xec1e002a); //fadds f0, f30, f0
 	ASMEnd();
 
 	//restore the current auto L-Cancel setting
-	ASMStart(0x808745a0);
+	ASMStart(0x808745a0, "[CM: ReplayFix] FixAutoLCancel 2", 
+		"restore the current auto L-Cancel setting");
 	Reg1 = 3;
 
 	WriteIntToFile(0x3c6080ae); //lis r3, 0x80AE
@@ -102,7 +106,8 @@ void FixAutoLCancel()
 //this prevents that from happening
 void StopFalseCorruption()
 {
-	ASMStart(0x8004c11c);
+	ASMStart(0x8004c11c, "[CM: ReplayFix] StopFalseCorruption", 
+		"the memory saving techniques can be so good that Brawl thinks the replay is too small, and is corrupted\nthis prevents that from happening");
 
 	SetRegister(5, 0); //5 is minimum size
 
@@ -113,7 +118,8 @@ void StopFalseCorruption()
 void FixDebugPause()
 {
 	//fix for match
-	ASMStart(0x8004b9e0);
+	ASMStart(0x8004b9e0, "[CM: ReplayFix] FixDebugPause 1", 
+		"makes debug pause during match or replay not cause desyncs\nfix for match");
 
 	LoadByteToReg(30, IS_DEBUG_PAUSED + 3);
 	If(30, EQUAL_I, 1); //is debug paused
@@ -130,7 +136,8 @@ void FixDebugPause()
 
 
 	//fix for replay
-	ASMStart(0x8004bcb8);
+	ASMStart(0x8004bcb8, "[CM: ReplayFix] FixDebugPause 2", 
+		"fix for replay");
 
 	int Reg1 = 24;
 	int Reg2 = 31;
@@ -222,7 +229,7 @@ void FixDebugPause()
 
 void FastForward()
 {
-	ASMStart(0x80017388);
+	ASMStart(0x80017388, "[CM: ReplayFix] FastForward");
 
 	int Reg1 = 3;
 	int Reg2 = 31;
@@ -288,7 +295,15 @@ void FastForward()
 void MemCardCheckSkip()
 {
 	//skips the function
-	ASMStart(0x803e16c8);
+	ASMStart(0x803e16c8, "[CM: ReplayFix] MemCardCheckSkip 1", 
+		"Code: stops Brawl from checking how much room is left on the memory card, and gives a fake value"
+		"\n\tskips a check when first loading PM, one every time the stage select screen is acessed,"
+		"\n\t3 every time a replay is saved, and 2 every time the replay screen is loaded"
+		"\n\teach check saves several seconds"
+		"\n\tI don't know if this function is called in other places, nor the full implications"
+		"\n\tof skipping it.I haven't run into any problems though and it saves a ton of time."
+		"\n1: skips the function"
+		);
 
 	SetRegister(3, 0);
 
@@ -297,7 +312,8 @@ void MemCardCheckSkip()
 	ASMEnd();
 
 	//writes in a fake value for how much memory remains
-	ASMStart(0x8001efdc);
+	ASMStart(0x8001efdc, "[CM: ReplayFix] MemCardCheckSkip 2",
+		"2: writes in a fake value for how much memory remains");
 
 	SetRegister(27, 1337);
 
@@ -308,7 +324,7 @@ void MemCardCheckSkip()
 void AlternateStageFix()
 {
 	//can use registers 3, 5, 6, 7, 8
-	ASMStart(0x8094a16c);
+	ASMStart(0x8094a16c, "[CM: ReplayFix] AlternateStageFix");
 
 	//get correct alt stage
 	SetRegister(7, 0x800B9EA2); //alt stage helper ASL loc
@@ -351,7 +367,9 @@ void AlternateStageFix()
 void StopRecording()
 {
 	//changes the end of the replay buffer so it won't overwrite required memory
-	ASMStart(0x8004ba84);
+	ASMStart(0x8004ba84, "[CM: ReplayFix] StopRecording 1",
+		"Code: stops Brawl from overwriting certain values so unfinished replays can be saved (by skipping operations)"
+		"\n1: changes the end of the replay buffer so it won't overwrite required memory");
 
 	//reset should stop recording flag
 	ADDI(0, 0, 0); //set r0 to 0
@@ -366,7 +384,10 @@ void StopRecording()
 
 	//stops Brawl from overwriting certain values so unfinished replays can be saved (by skipping operations)
 	//also tells recording function to stop recording
-	ASMStart(0x8004ba9c);
+	ASMStart(0x8004ba9c, "[CM: ReplayFix] StopRecording 2", 
+		"2: stops Brawl from overwriting certain values so unfinished replays can be saved (by skipping operations)"
+		"\n\talso tells recording function to stop recording"
+	);
 
 	ADDI(0, 0, 1); //set r0 to 1
 	SetRegister(4, SHOULD_STOP_RECORDING);
@@ -378,7 +399,7 @@ void StopRecording()
 //prevents Brawl from running its replay function
 void StopBrawlReplay()
 {
-	ASMStart(0x8004ab7c);
+	ASMStart(0x8004ab7c, "[CM: ReplayFix] StopBrawlReplay");
 
 	NOP();
 
@@ -388,7 +409,7 @@ void StopBrawlReplay()
 //changes the offset
 void SetupPlayback()
 {
-	ASMStart(0x8004be50);
+	ASMStart(0x8004be50, "[CM: ReplayFix] SetupPlayback");
 
 	LoadWordToReg(3, IS_VERSUS_LOC);
 	LoadWordToReg(8, FRAME_COUNTER_LOC);
@@ -411,7 +432,8 @@ void SetupPlayback()
 //sets r20 to the start of a sync data segment and resets ptrs
 void AlignSyncDuringPlayback()
 {
-	ASMStart(0x8004bd6c);
+	ASMStart(0x8004bd6c, "[CM: ReplayFix] AlignSyncDuringPlayback",
+		"sets r20 to the start of a sync data segment and resets ptrs");
 
 	//reset input buffer offset
 	SetRegister(20, FRAME_INPUT_BUFFER_OFFSET);
@@ -446,7 +468,8 @@ void AlignSyncDuringPlayback()
 //changes the destination of a memory move during recording to a location that won't be overwritten
 void SaveSyncData()
 {
-	ASMStart(0x8004bb18);
+	ASMStart(0x8004bb18, "[CM: ReplayFix] SaveSyncData",
+		"changes the destination of a memory move during recording to a location that won't be overwritten");
 
 	LoadWordToReg(3, CURRENT_FRAME_HEADER_BYTE_LOC);
 	SetRegister(5, 0x06);
@@ -468,7 +491,8 @@ void SaveSyncData()
 void SetupRecord()
 {
 	//need r30
-	ASMStart(0x8004bb04);
+	ASMStart(0x8004bb04, "[CM: ReplayFix] SetupRecord", 
+		"stores the head byte location, sets up the input ptr, and resets sync data");
 
 	int Reg1 = 5;
 	int Reg2 = 31;
@@ -517,7 +541,8 @@ void RecordInput()
 	StopRecording();
 
 	//need r28, r27
-	ASMStart(0x80764f18);
+	ASMStart(0x80764f18, "[CM: ReplayFix] RecordInput", 
+		"records input during a match");
 
 	int Reg1 = 12;
 	int Reg2 = 31;
@@ -735,7 +760,8 @@ void RecordInput()
 void CStickASDIFix()
 {
 	//need r21
-	ASMStart(0x8091319c);
+	ASMStart(0x8091319c, "[CM: ReplayFix] CStickASDIFix", 
+		"needed because the PlayInput function occurs too late for c-stick asdi and this one is too early for everything else");
 
 	int Reg1 = 12;
 	int Reg2 = 31;
@@ -914,7 +940,8 @@ void PlayInput()
 	EndReplay();
 
 	//need r28, r27
-	ASMStart(0x80764e8c);
+	ASMStart(0x80764e8c, "[CM: ReplayFix] PlayInput", 
+		"plays back input during replay");
 
 	int Reg1 = 3;
 	int Reg2 = 31;
@@ -1109,7 +1136,11 @@ void PlayInput()
 //saves current auto L-Cancel setting to byte
 void MakeBrawlSaveWholeReplay()
 {
-	ASMStart(0x80152C64);
+	ASMStart(0x80152C64, "[CM: ReplayFix] MakeBrawlSaveWholeReplay",
+		"makes Brawl save the entire replay"
+		"\nalso adds values at the end of the replay to make it properly terminate"
+		"\nsaves current auto L-Cancel setting to byte"
+	);
 
 	//set size
 	LoadWordToReg(5, INPUT_BUFFER_PTR_LOC);

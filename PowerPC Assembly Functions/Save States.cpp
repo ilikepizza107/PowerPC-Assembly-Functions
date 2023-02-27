@@ -290,7 +290,7 @@ void SaveOrRestoreState()
 void AddArticle()
 {
 	//r3 == article ptr
-	ASMStart(0x808e2d84);
+	ASMStart(0x808e2d84, "[CM: Save States] AddArticle");
 	SaveRegisters();
 
 	int reg1 = 31;
@@ -311,7 +311,7 @@ void AddArticle()
 void RemoveArticle()
 {
 	//r3 == article ptr
-	ASMStart(0x808e39dc);
+	ASMStart(0x808e39dc, "[CM: Save States] RemoveArticle");
 	SaveRegisters();
 
 	int reg1 = 31;
@@ -880,7 +880,7 @@ void temp1()
 
 	//r9 has released inputs
 
-	ASMStart(0x8004ac24);
+	ASMStart(0x8004ac24, "[CM: Save States] temp1");
 
 	int Reg1 = 14;
 	int Reg2 = 15;
@@ -1082,7 +1082,7 @@ void temp1()
 
 void SaveOrRestoreState()
 {
-	ASMStart(0x8004ac24);
+	ASMStart(0x8004ac24, "[CM: Save States] SaveOrRestoreState");
 
 	int Reg1 = 14;
 	int Reg2 = 15;

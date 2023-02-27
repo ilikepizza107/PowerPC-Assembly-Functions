@@ -12,7 +12,7 @@ void StopStartAltFunctions()
 
 void CheckIfSelectingStage()
 {
-	ASMStart(0x806b30fc);
+	ASMStart(0x806b30fc, "[CM: StopStartAlts] CheckIfSelectingStage");
 
 	int Reg1 = 31;
 	int Reg2 = 30;
@@ -30,7 +30,8 @@ void CheckIfSelectingStage()
 //needs CheckIfSelectingStage
 void NegateRButton()
 {
-	ASMStart(0x8002973c);
+	ASMStart(0x8002973c, "[CM: StopStartAlts] NegateRButton", 
+		"needs CheckIfSelectingStage");
 
 	int Reg1 = 31;
 	int Reg2 = 30;
@@ -74,7 +75,8 @@ void NegateRButton()
 void ChangeRToStart()
 {
 	//eliminate start input from alt stage value
-	ASMStart(0x8094a168);
+	ASMStart(0x8094a168, "[CM: StopStartAlts] ChangeRToStart", 
+		"eliminate start input from alt stage value");
 
 	int Reg1 = 3;
 	int Reg2 = 4;

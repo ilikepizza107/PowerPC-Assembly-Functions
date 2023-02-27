@@ -28,7 +28,7 @@ void recordActiveTags() {
 
 	//r31 is menuPtr thing
 	//ASMStart(0x806a0714);
-	ASMStart(0x806a0718);
+	ASMStart(0x806a0718, "[CM: Tag Based Costumes] recordActiveTags");
 	SaveRegisters();
 
 	int menuPtrReg = 3;
@@ -56,7 +56,7 @@ void recordActiveTags() {
 }
 
 void teamBattleTagReload() {
-	ASMStart(0x8068a4a0);
+	ASMStart(0x8068a4a0, "[CM: Tag Based Costumes] teamBattleTagReload");
 	SaveRegisters();
 
 	int teamBattleSettingsReg = 31;
@@ -83,7 +83,7 @@ void teamBattleTagReload() {
 void setTagCostume() {
 	//r8 is port num
 	//r4 is path str
-	ASMStart(0x8084d0d4);
+	ASMStart(0x8084d0d4, "[CM: Tag Based Costumes] setTagCostume");
 	SaveRegisters();
 
 	int endStrReg = 20;
@@ -190,7 +190,7 @@ void setTagCostume() {
 void reloadCostumeAfterTagSelect() {
 	//r31 + 8 = flag location
 	//if flag == 1, set r3 to 0x7F, else lbz r3, 0x5B(r30)
-	ASMStart(0x8094641c);
+	ASMStart(0x8094641c, "[CM: Tag Based Costumes] reloadCostumeAfterTagSelect");
 
 	LBZ(3, 31, 2); //port
 	SetRegister(4, TAG_LOAD_FLAGS_LOC);
@@ -213,7 +213,7 @@ void reloadCostumeAfterTagSelect() {
 }
 
 void updateTagsWhenOptionChanged() {
-	ASMStart(0x8001735c);
+	ASMStart(0x8001735c, "[CM: Tag Based Costumes] updateTagsWhenOptionChanged");
 	SaveRegisters();
 
 	int playerInitDataReg = 30;

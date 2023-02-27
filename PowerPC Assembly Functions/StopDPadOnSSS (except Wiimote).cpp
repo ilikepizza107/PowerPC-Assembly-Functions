@@ -12,7 +12,7 @@ void StopDPadOnSSS()
 
 void CheckIfOnSSS()
 {
-	ASMStart(0x806b30fc);
+	ASMStart(0x806b30fc, "[CM: StopDPadOnSSS (except Wiimote)] CheckIfOnSSS");
 
 	int Reg1 = 31;
 	int Reg2 = 30;
@@ -29,7 +29,7 @@ void CheckIfOnSSS()
 
 void StopDPad()
 {
-	ASMStart(0x80029ed8);
+	ASMStart(0x80029ed8, "[CM: StopDPadOnSSS (except Wiimote)] StopDPad");
 	WriteIntToFile(0xcb1f0080); //lfd f24, r31, 0x80
 
 	//SaveRegs({ 31, 30, 29, 28 });
@@ -92,7 +92,7 @@ void StopDPad()
 
 void FixDPadASL()
 {
-	ASMStart(0x8094a168);
+	ASMStart(0x8094a168, "[CM: StopDPadOnSSS (except Wiimote)] FixDPadASL");
 	
 	int Reg1 = 4; //can use without saving
 	int Reg2 = 31;
@@ -117,7 +117,7 @@ void ConvertButtons()
 
 	ConvertedWiimoteASL();
 
-	ASMStart(0x80029ed4);
+	ASMStart(0x80029ed4, "[CM: StopDPadOnSSS (except Wiimote)] ConvertButtons");
 	//don't use r31
 	int Reg1 = 23;
 	int Reg2 = 30;
@@ -182,7 +182,7 @@ void ConvertButtons()
 
 void ConvertedWiimoteASL()
 {
-	ASMStart(0x800b9e9c);
+	ASMStart(0x800b9e9c, "[CM: StopDPadOnSSS (except Wiimote)] ConvertedWiimoteASL");
 
 	int Reg1 = 31;
 	int Reg2 = 30;

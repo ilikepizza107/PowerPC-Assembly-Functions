@@ -3,7 +3,7 @@
 #include "Miscellaneous Code.h"
 
 void fixStanimaTextBug() {
-	ASMStart(0x806a8278);
+	ASMStart(0x806a8278, "[CM: Miscellaneous Code] fixStanimaTextBug");
 
 	LBZ(4, 3, 0x66E);
 	If(4, GREATER_I, 10); {
@@ -18,7 +18,7 @@ void retainTechKB() {
 	//[sp + 0x10] = pervious X KB
 	//store at r31 + 8
 	//use r29+
-	ASMStart(0x8086d1c8);
+	ASMStart(0x8086d1c8, "[CM: Miscellaneous Code] retainTechKB");
 
 	LWZ(30, 1, 0x10);
 	STW(30, 31, 0x8);
@@ -31,7 +31,7 @@ void preventRollSlideOff() {
 	//r30 is module ptr
 	//use r3, r30, r31
 	//action = [[[r30 + 0xD8] + 0x70] + 0x34]
-	ASMStart(0x8089dbd0);
+	ASMStart(0x8089dbd0, "[CM: Miscellaneous Code] preventRollSlideOff");
 
 	LWZ(3, 30, 0xD8);
 	LWZ(3, 3, 0x70); //status module
@@ -57,7 +57,7 @@ void DBZModeTest() {
 	//use r28 and up
 	//r26 = kinetic module ptr
 	//r27 = module ptr
-	ASMStart(0x807c1a20);
+	ASMStart(0x807c1a20, "[CM: Miscellaneous Code] DBZModeTest");
 	SaveRegisters(3);
 
 	int reg1 = 31;
@@ -99,7 +99,7 @@ void DBZModeTest() {
 }
 
 void stickInputValueVariables() {
-	ASMStart(0x809131a0);
+	ASMStart(0x809131a0, "[CM: Miscellaneous Code] stickInputValueVariables");
 	SaveRegisters();
 
 	int reg = 31;
@@ -133,7 +133,7 @@ void musicPercentCode() {
 	//r3 + 0x670 = stage id
 	//r3 + 0x698 = song id
 	//music object = [0x805a01d8]
-	ASMStart(0x8117e698);
+	ASMStart(0x8117e698, "[CM: Miscellaneous Code] musicPercentCode");
 	SaveRegisters({1});
 
 	int reg1 = 31;
@@ -191,7 +191,7 @@ void musicPercentCode() {
 }
 
 void cstickTiltTest() {
-	ASMStart(0x80764dd0);
+	ASMStart(0x80764dd0, "[CM: Miscellaneous Code] cstickTiltTest");
 
 	SaveRegisters();
 
@@ -257,7 +257,7 @@ void cstickTiltTest() {
 }
 
 void DoubleFighterTest() {
-	ASMStart(0x8081dfb0);
+	ASMStart(0x8081dfb0, "[CM: Miscellaneous Code] DoubleFighterTest");
 	//use r19 up
 	//r27 has ptr
 	LWZ(19, 27, 0x30);
@@ -383,7 +383,7 @@ void getStickMagnitide(int stickBaseReg, int resultFReg = 2) {
 
 void UCF() {
 	//r31 is module ptr
-	ASMStart(0x8083a31c);
+	ASMStart(0x8083a31c, "[CM: Miscellaneous Code] UCF 1");
 	SaveRegisters(4);
 	int reg1 = 3;
 	int reg2 = 4;
@@ -448,7 +448,7 @@ void UCF() {
 	RestoreRegisters();
 	ASMEnd(0x7f43d378); //mr r3, r26
 
-	ASMStart(0x8083a324);
+	ASMStart(0x8083a324, "[CM: Miscellaneous Code] UCF 2");
 	SaveRegisters();
 
 	SetRegister(reg1, 0x80B882EC);
@@ -464,7 +464,7 @@ void UCF() {
 }
 
 void LXPGreenOverlayFix() {
-	ASMStart(0x806d4858);
+	ASMStart(0x806d4858, "[CM: Miscellaneous Code] LXPGreenOverlayFix");
 
 	int reg1 = 3;
 	int reg2 = 4;
@@ -481,7 +481,7 @@ void LXPGreenOverlayFix() {
 
 void FixStickyRAlts() {
 	//can use r0, r3, r4, r5
-	ASMStart(0x806cbfa8);
+	ASMStart(0x806cbfa8, "[CM: Miscellaneous Code] FixStickyRAlts");
 
 	int reg1 = 3;
 	int reg2 = 4;
@@ -501,7 +501,7 @@ void FixStickyRAlts() {
 
 void CStickSlowFix()
 {
-	ASMStart(0x80048b70);
+	ASMStart(0x80048b70, "[CM: Miscellaneous Code] CStickSlowFix");
 
 	LoadWordToReg(6, 0x80B84EB0);
 	If(6, NOT_EQUAL_I, 0); {
@@ -530,7 +530,7 @@ void FixTr4shTeamToggle()
 	//logic
 	//use r3, r12, r4
 	//r31 has menu ptr?
-	ASMStart(0x8068a494);
+	ASMStart(0x8068a494, "[CM: Miscellaneous Code] FixTr4shTeamToggle (Logic)");
 	//sets S4 toggle
 	//LoadWordToReg(3, 0x805A00E0);
 	//LWZ(3, 3, 0x10);
@@ -548,7 +548,7 @@ void FixTr4shTeamToggle()
 	//save flag
 	//use r4, r5, r0
 	//r3 has menu ptr
-	ASMStart(0x806846e0);
+	ASMStart(0x806846e0, "[CM: Miscellaneous Code] FixTr4shTeamToggle (Save Flag)");
 
 	LBZ(4, 3, 0x5CB);
 	LoadWordToReg(5, 0x805A00E0);
@@ -561,7 +561,7 @@ void FixTr4shTeamToggle()
 	//clear flag
 	//r3 has menu ptr
 	//use r4, r5
-	ASMStart(0x80684480);
+	ASMStart(0x80684480, "[CM: Miscellaneous Code] FixTr4shTeamToggle (Clear Flag)");
 
 	LoadWordToReg(4, 0x805A00E0);
 	LWZ(4, 4, 0x10);
@@ -574,7 +574,7 @@ void FixTr4shTeamToggle()
 
 	//fix toggle
 	//use r4, r3, r5
-	ASMStart(0x80686c04);
+	ASMStart(0x80686c04, "[CM: Miscellaneous Code] FixTr4shTeamToggle (Fix Toggle)");
 
 	LoadWordToReg(3, 0x805A00E0);
 	LWZ(3, 3, 0x10);
@@ -591,7 +591,7 @@ void FixTr4shTeamToggle()
 
 void StopPokemonTrainerSwitch()
 {
-	ASMStart(0x80a8c390);
+	ASMStart(0x80a8c390, "[CM: Miscellaneous Code] StopPokemonTrainerSwitch");
 
 	If(4, EQUAL_I, 0x123); //down B switch
 	SetRegister(4, 0x120);
@@ -603,7 +603,7 @@ void StopPokemonTrainerSwitch()
 void SetKappaItemFlag()
 {
 	//can use r5, r6, r7, r8
-	ASMStart(0x8094a170);
+	ASMStart(0x8094a170, "[CM: Miscellaneous Code] SetKappaItemFlag");
 
 	SetRegister(6, KAPPA_ITEM_FLAG);
 	LoadHalfToReg(5, ALT_STAGE_VAL_LOC);
@@ -626,7 +626,7 @@ void SetTeamAttackTraining()
 {
 	//r29 + 8 + 2 has team attack byte
 	//can use r3, r5
-	ASMStart(0x806f1984);
+	ASMStart(0x806f1984, "[CM: Miscellaneous Code] SetTeamAttackTraining");
 
 	LBZ(3, 29, 10);
 	ORI(3, 3, 1); //turn on team attack
@@ -642,7 +642,7 @@ void ItemSpawnControl()
 	SetKappaItemFlag();
 
 	//r3 + 0x64 is item spawn frame
-	ASMStart(0x80951f3c);
+	ASMStart(0x80951f3c, "[CM: Miscellaneous Code] ItemSpawnControl");
 
 	int Reg1 = 31;
 	int Reg2 = 30;
