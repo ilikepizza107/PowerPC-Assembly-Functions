@@ -1,5 +1,7 @@
 #include "_DashAttackItemGrab.h"
 
+const std::string codeVersion = "v1.0.0";
+
 void dashAttackItemGrab()
 {
 	// If Toggle Enabled
@@ -11,7 +13,7 @@ void dashAttackItemGrab()
 		constexpr unsigned long dashAttackItemGrabRamWriteLoc = 0x80FB240C;
 
 
-		ASMStart(0x808e0094, "Dash Attack Item Grab Toggle " + version + " [QuickLava]"); // Hooks "getPowerMul/[ftLogPatternModule]/ft_pattern_log.o" (same as the Staling Toggle Code).
+		ASMStart(0x808e0094, "Dash Attack Item Grab Toggle " + codeVersion + " [QuickLava]"); // Hooks "getPowerMul/[ftLogPatternModule]/ft_pattern_log.o" (same as the Staling Toggle Code).
 		SetRegister(reg1, DASH_ATTACK_ITEM_GRAB_INDEX); // Load the location of the toggle's line.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the selected index of the CSS Roster Line
 
