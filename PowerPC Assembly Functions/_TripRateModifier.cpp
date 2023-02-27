@@ -8,7 +8,7 @@ void tripRateModifier()
 	{
 		int reg1 = 5;
 		int reg2 = 12;
-		ASMStart(0x8089E910, "Tripping Toggle " + codeVersion + " [QuickLava]"); // Hooks "isSlip/[ftUtil]/ft_util.o".
+		ASMStart(0x8089E910, "[CM: _TripRateModifier] Tripping Toggle " + codeVersion + " [QuickLava]"); // Hooks "isSlip/[ftUtil]/ft_util.o".
 		SetRegister(reg1, TRIP_TOGGLE_INDEX); // Load the location of the toggle's line.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the current state of the toggle.
 		// If the toggle is set to on...
@@ -31,7 +31,7 @@ void tripRateModifier()
 		reg1 = 5;
 		reg2 = 12;
 		const unsigned long dashTurnSlipMultiplierAddress = 0x80b883dc;
-		ASMStart(0x8089e868, "Tripping Rate Modifier " + codeVersion + " [QuickLava]"); // Hooks "isSlip/[ftUtil]/ft_util.o".
+		ASMStart(0x8089e868, "[CM: _TripRateModifier] Tripping Rate Modifier " + codeVersion + " [QuickLava]"); // Hooks "isSlip/[ftUtil]/ft_util.o".
 		SetRegister(reg1, TRIP_TOGGLE_INDEX); // Load the location of the toggle's line.
 		LWZ(reg2, reg1, Line::VALUE); // Then Look 0x08 past that address to get the current state of the toggle.
 		// If the toggle is set to on...
@@ -48,7 +48,7 @@ void tripRateModifier()
 
 
 		reg1 = 12;
-		ASMStart(0x8081cb68, "Tripping Interval Modifier " + codeVersion + " [QuickLava]"); // Hooks "isSlipInterval/[ftOwner]/ft_owner.o".
+		ASMStart(0x8081cb68, "[CM: _TripRateModifier] Tripping Interval Modifier " + codeVersion + " [QuickLava]"); // Hooks "isSlipInterval/[ftOwner]/ft_owner.o".
 		SetRegister(reg1, TRIP_INTERVAL_INDEX); // Load the location of the cooldown toggle's line.
 		LWZ(reg1, reg1, Line::VALUE); // Then look 0x08 past that address to get the value.
 		If(reg1, EQUAL_I, 0);
