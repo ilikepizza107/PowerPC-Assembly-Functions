@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <cassert>
+#include <sstream>
 using namespace std;
 
 typedef unsigned int u32;
@@ -276,15 +277,17 @@ namespace ledger
 		std::string codeName = "";
 		std::streampos codeStartPos = SIZE_MAX;
 		std::streampos codeEndPos = SIZE_MAX;
+		std::string codeBlurb = "";
 
-		codeLedgerEntry(std::string codeNameIn, std::streampos codeStartPosIn) : codeName(codeNameIn), codeStartPos(codeStartPosIn) {};
+		codeLedgerEntry(std::string codeNameIn, std::streampos codeStartPosIn, std::string codeBlurbIn = "") :
+			codeName(codeNameIn), codeStartPos(codeStartPosIn), codeBlurb(codeBlurbIn) {};
 		std::size_t length();
 	};
 
-	bool openLedgerEntry(std::string codeName);
+	bool openLedgerEntry(std::string codeName, std::string codeBlurb = "");
 	bool closeLedgerEntry();
 
-	bool writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::vector<char>& codeIn);
+	bool writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn);
 }
 
 
@@ -343,7 +346,7 @@ void LoadWordToReg(int DestReg, int Reg, int Address);
 void LoadHalfToReg(int DestReg, int Reg, int Address);
 void LoadByteToReg(int DestReg, int Reg, int Address);
 void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg);
-void ASMStart(int BranchAddress, std::string name = "");
+void ASMStart(int BranchAddress, std::string name = "", std::string blurb = "");
 void ASMEnd(int Replacement);
 void ASMEnd();
 void Label(int LabelNum);

@@ -22,13 +22,13 @@ std::size_t ledger::codeLedgerEntry::length()
 {
 	return (codeStartPos != SIZE_MAX && codeEndPos != SIZE_MAX && codeEndPos > codeStartPos) ? codeEndPos - codeStartPos : SIZE_MAX;
 }
-bool ledger::openLedgerEntry(std::string codeName)
+bool ledger::openLedgerEntry(std::string codeName, std::string codeBlurb)
 {
 	bool result = 0;
 
 	if (codeLedger.empty() || codeLedger.back().codeEndPos != SIZE_MAX)
 	{
-		codeLedger.push_back(ledger::codeLedgerEntry(codeName, WPtr.tellp()));
+		codeLedger.push_back(ledger::codeLedgerEntry(codeName, WPtr.tellp(), codeBlurb));
 		result = 1;
 	}
 	else
@@ -56,12 +56,44 @@ bool ledger::closeLedgerEntry()
 
 	return result;
 }
-bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::vector<char>& codeIn)
+bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn)
 {
-	// Write Code Name and Hashtags
-	output << std::string(std::max((int)codeNameIn.size(), 20), '#') << "\n";
+	// Determine Hashtag Border Length
+	std::size_t hashtagStrLength = std::max((int)codeNameIn.size(), 20);
+	if (!codeBlurbIn.empty())
+	{
+		std::size_t cursorBak = 0;
+		std::size_t cursor = 0;
+		while (cursor < codeBlurbIn.size())
+		{
+			cursorBak = cursor;
+			cursor = codeBlurbIn.find('\n', cursor);
+			if (cursor != std::string::npos)
+			{
+				hashtagStrLength = std::max((cursor - cursorBak) + 2, hashtagStrLength);
+				cursor += 1;
+			}
+			else
+			{
+				hashtagStrLength = std::max((codeBlurbIn.size() - cursorBak) + 2, hashtagStrLength);
+				cursor = std::string::npos;
+			}
+		}
+	}
+
+	// Write Code Name, Blurb, and Hashtags
+	output << std::string(hashtagStrLength, '#') << "\n";
 	output << codeNameIn << "\n";
-	output << std::string(std::max((int)codeNameIn.size(), 20), '#') << "\n";
+	if (!codeBlurbIn.empty())
+	{
+		std::stringstream blurbStream(codeBlurbIn);
+		std::string currentLine = "";
+		while (std::getline(blurbStream, currentLine))
+		{
+			output << "# " << currentLine << "\n";
+		}
+	}
+	output << std::string(hashtagStrLength, '#') << "\n";
 
 	// Write Code Body
 	std::size_t position = 0;
@@ -215,7 +247,7 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 				temp.resize(unattestedLength);
 				textFile.read(temp.data(), unattestedLength);
 
-				ledger::writeCodeToASMStream(neoASMFile, tempName, temp);
+				ledger::writeCodeToASMStream(neoASMFile, tempName, "", temp);
 				
 				neoASMFile << "\n";
 				unknownCount++;
@@ -234,7 +266,7 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 				textFile.seekg(currEntry->codeStartPos);
 				textFile.read(temp.data(), entryLength);
 
-				ledger::writeCodeToASMStream(neoASMFile, tempName, temp);
+				ledger::writeCodeToASMStream(neoASMFile, tempName, currEntry->codeBlurb, temp);
 				neoASMFile << "\n";
 			}
 		}
@@ -591,9 +623,9 @@ void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg)
 //keeps track of how many lines are written
 //writes extra 00000000 or 60000000 00000000 at end as necessary
 //assumes ba = 0x80000000
-void ASMStart(int BranchAddress, std::string name)
+void ASMStart(int BranchAddress, std::string name, std::string blurb)
 {
-	ledger::openLedgerEntry(name);
+	ledger::openLedgerEntry(name, blurb);
 
 	int OpWord = (0xC2 << 24);
 	if(BranchAddress >= 0x81000000)
