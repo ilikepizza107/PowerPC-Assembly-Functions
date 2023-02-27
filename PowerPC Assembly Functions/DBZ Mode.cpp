@@ -5,7 +5,7 @@ void DBZMode() {
 	//use r28 and up
 	//r26 = kinetic module ptr
 	//r27 = module ptr
-	ASMStart(0x807c1a20);
+	ASMStart(0x807c1a20, "DBZ Mode");
 	SaveRegisters(3);
 
 	int reg1 = 31;
@@ -63,7 +63,7 @@ void DBZMode() {
 void forceDeathOffTop() {
 	//set r3 to checkDeadArea if DBZ mode active, checkDead returned -1, not dying, and not respawning
 	//r31 is module ptr
-	ASMStart(0x8083ade0);
+	ASMStart(0x8083ade0, "Force Death Off Top");
 
 	int EndLabel = GetNextLabel();
 

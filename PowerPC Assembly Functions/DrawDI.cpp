@@ -119,7 +119,7 @@ void SetHitStart()
 {
 	//r30 = module ptr
 	//r31 = damage log
-	ASMStart(0x808761e8);
+	ASMStart(0x808761e8, "Set Hit Start");
 
 	WriteIntToFile(0x4e800421); //bctrl
 
@@ -180,7 +180,7 @@ void AddToSDIBuffer()
 	//f2 = new ypos
 	//r30 = module ptr
 	//can use r12, r3
-	ASMStart(0x80876c84);
+	ASMStart(0x80876c84, "Add to SDI Buffer");
 	SaveRegisters();
 
 	FindCharacterBuffer(30, 12);
@@ -207,7 +207,7 @@ void AddToASDIBuffer()
 	//f2 = new ypos
 	//r31 = module ptr
 	//use f3, r3, r12
-	ASMStart(0x80876fec);
+	ASMStart(0x80876fec, "Add To ASDI Buffer");
 	SaveRegisters();
 
 	int reg1 = 30;
@@ -238,7 +238,7 @@ void AddToASDIBuffer()
 void SetTrajectoryBuffers()
 {
 	//r29 = module ptr
-	ASMStart(0x80877b48);
+	ASMStart(0x80877b48, "Set Trajectory Buffers");
 	SaveRegisters(30); //reduce number saved later
 
 	int reg1 = 31;
