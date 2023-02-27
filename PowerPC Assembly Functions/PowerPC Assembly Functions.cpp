@@ -205,6 +205,7 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 		return false;
 	}
 
+	/*
 	ofstream asmFile(OutputAsmPath);
 	if (asmFile.is_open())
 	{
@@ -220,13 +221,13 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 
 		asmFile.close();
 	}
-
 	else {
 		cout << "Unable to open ASM file, check the OutputAsmPath";
 		return false;
 	}
+	*/
 
-	ofstream neoASMFile("./Code_Menu_Output/CodeMenu_New.asm");
+	ofstream neoASMFile(OutputAsmPath);
 	if (!codeLedger.empty() && neoASMFile.is_open())
 	{
 		std::vector<char> temp{};
@@ -273,7 +274,7 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 	}
 	else
 	{
-		std::cerr << "[ERROR] Couldn't open ASM File!\n";
+		std::cerr << "[ERROR] Couldn't create ASM File (\"" << OutputAsmPath << "\")!\n";
 	}
 }
 
