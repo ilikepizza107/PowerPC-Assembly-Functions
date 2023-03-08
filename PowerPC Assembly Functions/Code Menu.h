@@ -81,6 +81,12 @@ extern int DASH_ATTACK_ITEM_GRAB_INDEX;
 extern int TRIP_TOGGLE_INDEX;
 extern int TRIP_RATE_MULTIPLIER_INDEX;
 extern int TRIP_INTERVAL_INDEX;
+extern int BACKPLATE_COLOR_1_INDEX;
+extern int BACKPLATE_COLOR_2_INDEX;
+extern int BACKPLATE_COLOR_3_INDEX;
+extern int BACKPLATE_COLOR_4_INDEX;
+extern int BACKPLATE_COLOR_C_INDEX;
+extern int BACKPLATE_COLOR_T_INDEX;
 
 
 struct ConstantPair {
@@ -464,7 +470,14 @@ static const int THEME_LOC = CSS_VER_LOC + 4; //4
 //static const int TRIP_RATE_MULTIPLIER_LOC = TRIP_TOGGLE_LOC + 0x04; //4
 //static const int TRIP_INTERVAL_LOC = TRIP_RATE_MULTIPLIER_LOC + 0x04; //4
 
-static const int DRAW_SETTINGS_BUFFER_LOC = THEME_LOC + 4; //0x200
+static const int BACKPLATE_COLOR_1_LOC = THEME_LOC + 4; //4
+static const int BACKPLATE_COLOR_2_LOC = BACKPLATE_COLOR_1_LOC + 4; //4
+static const int BACKPLATE_COLOR_3_LOC = BACKPLATE_COLOR_2_LOC + 4; //4
+static const int BACKPLATE_COLOR_4_LOC = BACKPLATE_COLOR_3_LOC + 4; //4
+static const int BACKPLATE_COLOR_C_LOC = BACKPLATE_COLOR_4_LOC + 4; //4
+static const int BACKPLATE_COLOR_T_LOC = BACKPLATE_COLOR_C_LOC + 4; //4
+
+static const int DRAW_SETTINGS_BUFFER_LOC = BACKPLATE_COLOR_T_LOC + 4; //0x200
 
 
 

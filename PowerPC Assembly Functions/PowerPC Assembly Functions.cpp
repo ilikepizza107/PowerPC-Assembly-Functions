@@ -1784,7 +1784,7 @@ void ANDI(int DestReg, int SourceReg, int Immediate)
 	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
 }
-
+	
 void ANDIS(int DestReg, int SourceReg, int Immediate)
 {
 	OpHex = GetOpSegment(29, 6, 5);

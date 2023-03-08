@@ -21,6 +21,7 @@
 #include "_ThemeChange.h"
 #include "_DashAttackItemGrab.h"
 #include "_TripRateModifier.h"
+#include "_BackplateColors.h"
 //#include "FPS Display.h"
 using namespace std;
 
@@ -462,7 +463,7 @@ int main(int argc, char** argv)
 
 		//LXPGreenOverlayFix();
 
-		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); // dashAttackItemGrab(); tripRateModifier();
+		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); backplateColorChange(); // dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();
 

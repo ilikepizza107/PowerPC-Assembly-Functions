@@ -76,6 +76,12 @@ int DASH_ATTACK_ITEM_GRAB_INDEX = -1;
 int TRIP_TOGGLE_INDEX = -1;
 int TRIP_RATE_MULTIPLIER_INDEX = -1;
 int TRIP_INTERVAL_INDEX = -1;
+int BACKPLATE_COLOR_1_INDEX = -1;
+int BACKPLATE_COLOR_2_INDEX = -1;
+int BACKPLATE_COLOR_3_INDEX = -1;
+int BACKPLATE_COLOR_4_INDEX = -1;
+int BACKPLATE_COLOR_C_INDEX = -1;
+int BACKPLATE_COLOR_T_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
 
 //constant overrides
@@ -910,8 +916,29 @@ void CodeMenu()
 	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
 	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
-
 	Page SpecialModePage("Special Modes", SpecialModeLines);
+
+
+	// HUD Color Settings
+	vector<Line*> HUDColorLines;
+	std::vector<std::string> colorStrings = { 
+		"Color 0",
+		"Color 1", "Color 2", "Color 3", 
+		"Color 4", "Color 5", "Color 6", 
+		"Color 7", "Color 8", "Color 9",
+		"Color 10", "Color 11", "Color 12",
+		"Color 13", "Color 14", "Color 15",
+	};
+	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
+	HUDColorLines.push_back(new Selection("Red: ", colorStrings, 1, BACKPLATE_COLOR_1_INDEX));
+	HUDColorLines.push_back(new Selection("Blue: ", colorStrings, 2, BACKPLATE_COLOR_2_INDEX));
+	HUDColorLines.push_back(new Selection("Yellow: ", colorStrings, 3, BACKPLATE_COLOR_3_INDEX));
+	HUDColorLines.push_back(new Selection("Green: ", colorStrings, 4, BACKPLATE_COLOR_4_INDEX));
+	HUDColorLines.push_back(new Selection("Gray: ", colorStrings, 9, BACKPLATE_COLOR_C_INDEX));
+	HUDColorLines.push_back(new Selection("Clear: ", colorStrings, 0, BACKPLATE_COLOR_T_INDEX));
+	Page HUDColorsPage("HUD Colors", HUDColorLines);
+
+
 	//main page
 	vector<Line*> MainLines;
 #if DOLPHIN_BUILD
@@ -955,6 +982,7 @@ void CodeMenu()
 	MainLines.push_back(&P3.CalledFromLine);
 	MainLines.push_back(&P4.CalledFromLine);
 	MainLines.push_back(&SpecialModePage.CalledFromLine);
+	MainLines.push_back(&HUDColorsPage.CalledFromLine);
 
 #if BUILD_TYPE == PROJECT_PLUS
 	MainLines.push_back(new Toggle("Crowd Cheers", false, CROWD_CHEER_TOGGLE_INDEX));
@@ -1541,6 +1569,14 @@ void CreateMenu(Page MainPage)
 
 	// Theme Setting
 	AddValueToByteArray(THEME_SETTING_INDEX, Header);
+
+	// Backplate Settings
+	AddValueToByteArray(BACKPLATE_COLOR_1_INDEX, Header);
+	AddValueToByteArray(BACKPLATE_COLOR_2_INDEX, Header);
+	AddValueToByteArray(BACKPLATE_COLOR_3_INDEX, Header);
+	AddValueToByteArray(BACKPLATE_COLOR_4_INDEX, Header);
+	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
+	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
 
 	//// Dash Attack Item Grab Setting
 	//AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
