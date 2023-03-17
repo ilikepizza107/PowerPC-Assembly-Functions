@@ -463,7 +463,7 @@ int main(int argc, char** argv)
 
 		//LXPGreenOverlayFix();
 
-		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); backplateColorChange(); // dashAttackItemGrab(); tripRateModifier();
+		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); backplateColorChange(); shieldColorChange(); // dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();
 
