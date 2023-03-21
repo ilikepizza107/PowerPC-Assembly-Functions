@@ -274,9 +274,8 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				logOutput.setStandardOutputStream(lava::outputSplitter::sOS_CERR);
-				logOutput << "[ERROR] Couldn't open \"" << themeInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
-				logOutput.setStandardOutputStream(lava::outputSplitter::sOS_COUT);
+				logOutput.write("[ERROR] Couldn't open \"" + themeInputFileName + "\"! Ensure that the file is present in this folder and try again!\n",
+					ULONG_MAX, lava::outputSplitter::sOS_CERR);
 			}
 			//Print the results.
 			logOutput << "\nFinal Theme List:\n";
@@ -329,9 +328,8 @@ int main(int argc, char** argv)
 						}
 						else
 						{
-							logOutput.setStandardOutputStream(lava::outputSplitter::sOS_CERR);
-							logOutput << "[ERROR] Invalid Filename specified! The roster \"" << currPair->first << "\" will not be added to the Code Menu!\n";
-							logOutput.setStandardOutputStream(lava::outputSplitter::sOS_COUT);
+							logOutput.write("[ERROR] Invalid Filename specified! The roster \"" + currPair->first + "\" will not be added to the Code Menu!\n",
+								ULONG_MAX, lava::outputSplitter::sOS_CERR);
 						}
 					}
 
@@ -351,9 +349,8 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				logOutput.setStandardOutputStream(lava::outputSplitter::sOS_CERR);
-				logOutput << "[ERROR] Couldn't open \"" << rosterInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
-				logOutput.setStandardOutputStream(lava::outputSplitter::sOS_COUT);
+				logOutput.write("[ERROR] Couldn't open \"" + rosterInputFileName + "\"! Ensure that the file is present in this folder and try again!\n",
+					ULONG_MAX, lava::outputSplitter::sOS_CERR);
 			}
 			//Print the results.
 			logOutput << "\nFinal Roster List:\n";
@@ -401,9 +398,8 @@ int main(int argc, char** argv)
 						}
 						else
 						{
-							logOutput.setStandardOutputStream(lava::outputSplitter::sOS_CERR);
-							logOutput << "[ERROR] Invalid Slot ID specified! The character \"" << currPair->first << "\" will not be added to the Code Menu!\n";
-							logOutput.setStandardOutputStream(lava::outputSplitter::sOS_COUT);
+							logOutput.write("[ERROR] Invalid Slot ID specified! The character \"" + currPair->first + "\" will not be added to the Code Menu!\n",
+								ULONG_MAX, lava::outputSplitter::sOS_CERR);
 						}
 					}
 
@@ -423,9 +419,8 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				logOutput.setStandardOutputStream(lava::outputSplitter::sOS_CERR);
-				logOutput << "[ERROR] Couldn't open \"" << exCharInputFileName << "\"! Ensure that the file is present in this folder and try again!\n";
-				logOutput.setStandardOutputStream(lava::outputSplitter::sOS_COUT);
+				logOutput.write("[ERROR] Couldn't open \"" + exCharInputFileName + "\"! Ensure that the file is present in this folder and try again!\n",
+					ULONG_MAX, lava::outputSplitter::sOS_CERR);
 			}
 			//Print the results.
 			logOutput << "\nFinal Character List:\n";

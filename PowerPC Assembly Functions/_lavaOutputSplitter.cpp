@@ -98,9 +98,13 @@ namespace lava
 				standardOutputStream = &std::clog;
 				break;
 			}
-			default:
+			case stdOutStreamEnum::sOS_DISABLED:
 			{
 				standardOutputStream = &lava::cnull;
+				break;
+			}
+			default:
+			{
 				break;
 			}
 		}
@@ -113,7 +117,7 @@ namespace lava
 	{
 		operatorChannelMask = channelMaskIn;
 	}
-	
+
 	bool outputSplitter::pushStream(outputEntry streamIn, unsigned long streamIDIn, unsigned long* streamIDOut)
 	{
 		bool result = 0;
@@ -155,7 +159,7 @@ namespace lava
 
 		return result;
 	}
-	bool outputSplitter::write(std::string content, unsigned long channelMask, bool disableStandardOutput)
+	bool outputSplitter::write(std::string content, unsigned long channelMask, stdOutStreamEnum standardOutputRedirect)
 	{
 		bool result = 0;
 
@@ -176,22 +180,25 @@ namespace lava
 				}
 			}
 
-			if (!disableStandardOutput && (channelMask & standardOutputStreamChannelMask))
+			if ((standardOutputRedirect != stdOutStreamEnum::sOS_DISABLED) && (channelMask & standardOutputStreamChannelMask))
 			{
+				stdOutStreamEnum stdOutStreamBak = getStandardOutputStream();
+				setStandardOutputStream(standardOutputRedirect);
 				*standardOutputStream << content;
+				setStandardOutputStream(stdOutStreamBak);
 			}
 		}
 
 		return result;
 	}
-	
+
 
 	template<>
 	outputSplitter& operator<< <int>(outputSplitter& os, const int s)
 	{
 		if (os.integerPrintMode == 0)
 		{
-			os << numToDecStringWithPadding((signed long long) s, os.integerPrintPaddingLength);
+			os << lava::numToDecStringWithPadding((signed long long) s, os.integerPrintPaddingLength);
 		}
 		else
 		{
@@ -215,7 +222,7 @@ namespace lava
 	template<>
 	outputSplitter& operator<< <unsigned long>(outputSplitter& os, const  unsigned long s)
 	{
-		return operator<<(os, (unsigned int) s);
+		return operator<<(os, (unsigned int)s);
 	}
 	template<>
 	outputSplitter& operator<< <float>(outputSplitter& os, const float s)
@@ -239,6 +246,12 @@ namespace lava
 	outputSplitter& operator<< <outputSplitterIntMode>(outputSplitter& os, const outputSplitterIntMode s)
 	{
 		os.integerPrintMode = s.mode;
+		return os;
+	}
+	template<>
+	outputSplitter& operator<< <outputSplitter::stdOutStreamEnum>(outputSplitter& os, const outputSplitter::stdOutStreamEnum s)
+	{
+		os.setStandardOutputStream(s);
 		return os;
 	}
 }

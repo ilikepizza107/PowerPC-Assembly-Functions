@@ -9,7 +9,7 @@
 
 namespace lava
 {
-	// lavaOutputSplitter v1.1.5 - A utility for managing output to multiple output streams at once.
+	// lavaOutputSplitter v1.2.0 - A utility for managing output to multiple output streams at once.
 	// OutputEntries:
 	// - An object which contains a shared_ptr to an output stream, as well as a groupIdentifierMask
 	// - Group identifier masks are bitfields which specifiy which "stream groups" an object belongs to.
@@ -42,10 +42,11 @@ namespace lava
 	public:
 		enum stdOutStreamEnum
 		{
+			sOS_NULL = -1,
 			sOS_DISABLED = 0,
 			sOS_COUT,
 			sOS_CERR,
-			sOS_CLOG
+			sOS_CLOG,
 		};
 
 	private:
@@ -81,7 +82,7 @@ namespace lava
 		bool removeStream(unsigned long streamIDIn);
 
 		// Note: Output to collected streams can be momentarily disabled by passing in a channelMask of 0.
-		bool write(std::string content, unsigned long channelMask = ULONG_MAX, bool disableStandardOutput = 0);
+		bool write(std::string content, unsigned long channelMask = ULONG_MAX, stdOutStreamEnum standardOutputRedirect = stdOutStreamEnum::sOS_NULL);
 
 		template<typename T>
 		friend outputSplitter& operator<<(outputSplitter& os, const T s);
@@ -128,6 +129,8 @@ namespace lava
 	outputSplitter& operator<< <outputSplitterChannelMask>(outputSplitter& os, const outputSplitterChannelMask s);
 	template<>
 	outputSplitter& operator<< <outputSplitterIntMode>(outputSplitter& os, const outputSplitterIntMode s);
+	template<>
+	outputSplitter& operator<< <outputSplitter::stdOutStreamEnum>(outputSplitter& os, const outputSplitter::stdOutStreamEnum s);
 }
 
 #endif
