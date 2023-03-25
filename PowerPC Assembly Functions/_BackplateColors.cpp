@@ -48,6 +48,104 @@ enum colorConstants
 // Works a lot like the setFrameCol func, just need to intercept the frame being prescribed and overwrite it
 //
 
+
+void menSelChrElemntChange()
+{
+	// If CSS Rosters are enabled
+	if (BACKPLATE_COLOR_1_INDEX != -1)
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+
+		constexpr int stringReg = 4;
+
+		int applyChangeLabel = GetNextLabel();
+		int exitLabel = GetNextLabel();
+
+		ASMStart(0x800b5f20, "[CM: _BackplateColors] MenSelChr Element Override " + codeVersion + " [QuickLava]"); // Hooks "setActionNo/[MuObject]/mu_object.o".
+
+		ADDI(stringReg, 1, 88); // Restore Original Instruction
+
+		LWZ(reg1, stringReg, 0x00);
+		SetRegister(reg2, "MenS");
+		If(reg1, EQUAL_L, reg2);
+		{
+			LWZ(reg1, stringReg, 0x08);
+			SetRegister(reg2, "rCen");
+			If(reg1, EQUAL_L, reg2);
+			{
+				std::size_t indexDestinationOffset = std::string("MenSelchrCentry4_TopN__0").size() - 1;
+				ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
+				JumpToLabel(applyChangeLabel); // Jump to apply block if they match
+			}
+			EndIf();
+			SetRegister(reg2, "rChu");
+			If(reg1, EQUAL_L, reg2);
+			{
+				std::size_t indexDestinationOffset = std::string("MenSelchrChuman4_TopN__0").size() - 1;
+				ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
+				JumpToLabel(applyChangeLabel); // Jump to apply block if they match
+			}
+			EndIf();
+			SetRegister(reg2, "rCoi");
+			If(reg1, EQUAL_L, reg2);
+			{
+				LWZ(reg1, stringReg, 0x0C);
+				SetRegister(reg2, "n_To");
+				If(reg1, EQUAL_L, reg2);
+				{
+					std::size_t indexDestinationOffset = std::string("MenSelchrCoin_TopN__0").size() - 1;
+					ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
+					JumpToLabel(applyChangeLabel); // Jump to apply block if they match
+				}
+				EndIf();
+			}
+			EndIf();
+			SetRegister(reg2, "rCur");
+			If(reg1, EQUAL_L, reg2);
+			{
+				std::size_t indexDestinationOffset = std::string("MenSelchrCursorB_TopN__0").size() - 1;
+				ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
+				JumpToLabel(applyChangeLabel); // Jump to apply block if they match
+			}
+			EndIf();
+		}
+		EndIf();
+		JumpToLabel(exitLabel);
+
+
+		Label(applyChangeLabel);
+
+		// Borrow the stringRegister for a moment, to store the target index
+		// We'll put this back later lol
+		LBZ(stringReg, reg1, 0x00);
+		// Subtract '0' from it so we get the index as a number.
+		ADDI(stringReg, stringReg, -1 * (unsigned char)'0');
+
+		// Calculate offset into Backplate Color LOC Entries
+		SetRegister(reg2, 0x4);
+		MULLW(reg2, reg2, stringReg);
+		// Add that to first entry's location
+		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+		// Load line INDEX value
+		LWZ(reg2, reg2, 0x00);
+		// Load the current value at that line.
+		LWZ(reg2, reg2, Line::VALUE);
+		// Add '0' to it to get the ASCII hex for the index.
+		ADDI(reg2, reg2, '0');
+
+		// Store it at the destination location in the string, as calculated before.
+		STB(reg2, reg1, 0x00);
+
+		ADDI(stringReg, 1, 88); // Restore stringRegister's Value
+
+		Label(exitLabel);
+
+		ASMEnd();
+	}
+}
+
 void shieldColorChange()
 {
 	// If CSS Rosters are enabled
@@ -60,7 +158,7 @@ void shieldColorChange()
 		int applyChangeLabel = GetNextLabel();
 		int exitLabel = GetNextLabel();
 
-		ASMStart(0x8018db38, "[CM: _BackplateColors] Shield Color Override " + codeVersion + " [QuickLava]"); // Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/g3d_resfile.o".
+		ASMStart(0x8018db38, "[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]"); // Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/g3d_resfile.o".
 
 		// Get string offset for the first CLR0 in the list
 		LWZ(reg1, 3, 0x20);
@@ -118,7 +216,6 @@ void shieldColorChange()
 		ASMEnd(0x381f0001); // Restore original instruction: addi r0, r31, 1
 	}
 }
-
 
 void backplateColorChange()
 {

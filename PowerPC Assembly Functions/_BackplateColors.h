@@ -3,6 +3,7 @@
 
 #include "_AdditionalCode.h"
 
+void menSelChrElemntChange();
 void shieldColorChange();
 void backplateColorChange();
 
