@@ -39,10 +39,13 @@ enum colorConstants
 //
 
 // Menu Notes:
-// Cursor Color:
-// Goes through function: "GetResAnmClr/[nw4r3g3d7ResFileCFPCc]/g3d_resfile.o" 0x8018d9e4
-//  SetActionNo?
-// Suffix for animation is already applied by the time we get to this function, have to intercept earlier
+// Coin, Character Outline, Tag Entry Button, and Tag Pane:
+// As I've learned, these all get their colors set through the "setActionNo" function.
+// The param_2 that gets passed in is an index, which gets appended to an object's base name
+// to get the name to use when looking up any relevant animations (VISOs, PAT0s, CLR0s, etc.)
+// To force a specific one of these to load, you'll wanna intercept the call to the relevant
+// "GetResAnm___()" function call (in my case, I'm only interested in CLR0 calls).
+// 
 // Hand Color:
 // Goes through function: "updateTeamColor/[muSelCharHand]/mu_selchar_hand.o" 0x8069ca64
 // Works a lot like the setFrameCol func, just need to intercept the frame being prescribed and overwrite it
