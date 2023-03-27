@@ -2,26 +2,6 @@
 
 const std::string codeVersion = "v1.0.0";
 
-enum colorConstants
-{
-	cc_CLEAR = 0x0000,
-	cc_RED = 0x3ff0,
-	cc_BLUE = 0x4000,
-	cc_YELLOW = 0x4008,
-	cc_GREEN = 0x4010,
-	cc_PINK = 0x4014,
-	cc_PURPLE = 0x4018,
-	cc_ORANGE = 0x401c,
-	cc_TEAL = 0x4020,
-	cc_GRAY = 0x4022,
-	cc_COLOR10 = 0x4024,
-	cc_COLOR11 = 0x4026,
-	cc_COLOR12 = 0x4028,
-	cc_COLOR13 = 0x402a,
-	cc_COLOR14 = 0x402c,
-	cc_COLOR15 = 0x402e,
-};
-
 
 // Shield Color Notes:
 // Goes through function: "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/(g3d_resfile.o)" 0x8018dae8
@@ -49,6 +29,10 @@ enum colorConstants
 // I'm gonna need to rewrite this one, it's currently *far* to broad in terms of what it *can* affect.
 // The following are functions which call setFrameMatColor which are relevant to player slot colors:
 // - setStockMarkColor/[IfPlayer]/(if_player.o): Various In-Battle Things (Franchise Icons)?
+//	- Frachise Icon (First Call)
+//	- BP Background (Second Call)
+//	- Loupe (Third Call)
+//	- Arrow (Fourth Call)
 // - initMdlData/[ifVsResultTask]/(if_vsresult.o): Various Results Screen Stuff?
 // 
 // Hand Color:
@@ -238,23 +222,39 @@ void backplateColorChange()
 	// 08 = Teal
 	// 09 = CPU Grey
 
+	constexpr unsigned short triggerTag = 0xBEEF;
+
 	// If CSS Rosters are enabled
 	if (BACKPLATE_COLOR_1_INDEX != -1)
 	{
 		int reg1 = 11;
 		int reg2 = 12;
 
-		ASMStart(0x800e1900, "[CM: _BackplateColors] Set Override Disabled Flag " + codeVersion + " [QuickLava]"); // Hooks "setDamageNumColor/[IfPlayer]/if_player.o"
+		// The following four codes all hook "setStockMarkColor/[IfPlayer]/if_player.o"
+		ASMStart(0x800e21c0, "[CM: _BackplateColors] Set Override Disabled Flag (Franchise Icon) " + codeVersion + " [QuickLava]");
+		SetRegister(reg1, triggerTag);
+		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
 
-		SetRegister(reg1, 0x1);
+		ASMStart(0x800e21ec, "[CM: _BackplateColors] Set Override Disabled Flag (BP Background) " + codeVersion + " [QuickLava]");
+		SetRegister(reg1, triggerTag);
+		ASMEnd(0x807f00b8); // Restores original instruction: lwz	r3, 0x00B8 (r31)
 
-		ASMEnd(0x7fc3f378); // Restores original instruction: mr	r3, r30
+		ASMStart(0x800e21fc, "[CM: _BackplateColors] Set Override Disabled Flag (Loupe) " + codeVersion + " [QuickLava]");
+		SetRegister(reg1, triggerTag);
+		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
 
-		int exitLabel = GetNextLabel();
+		ASMStart(0x800e2228, "[CM: _BackplateColors] Set Override Disabled Flag (Arrow) " + codeVersion + " [QuickLava]");
+		SetRegister(reg1, triggerTag);
+		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
+
+		ASMStart(0x800e2254, "[CM: _BackplateColors] Set Override Disabled Flag (???) " + codeVersion + " [QuickLava]");
+		SetRegister(reg1, triggerTag);
+		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
+
 
 		ASMStart(0x800b7a74, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
 
-		If(reg1, NOT_EQUAL_I, 0x1);
+		If(reg1, EQUAL_I_L, triggerTag);
 		{
 			// Convert target frame to an integer, and copy it into reg1
 			SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
@@ -277,13 +277,6 @@ void backplateColorChange()
 			EndIf();
 			// Then subtract 1, ultimately correcting everything.
 			ADDI(reg1, reg1, -0x1);
-
-			// If we're asking for a frame not represented by one of our lines, skip the rest of the code.
-			If(reg1, GREATER_OR_EQUAL_I, 0x06);
-			{
-				JumpToLabel(exitLabel);
-			}
-			EndIf();
 
 			// Calculate which code menu line we should be looking at
 			SetRegister(reg2, 0x4);
@@ -332,17 +325,14 @@ void backplateColorChange()
 				STW(reg2, reg1, 0x00);
 			}
 			EndIf();
-
+			
 			// Load our resulting double!
 			LFD(31, reg1, 0x00);
-		}
-		Else();
-		{
+
+			// Ensure r11 trigger tag is unset.
 			SetRegister(reg1, 0x00);
 		}
 		EndIf();
-
-		Label(exitLabel);
 
 		ASMEnd(0xfc20f890); // Restore original instruction: fmr	f1, f31
 	}
