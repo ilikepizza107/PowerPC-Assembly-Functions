@@ -37,14 +37,19 @@ enum colorConstants
 // From there, it looks like it looks (0x10 * (index + 1)) + 0x14 past to get the data
 // But if you go back 4 bytes from there, that's the string!
 //
-
 // Menu Notes:
-// Coin, Character Outline, Tag Entry Button, and Tag Pane:
+// Coin, Character Outline, Tag Entry Button, and Tag Pane (setActionNo Elements, menSelChrElemntChange):
 // As I've learned, these all get their colors set through the "setActionNo" function.
 // The param_2 that gets passed in is an index, which gets appended to an object's base name
 // to get the name to use when looking up any relevant animations (VISOs, PAT0s, CLR0s, etc.)
 // To force a specific one of these to load, you'll wanna intercept the call to the relevant
 // "GetResAnm___()" function call (in my case, I'm only interested in CLR0 calls).
+// 
+// Misc Elements (setFrameMatColor Elements, backplateColorChange):
+// I'm gonna need to rewrite this one, it's currently *far* to broad in terms of what it *can* affect.
+// The following are functions which call setFrameMatColor which are relevant to player slot colors:
+// - setStockMarkColor/[IfPlayer]/(if_player.o): Various In-Battle Things (Franchise Icons)?
+// - initMdlData/[ifVsResultTask]/(if_vsresult.o): Various Results Screen Stuff?
 // 
 // Hand Color:
 // Goes through function: "updateTeamColor/[muSelCharHand]/mu_selchar_hand.o" 0x8069ca64
@@ -245,72 +250,99 @@ void backplateColorChange()
 
 		ASMEnd(0x7fc3f378); // Restores original instruction: mr	r3, r30
 
+		int exitLabel = GetNextLabel();
+
 		ASMStart(0x800b7a74, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
 
 		If(reg1, NOT_EQUAL_I, 0x1);
 		{
-			// Select Appropriate Line
+			// Convert target frame to an integer, and copy it into reg1
 			SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
-			STFD(31, reg1, 0x00);
-			LHZ(reg1, reg1, 0x00);
+			FCTIWZ(1, 31);
+			STFD(1, reg1, 0x00);
+			LWZ(reg1, reg1, 0x04);
 
-			SetRegister(reg2, 0xFFFF);
-			// Red
-			If(reg1, EQUAL_I, colorConstants::cc_RED);
+			//Shuffle around the requested frames to line up with the Code Menu Lines
+			// If we ask for frame 0, point to 1 above Transparent Line
+			If(reg1, EQUAL_I, 0x00);
 			{
-				SetRegister(reg2, BACKPLATE_COLOR_1_INDEX);
-			}EndIf();
-			// Blue
-			If(reg1, EQUAL_I, colorConstants::cc_BLUE);
-			{
-				SetRegister(reg2, BACKPLATE_COLOR_2_INDEX);
-			}EndIf();
-			// Yellow
-			If(reg1, EQUAL_I, colorConstants::cc_YELLOW);
-			{
-				SetRegister(reg2, BACKPLATE_COLOR_3_INDEX);
-			}EndIf();
-			// Green
-			If(reg1, EQUAL_I, colorConstants::cc_GREEN);
-			{
-				SetRegister(reg2, BACKPLATE_COLOR_4_INDEX);
-			}EndIf();
-			// CPU
-			If(reg1, EQUAL_I, colorConstants::cc_GRAY);
-			{
-				SetRegister(reg2, BACKPLATE_COLOR_C_INDEX);
-			}EndIf();
-			// CPU
-			If(reg1, EQUAL_I, colorConstants::cc_CLEAR);
-			{
-				SetRegister(reg2, BACKPLATE_COLOR_T_INDEX);
-			}EndIf();
-
-			If(reg2, NOT_EQUAL_I, 0xFFFF);
-			{
-				LWZ(reg2, reg2, Line::VALUE); // Then Look 0x08 past the line's address to get the selected index
-				for (std::size_t i = 0; i < 16; i++) // For each color...
-				{
-					double tempDouble = i;
-					std::vector<unsigned char> doubleHex = lava::fundamentalToBytes(tempDouble);
-
-					If(reg2, EQUAL_I, i); // ... add a case for that index...
-					{
-						SetRegister(reg1, lava::bytesToFundamental<short>(doubleHex.data()));
-					}EndIf();
-				}
-
-				SetRegister(reg2, SET_FLOAT_REG_TEMP_MEM);
-				STH(reg1, reg2, 0x00);
-				LFD(31, reg2, 0x00);
+				SetRegister(reg1, 0x06);
 			}
 			EndIf();
+			// If we ask for frame 9, point to 1 above CPU Line
+			If(reg1, EQUAL_I, 0x9);
+			{
+				SetRegister(reg1, 0x05);
+			}
+			EndIf();
+			// Then subtract 1, ultimately correcting everything.
+			ADDI(reg1, reg1, -0x1);
+
+			// If we're asking for a frame not represented by one of our lines, skip the rest of the code.
+			If(reg1, GREATER_OR_EQUAL_I, 0x06);
+			{
+				JumpToLabel(exitLabel);
+			}
+			EndIf();
+
+			// Calculate which code menu line we should be looking at
+			SetRegister(reg2, 0x4);
+			MULLW(reg2, reg2, reg1);
+			// Add that to first entry's location
+			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+			ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+			// Load line INDEX value
+			LWZ(reg2, reg2, 0x00);
+			// Then Look 0x08 past the line's address to get the selected index
+			LWZ(reg2, reg2, Line::VALUE);
+
+			// Set reg1 to our staging location
+			SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
+			FSUB(1, 31, 31); // Zero Out fr1...
+			STFD(1, reg1, 0x00); // ... and store it to zero out the Float Area
+
+			// If our target number is greater than 0
+			If(reg2, GREATER_I, 0x00);
+			{
+				// Get then number of leading zeroes in our target frame
+				CNTLZW(reg1, reg2);
+
+				// Build the Mantissa
+				// Subtract 11 from that, so that we correctly shift it into the mantissa area
+				ADDI(reg1, reg1, -11);
+				// Shift the number into the mantissa region, masking out the first implicit 1
+				RLWNM(reg2, reg2, reg1, 12, 31);
+
+				// Build the Exponent
+				// Add 11 back to our leading zero count, then subtract 0x1F...
+				ADDI(reg1, reg1, -0x1F + 11);
+				// ... and multiply our number by -1. This essentially gets us log2 of our original number.
+				NEG(reg1, reg1);
+				// Add the bias to our log2 to get what will be the exponent component of our double
+				ADDI(reg1, reg1, 1023);
+				// Then shift it left 20 bits into proper position, masking to ensure we don't overwite the mantissa.
+				RLWINM(reg1, reg1, 20, 0, 11);
+
+				// OR together the Mantissa and Exponent portions, and we've got the head of our double!
+				OR(reg2, reg1, reg2);
+
+				// Set reg1 back to our staging location...
+				SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
+				// ... and store our double head there so that we can load it with the next instruction!
+				STW(reg2, reg1, 0x00);
+			}
+			EndIf();
+
+			// Load our resulting double!
+			LFD(31, reg1, 0x00);
 		}
 		Else();
 		{
 			SetRegister(reg1, 0x00);
 		}
 		EndIf();
+
+		Label(exitLabel);
 
 		ASMEnd(0xfc20f890); // Restore original instruction: fmr	f1, f31
 	}
