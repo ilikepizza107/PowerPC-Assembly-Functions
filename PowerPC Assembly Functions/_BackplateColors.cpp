@@ -34,6 +34,15 @@ const std::string codeVersion = "v1.0.0";
 //	- Loupe (Third Call)
 //	- Arrow (Fourth Call)
 // - initMdlData/[ifVsResultTask]/(if_vsresult.o): Various Results Screen Stuff?
+// At the point where we hook in this function, r31 is the original r3 value.
+// Additionally, if we go *(*(r3 + 0x14) + 0x18), we find ourselves in what looks to be the 
+// structure in memory which actually drives the assembled CLR0 data. I'm fairly certain that:
+//	- 0x18 is the current frame
+//	- 0x1C is the frame advance rate
+//	- 0x20 is maybe loop start frame?
+//	- 0x24 into this data is the frame count
+//	- 0x28 is a pointer to the playback policy (loop, don't loop, etc.)
+//	- 0x2C IS THE CLR0 POINTER!
 // 
 // Hand Color:
 // Goes through function: "updateTeamColor/[muSelCharHand]/mu_selchar_hand.o" 0x8069ca64
@@ -289,45 +298,26 @@ void backplateColorChange()
 			// Then Look 0x08 past the line's address to get the selected index
 			LWZ(reg2, reg2, Line::VALUE);
 
+			// And now, to perform black magic int-to-float conversion, as pilfered from the Brawl game code lol.
 			// Set reg1 to our staging location
 			SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
-			FSUB(1, 31, 31); // Zero Out fr1...
-			STFD(1, reg1, 0x00); // ... and store it to zero out the Float Area
 
-			// If our target number is greater than 0
-			If(reg2, GREATER_I, 0x00);
-			{
-				// Get then number of leading zeroes in our target frame
-				CNTLZW(reg1, reg2);
-
-				// Build the Mantissa
-				// Subtract 11 from that, so that we correctly shift it into the mantissa area
-				ADDI(reg1, reg1, -11);
-				// Shift the number into the mantissa region, masking out the first implicit 1
-				RLWNM(reg2, reg2, reg1, 12, 31);
-
-				// Build the Exponent
-				// Add 11 back to our leading zero count, then subtract 0x1F...
-				ADDI(reg1, reg1, -0x1F + 11);
-				// ... and multiply our number by -1. This essentially gets us log2 of our original number.
-				NEG(reg1, reg1);
-				// Add the bias to our log2 to get what will be the exponent component of our double
-				ADDI(reg1, reg1, 1023);
-				// Then shift it left 20 bits into proper position, masking to ensure we don't overwite the mantissa.
-				RLWINM(reg1, reg1, 20, 0, 11);
-
-				// OR together the Mantissa and Exponent portions, and we've got the head of our double!
-				OR(reg2, reg1, reg2);
-
-				// Set reg1 back to our staging location...
-				SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
-				// ... and store our double head there so that we can load it with the next instruction!
-				STW(reg2, reg1, 0x00);
-			}
-			EndIf();
-			
-			// Load our resulting double!
+			// Store the integer to convert at the tail end of our Float staging area
+			STW(reg2, reg1, 0x04);
+			// Set reg2 equal to 0x4330, then store it at the head of our staging area
+			ADDIS(reg2, 0, 0x4330);
+			STW(reg2, reg1, 0x00);
+			// Load that value into fr31 now
 			LFD(31, reg1, 0x00);
+			// Load the global constant 0x4330000000000000 float from 0x805A36EA
+			ADDIS(reg2, 0, 0x805A);
+			LFD(1, reg2, 0x36E8);
+			// Subtract that constant float from our constructed float...
+			FSUB(31, 31, 1);
+			// ... and voila! conversion done. Not entirely sure why this works lol, though my intuition is that
+			// it's setting the exponent part of the float such that the mantissa ends up essentially in plain decimal format.
+			// Exponent ends up being 2^52, and a double's mantissa is 52 bits long, so seems like that's what's up.
+			// Genius stuff lol.
 
 			// Ensure r11 trigger tag is unset.
 			SetRegister(reg1, 0x00);
