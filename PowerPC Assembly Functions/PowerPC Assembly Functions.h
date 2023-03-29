@@ -235,7 +235,7 @@ const int MENU_SELECTED_TAG_OFFSET = 0x164;
 #define BRANCH_IF_FALSE 0b00100
 #define BRANCH_ALWAYS 0b10100
 #define MAX_IFS 15
-#define MAX_LABELS 20
+#define MAX_LABELS 50
 #define MAX_JUMPS 50
 #define LESS 0
 #define GREATER 1
