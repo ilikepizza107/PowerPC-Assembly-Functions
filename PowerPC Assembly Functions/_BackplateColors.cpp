@@ -254,7 +254,7 @@ void backplateColorChange()
 		LWZ(reg1, reg1, 0x2C);
 		// Grab the number of frames in the CLR0.
 		LHZ(reg2, reg1, 0x1C);
-		CMPLI(reg2, 0x08, 0);
+		CMPLI(reg2, 10, 0);
 		JumpToLabel(exitLabel, bCACB_LESSER);
 
 		// Now grab the string offset, from 0x14 past the CLR0 pointer...
