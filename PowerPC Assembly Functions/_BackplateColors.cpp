@@ -37,6 +37,7 @@ const std::string codeVersion = "v1.0.0";
 // At the point where we hook in this function, r31 is the original r3 value.
 // Additionally, if we go *(*(r3 + 0x14) + 0x18), we find ourselves in what looks to be the 
 // structure in memory which actually drives the assembled CLR0 data. I'm fairly certain that:
+//	- 0x14 is flags, potentially?
 //	- 0x18 is the current frame
 //	- 0x1C is the frame advance rate
 //	- 0x20 is maybe loop start frame?
@@ -238,93 +239,147 @@ void backplateColorChange()
 	{
 		int reg1 = 11;
 		int reg2 = 12;
+		int reg3 = 3;
 
-		// The following four codes all hook "setStockMarkColor/[IfPlayer]/if_player.o"
-		ASMStart(0x800e21c0, "[CM: _BackplateColors] Set Override Disabled Flag (Franchise Icon) " + codeVersion + " [QuickLava]");
-		SetRegister(reg1, triggerTag);
-		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
+		int exitLabel = GetNextLabel();
+		int applyChangesLabel = GetNextLabel();
 
-		ASMStart(0x800e21ec, "[CM: _BackplateColors] Set Override Disabled Flag (BP Background) " + codeVersion + " [QuickLava]");
-		SetRegister(reg1, triggerTag);
-		ASMEnd(0x807f00b8); // Restores original instruction: lwz	r3, 0x00B8 (r31)
+		ASMStart(0x800b7a70, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
 
-		ASMStart(0x800e21fc, "[CM: _BackplateColors] Set Override Disabled Flag (Loupe) " + codeVersion + " [QuickLava]");
-		SetRegister(reg1, triggerTag);
-		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
+		// r31 is the original r3 value. Grab the address from 0x14 past that...
+		LWZ(reg1, 31, 0x14);
+		// ... then the address 0x18 past that, putting us at I think CLR0 Anm Obj.
+		LWZ(reg1, reg1, 0x18);
+		// Now grab 0x2C past that, and we've got the original CLR0 data now.
+		LWZ(reg1, reg1, 0x2C);
+		// Grab the number of frames in the CLR0.
+		LHZ(reg2, reg1, 0x1C);
+		CMPLI(reg2, 0x08, 0);
+		JumpToLabel(exitLabel, bCACB_LESSER);
 
-		ASMStart(0x800e2228, "[CM: _BackplateColors] Set Override Disabled Flag (Arrow) " + codeVersion + " [QuickLava]");
-		SetRegister(reg1, triggerTag);
-		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
+		// Now grab the string offset, from 0x14 past the CLR0 pointer...
+		LWZ(reg2, reg1, 0x14);
+		// ... and add it to the CLR0 pointer to get the string.
+		ADD(reg2, reg1, reg2);
 
-		ASMStart(0x800e2254, "[CM: _BackplateColors] Set Override Disabled Flag (???) " + codeVersion + " [QuickLava]");
-		SetRegister(reg1, triggerTag);
-		ASMEnd(0x7fa3eb78); // Restores original instruction: mr	r3, r29
+		// From here, we're going to do some checks to identify whether the CLR0 we're looking at is one we want to override.
+		// Each area will specify strings to try to catch, as well as a starting position, and will iterate through them all
+		// until we've found one.
+		std::vector<std::string> stringsToCatch;
+		std::size_t startingPos = SIZE_MAX;
 
+		// Load the first 4 bytes of the string.
+		LWZ(reg1, reg2, 0x00);
 
-		ASMStart(0x800b7a74, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
-
-		If(reg1, EQUAL_I_L, triggerTag);
+		// Char Select CLR0s
+		SetRegister(reg3, "MenS");
+		If(reg1, EQUAL_L, reg3);
 		{
-			// Convert target frame to an integer, and copy it into reg1
-			SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
-			FCTIWZ(1, 31);
-			STFD(1, reg1, 0x00);
-			LWZ(reg1, reg1, 0x04);
+			startingPos = 0x08;
+			stringsToCatch = {
+				"MenSelchrCbase4_TopN__0",
+				"MenSelchrCmark4_TopN__0",
+			};
 
-			//Shuffle around the requested frames to line up with the Code Menu Lines
-			// If we ask for frame 0, point to 1 above Transparent Line
-			If(reg1, EQUAL_I, 0x00);
+			LWZ(reg1, reg2, startingPos);
+			for (std::size_t i = 0; i < stringsToCatch.size(); i++)
 			{
-				SetRegister(reg1, 0x06);
+				SetRegister(reg3, stringsToCatch[i].substr(startingPos, 0x04));
+				CMPL(reg3, reg1, 0);
+				JumpToLabel(applyChangesLabel, bCACB_EQUAL);
 			}
-			EndIf();
-			// If we ask for frame 9, point to 1 above CPU Line
-			If(reg1, EQUAL_I, 0x9);
+			JumpToLabel(exitLabel);
+		}
+		EndIf();
+		// In-Game, Results Creen CLR0s
+		SetRegister(reg3, "Inf");
+		// Set the bottom char of the string to 0.
+		// Note: because we're changing the reg holding the loaded part of the string, keep
+		// this group last, or your comparisons won't work as you expect.
+		RLWINM(reg1, reg1, 0x0, 0x00, 0x17);
+		If(reg1, EQUAL_L, reg3);
+		{
+			stringsToCatch = {
+				"InfArrow_TopN__0",
+				"InfFace_TopN__0",
+				"InfLoupe0_TopN__0",
+				"InfMark_TopN__0",
+				"InfPlynm_TopN__0",
+				"InfResultRank#_TopN__0",
+				"InfResultMark##_TopN",
+			};
+			startingPos = 0x06;
+
+			LWZ(reg1, reg2, startingPos);
+			for (std::size_t i = 0; i < stringsToCatch.size(); i++)
 			{
-				SetRegister(reg1, 0x05);
+				SetRegister(reg3, stringsToCatch[i].substr(startingPos, 0x04));
+				CMPL(reg3, reg1, 0);
+				JumpToLabel(applyChangesLabel, bCACB_EQUAL);
 			}
-			EndIf();
-			// Then subtract 1, ultimately correcting everything.
-			ADDI(reg1, reg1, -0x1);
-
-			// Calculate which code menu line we should be looking at
-			SetRegister(reg2, 0x4);
-			MULLW(reg2, reg2, reg1);
-			// Add that to first entry's location
-			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-			ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-			// Load line INDEX value
-			LWZ(reg2, reg2, 0x00);
-			// Then Look 0x08 past the line's address to get the selected index
-			LWZ(reg2, reg2, Line::VALUE);
-
-			// And now, to perform black magic int-to-float conversion, as pilfered from the Brawl game code lol.
-			// Set reg1 to our staging location
-			SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
-
-			// Store the integer to convert at the tail end of our Float staging area
-			STW(reg2, reg1, 0x04);
-			// Set reg2 equal to 0x4330, then store it at the head of our staging area
-			ADDIS(reg2, 0, 0x4330);
-			STW(reg2, reg1, 0x00);
-			// Load that value into fr31 now
-			LFD(31, reg1, 0x00);
-			// Load the global constant 0x4330000000000000 float from 0x805A36EA
-			ADDIS(reg2, 0, 0x805A);
-			LFD(1, reg2, 0x36E8);
-			// Subtract that constant float from our constructed float...
-			FSUB(31, 31, 1);
-			// ... and voila! conversion done. Not entirely sure why this works lol, though my intuition is that
-			// it's setting the exponent part of the float such that the mantissa ends up essentially in plain decimal format.
-			// Exponent ends up being 2^52, and a double's mantissa is 52 bits long, so seems like that's what's up.
-			// Genius stuff lol.
-
-			// Ensure r11 trigger tag is unset.
-			SetRegister(reg1, 0x00);
+			JumpToLabel(exitLabel);
 		}
 		EndIf();
 
-		ASMEnd(0xfc20f890); // Restore original instruction: fmr	f1, f31
+		Label(applyChangesLabel);
+		
+		// Convert target frame to an integer, and copy it into reg1
+		SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
+		FCTIWZ(1, 31);
+		STFD(1, reg1, 0x00);
+		LWZ(reg1, reg1, 0x04);
+
+		//Shuffle around the requested frames to line up with the Code Menu Lines
+		// If we ask for frame 0, point to 1 above Transparent Line
+		If(reg1, EQUAL_I, 0x00);
+		{
+			SetRegister(reg1, 0x06);
+		}
+		EndIf();
+		// If we ask for frame 9, point to 1 above CPU Line
+		If(reg1, EQUAL_I, 0x9);
+		{
+			SetRegister(reg1, 0x05);
+		}
+		EndIf();
+		// Then subtract 1, ultimately correcting everything.
+		ADDI(reg1, reg1, -0x1);
+
+		// Calculate which code menu line we should be looking at
+		SetRegister(reg2, 0x4);
+		MULLW(reg2, reg2, reg1);
+		// Add that to first entry's location
+		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+		// Load line INDEX value
+		LWZ(reg2, reg2, 0x00);
+		// Then Look 0x08 past the line's address to get the selected index
+		LWZ(reg2, reg2, Line::VALUE);
+
+		// And now, to perform black magic int-to-float conversion, as pilfered from the Brawl game code lol.
+		// Set reg1 to our staging location
+		SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
+
+		// Store the integer to convert at the tail end of our Float staging area
+		STW(reg2, reg1, 0x04);
+		// Set reg2 equal to 0x4330, then store it at the head of our staging area
+		ADDIS(reg2, 0, 0x4330);
+		STW(reg2, reg1, 0x00);
+		// Load that value into fr31 now
+		LFD(31, reg1, 0x00);
+		// Load the global constant 0x4330000000000000 float from 0x805A36EA
+		ADDIS(reg2, 0, 0x805A);
+		LFD(1, reg2, 0x36E8);
+		// Subtract that constant float from our constructed float...
+		FSUB(31, 31, 1);
+		// ... and voila! conversion done. Not entirely sure why this works lol, though my intuition is that
+		// it's setting the exponent part of the float such that the mantissa ends up essentially in plain decimal format.
+		// Exponent ends up being 2^52, and a double's mantissa is 52 bits long, so seems like that's what's up.
+		// Genius stuff lol.
+
+		Label(exitLabel);
+
+		ASMEnd(0x807f0014); // Restore original instruction: lwz	r3, 0x0014 (r31)
 	}
 
 }
