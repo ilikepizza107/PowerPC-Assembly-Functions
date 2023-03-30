@@ -290,6 +290,22 @@ namespace ledger
 	bool writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn);
 }
 
+// Branch Conditions, Used for JumpToLabel and BC Operations
+struct branchConditionAndConditionBit
+{
+	int BranchCondition = INT_MAX;
+	int ConditionBit = INT_MAX;
+
+	branchConditionAndConditionBit(int BranchConditionIn = INT_MAX, int ConditionBitIn = INT_MAX) :
+		BranchCondition(BranchConditionIn), ConditionBit(ConditionBitIn) {};
+};
+const static branchConditionAndConditionBit bCACB_EQUAL				=		{ BRANCH_IF_TRUE, EQ };
+const static branchConditionAndConditionBit bCACB_NOT_EQUAL			=		{ BRANCH_IF_FALSE, EQ };
+const static branchConditionAndConditionBit bCACB_GREATER			=		{ BRANCH_IF_TRUE, GT};
+const static branchConditionAndConditionBit bCACB_GREATER_OR_EQ		=		{ BRANCH_IF_FALSE, LT};
+const static branchConditionAndConditionBit bCACB_LESSER			=		{ BRANCH_IF_TRUE, LT };
+const static branchConditionAndConditionBit bCACB_LESSER_OR_EQ		=		{ BRANCH_IF_FALSE, GT };
+const static branchConditionAndConditionBit bCACB_UNSPECIFIED		=		{ INT_MAX, INT_MAX };
 
 ///variables start
 extern fstream WPtr;
@@ -307,6 +323,7 @@ static int LabelPosArray[MAX_LABELS] = {};
 static int LabelIndex = 0;
 static int JumpLabelNumArray[MAX_JUMPS] = {};
 static int JumpFromArray[MAX_JUMPS] = {};
+static branchConditionAndConditionBit JumpFromConditionArray[MAX_JUMPS] = {};
 static int JumpIndex = 0;
 static vector<int> FPPushRecords;
 static vector<int> CounterLoppRecords;
@@ -351,7 +368,8 @@ void ASMEnd(int Replacement);
 void ASMEnd();
 void Label(int LabelNum);
 int GetNextLabel();
-void JumpToLabel(int LabelNum);
+void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn = bCACB_UNSPECIFIED);
+void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit);
 void CompleteJumps();
 int CalcBranchOffset(int Location, int Target);
 void StrCpy(int Destination, int Source, int Temp);
@@ -466,9 +484,11 @@ void ANDI(int DestReg, int SourceReg, int Immediate);
 void ANDIS(int DestReg, int SourceReg, int Immediate);
 void B(int JumpDist);
 void BA(int Address);
+void BC(int JumpDist, branchConditionAndConditionBit conditionIn);
 void BC(int JumpDist, int BranchCondition, int ConditionBit);
 void BCTR();
 void BCTRL();
+void BL(int JumpDist);
 void BLA(int Address);
 void BLR();
 void CMP(int Reg1, int Reg2, int CondField);

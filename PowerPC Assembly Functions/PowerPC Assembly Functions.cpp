@@ -688,17 +688,22 @@ int GetNextLabel()
 	return (LabelIndex - 1);
 }
 
-void JumpToLabel(int LabelNum)
+void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn)
 {
-	if(JumpIndex >= MAX_JUMPS)
+	if (JumpIndex >= MAX_JUMPS)
 	{
 		cout << "ERROR, too many jumps\n";
 		exit(0);
 	}
 	JumpLabelNumArray[JumpIndex] = LabelNum;
 	JumpFromArray[JumpIndex] = WPtr.tellp();
+	JumpFromConditionArray[JumpIndex] = conditionIn;
 	WriteIntToFile(0);
 	JumpIndex++;
+}
+void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit)
+{
+	JumpToLabel(LabelNum, { BranchCondition, ConditionBit });
 }
 
 void CompleteJumps()
@@ -707,7 +712,15 @@ void CompleteJumps()
 	for(int i = 0; i < JumpIndex ; i++)
 	{
 		WPtr.seekp(JumpFromArray[i]);
-		B(CalcBranchOffset(JumpFromArray[i], LabelPosArray[JumpLabelNumArray[i]]));
+		branchConditionAndConditionBit* currEntry = &JumpFromConditionArray[i];
+		if (currEntry->BranchCondition != INT_MAX && currEntry->ConditionBit != INT_MAX)
+		{
+			BC(CalcBranchOffset(JumpFromArray[i], LabelPosArray[JumpLabelNumArray[i]]), currEntry->BranchCondition, currEntry->ConditionBit);
+		}
+		else
+		{
+			B(CalcBranchOffset(JumpFromArray[i], LabelPosArray[JumpLabelNumArray[i]]));
+		}
 	}
 	WPtr.seekp(holdPos);
 }
@@ -1813,6 +1826,10 @@ void BA(int Address)
 	WriteIntToFile(OpHex);
 }
 
+void BC(int JumpDist, branchConditionAndConditionBit conditionIn)
+{
+	BC(JumpDist, conditionIn.BranchCondition, conditionIn.ConditionBit);
+}
 //distance/4, branch if true/false, bit to check
 void BC(int JumpDist, int BranchCondition, int ConditionBit)
 {
