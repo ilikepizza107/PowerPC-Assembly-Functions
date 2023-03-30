@@ -1961,12 +1961,13 @@ void EXTSB(int DestReg, int SourceReg, bool SetConditionReg)
 	WriteIntToFile(OpHex);
 }
 
-void FABS(int DestReg, int SourceReg)
+void FABS(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 20);
 	OpHex |= GetOpSegment(264, 10, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
@@ -2043,12 +2044,13 @@ void FDIVS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionR
 	WriteIntToFile(OpHex);
 }
 
-void FMR(int DestReg, int SourceReg)
+void FMR(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 20);
 	OpHex |= GetOpSegment(72, 10, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
@@ -2074,12 +2076,13 @@ void FMULS(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg)
 	WriteIntToFile(OpHex);
 }
 
-void FNEG(int DestReg, int SourceReg)
+void FNEG(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 20);
 	OpHex |= GetOpSegment(40, 10, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
