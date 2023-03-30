@@ -2001,21 +2001,23 @@ void FCMPU(int FPReg1, int FPReg2, int CondField)
 	WriteIntToFile(OpHex);
 }
 
-void FCTIW(int SourceReg, int DestReg)
+void FCTIW(int SourceReg, int DestReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 20);
 	OpHex |= GetOpSegment(14, 10, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
-void FCTIWZ(int DestReg, int SourceReg)
+void FCTIWZ(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 20);
 	OpHex |= GetOpSegment(15, 10, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
@@ -2093,12 +2095,13 @@ void FRES(int DestReg, int SourceReg, bool SetConditionReg)
 
 //Rounds a 64-bit, double precision floating-point operand to single precision
 //places result in a floating-point register
-void FRSP(int DestReg, int SourceReg)
+void FRSP(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 20);
 	OpHex |= GetOpSegment(12, 10, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 

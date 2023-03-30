@@ -488,15 +488,15 @@ void FADD(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0)
 void FADDS(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void FCMPU(int FPReg1, int FPReg2, int CondField);
 void FMR(int DestReg, int SourceReg);
-void FCTIW(int DestReg, int SourceReg);
-void FCTIWZ(int DestReg, int SourceReg);
+void FCTIW(int DestReg, int SourceReg, bool SetConditionReg = 0);
+void FCTIWZ(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FDIV(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
 void FDIVS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
 void FMUL(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void FMULS(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void FNEG(int DestReg, int SourceReg);
 void FRES(int DestReg, int SourceReg, bool SetConditionReg = 0);
-void FRSP(int DestReg, int SourceReg);
+void FRSP(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FRSQRTE(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FSQRT(int FPDestReg, int FPSourceReg, bool SetConditionReg = 0);
 void FSUB(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
