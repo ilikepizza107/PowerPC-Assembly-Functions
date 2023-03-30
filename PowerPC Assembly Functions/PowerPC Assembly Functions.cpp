@@ -2503,7 +2503,7 @@ void ORIS(int DestReg, int SourceReg, int Immediate)
 	WriteIntToFile(OpHex);
 }
 
-void RLWINM(int DestReg, int SourceReg, int ShiftNum, int MaskStart, int MaskEnd)
+void RLWINM(int DestReg, int SourceReg, int ShiftNum, int MaskStart, int MaskEnd, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(21, 6, 5);
 	OpHex |= GetOpSegment(SourceReg, 5, 10);
@@ -2511,10 +2511,11 @@ void RLWINM(int DestReg, int SourceReg, int ShiftNum, int MaskStart, int MaskEnd
 	OpHex |= GetOpSegment(ShiftNum, 5, 20);
 	OpHex |= GetOpSegment(MaskStart, 5, 25);
 	OpHex |= GetOpSegment(MaskEnd, 5, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
-void RLWNM(int DestReg, int SourceReg, int ShiftReg, int MaskStart, int MaskEnd)
+void RLWNM(int DestReg, int SourceReg, int ShiftReg, int MaskStart, int MaskEnd, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(23, 6, 5);
 	OpHex |= GetOpSegment(SourceReg, 5, 10);
@@ -2522,16 +2523,18 @@ void RLWNM(int DestReg, int SourceReg, int ShiftReg, int MaskStart, int MaskEnd)
 	OpHex |= GetOpSegment(ShiftReg, 5, 20);
 	OpHex |= GetOpSegment(MaskStart, 5, 25);
 	OpHex |= GetOpSegment(MaskEnd, 5, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
-void SRAWI(int DestReg, int SourceReg, int ShiftNum)
+void SRAWI(int DestReg, int SourceReg, int ShiftNum, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(DestReg, 5, 15);
 	OpHex |= GetOpSegment(ShiftNum, 5, 20);
 	OpHex |= GetOpSegment(824, 10, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
