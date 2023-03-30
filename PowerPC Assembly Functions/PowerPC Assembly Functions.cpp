@@ -1727,13 +1727,14 @@ void ABS(int DestReg, int SourceReg, int tempReg)
 	XOR(DestReg, DestReg, tempReg);
 }
 
-void ADD(int DestReg, int SourceReg1, int SourceReg2)
+void ADD(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg1, 5, 15);
 	OpHex |= GetOpSegment(SourceReg2, 5, 20);
 	OpHex |= GetOpSegment(266, 9, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
@@ -1917,23 +1918,25 @@ void DCBST(int SourceReg1, int SourceReg2) {
 	WriteIntToFile(OpHex);
 }
 
-void DIVW(int DestReg, int DividendReg, int DivisorReg)
+void DIVW(int DestReg, int DividendReg, int DivisorReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(DividendReg, 5, 15);
 	OpHex |= GetOpSegment(DivisorReg, 5, 20);
 	OpHex |= GetOpSegment(491, 9, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
-void DIVWU(int DestReg, int DividendReg, int DivisorReg)
+void DIVWU(int DestReg, int DividendReg, int DivisorReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(DividendReg, 5, 15);
 	OpHex |= GetOpSegment(DivisorReg, 5, 20);
 	OpHex |= GetOpSegment(459, 9, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
@@ -2423,22 +2426,24 @@ void MULLI(int DestReg, int SourceReg, int Immediate)
 	WriteIntToFile(OpHex);
 }
 
-void MULLW(int DestReg, int SourceReg1, int SourceReg2)
+void MULLW(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg1, 5, 15);
 	OpHex |= GetOpSegment(SourceReg2, 5, 20);
 	OpHex |= GetOpSegment(235, 9, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
-void NEG(int DestReg, int SourceReg)
+void NEG(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 15);
 	OpHex |= GetOpSegment(104, 9, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
@@ -2681,13 +2686,14 @@ void STWX(int DestReg, int AddressReg1, int AddressReg2)
 }
 
 //DestReg = SourceReg1 - SourceReg2
-void SUBF(int DestReg, int SourceReg1, int SourceReg2)
+void SUBF(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg2, 5, 15);
 	OpHex |= GetOpSegment(SourceReg1, 5, 20);
 	OpHex |= GetOpSegment(40, 9, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
