@@ -51,6 +51,32 @@ const std::string codeVersion = "v1.0.0";
 //
 
 
+void randomColorChange()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int	playerKindReg = 23;
+	int	fighterKindReg = 31;
+	int	costumeIDReg = 24;
+
+	ASMStart(0x80697554, "[CM: _BackplateColors] MenSelChr Random Color Override " + codeVersion + " [QuickLava]"); // Hooks "setCharPic/[muSelCharPlayerArea]/mu_selchar_player_area_o".
+
+	// Where we're hooking, we guarantee that we're dealing with the Random portrait.
+	// The costumeIDReg at this moment is guaranteed to range from 0 (Red) to 4 (CPU).
+	// Calculate offset into Backplate Color LOC Entries
+	SetRegister(reg2, 0x4);
+	MULLW(reg2, reg2, costumeIDReg);
+	// Add that to first entry's location
+	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+	ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+	// Load line INDEX value
+	LWZ(reg2, reg2, 0x00);
+	// Load the current value at that line into the costume register.
+	LWZ(costumeIDReg, reg2, Line::VALUE);
+
+	ASMEnd(0x3b5b0004); // Restore Original Instruction: addi	r26, r27, 4
+}
+
 void menSelChrElemntChange()
 {
 	// If CSS Rosters are enabled
