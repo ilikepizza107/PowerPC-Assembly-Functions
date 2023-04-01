@@ -50,6 +50,78 @@ const std::string codeVersion = "v1.0.0";
 // Works a lot like the setFrameCol func, just need to intercept the frame being prescribed and overwrite it
 //
 
+// This code is usable between both updateTeamColor and updateMeleeKind for the hand, so
+// I've moved the bulk of it out into this function here to ensure things are consistent
+// between the two.
+void handColorChangeBody(int reg1, int reg2, int reg3)
+{
+	// Convert target frame to an integer, and copy it into reg1
+	SetRegister(reg3, SET_FLOAT_REG_TEMP_MEM);
+	FCTIWZ(1, 1);
+	STFD(1, reg3, 0x00);
+	LWZ(reg1, reg3, 0x04);
+	// We'll be using this to index into our Code Menu lines, so
+	// if it's greater than 0, we'll subtract 1 (Red is usually called via frame 1).
+	If(reg1, GREATER_I_L, 0x00);
+	{
+		ADDI(reg1, reg1, -0x01);
+	}
+	// Use that to calculate which code menu line we should be looking at
+	SetRegister(reg2, 0x4);
+	MULLW(reg2, reg2, reg1);
+	// Add that to first entry's location
+	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+	ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+	// Load line INDEX value
+	LWZ(reg2, reg2, 0x00);
+	// Then Look 0x08 past the line's address to get the selected index
+	LWZ(reg2, reg2, Line::VALUE);
+	// Convert the prescribed frame back into a double:
+	// Store the prescribed frame at the end of the double staging area.
+	STW(reg2, reg3, 0x04);
+	// Write the conversion double's head to the front of the area, and load it into a register.
+	SetRegister(reg2, 0x43300000);
+	STW(reg2, reg3, 0x00);
+	LFD(1, reg3, 0x00);
+	// Load the 0x4330 double to subtract with.
+	ADDIS(reg1, 0, 0x805A);
+	LFD(0, reg1, 0x36E8);
+	// Subtract to finish the conversion.
+	FSUB(1, 1, 0);
+}
+void handColorChange()
+{
+
+	// If Color Changer is enabled
+	if (BACKPLATE_COLOR_1_INDEX != -1)
+	{
+		// In team color case, the frame gets one added to it while it's converted to Double
+		// Frames:
+		//	- 0x00 Red2?
+		//	- 0x01 Red Main
+		//	- 0x02 Blue
+		//	- 0x03 Yellow
+		//	- 0x04 Green Main
+		//	- 0x05 Green2?
+		//
+		
+		int reg1 = 11;
+		int reg2 = 12;
+		int reg3 = 3;
+
+		ASMStart(0x8069ca3c, "[CM: _BackplateColors] CSS Hand Color Change (meleeKind) " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
+
+		handColorChangeBody(reg1, reg2, reg3);
+		
+		ASMEnd(0x807f004c); // Restore original instruction: lwz	r3, 0x004C (r31)
+
+		ASMStart(0x8069caf0, "[CM: _BackplateColors] CSS Hand Color Change (teamColor) " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
+
+		handColorChangeBody(reg1, reg2, reg3);
+
+		ASMEnd(0x807f004c); // Restore original instruction: lwz	r3, 0x004C (r31)
+	}
+}
 
 void randomColorChange()
 {
@@ -258,8 +330,6 @@ void backplateColorChange()
 	// 08 = Teal
 	// 09 = CPU Grey
 
-	constexpr unsigned short triggerTag = 0xBEEF;
-
 	// If CSS Rosters are enabled
 	if (BACKPLATE_COLOR_1_INDEX != -1)
 	{
@@ -354,6 +424,15 @@ void backplateColorChange()
 		FCTIWZ(1, 31);
 		STFD(1, reg1, 0x00);
 		LWZ(reg1, reg1, 0x04);
+
+		// This is only really here for the Results Screen Franchise icons.
+		// Those ask for normal frame + 10 as you click through the stats.
+		// This prevents that from happening.
+		If(reg1, GREATER_OR_EQUAL_I_L, 10);
+		{
+			ADDI(reg1, reg1, -10);
+		}
+		EndIf();
 
 		//Shuffle around the requested frames to line up with the Code Menu Lines
 		// If we ask for frame 0, point to 1 above Transparent Line

@@ -3,6 +3,7 @@
 
 #include "_AdditionalCode.h"
 
+void handColorChange();
 void randomColorChange();
 void menSelChrElemntChange();
 void shieldColorChange();

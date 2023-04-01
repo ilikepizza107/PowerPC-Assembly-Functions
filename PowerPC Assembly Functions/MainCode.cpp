@@ -459,7 +459,7 @@ int main(int argc, char** argv)
 		//LXPGreenOverlayFix();
 
 		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
-		backplateColorChange(); shieldColorChange(); menSelChrElemntChange(); randomColorChange();
+		backplateColorChange(); shieldColorChange(); menSelChrElemntChange(); randomColorChange(); handColorChange();
 		// dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();
