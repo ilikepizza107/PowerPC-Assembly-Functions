@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include <fstream>
 #include <vector>
+#include <array>
 #include <algorithm>
 #include <numeric>
 #include <string>
@@ -287,8 +288,10 @@ namespace ledger
 	bool openLedgerEntry(std::string codeName, std::string codeBlurb = "");
 	bool closeLedgerEntry();
 
-	bool writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn);
+	bool writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn, bool codeUnattested = 0);
 }
+std::string instructionHexToGCTRMString(unsigned long hexIn);
+std::string instructionHexToGCTRMString(std::string hexIn);
 
 // Branch Conditions, Used for JumpToLabel and BC Operations
 struct branchConditionAndConditionBit
