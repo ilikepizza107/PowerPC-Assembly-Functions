@@ -66,6 +66,7 @@ void handColorChangeBody(int reg1, int reg2, int reg3)
 	{
 		ADDI(reg1, reg1, -0x01);
 	}
+	EndIf();
 	// Use that to calculate which code menu line we should be looking at
 	SetRegister(reg2, 0x4);
 	MULLW(reg2, reg2, reg1);
