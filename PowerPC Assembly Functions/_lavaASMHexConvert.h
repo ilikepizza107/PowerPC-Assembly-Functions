@@ -14,7 +14,7 @@ namespace lava
 		aPOC_NULL = -1,
 		aPOC_ADDI = 14,
 		aPOC_ADDIS = 15,
-		aPOC_ADD = 31,
+		aPOC_31 = 31,
 		// Load Instructions
 		aPOC_LWZ = 32,
 		aPOC_LWZU = 33,
@@ -40,6 +40,8 @@ namespace lava
 		// Logical Integer Instructions
 		aPOC_ORI = 24,
 		aPOC_ORIS = 25,
+		aPOC_ANDI = 28,
+		aPOC_ANDIS = 29,
 	};
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);

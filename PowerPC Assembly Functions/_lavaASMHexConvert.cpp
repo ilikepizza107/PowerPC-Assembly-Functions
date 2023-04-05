@@ -3,6 +3,7 @@
 namespace lava
 {
 	const std::string opName_WithUpdateString = " w/ Update";
+	const std::string opName_WithComplString = " w/ Complement";
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length)
 	{
@@ -113,13 +114,13 @@ namespace lava
 
 		return result.str();
 	}
-	std::string ORImmInstrToString(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string integerAndOrImmInstrToString(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
 	{
 		std::stringstream result;
 
 		if (argumentsIn.size() >= 4)
 		{
-			if (argumentsIn[1] == 0 && argumentsIn[2] == 0 && argumentsIn[3] == 0)
+			if (instructionIn->mneumonic == "ori" && argumentsIn[1] == 0 && argumentsIn[2] == 0 && argumentsIn[3] == 0)
 			{
 				result << "nop";
 			}
@@ -135,13 +136,53 @@ namespace lava
 		return result.str();
 	}
 
+	std::string integerThreeRegWithOEAndRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	{
+		std::stringstream result;
+
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[4])
+			{
+				result << 'o';
+			}
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string integerThreeRegWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	{
+		std::stringstream result;
+
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+
 
 	std::vector<unsigned long> asmPrOpCodeGroup::splitHexIntoArguments(unsigned long instructionHexIn)
 	{
 		std::vector<unsigned long> result{};
 
 		unsigned long instructionLength = 0;
-		result.push_back(getInstructionOpCode(instructionHexIn));
 		for (unsigned long i = 0; i < argumentStartBits.size(); i++)
 		{
 			if (i < (argumentStartBits.size() - 1))
@@ -167,6 +208,17 @@ namespace lava
 			result->primaryOpCode = this->primaryOpCode;
 			result->name = nameIn;
 			result->secondaryOpCode = secOpIn;
+			result->canonForm = result->primaryOpCode << (32 - 6);
+			if (this->secondaryOpCodeArgumentIndex != UCHAR_MAX)
+			{
+				int secOpShiftAmount = 0;
+				if ((this->secondaryOpCodeArgumentIndex + 1) < this->argumentStartBits.size())
+				{
+					secOpShiftAmount = 32 - this->argumentStartBits[this->secondaryOpCodeArgumentIndex + 1];
+				}
+
+				result->canonForm |= result->secondaryOpCode << secOpShiftAmount;
+			}
 		}
 
 		return result;
@@ -192,239 +244,262 @@ namespace lava
 		asmPrOpCodeGroup* currentOpGroup = nullptr;
 		asmInstruction* currentInstruction = nullptr;
 
+		// Arithmetic Instructions
+
 		// Op Code 14
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDI, { 6, 11, 16});
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDI, { 0, 6, 11, 16});
 		{
 			// Operation: ADDI
 			currentInstruction = currentOpGroup->pushInstruction("Add Immediate", USHRT_MAX);
 			currentInstruction->mneumonic = "addi";
-			currentInstruction->canonForm = 0x38000000;
 			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
 		}
 		// Op Code 15
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIS, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIS, { 0, 6, 11, 16 });
 		{
 			// Operation: ADDI
 			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", USHRT_MAX);
 			currentInstruction->mneumonic = "addis";
-			currentInstruction->canonForm = 0x3C000000;
 			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
 		}
 
 		// Op Code 31
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADD, { 6, 11, 16, 21, 22, 31 }, 3);
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_31, { 0, 6, 11, 16, 21, 22, 31 }, 5);
 		{
 			// Operation: ADD
 			currentInstruction = currentOpGroup->pushInstruction("Add", 266);
 			currentInstruction->mneumonic = "add";
-			currentInstruction->canonForm = 0x7C000214;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+
+			// Operation: AND
+			currentInstruction = currentOpGroup->pushInstruction("AND", 28);
+			currentInstruction->mneumonic = "and";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: ANDC
+			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, 60);
+			currentInstruction->mneumonic = "andc";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+
+			// Operation: OR
+			currentInstruction = currentOpGroup->pushInstruction("OR", 444);
+			currentInstruction->mneumonic = "or";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: ORC
+			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, 412);
+			currentInstruction->mneumonic = "orc";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+
+			// Operation: NOR
+			currentInstruction = currentOpGroup->pushInstruction("NOR", 124);
+			currentInstruction->mneumonic = "nor";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+
+
 		}
 
 		// Load Instructions
+
 		// Op Code 32
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZ, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZ, { 0, 6, 11, 16 });
 		{
 			// Operation: LWZ
 			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero", USHRT_MAX);
 			currentInstruction->mneumonic = "lwz";
-			currentInstruction->canonForm = 0x80000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 33
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZU, { 0, 6, 11, 16 });
 		{
 			// Operation: LWZU
 			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "lwzu";
-			currentInstruction->canonForm = 0x84000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 34
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZ, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZ, { 0, 6, 11, 16 });
 		{
 			// Operation: LBZ
 			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero", USHRT_MAX);
 			currentInstruction->mneumonic = "lbz";
-			currentInstruction->canonForm = 0x88000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 35
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZU, { 0, 6, 11, 16 });
 		{
 			// Operation: LBZ
 			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "lbzu";
-			currentInstruction->canonForm = 0x8C000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 40
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZ, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZ, { 0, 6, 11, 16 });
 		{
 			// Operation: LBZ
 			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero", USHRT_MAX);
 			currentInstruction->mneumonic = "lhz";
-			currentInstruction->canonForm = 0xA0000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 41
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZU, { 0, 6, 11, 16 });
 		{
 			// Operation: LBZ
 			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "lhzu";
-			currentInstruction->canonForm = 0xA4000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 48
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFS, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFS, { 0, 6, 11, 16 });
 		{
 			// Operation: LFS
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single", USHRT_MAX);
 			currentInstruction->mneumonic = "lfs";
-			currentInstruction->canonForm = 0xC0000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 		// Op Code 49
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFSU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFSU, { 0, 6, 11, 16 });
 		{
 			// Operation: LFSU
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "lfsu";
-			currentInstruction->canonForm = 0xC4000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 		// Op Code 50
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFD, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFD, { 0, 6, 11, 16 });
 		{
 			// Operation: LFD
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double", USHRT_MAX);
 			currentInstruction->mneumonic = "lfd";
-			currentInstruction->canonForm = 0xC8000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 		// Op Code 51
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFDU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFDU, { 0, 6, 11, 16 });
 		{
 			// Operation: LFDU
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "lfdu";
-			currentInstruction->canonForm = 0xCC000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 
 
 
 		// Store Instructions
+
 		// Op Code 36
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STW, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STW, { 0, 6, 11, 16 });
 		{
 			// Operation: STW
 			currentInstruction = currentOpGroup->pushInstruction("Store Word", USHRT_MAX);
 			currentInstruction->mneumonic = "stw";
-			currentInstruction->canonForm = 0x90000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 37
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STWU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STWU, { 0, 6, 11, 16 });
 		{
 			// Operation: STWU
 			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "stwu";
-			currentInstruction->canonForm = 0x94000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 38
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STB, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STB, { 0, 6, 11, 16 });
 		{
 			// Operation: STB
 			currentInstruction = currentOpGroup->pushInstruction("Store Byte", USHRT_MAX);
 			currentInstruction->mneumonic = "stb";
-			currentInstruction->canonForm = 0x98000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 39
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STBU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STBU, { 0, 6, 11, 16 });
 		{
 			// Operation: STBU
 			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "stbu";
-			currentInstruction->canonForm = 0x9C000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 44
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STH, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STH, { 0, 6, 11, 16 });
 		{
 			// Operation: STH
 			currentInstruction = currentOpGroup->pushInstruction("Store Half Word", USHRT_MAX);
 			currentInstruction->mneumonic = "sth";
-			currentInstruction->canonForm = 0xB0000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 45
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STHU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STHU, { 0, 6, 11, 16 });
 		{
 			// Operation: STHU
 			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "sthu";
-			currentInstruction->canonForm = 0xB4000000;
 			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
 		}
 		// Op Code 52
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFS, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFS, { 0, 6, 11, 16 });
 		{
 			// Operation: STFS
 			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single", USHRT_MAX);
 			currentInstruction->mneumonic = "stfs";
-			currentInstruction->canonForm = 0xD0000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 		// Op Code 53
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFSU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFSU, { 0, 6, 11, 16 });
 		{
 			// Operation: STFSU
 			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "stfsu";
-			currentInstruction->canonForm = 0xD4000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 		// Op Code 54
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFD, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFD, { 0, 6, 11, 16 });
 		{
 			// Operation: STFD
 			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double", USHRT_MAX);
 			currentInstruction->mneumonic = "stfd";
-			currentInstruction->canonForm = 0xD8000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 		// Op Code 55
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFDU, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFDU, { 0, 6, 11, 16 });
 		{
 			// Operation: STFDU
 			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "stfdu";
-			currentInstruction->canonForm = 0xDC000000;
 			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
 		}
 
 		// Logical Integer Instructions
+
 		// Op Code 24
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORI, {6, 11, 16});
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORI, { 0, 6, 11, 16});
 		{
 			// Operation: ORI
 			currentInstruction = currentOpGroup->pushInstruction("OR Immediate" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "ori";
-			currentInstruction->canonForm = 0x60000000;
-			currentInstruction->convertInstructionArgumentsToString = ORImmInstrToString;
+			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
 		}
 		// Op Code 25
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORIS, { 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORIS, { 0, 6, 11, 16 });
 		{
 			// Operation: ORI
 			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted" + opName_WithUpdateString, USHRT_MAX);
 			currentInstruction->mneumonic = "oris";
-			currentInstruction->canonForm = 0x64000000;
-			currentInstruction->convertInstructionArgumentsToString = ORImmInstrToString;
+			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
 		}
+		// Op Code 28
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDI, { 0, 6, 11, 16 });
+		{
+			// Operation: ANDI
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate" + opName_WithUpdateString, USHRT_MAX);
+			currentInstruction->mneumonic = "andi.";
+			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
+		}
+		// Op Code 28
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDIS, { 0, 6, 11, 16 });
+		{
+			// Operation: ORI
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, USHRT_MAX);
+			currentInstruction->mneumonic = "andis.";
+			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
+		}
+
 	}
 
 	std::string convertOperationHexToString(unsigned long hexIn)
