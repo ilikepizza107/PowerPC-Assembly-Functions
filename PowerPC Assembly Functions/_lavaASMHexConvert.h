@@ -12,9 +12,14 @@ namespace lava
 	enum asmPrimaryOpCodes
 	{
 		aPOC_NULL = -1,
+		aPOC_31 = 31,
+		// Arithmetic Instructions
+		aPOC_MULLI = 7,
+		aPOC_ADDIC = 12,
+		aPOC_ADDIC_DOT = 13,
 		aPOC_ADDI = 14,
 		aPOC_ADDIS = 15,
-		aPOC_31 = 31,
+		aPOC_SUBFIC = 8,
 		// Load Instructions
 		aPOC_LWZ = 32,
 		aPOC_LWZU = 33,

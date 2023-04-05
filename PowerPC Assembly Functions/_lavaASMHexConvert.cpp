@@ -246,6 +246,40 @@ namespace lava
 
 		// Arithmetic Instructions
 
+		// Op Code 7
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_MULLI, { 0, 6, 11, 16 });
+		{
+			// Operation: MULLI
+			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Immediate", USHRT_MAX);
+			currentInstruction->mneumonic = "mulli";
+			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+		}
+
+		// Op Code 8
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_SUBFIC, { 0, 6, 11, 16 });
+		{
+			// Operation: SUBFIC
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Immediate Carrying", USHRT_MAX);
+			currentInstruction->mneumonic = "subfic";
+			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+		}
+
+		// Op Code 12
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC, { 0, 6, 11, 16 });
+		{
+			// Operation: ADDIC
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying", USHRT_MAX);
+			currentInstruction->mneumonic = "addic";
+			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+		}
+		// Op Code 13
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC_DOT, { 0, 6, 11, 16 });
+		{
+			// Operation: ADDIC.
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying and Record", USHRT_MAX);
+			currentInstruction->mneumonic = "addic.";
+			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+		}
 		// Op Code 14
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDI, { 0, 6, 11, 16});
 		{
@@ -269,6 +303,49 @@ namespace lava
 			// Operation: ADD
 			currentInstruction = currentOpGroup->pushInstruction("Add", 266);
 			currentInstruction->mneumonic = "add";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			// Operation: ADDC
+			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", 10);
+			currentInstruction->mneumonic = "addc";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			// Operation: ADDE
+			currentInstruction = currentOpGroup->pushInstruction("Add Extended", 138);
+			currentInstruction->mneumonic = "adde";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+
+			// Operation: DIVW
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word", 491);
+			currentInstruction->mneumonic = "divw";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			// Operation: DIVWU
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", 459);
+			currentInstruction->mneumonic = "divwu";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+
+			// Operation: MULHW
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", 75);
+			currentInstruction->mneumonic = "mulhw";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			// Operation: MULHWU
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", 11);
+			currentInstruction->mneumonic = "mulhwu";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			// Operation: MULLW
+			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", 235);
+			currentInstruction->mneumonic = "mullw";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+
+			// Operation: SUBF
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From", 40);
+			currentInstruction->mneumonic = "subf";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			// Operation: SUBFC
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", 8);
+			currentInstruction->mneumonic = "subfc";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			// Operation: SUBFE
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", 136);
+			currentInstruction->mneumonic = "subfe";
 			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
 
 			// Operation: AND
