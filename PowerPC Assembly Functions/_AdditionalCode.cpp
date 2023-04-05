@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "_AdditionalCode.h"
 
 namespace lava

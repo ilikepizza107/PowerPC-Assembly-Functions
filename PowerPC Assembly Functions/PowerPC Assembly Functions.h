@@ -10,6 +10,7 @@
 #include <iostream>
 #include <cassert>
 #include <sstream>
+#include "_lavaASMHexConvert.h"
 using namespace std;
 
 typedef unsigned int u32;

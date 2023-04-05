@@ -108,6 +108,9 @@
     <ClInclude Include="_BackplateColors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_lavaASMHexConvert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">
@@ -198,6 +201,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_BackplateColors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_lavaASMHexConvert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

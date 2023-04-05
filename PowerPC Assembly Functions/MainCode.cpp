@@ -119,6 +119,7 @@ int main(int argc, char** argv)
 	}
 	if (std::filesystem::is_directory(outputFolder))
 	{
+		lava::buildInstructionDictionary();
 		initMenuFileStream();
 		string OutputTextPath = asmTextOutputFilePath;
 

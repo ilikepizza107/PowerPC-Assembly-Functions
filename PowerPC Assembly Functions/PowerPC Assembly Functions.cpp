@@ -160,97 +160,9 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 	return output.good();
 }
 
-unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length)
-{
-	unsigned long result = ULONG_MAX;
-
-	if ((startBitIndex < 32) && (startBitIndex + length <= 32))
-	{
-		result = hexIn & ((unsigned long long(2) << (31 - startBitIndex)) - 1);
-		result = result >> ((32 - startBitIndex) - length);
-	}
-
-	return result;
-}
 std::string instructionHexToGCTRMString(unsigned long hexIn)
 {
-	std::stringstream result;
-
-	unsigned long instructionType = extractInstructionArg(hexIn, 0, 6);
-	unsigned long foramattingArchetype = ULONG_MAX;
-
-	enum formats {
-		fmt_NULL = ULONG_MAX,
-		fmt_PLAIN = 0,
-		fmt_LWZ,
-		fmt_LWZUX,
-	};
-
-	std::array<unsigned long, 8> decomposedArguments;
-	decomposedArguments.fill(ULONG_MAX);
-	decomposedArguments[0] = instructionType;
-
-	switch (instructionType)
-	{
-	case 31:
-	{
-		foramattingArchetype = fmt_LWZ;
-		decomposedArguments[1] = extractInstructionArg(hexIn, 6, 5);
-		decomposedArguments[2] = extractInstructionArg(hexIn, 11, 5);
-		decomposedArguments[3] = extractInstructionArg(hexIn, 16, 5);
-		decomposedArguments[4] = extractInstructionArg(hexIn, 21, 5);
-		if (decomposedArguments[4] == 55)
-		{
-			result << "lwzux";
-		}
-		else
-		{
-			result << "lwzx";
-		}
-		break;
-	}
-	case 32:
-	{
-		foramattingArchetype = fmt_LWZ;
-		decomposedArguments[1] = extractInstructionArg(hexIn, 6, 5);
-		decomposedArguments[2] = extractInstructionArg(hexIn, 11, 5);
-		decomposedArguments[3] = extractInstructionArg(hexIn, 16, 16);
-		result << "lwz";
-		break;
-	}
-	case 33:
-	{
-		foramattingArchetype = fmt_LWZ;
-		decomposedArguments[1] = extractInstructionArg(hexIn, 6, 5);
-		decomposedArguments[2] = extractInstructionArg(hexIn, 11, 5);
-		decomposedArguments[3] = extractInstructionArg(hexIn, 16, 16);
-		result << "lwzu";
-		break;
-	}
-	default:
-	{
-		break;
-	}
-	}
-
-	switch (foramattingArchetype)
-	{
-	case fmt_LWZ:
-	{
-		result << " r" << decomposedArguments[1] << ", 0x" << std::hex << decomposedArguments[3] << "(r" << std::dec << decomposedArguments[2] << ")";
-		break;
-	}
-	case fmt_LWZUX:
-	{
-		result << " r" << decomposedArguments[1] << ", r" << decomposedArguments[2] << ", r" << decomposedArguments[2];
-	}
-	default:
-	{
-		break;
-	}
-	}
-
-	return result.str();
+	return lava::convertOperationHexToString(hexIn);
 }
 std::string instructionHexToGCTRMString(std::string hexIn)
 {
