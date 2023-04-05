@@ -4,6 +4,8 @@ namespace lava
 {
 	const std::string opName_WithUpdateString = " w/ Update";
 	const std::string opName_WithComplString = " w/ Complement";
+	const std::string opName_DoublePrecision = " (Double-Precision)";
+	const std::string opName_SinglePrecision = " Single";
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length)
 	{
@@ -131,6 +133,43 @@ namespace lava
 				result << ", r" << argumentsIn[2];
 				result << ", " << std::hex << "0x" << argumentsIn[3];
 			}
+		}
+
+		return result.str();
+	}
+
+	std::string floatThreeRegOmitCWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	{
+		std::stringstream result;
+
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " f" << argumentsIn[1];
+			result << ", f" << argumentsIn[2];
+			result << ", f" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string floatThreeRegOmitBWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	{
+		std::stringstream result;
+
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " f" << argumentsIn[1];
+			result << ", f" << argumentsIn[2];
+			result << ", f" << argumentsIn[4];
 		}
 
 		return result.str();
@@ -295,6 +334,47 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", USHRT_MAX);
 			currentInstruction->mneumonic = "addis";
 			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+		}
+
+		// Op Code 63
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_D_ARTH, { 0, 6, 11, 16, 21, 26, 31 }, 5);
+		{
+			// Operation: FADD
+			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_DoublePrecision, 21);
+			currentInstruction->mneumonic = "fadd";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
+			// Operation: FDIV
+			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_DoublePrecision, 18);
+			currentInstruction->mneumonic = "fdiv";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
+			// Operation: FMUL
+			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_DoublePrecision, 25);
+			currentInstruction->mneumonic = "fmul";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitBWithRc;
+			// Operation: FSUB
+			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_DoublePrecision, 20);
+			currentInstruction->mneumonic = "fsub";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
+		}
+		// Op Code 59
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_S_ARTH, { 0, 6, 11, 16, 21, 26, 31 }, 5);
+		{
+			// Operation: FADDS
+			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_SinglePrecision, 21);
+			currentInstruction->mneumonic = "fadds";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
+			// Operation: FDIVS
+			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_SinglePrecision, 18);
+			currentInstruction->mneumonic = "fdivs";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
+			// Operation: FMULS
+			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_SinglePrecision, 25);
+			currentInstruction->mneumonic = "fmuls";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitBWithRc;
+			// Operation: FSUBS
+			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_SinglePrecision, 20);
+			currentInstruction->mneumonic = "fsubs";
+			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
 		}
 
 		// Op Code 31

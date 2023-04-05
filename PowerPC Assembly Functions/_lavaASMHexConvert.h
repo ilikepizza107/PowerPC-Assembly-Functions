@@ -20,6 +20,8 @@ namespace lava
 		aPOC_ADDI = 14,
 		aPOC_ADDIS = 15,
 		aPOC_SUBFIC = 8,
+		aPOC_FLOAT_D_ARTH = 63,
+		aPOC_FLOAT_S_ARTH = 59,
 		// Load Instructions
 		aPOC_LWZ = 32,
 		aPOC_LWZU = 33,
