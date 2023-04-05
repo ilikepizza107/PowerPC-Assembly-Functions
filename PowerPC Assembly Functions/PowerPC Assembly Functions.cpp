@@ -107,35 +107,44 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 		for (std::size_t i = 0; i < numLines * 2; i++)
 		{
 			currHex = std::string(codeIn.data() + position, 0x8);
-			if (currHex.find("C2") == 0)
+			if (!inHook)
 			{
-				output << "HOOK @ $80" << currHex.substr(2, 6) << "\n{\n";
-				i++;
-				position += 0x8;
-			}
-			else if (currHex.find("C3") == 0)
-			{ 
-				output << "HOOK @ $81" << currHex.substr(2, 6) << "\n{\n";
-				i++;
-				position += 0x8;
-			}
-			else if (currHex == "00000000")
-			{
-				output << "}\n";
+				if (currHex.find("C2") == 0)
+				{
+					output << "HOOK @ $80" << currHex.substr(2, 6) << "\n{\n";
+					i++;
+					position += 0x8;
+					inHook = 1;
+				}
+				else if (currHex.find("C3") == 0)
+				{
+					output << "HOOK @ $81" << currHex.substr(2, 6) << "\n{\n";
+					i++;
+					position += 0x8;
+					inHook = 1;
+				}
 			}
 			else
 			{
-				output << "\t";
-				instruction = instructionHexToGCTRMString(currHex);
-				if (!instruction.empty())
+				if (currHex == "00000000")
 				{
-					output << instruction;
+					output << "}\n";
+					inHook = 0;
 				}
 				else
 				{
-					output << "* " << currHex;
+					output << "\t";
+					instruction = instructionHexToGCTRMString(currHex);
+					if (!instruction.empty())
+					{
+						output << instruction;
+					}
+					else
+					{
+						output << "* " << currHex;
+					}
+					output << "\n";
 				}
-				output << "\n";
 			}
 			position += 0x8;
 		}
