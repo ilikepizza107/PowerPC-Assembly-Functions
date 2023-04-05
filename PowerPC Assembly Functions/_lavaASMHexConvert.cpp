@@ -138,6 +138,23 @@ namespace lava
 		return result.str();
 	}
 
+	std::string floatTwoRegOmitAWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	{
+		std::stringstream result;
+
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " f" << argumentsIn[1];
+			result << ", f" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 	std::string floatThreeRegOmitCWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
 	{
 		std::stringstream result;
@@ -355,6 +372,19 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_DoublePrecision, 20);
 			currentInstruction->mneumonic = "fsub";
 			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
+
+			// Operation: FCTIW
+			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word", 14);
+			currentInstruction->mneumonic = "fctiw";
+			currentInstruction->convertInstructionArgumentsToString = floatTwoRegOmitAWithRc;
+			// Operation: FCTIWZ
+			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word with Round toward Zero", 15);
+			currentInstruction->mneumonic = "fctiwz";
+			currentInstruction->convertInstructionArgumentsToString = floatTwoRegOmitAWithRc;
+			// Operation: FRSP
+			currentInstruction = currentOpGroup->pushInstruction("Floating Round to Single", 12);
+			currentInstruction->mneumonic = "frsp";
+			currentInstruction->convertInstructionArgumentsToString = floatTwoRegOmitAWithRc;
 		}
 		// Op Code 59
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_S_ARTH, { 0, 6, 11, 16, 21, 26, 31 }, 5);
