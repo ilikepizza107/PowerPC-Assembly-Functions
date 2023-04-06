@@ -464,13 +464,13 @@ static const int CSS_VER_LOC = SPEED_LOC + 4; //4
 
 static const int THEME_LOC = CSS_VER_LOC + 4; //4
 
-//static const int DASH_ATTACK_ITEM_GRAB_LOC = THEME_LOC + 4; //4
-//
-//static const int TRIP_TOGGLE_LOC = DASH_ATTACK_ITEM_GRAB_LOC + 0x04; //4
-//static const int TRIP_RATE_MULTIPLIER_LOC = TRIP_TOGGLE_LOC + 0x04; //4
-//static const int TRIP_INTERVAL_LOC = TRIP_RATE_MULTIPLIER_LOC + 0x04; //4
+static const int DASH_ATTACK_ITEM_GRAB_LOC = THEME_LOC + 4; //4
 
-static const int BACKPLATE_COLOR_1_LOC = THEME_LOC + 4; //4
+static const int TRIP_TOGGLE_LOC = DASH_ATTACK_ITEM_GRAB_LOC + 4; //4
+static const int TRIP_RATE_MULTIPLIER_LOC = TRIP_TOGGLE_LOC + 4; //4
+static const int TRIP_INTERVAL_LOC = TRIP_RATE_MULTIPLIER_LOC + 4; //4
+
+static const int BACKPLATE_COLOR_1_LOC = TRIP_INTERVAL_LOC + 4; //4
 static const int BACKPLATE_COLOR_2_LOC = BACKPLATE_COLOR_1_LOC + 4; //4
 static const int BACKPLATE_COLOR_3_LOC = BACKPLATE_COLOR_2_LOC + 4; //4
 static const int BACKPLATE_COLOR_4_LOC = BACKPLATE_COLOR_3_LOC + 4; //4

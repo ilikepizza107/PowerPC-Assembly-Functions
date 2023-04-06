@@ -1568,6 +1568,16 @@ void CreateMenu(Page MainPage)
 	// Theme Setting
 	AddValueToByteArray(THEME_SETTING_INDEX, Header);
 
+	// Dash Attack Item Grab Setting
+	AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
+	
+	// Tripping Toggle
+	AddValueToByteArray(TRIP_TOGGLE_INDEX, Header);
+	// Tripping Rate Multiplier
+	AddValueToByteArray(TRIP_RATE_MULTIPLIER_INDEX, Header);
+	// Tripping Cooldown Toggle
+	AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
+
 	// Backplate Settings
 	AddValueToByteArray(BACKPLATE_COLOR_1_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_2_INDEX, Header);
@@ -1576,15 +1586,7 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
 
-	//// Dash Attack Item Grab Setting
-	//AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
-	//
-	//// Tripping Toggle
-	//AddValueToByteArray(TRIP_TOGGLE_INDEX, Header);
-	//// Tripping Rate Multiplier
-	//AddValueToByteArray(TRIP_RATE_MULTIPLIER_INDEX, Header);
-	//// Tripping Cooldown Toggle
-	//AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
+	
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
