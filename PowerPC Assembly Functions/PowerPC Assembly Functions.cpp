@@ -59,7 +59,7 @@ bool ledger::closeLedgerEntry()
 bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn)
 {
 	// Determine Hashtag Border Length
-	std::size_t hashtagStrLength = std::max((int)codeNameIn.size(), 20);
+	std::size_t hashtagStrLength = (codeNameIn.empty()) ? 0 : std::max((int)codeNameIn.size(), 20);
 	if (!codeBlurbIn.empty())
 	{
 		std::size_t cursorBak = 0;
@@ -81,19 +81,22 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 		}
 	}
 
-	// Write Code Name, Blurb, and Hashtags
-	output << std::string(hashtagStrLength, '#') << "\n";
-	output << codeNameIn << "\n";
-	if (!codeBlurbIn.empty())
+	if (hashtagStrLength > 0)
 	{
-		std::stringstream blurbStream(codeBlurbIn);
-		std::string currentLine = "";
-		while (std::getline(blurbStream, currentLine))
+		// Write Code Name, Blurb, and Hashtags
+		output << std::string(hashtagStrLength, '#') << "\n";
+		output << codeNameIn << "\n";
+		if (!codeBlurbIn.empty())
 		{
-			output << "# " << currentLine << "\n";
+			std::stringstream blurbStream(codeBlurbIn);
+			std::string currentLine = "";
+			while (std::getline(blurbStream, currentLine))
+			{
+				output << "# " << currentLine << "\n";
+			}
 		}
+		output << std::string(hashtagStrLength, '#') << "\n";
 	}
-	output << std::string(hashtagStrLength, '#') << "\n";
 
 	// Write Code Body
 	std::size_t position = 0;
@@ -255,7 +258,7 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 			}
 
 			tempName = currEntry->codeName;
-			if (tempName.empty())
+			if (tempName.empty() && !ALLOW_BLANK_CODE_NAMES_IN_ASM)
 			{
 				tempName = "Unnamed Code " + std::to_string(unnamedCount);
 				unnamedCount++;

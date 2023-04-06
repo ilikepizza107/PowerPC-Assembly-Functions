@@ -54,6 +54,9 @@ extern long characterListVersion;
 // As a result, attempting to run Netplay GCTs on console may brick your Wii. 
 #define BUILD_NETPLAY_FILES (false && DOLPHIN_BUILD)
 
+// ASM Output Formatting Settings
+#define ALLOW_BLANK_CODE_NAMES_IN_ASM true
+
 //ROTC floating offsets
 #define FS_20_0 -0x7920
 
