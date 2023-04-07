@@ -175,14 +175,17 @@ std::string instructionHexToGCTRMString(unsigned long hexIn)
 }
 std::string instructionHexToGCTRMString(std::string hexIn)
 {
+	std::string result = "";
+
 	unsigned long integerConversion = ULONG_MAX;
 	char* res = nullptr;
 	integerConversion = std::strtoul(hexIn.c_str(), &res, 16);
-	if (res != (hexIn.c_str() + hexIn.size()))
+	if (res == (hexIn.c_str() + hexIn.size()))
 	{
-		integerConversion = integerConversion;
+		result = instructionHexToGCTRMString(integerConversion);
 	}
-	return instructionHexToGCTRMString(integerConversion);
+
+	return result;
 }
 
 
