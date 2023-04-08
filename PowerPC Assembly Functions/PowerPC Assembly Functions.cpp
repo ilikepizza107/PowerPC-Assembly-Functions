@@ -186,6 +186,16 @@ std::string instructionHexToGCTRMString(std::string hexIn)
 	if (res == (hexIn.c_str() + hexIn.size()))
 	{
 		result = instructionHexToGCTRMString(integerConversion);
+		if (PRINT_INSTRUCTION_HEX_ALONGSIDE_ASM && !result.empty())
+		{
+			std::size_t relativeCommentLocation = 0x20;
+			std::size_t paddingLength = (result.size() > relativeCommentLocation) ? 0x00 : relativeCommentLocation - result.size();
+			if (paddingLength > 0)
+			{
+				result += std::string(paddingLength, ' ');
+			}
+			result += "# 0x" + hexIn;
+		}
 	}
 
 	return result;

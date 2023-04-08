@@ -59,6 +59,7 @@ extern long characterListVersion;
 
 // ASM Output Formatting Settings
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
+#define PRINT_INSTRUCTION_HEX_ALONGSIDE_ASM true
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
