@@ -195,6 +195,10 @@ void buildCharacterIDLists()
 	{
 		characterNameToIDMap.emplace("Dark Samus", LCSI_DARK_SAMUS);
 	}
+	if (characterListVersion >= characterListVersions::clv_PPEX_SCEPTILE)
+	{
+		characterNameToIDMap.emplace("Sceptile", LCSI_SCEPTILE);
+	}
 
 	unzipMapToVectors(characterNameToIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
 }
@@ -919,23 +923,7 @@ void CodeMenu()
 	Page SpecialModePage("Special Modes", SpecialModeLines);
 
 
-	// HUD Color Settings
-	vector<Line*> HUDColorLines;
-	std::vector<std::string> colorStrings = { 
-		"Color 0",
-		"Color 1", "Color 2", "Color 3", 
-		"Color 4", "Color 5", "Color 6", 
-		"Color 7", "Color 8", "Color 9",
-	};
-	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	HUDColorLines.push_back(new Selection("Red: ", colorStrings, 1, BACKPLATE_COLOR_1_INDEX));
-	HUDColorLines.push_back(new Selection("Blue: ", colorStrings, 2, BACKPLATE_COLOR_2_INDEX));
-	HUDColorLines.push_back(new Selection("Yellow: ", colorStrings, 3, BACKPLATE_COLOR_3_INDEX));
-	HUDColorLines.push_back(new Selection("Green: ", colorStrings, 4, BACKPLATE_COLOR_4_INDEX));
-	HUDColorLines.push_back(new Selection("Gray: ", colorStrings, 9, BACKPLATE_COLOR_C_INDEX));
-	HUDColorLines.push_back(new Selection("Clear: ", colorStrings, 0, BACKPLATE_COLOR_T_INDEX));
-	Page HUDColorsPage("HUD Colors", HUDColorLines);
-
+	
 
 	//main page
 	vector<Line*> MainLines;
@@ -980,7 +968,27 @@ void CodeMenu()
 	MainLines.push_back(&P3.CalledFromLine);
 	MainLines.push_back(&P4.CalledFromLine);
 	MainLines.push_back(&SpecialModePage.CalledFromLine);
+
+	/*
+	// HUD Color Settings
+	vector<Line*> HUDColorLines;
+	std::vector<std::string> colorStrings = {
+		"Color 0",
+		"Color 1", "Color 2", "Color 3",
+		"Color 4", "Color 5", "Color 6",
+		"Color 7", "Color 8", "Color 9",
+	};
+	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
+	HUDColorLines.push_back(new Selection("Red: ", colorStrings, 1, BACKPLATE_COLOR_1_INDEX));
+	HUDColorLines.push_back(new Selection("Blue: ", colorStrings, 2, BACKPLATE_COLOR_2_INDEX));
+	HUDColorLines.push_back(new Selection("Yellow: ", colorStrings, 3, BACKPLATE_COLOR_3_INDEX));
+	HUDColorLines.push_back(new Selection("Green: ", colorStrings, 4, BACKPLATE_COLOR_4_INDEX));
+	HUDColorLines.push_back(new Selection("Gray: ", colorStrings, 9, BACKPLATE_COLOR_C_INDEX));
+	HUDColorLines.push_back(new Selection("Clear: ", colorStrings, 0, BACKPLATE_COLOR_T_INDEX));
+	Page HUDColorsPage("HUD Colors", HUDColorLines);
 	MainLines.push_back(&HUDColorsPage.CalledFromLine);
+	*/
+
 
 #if BUILD_TYPE == PROJECT_PLUS
 	MainLines.push_back(new Toggle("Crowd Cheers", false, CROWD_CHEER_TOGGLE_INDEX));
@@ -1568,6 +1576,16 @@ void CreateMenu(Page MainPage)
 	// Theme Setting
 	AddValueToByteArray(THEME_SETTING_INDEX, Header);
 
+	// Dash Attack Item Grab Setting
+	AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
+	
+	// Tripping Toggle
+	AddValueToByteArray(TRIP_TOGGLE_INDEX, Header);
+	// Tripping Rate Multiplier
+	AddValueToByteArray(TRIP_RATE_MULTIPLIER_INDEX, Header);
+	// Tripping Cooldown Toggle
+	AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
+
 	// Backplate Settings
 	AddValueToByteArray(BACKPLATE_COLOR_1_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_2_INDEX, Header);
@@ -1576,15 +1594,7 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
 
-	//// Dash Attack Item Grab Setting
-	//AddValueToByteArray(DASH_ATTACK_ITEM_GRAB_INDEX, Header);
-	//
-	//// Tripping Toggle
-	//AddValueToByteArray(TRIP_TOGGLE_INDEX, Header);
-	//// Tripping Rate Multiplier
-	//AddValueToByteArray(TRIP_RATE_MULTIPLIER_INDEX, Header);
-	//// Tripping Cooldown Toggle
-	//AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
+	
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);

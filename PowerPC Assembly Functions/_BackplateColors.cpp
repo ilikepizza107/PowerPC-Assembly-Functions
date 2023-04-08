@@ -50,6 +50,50 @@ const std::string codeVersion = "v1.0.0";
 // Works a lot like the setFrameCol func, just need to intercept the frame being prescribed and overwrite it
 //
 
+
+void overrideSetFontColorRGBA(int red, int green, int blue, int alpha)
+{
+	SetRegister(5, red);
+	SetRegister(6, green);
+	SetRegister(7, blue);
+	SetRegister(8, alpha);
+}
+void resultsScreenNameFix(int reg1, int reg2)
+{
+	overrideSetFontColorRGBA(0xFF, 0xFF, 0xFF, 0xA0);
+	// Index to relevant message
+	LWZ(reg1, 3, 0x0C);
+	MULLI(reg2, 4, 0x48);
+	ADD(reg1, reg1, reg2);
+	// Load message's format byte
+	LBZ(reg2, reg1, 0x00);
+	// Disable text stroke (zero out 2's bit)
+	ANDI(reg2, reg2, 0b11111101);
+	// Store message's format byte
+	STB(reg2, reg1, 0x00);
+}
+void transparentCSSandResultsScreenNames()
+{
+	// If Color Changer is enabled
+	if (BACKPLATE_COLOR_1_INDEX != -1)
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+
+		ASMStart(0x800ea73c, "[CM: _BackplateColors] Results Screen Player Names are Transparent " + codeVersion + " [QuickLava]"); // Hooks "initMdlData/[ifVsResultTask]/if_vsresult.o".
+		resultsScreenNameFix(reg1, reg2);
+		ASMEnd();
+
+		ASMStart(0x800ea8c0); // Hooks same as above.
+		resultsScreenNameFix(reg1, reg2);
+		ASMEnd();
+
+		ASMStart(0x8069b268, "[CM: _BackplateColors] CSS Player Names are Transparent " + codeVersion + " [QuickLava]"); // Hooks "dispName/[muSelCharPlayerArea]/mu_selchar_player_area_obj".
+		overrideSetFontColorRGBA(0xFF, 0xFF, 0xFF, 0xB0);
+		ASMEnd();
+	}
+}
+
 // This code is usable between both updateTeamColor and updateMeleeKind for the hand, so
 // I've moved the bulk of it out into this function here to ensure things are consistent
 // between the two.
@@ -92,7 +136,6 @@ void handColorChangeBody(int reg1, int reg2, int reg3)
 }
 void handColorChange()
 {
-
 	// If Color Changer is enabled
 	if (BACKPLATE_COLOR_1_INDEX != -1)
 	{
@@ -126,33 +169,37 @@ void handColorChange()
 
 void randomColorChange()
 {
-	int reg1 = 11;
-	int reg2 = 12;
-	int	playerKindReg = 23;
-	int	fighterKindReg = 31;
-	int	costumeIDReg = 24;
+	// If Color Changer is enabled
+	if (BACKPLATE_COLOR_1_INDEX != -1)
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+		int	playerKindReg = 23;
+		int	fighterKindReg = 31;
+		int	costumeIDReg = 24;
 
-	ASMStart(0x80697554, "[CM: _BackplateColors] MenSelChr Random Color Override " + codeVersion + " [QuickLava]"); // Hooks "setCharPic/[muSelCharPlayerArea]/mu_selchar_player_area_o".
+		ASMStart(0x80697554, "[CM: _BackplateColors] MenSelChr Random Color Override " + codeVersion + " [QuickLava]"); // Hooks "setCharPic/[muSelCharPlayerArea]/mu_selchar_player_area_o".
 
-	// Where we're hooking, we guarantee that we're dealing with the Random portrait.
-	// The costumeIDReg at this moment is guaranteed to range from 0 (Red) to 4 (CPU).
-	// Calculate offset into Backplate Color LOC Entries
-	SetRegister(reg2, 0x4);
-	MULLW(reg2, reg2, costumeIDReg);
-	// Add that to first entry's location
-	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-	ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-	// Load line INDEX value
-	LWZ(reg2, reg2, 0x00);
-	// Load the current value at that line into the costume register.
-	LWZ(costumeIDReg, reg2, Line::VALUE);
+		// Where we're hooking, we guarantee that we're dealing with the Random portrait.
+		// The costumeIDReg at this moment is guaranteed to range from 0 (Red) to 4 (CPU).
+		// Calculate offset into Backplate Color LOC Entries
+		SetRegister(reg2, 0x4);
+		MULLW(reg2, reg2, costumeIDReg);
+		// Add that to first entry's location
+		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+		// Load line INDEX value
+		LWZ(reg2, reg2, 0x00);
+		// Load the current value at that line into the costume register.
+		LWZ(costumeIDReg, reg2, Line::VALUE);
 
-	ASMEnd(0x3b5b0004); // Restore Original Instruction: addi	r26, r27, 4
+		ASMEnd(0x3b5b0004); // Restore Original Instruction: addi	r26, r27, 4
+	}
 }
 
 void menSelChrElemntChange()
 {
-	// If CSS Rosters are enabled
+	// If Color Changer is enabled
 	if (BACKPLATE_COLOR_1_INDEX != -1)
 	{
 		int reg1 = 11;
@@ -249,7 +296,7 @@ void menSelChrElemntChange()
 
 void shieldColorChange()
 {
-	// If CSS Rosters are enabled
+	// If Color Changer is enabled
 	if (BACKPLATE_COLOR_1_INDEX != -1)
 	{
 		int reg1 = 11;
@@ -331,7 +378,7 @@ void backplateColorChange()
 	// 08 = Teal
 	// 09 = CPU Grey
 
-	// If CSS Rosters are enabled
+	// If Color Changer is enabled
 	if (BACKPLATE_COLOR_1_INDEX != -1)
 	{
 		int reg1 = 11;

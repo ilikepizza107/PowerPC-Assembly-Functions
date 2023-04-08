@@ -460,7 +460,7 @@ int main(int argc, char** argv)
 		//LXPGreenOverlayFix();
 
 		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
-		backplateColorChange(); shieldColorChange(); menSelChrElemntChange(); randomColorChange(); handColorChange();
+		backplateColorChange(); shieldColorChange(); menSelChrElemntChange(); randomColorChange(); handColorChange(); transparentCSSandResultsScreenNames();
 		// dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();

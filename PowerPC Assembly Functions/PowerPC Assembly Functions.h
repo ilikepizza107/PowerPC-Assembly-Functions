@@ -40,6 +40,7 @@ enum characterListVersions
 	clv_PPEX_RIDLEY,
 	clv_PPEX_WALUIGI,
 	clv_PPEX_DARK_SAMUS,
+	clv_PPEX_SCEPTILE,
 	__clv_Count
 };
 extern long characterListVersion;
@@ -55,6 +56,9 @@ extern long characterListVersion;
 // This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.
 // As a result, attempting to run Netplay GCTs on console may brick your Wii. 
 #define BUILD_NETPLAY_FILES (false && DOLPHIN_BUILD)
+
+// ASM Output Formatting Settings
+#define ALLOW_BLANK_CODE_NAMES_IN_ASM true
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920

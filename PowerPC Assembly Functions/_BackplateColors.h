@@ -3,6 +3,7 @@
 
 #include "_AdditionalCode.h"
 
+void transparentCSSandResultsScreenNames();
 void handColorChange();
 void randomColorChange();
 void menSelChrElemntChange();
