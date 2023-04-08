@@ -2,6 +2,8 @@
 
 namespace lava
 {
+	constexpr unsigned long overflowSecondaryOpcodeFlag = 0b1000000000;
+	const std::string opName_WithOverflowString = " w/ Overflow";
 	const std::string opName_WithUpdateString = " w/ Update";
 	const std::string opName_WithComplString = " w/ Complement";
 	const std::string opName_DoublePrecision = " (Double-Precision)";
@@ -138,6 +140,43 @@ namespace lava
 		return result.str();
 	}
 
+	std::string integerThreeRegABSwapWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	{
+		std::stringstream result;
+
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string integerThreeRegWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	{
+		std::stringstream result;
+
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+
 	std::string floatTwoRegOmitAWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
 	{
 		std::stringstream result;
@@ -192,46 +231,6 @@ namespace lava
 		return result.str();
 	}
 
-	std::string integerThreeRegWithOEAndRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
-	{
-		std::stringstream result;
-
-		if (argumentsIn.size() >= 7)
-		{
-			result << instructionIn->mneumonic;
-			if (argumentsIn[4])
-			{
-				result << 'o';
-			}
-			if (argumentsIn[6])
-			{
-				result << '.';
-			}
-			result << " r" << argumentsIn[1];
-			result << ", r" << argumentsIn[2];
-			result << ", r" << argumentsIn[3];
-		}
-
-		return result.str();
-	}
-	std::string integerThreeRegWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
-	{
-		std::stringstream result;
-
-		if (argumentsIn.size() >= 7)
-		{
-			result << instructionIn->mneumonic;
-			if (argumentsIn[6])
-			{
-				result << '.';
-			}
-			result << " r" << argumentsIn[1];
-			result << ", r" << argumentsIn[2];
-			result << ", r" << argumentsIn[3];
-		}
-
-		return result.str();
-	}
 
 
 	std::vector<unsigned long> asmPrOpCodeGroup::splitHexIntoArguments(unsigned long instructionHexIn)
@@ -279,6 +278,23 @@ namespace lava
 
 		return result;
 	}
+	asmInstruction* asmPrOpCodeGroup::pushOverflowVersionOfInstruction(asmInstruction* originalInstrIn)
+	{
+		asmInstruction* result = nullptr;
+
+		if (originalInstrIn != nullptr)
+		{
+			result = pushInstruction(originalInstrIn->name + opName_WithOverflowString, originalInstrIn->secondaryOpCode | overflowSecondaryOpcodeFlag);
+			if (result != nullptr)
+			{
+				result->mneumonic = originalInstrIn->mneumonic + "o";
+				result->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			}
+		}
+
+		return result;
+	}
+
 
 	std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary{};
 	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, std::vector<unsigned char> argStartsIn, unsigned char secOpCodeArgIndex)
@@ -408,55 +424,78 @@ namespace lava
 		}
 
 		// Op Code 31
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_31, { 0, 6, 11, 16, 21, 22, 31 }, 5);
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_31, { 0, 6, 11, 16, 21, 31 }, 4);
 		{
 			// Operation: ADD
 			currentInstruction = currentOpGroup->pushInstruction("Add", 266);
 			currentInstruction->mneumonic = "add";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: ADDO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: ADDC
 			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", 10);
 			currentInstruction->mneumonic = "addc";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: ADDCO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: ADDE
 			currentInstruction = currentOpGroup->pushInstruction("Add Extended", 138);
 			currentInstruction->mneumonic = "adde";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: ADDEO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: DIVW
 			currentInstruction = currentOpGroup->pushInstruction("Divide Word", 491);
 			currentInstruction->mneumonic = "divw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: DIVWO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: DIVWU
 			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", 459);
 			currentInstruction->mneumonic = "divwu";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: DIVWUO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: MULHW
 			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", 75);
 			currentInstruction->mneumonic = "mulhw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: MULHWO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+
 			// Operation: MULHWU
 			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", 11);
 			currentInstruction->mneumonic = "mulhwu";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: MULHWUO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: MULLW
 			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", 235);
 			currentInstruction->mneumonic = "mullw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: MULLWO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: SUBF
 			currentInstruction = currentOpGroup->pushInstruction("Subtract From", 40);
 			currentInstruction->mneumonic = "subf";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: SUBFO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: SUBFC
 			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", 8);
 			currentInstruction->mneumonic = "subfc";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: SUBFCO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: SUBFE
 			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", 136);
 			currentInstruction->mneumonic = "subfe";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithOEAndRc;
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			// Operation: SUBFEO
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: AND
 			currentInstruction = currentOpGroup->pushInstruction("AND", 28);
@@ -481,7 +520,18 @@ namespace lava
 			currentInstruction->mneumonic = "nor";
 			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
 
-
+			// Operation: SLW
+			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", 24);
+			currentInstruction->mneumonic = "slw";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegABSwapWithRc;
+			// Operation: SRAW
+			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word", 792);
+			currentInstruction->mneumonic = "sraw";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegABSwapWithRc;
+			// Operation: SRAWI
+			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", 824);
+			currentInstruction->mneumonic = "srawi";
+			currentInstruction->convertInstructionArgumentsToString = integerThreeRegABSwapWithRc;
 		}
 
 		// Load Instructions

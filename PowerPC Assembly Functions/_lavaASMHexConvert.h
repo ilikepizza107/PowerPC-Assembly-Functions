@@ -9,6 +9,16 @@
 
 namespace lava
 {
+	// lavaASMHexConvert v1.0.0 - A utility for converting 32-bit IBM PowerPC Assembly Instruction Hex into readable code.
+	// Conventions and Concessions:
+	// - This library presently supports only a subset of the 32-bit PPC ASM instruction set. It offers no support for 64-bit
+	//		exclusive instructions.
+	// - To simplify parsing, some opcode 31 integer arithmetic operations which use bit 21 to encode the OE flag have instead
+	//		had their definitions split into two explicit operations, one with the "o" suffix, and one without. The variants
+	//		using the "o" suffix have had 0b1000000000 ORed into their recorded secondary opcode so that they still parse correctly.
+	//
+
+
 	enum asmPrimaryOpCodes
 	{
 		aPOC_NULL = -1,
@@ -87,6 +97,7 @@ namespace lava
 		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
 
 		asmInstruction* pushInstruction(std::string nameIn, unsigned short secOpIn);
+		asmInstruction* pushOverflowVersionOfInstruction(asmInstruction* originalInstrIn);
 	};
 
 	extern std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary;
