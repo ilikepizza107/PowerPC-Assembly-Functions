@@ -58,6 +58,8 @@ namespace lava
 		// Logical Integer Instructions
 		aPOC_ORI = 24,
 		aPOC_ORIS = 25,
+		aPOC_XORI = 26,
+		aPOC_XORIS = 27,
 		aPOC_ANDI = 28,
 		aPOC_ANDIS = 29,
 	};

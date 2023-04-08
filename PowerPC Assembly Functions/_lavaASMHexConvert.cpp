@@ -434,7 +434,7 @@ namespace lava
 		}
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", "addis", aIAL_Int2RegWithSIMM);
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", "addis", aIAL_IntADDI);
 		}
 
 
@@ -546,7 +546,7 @@ namespace lava
 
 		
 		// Logical Integer Instructions
-
+			
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORI);
 		{
 			currentInstruction = currentOpGroup->pushInstruction("OR Immediate", "ori", aIAL_IntORI);
@@ -554,6 +554,14 @@ namespace lava
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORIS);
 		{
 			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted", "oris", aIAL_Int2RegWithUIMM);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_XORI);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate", "xori", aIAL_Int2RegWithUIMM);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_XORIS);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate Shifted", "xoris", aIAL_Int2RegWithUIMM);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDI);
 		{
@@ -563,7 +571,6 @@ namespace lava
 		{
 			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, "andis.", aIAL_Int2RegWithUIMM);
 		}
-
 
 		// Op Code 31
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_31, 21, 10);
@@ -615,8 +622,14 @@ namespace lava
 			// Operation: ORC
 			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, "orc", aIAL_Int3RegSASwapWithRC, 412);
 
+			// Operation: EQV
+			currentInstruction = currentOpGroup->pushInstruction("Equivalent", "eqv", aIAL_Int3RegSASwapWithRC, 284);
+
 			// Operation: NOR
 			currentInstruction = currentOpGroup->pushInstruction("NOR", "nor", aIAL_Int3RegSASwapWithRC, 124);
+
+			// Operation: XOR
+			currentInstruction = currentOpGroup->pushInstruction("XOR", "xor", aIAL_Int3RegSASwapWithRC, 316);
 
 			// Operation: SLW
 			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", "slw", aIAL_Int3RegSASwapWithRC, 24);
