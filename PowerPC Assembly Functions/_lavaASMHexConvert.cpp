@@ -9,6 +9,7 @@ namespace lava
 	const std::string opName_DoublePrecision = " (Double-Precision)";
 	const std::string opName_SinglePrecision = " Single";
 
+	// Utility
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length)
 	{
 		unsigned long result = ULONG_MAX;
@@ -30,7 +31,6 @@ namespace lava
 	{
 		return extractInstructionArg(hexIn, 0, 6);
 	}
-
 	std::string unsignedImmArgToSignedString(unsigned long argIn, unsigned char argLengthInBitsIn, bool hexMode = 1)
 	{
 		std::stringstream result;
@@ -53,44 +53,48 @@ namespace lava
 		return result.str();
 	}
 
-	// Instruction to String Functions
-	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	// argumentLayout
+	std::array<argumentLayout, aIAL_LAYOUT_COUNT> layoutDictionary{};
+	std::vector<unsigned long> argumentLayout::splitHexIntoArguments(unsigned long instructionHexIn)
+	{
+		std::vector<unsigned long> result{};
+
+		unsigned long argumentLength = ULONG_MAX;
+		for (unsigned long i = 0; i < argumentStartBits.size(); i++)
+		{
+			if (i < (argumentStartBits.size() - 1))
+			{
+				argumentLength = argumentStartBits[i + 1] - argumentStartBits[i];
+			}
+			else
+			{
+				argumentLength = 32 - argumentStartBits[i];
+			}
+			result.push_back(extractInstructionArg(instructionHexIn, argumentStartBits[i], argumentLength));
+		}
+
+		return result;
+	}
+	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn,
+		std::string(*convFuncIn)(asmInstruction*, unsigned long), unsigned char secOpCodeArgIndex)
+	{
+		layoutDictionary[IDIn].layoutID = IDIn;
+		layoutDictionary[IDIn].argumentStartBits = argStartsIn;
+		layoutDictionary[IDIn].secondaryOpCodeArgIndex = secOpCodeArgIndex;
+		layoutDictionary[IDIn].conversionFunc = convFuncIn;
+		return &layoutDictionary[IDIn];
+	}
+
+	// Instruction to String Conversion Predicates
+	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		return instructionIn->mneumonic;
 	}
-	std::string integerLoadStoreInstrToString(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string integerAddImmConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
 
-		if (argumentsIn.size() >= 4)
-		{
-			result << instructionIn->mneumonic;
-			result << " r" << argumentsIn[1] << ", ";
-			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
-			result << "(r" << argumentsIn[2] << ")";
-		}
-
-		return result.str();
-	}
-	std::string floatLoadStoreInstrToString(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
-	{
-		std::stringstream result;
-
-		if (argumentsIn.size() >= 4)
-		{
-			result << instructionIn->mneumonic;
-			result << " f" << argumentsIn[1] << ", ";
-			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
-			result << "(r" << argumentsIn[2] << ")";
-		}
-
-		return result.str();
-	}
-
-	std::string integerAddSubImmInstrToString(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
-	{
-		std::stringstream result;
-
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 4)
 		{
 			// Activate "li"/"lis" mneumonic if rA == 0
@@ -118,13 +122,14 @@ namespace lava
 
 		return result.str();
 	}
-	std::string integerAndOrImmInstrToString(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string integerORImmConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 4)
 		{
-			if (instructionIn->mneumonic == "ori" && argumentsIn[1] == 0 && argumentsIn[2] == 0 && argumentsIn[3] == 0)
+			if (argumentsIn[1] == 0 && argumentsIn[2] == 0 && argumentsIn[3] == 0)
 			{
 				result << "nop";
 			}
@@ -139,29 +144,56 @@ namespace lava
 
 		return result.str();
 	}
-
-	std::string integerThreeRegABSwapWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string integerLoadStoreConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
 
-		if (argumentsIn.size() >= 6)
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 4)
 		{
 			result << instructionIn->mneumonic;
-			if (argumentsIn[5])
-			{
-				result << '.';
-			}
-			result << " r" << argumentsIn[2];
-			result << ", r" << argumentsIn[1];
-			result << ", r" << argumentsIn[3];
+			result << " r" << argumentsIn[1] << ", ";
+			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
+			result << "(r" << argumentsIn[2] << ")";
 		}
 
 		return result.str();
 	}
-	std::string integerThreeRegWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string integer2RegWithSIMMConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 4)
+		{
+			result << instructionIn->mneumonic;
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2] << ", ";
+			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
+		}
+
+		return result.str();
+	}
+	std::string integer2RegWithUIMMConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 4)
+		{
+			result << instructionIn->mneumonic;
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2] << ", ";
+			result << std::hex << "0x" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string integer3RegWithRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mneumonic;
@@ -176,11 +208,64 @@ namespace lava
 
 		return result.str();
 	}
-
-	std::string floatTwoRegOmitAWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string integer3RegSASwapWithRc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string integer2RegSASwapWithSHAndRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1];
+			result << ", " << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string floatLoadStoreConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 4)
+		{
+			result << instructionIn->mneumonic;
+			result << " f" << argumentsIn[1] << ", ";
+			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
+			result << "(r" << argumentsIn[2] << ")";
+		}
+
+		return result.str();
+	}
+	std::string float2RegOmitAWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mneumonic;
@@ -194,10 +279,11 @@ namespace lava
 
 		return result.str();
 	}
-	std::string floatThreeRegOmitCWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string float3RegOmitCWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mneumonic;
@@ -212,10 +298,11 @@ namespace lava
 
 		return result.str();
 	}
-	std::string floatThreeRegOmitBWithRc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn)
+	std::string float3RegOmitBWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mneumonic;
@@ -231,29 +318,21 @@ namespace lava
 		return result.str();
 	}
 
-
-
-	std::vector<unsigned long> asmPrOpCodeGroup::splitHexIntoArguments(unsigned long instructionHexIn)
+	// asmInstruction
+	argumentLayout* asmInstruction::getArgLayoutPtr()
 	{
-		std::vector<unsigned long> result{};
+		argumentLayout* result = nullptr;
 
-		unsigned long instructionLength = 0;
-		for (unsigned long i = 0; i < argumentStartBits.size(); i++)
+		if (layoutID != aIAL_NULL)
 		{
-			if (i < (argumentStartBits.size() - 1))
-			{
-				instructionLength = argumentStartBits[i + 1] - argumentStartBits[i];
-			}
-			else
-			{
-				instructionLength = 32 - argumentStartBits[i];
-			}
-			result.push_back(extractInstructionArg(instructionHexIn, argumentStartBits[i], instructionLength));
+			result = &layoutDictionary[layoutID];
 		}
 
 		return result;
 	}
-	asmInstruction* asmPrOpCodeGroup::pushInstruction(std::string nameIn, unsigned short secOpIn)
+
+	// asmPrOpCodeGroup
+	asmInstruction* asmPrOpCodeGroup::pushInstruction(std::string nameIn, std::string mneumIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn)
 	{
 		asmInstruction* result = nullptr;
 
@@ -262,14 +341,19 @@ namespace lava
 			result = &secondaryOpCodeToInstructions[secOpIn];
 			result->primaryOpCode = this->primaryOpCode;
 			result->name = nameIn;
+			result->mneumonic = mneumIn;
 			result->secondaryOpCode = secOpIn;
 			result->canonForm = result->primaryOpCode << (32 - 6);
-			if (this->secondaryOpCodeArgumentIndex != UCHAR_MAX)
+			result->layoutID = layoutIDIn;
+
+			argumentLayout* layoutPtr = result->getArgLayoutPtr();
+
+			if (layoutPtr != nullptr && layoutPtr->secondaryOpCodeArgIndex != UCHAR_MAX)
 			{
 				int secOpShiftAmount = 0;
-				if ((this->secondaryOpCodeArgumentIndex + 1) < this->argumentStartBits.size())
+				if ((layoutPtr->secondaryOpCodeArgIndex + 1) < layoutPtr->argumentStartBits.size())
 				{
-					secOpShiftAmount = 32 - this->argumentStartBits[this->secondaryOpCodeArgumentIndex + 1];
+					secOpShiftAmount = 32 - layoutPtr->argumentStartBits[layoutPtr->secondaryOpCodeArgIndex + 1];
 				}
 
 				result->canonForm |= result->secondaryOpCode << secOpShiftAmount;
@@ -284,20 +368,16 @@ namespace lava
 
 		if (originalInstrIn != nullptr)
 		{
-			result = pushInstruction(originalInstrIn->name + opName_WithOverflowString, originalInstrIn->secondaryOpCode | overflowSecondaryOpcodeFlag);
-			if (result != nullptr)
-			{
-				result->mneumonic = originalInstrIn->mneumonic + "o";
-				result->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			}
+			result = pushInstruction(originalInstrIn->name + opName_WithOverflowString, originalInstrIn->mneumonic + "o",
+				originalInstrIn->layoutID, originalInstrIn->secondaryOpCode | overflowSecondaryOpcodeFlag);
 		}
 
 		return result;
 	}
 
-
+	// instructionDictionary
 	std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary{};
-	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, std::vector<unsigned char> argStartsIn, unsigned char secOpCodeArgIndex)
+	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, unsigned char secOpCodeStart, unsigned char secOpCodeLength)
 	{
 		asmPrOpCodeGroup* result = nullptr;
 
@@ -305,8 +385,8 @@ namespace lava
 		{
 			result = &instructionDictionary[opCodeIn];
 			result->primaryOpCode = opCodeIn;
-			result->argumentStartBits = argStartsIn;
-			result->secondaryOpCodeArgumentIndex = secOpCodeArgIndex;
+			result->secondaryOpCodeStartBit = secOpCodeStart;
+			result->secondaryOpCodeLength = secOpCodeLength;
 		}
 
 		return result;
@@ -316,427 +396,235 @@ namespace lava
 		asmPrOpCodeGroup* currentOpGroup = nullptr;
 		asmInstruction* currentInstruction = nullptr;
 
-		// Arithmetic Instructions
+		// Setup Instruction Argument Layouts
+		defineArgLayout(aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
+		defineArgLayout(aIAL_IntORI, { 0, 6, 11, 16 }, integerORImmConv);
+		defineArgLayout(aIAL_IntLogical, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
+		defineArgLayout(aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
+		defineArgLayout(aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
+		defineArgLayout(aIAL_Int2RegWithUIMM, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
+		defineArgLayout(aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
+		defineArgLayout(aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
+		defineArgLayout(aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
+		defineArgLayout(aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
+		defineArgLayout(aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
+		defineArgLayout(aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
+		defineArgLayout(aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
 
-		// Op Code 7
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_MULLI, { 0, 6, 11, 16 });
+		// Integer Arithmetic Instructions
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_MULLI);
 		{
-			// Operation: MULLI
-			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Immediate", USHRT_MAX);
-			currentInstruction->mneumonic = "mulli";
-			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Immediate", "mulli", aIAL_Int2RegWithSIMM);
 		}
-
-		// Op Code 8
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_SUBFIC, { 0, 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_SUBFIC);
 		{
-			// Operation: SUBFIC
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Immediate Carrying", USHRT_MAX);
-			currentInstruction->mneumonic = "subfic";
-			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Immediate Carrying", "subfic", aIAL_Int2RegWithSIMM);
 		}
-
-		// Op Code 12
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC, { 0, 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC);
 		{
-			// Operation: ADDIC
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying", USHRT_MAX);
-			currentInstruction->mneumonic = "addic";
-			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying", "addic", aIAL_Int2RegWithSIMM);
 		}
-		// Op Code 13
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC_DOT, { 0, 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC_DOT);
 		{
-			// Operation: ADDIC.
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying and Record", USHRT_MAX);
-			currentInstruction->mneumonic = "addic.";
-			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying and Record", "addic.", aIAL_Int2RegWithSIMM);
 		}
-		// Op Code 14
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDI, { 0, 6, 11, 16});
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDI);
 		{
-			// Operation: ADDI
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate", USHRT_MAX);
-			currentInstruction->mneumonic = "addi";
-			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate", "addi", aIAL_IntADDI);
 		}
-		// Op Code 15
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIS, { 0, 6, 11, 16 });
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIS);
 		{
-			// Operation: ADDI
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", USHRT_MAX);
-			currentInstruction->mneumonic = "addis";
-			currentInstruction->convertInstructionArgumentsToString = integerAddSubImmInstrToString;
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", "addis", aIAL_Int2RegWithSIMM);
 		}
 
-		// Op Code 63
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_D_ARTH, { 0, 6, 11, 16, 21, 26, 31 }, 5);
-		{
-			// Operation: FADD
-			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_DoublePrecision, 21);
-			currentInstruction->mneumonic = "fadd";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
-			// Operation: FDIV
-			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_DoublePrecision, 18);
-			currentInstruction->mneumonic = "fdiv";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
-			// Operation: FMUL
-			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_DoublePrecision, 25);
-			currentInstruction->mneumonic = "fmul";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitBWithRc;
-			// Operation: FSUB
-			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_DoublePrecision, 20);
-			currentInstruction->mneumonic = "fsub";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
 
-			// Operation: FCTIW
-			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word", 14);
-			currentInstruction->mneumonic = "fctiw";
-			currentInstruction->convertInstructionArgumentsToString = floatTwoRegOmitAWithRc;
-			// Operation: FCTIWZ
-			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word with Round toward Zero", 15);
-			currentInstruction->mneumonic = "fctiwz";
-			currentInstruction->convertInstructionArgumentsToString = floatTwoRegOmitAWithRc;
-			// Operation: FRSP
-			currentInstruction = currentOpGroup->pushInstruction("Floating Round to Single", 12);
-			currentInstruction->mneumonic = "frsp";
-			currentInstruction->convertInstructionArgumentsToString = floatTwoRegOmitAWithRc;
-		}
-		// Op Code 59
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_S_ARTH, { 0, 6, 11, 16, 21, 26, 31 }, 5);
+		// Float Arithmetic Instructions
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_D_ARTH, 26, 5);
 		{
-			// Operation: FADDS
-			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_SinglePrecision, 21);
-			currentInstruction->mneumonic = "fadds";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
-			// Operation: FDIVS
-			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_SinglePrecision, 18);
-			currentInstruction->mneumonic = "fdivs";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
-			// Operation: FMULS
-			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_SinglePrecision, 25);
-			currentInstruction->mneumonic = "fmuls";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitBWithRc;
-			// Operation: FSUBS
-			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_SinglePrecision, 20);
-			currentInstruction->mneumonic = "fsubs";
-			currentInstruction->convertInstructionArgumentsToString = floatThreeRegOmitCWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_DoublePrecision, "fadd", aIAL_Flt3RegOmitCWithRC, 21);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_DoublePrecision, "fdiv", aIAL_Flt3RegOmitCWithRC, 18);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_DoublePrecision, "fmul", aIAL_Flt3RegOmitBWithRC, 25);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_DoublePrecision, "fsub", aIAL_Flt3RegOmitCWithRC, 20);
+
+			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word", "fctiw", aIAL_Flt2RegOmitAWithRC, 14);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word with Round toward Zero", "fctiwz", aIAL_Flt2RegOmitAWithRC, 15);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Round to Single", "frsp", aIAL_Flt2RegOmitAWithRC, 12);
 		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_S_ARTH, 26, 5);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_SinglePrecision, "fadds", aIAL_Flt3RegOmitCWithRC, 21);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_SinglePrecision, "fdivs", aIAL_Flt3RegOmitCWithRC, 18);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_SinglePrecision, "fmuls", aIAL_Flt3RegOmitBWithRC, 25);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_SinglePrecision, "fsubs", aIAL_Flt3RegOmitCWithRC, 20);
+		}
+
+
+		// Load Instructions
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZ);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero", "lwz", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateString, "lwzu", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZ);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero", "lbz", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateString, "lbzu", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZ);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero", "lhz", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateString, "lhzu", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFS);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single", "lfs", aIAL_FltLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFSU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single" + opName_WithUpdateString, "lfsu", aIAL_FltLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFD);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double", "lfd", aIAL_FltLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFDU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_WithUpdateString, "lfdu", aIAL_FltLoadStore);
+		}
+		
+
+		// Store Instructions
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STW);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Word", "stw", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STWU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateString, "stwu", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STB);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte", "stb", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STBU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateString, "stbu", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STH);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word", "sth", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STHU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateString, "sthu", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFS);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single", "stfs", aIAL_FltLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFSU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Floating-Point Single" + opName_WithUpdateString, "stfsu", aIAL_FltLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFD);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double", "stfd", aIAL_FltLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFDU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Floating-Point Double" + opName_WithUpdateString, "stfdu", aIAL_FltLoadStore);
+		}
+
+		
+		// Logical Integer Instructions
+
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORI);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("OR Immediate", "ori", aIAL_IntORI);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORIS);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted", "oris", aIAL_Int2RegWithUIMM);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDI);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate" + opName_WithUpdateString, "andi.", aIAL_Int2RegWithUIMM);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDIS);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, "andis.", aIAL_Int2RegWithUIMM);
+		}
+
 
 		// Op Code 31
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_31, { 0, 6, 11, 16, 21, 31 }, 4);
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_31, 21, 10);
 		{
-			// Operation: ADD
-			currentInstruction = currentOpGroup->pushInstruction("Add", 266);
-			currentInstruction->mneumonic = "add";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: ADDO
+			// Operation: ADD, ADDO
+			currentInstruction = currentOpGroup->pushInstruction("Add", "add", aIAL_Int3RegWithRC, 266);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: ADDC
-			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", 10);
-			currentInstruction->mneumonic = "addc";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: ADDCO
+			// Operation: ADDC, ADDCO
+			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", "addc", aIAL_Int3RegWithRC, 10);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: ADDE
-			currentInstruction = currentOpGroup->pushInstruction("Add Extended", 138);
-			currentInstruction->mneumonic = "adde";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: ADDEO
+			currentInstruction = currentOpGroup->pushInstruction("Add Extended", "adde", aIAL_Int3RegWithRC, 138);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
-			// Operation: DIVW
-			currentInstruction = currentOpGroup->pushInstruction("Divide Word", 491);
-			currentInstruction->mneumonic = "divw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: DIVWO
+			// Operation: DIVW, DIVWO
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word", "divw", aIAL_Int3RegWithRC, 491);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: DIVWU
-			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", 459);
-			currentInstruction->mneumonic = "divwu";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: DIVWUO
+			// Operation: DIVWU, DIVWUO
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", "divwu", aIAL_Int3RegWithRC, 459);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
-			// Operation: MULHW
-			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", 75);
-			currentInstruction->mneumonic = "mulhw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: MULHWO
+			// Operation: MULHW, MULHWO
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", "mulhw", aIAL_Int3RegWithRC, 75);
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: MULHWU, MULHWUO
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", "mulhwu", aIAL_Int3RegWithRC, 11);
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: MULLW, MULLWO
+			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", "mullw", aIAL_Int3RegWithRC, 235);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
-			// Operation: MULHWU
-			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", 11);
-			currentInstruction->mneumonic = "mulhwu";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: MULHWUO
+			// Operation: SUBF, SUBFO
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From", "subf", aIAL_Int3RegWithRC, 40);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: MULLW
-			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", 235);
-			currentInstruction->mneumonic = "mullw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: MULLWO
+			// Operation: SUBFC, SUBFCO
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", "subfc", aIAL_Int3RegWithRC, 8);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-
-			// Operation: SUBF
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From", 40);
-			currentInstruction->mneumonic = "subf";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: SUBFO
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: SUBFC
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", 8);
-			currentInstruction->mneumonic = "subfc";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: SUBFCO
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: SUBFE
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", 136);
-			currentInstruction->mneumonic = "subfe";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
-			// Operation: SUBFEO
+			// Operation: SUBFE, SUBFEO
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", aIAL_Int3RegWithRC, 136);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: AND
-			currentInstruction = currentOpGroup->pushInstruction("AND", 28);
-			currentInstruction->mneumonic = "and";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("AND", "and", aIAL_Int3RegSASwapWithRC, 28);
 			// Operation: ANDC
-			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, 60);
-			currentInstruction->mneumonic = "andc";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, "andc", aIAL_Int3RegSASwapWithRC, 60);
 
 			// Operation: OR
-			currentInstruction = currentOpGroup->pushInstruction("OR", 444);
-			currentInstruction->mneumonic = "or";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("OR", "or", aIAL_Int3RegSASwapWithRC, 444);
 			// Operation: ORC
-			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, 412);
-			currentInstruction->mneumonic = "orc";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, "orc", aIAL_Int3RegSASwapWithRC, 412);
 
 			// Operation: NOR
-			currentInstruction = currentOpGroup->pushInstruction("NOR", 124);
-			currentInstruction->mneumonic = "nor";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("NOR", "nor", aIAL_Int3RegSASwapWithRC, 124);
 
 			// Operation: SLW
-			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", 24);
-			currentInstruction->mneumonic = "slw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegABSwapWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", "slw", aIAL_Int3RegSASwapWithRC, 24);
 			// Operation: SRAW
-			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word", 792);
-			currentInstruction->mneumonic = "sraw";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegABSwapWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word", "sraw", aIAL_Int3RegSASwapWithRC, 792);
 			// Operation: SRAWI
-			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", 824);
-			currentInstruction->mneumonic = "srawi";
-			currentInstruction->convertInstructionArgumentsToString = integerThreeRegABSwapWithRc;
+			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", "srawi", aIAL_Int2RegSASwapWithSHAndRC, 824);
 		}
-
-		// Load Instructions
-
-		// Op Code 32
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZ, { 0, 6, 11, 16 });
-		{
-			// Operation: LWZ
-			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero", USHRT_MAX);
-			currentInstruction->mneumonic = "lwz";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 33
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZU, { 0, 6, 11, 16 });
-		{
-			// Operation: LWZU
-			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "lwzu";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 34
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZ, { 0, 6, 11, 16 });
-		{
-			// Operation: LBZ
-			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero", USHRT_MAX);
-			currentInstruction->mneumonic = "lbz";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 35
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZU, { 0, 6, 11, 16 });
-		{
-			// Operation: LBZ
-			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "lbzu";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 40
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZ, { 0, 6, 11, 16 });
-		{
-			// Operation: LBZ
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero", USHRT_MAX);
-			currentInstruction->mneumonic = "lhz";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 41
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZU, { 0, 6, 11, 16 });
-		{
-			// Operation: LBZ
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "lhzu";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 48
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFS, { 0, 6, 11, 16 });
-		{
-			// Operation: LFS
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single", USHRT_MAX);
-			currentInstruction->mneumonic = "lfs";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-		// Op Code 49
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFSU, { 0, 6, 11, 16 });
-		{
-			// Operation: LFSU
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "lfsu";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-		// Op Code 50
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFD, { 0, 6, 11, 16 });
-		{
-			// Operation: LFD
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double", USHRT_MAX);
-			currentInstruction->mneumonic = "lfd";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-		// Op Code 51
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFDU, { 0, 6, 11, 16 });
-		{
-			// Operation: LFDU
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "lfdu";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-
-
-
-		// Store Instructions
-
-		// Op Code 36
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STW, { 0, 6, 11, 16 });
-		{
-			// Operation: STW
-			currentInstruction = currentOpGroup->pushInstruction("Store Word", USHRT_MAX);
-			currentInstruction->mneumonic = "stw";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 37
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STWU, { 0, 6, 11, 16 });
-		{
-			// Operation: STWU
-			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "stwu";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 38
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STB, { 0, 6, 11, 16 });
-		{
-			// Operation: STB
-			currentInstruction = currentOpGroup->pushInstruction("Store Byte", USHRT_MAX);
-			currentInstruction->mneumonic = "stb";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 39
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STBU, { 0, 6, 11, 16 });
-		{
-			// Operation: STBU
-			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "stbu";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 44
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STH, { 0, 6, 11, 16 });
-		{
-			// Operation: STH
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Word", USHRT_MAX);
-			currentInstruction->mneumonic = "sth";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 45
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STHU, { 0, 6, 11, 16 });
-		{
-			// Operation: STHU
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "sthu";
-			currentInstruction->convertInstructionArgumentsToString = integerLoadStoreInstrToString;
-		}
-		// Op Code 52
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFS, { 0, 6, 11, 16 });
-		{
-			// Operation: STFS
-			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single", USHRT_MAX);
-			currentInstruction->mneumonic = "stfs";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-		// Op Code 53
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFSU, { 0, 6, 11, 16 });
-		{
-			// Operation: STFSU
-			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "stfsu";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-		// Op Code 54
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFD, { 0, 6, 11, 16 });
-		{
-			// Operation: STFD
-			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double", USHRT_MAX);
-			currentInstruction->mneumonic = "stfd";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-		// Op Code 55
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFDU, { 0, 6, 11, 16 });
-		{
-			// Operation: STFDU
-			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "stfdu";
-			currentInstruction->convertInstructionArgumentsToString = floatLoadStoreInstrToString;
-		}
-
-		// Logical Integer Instructions
-
-		// Op Code 24
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORI, { 0, 6, 11, 16});
-		{
-			// Operation: ORI
-			currentInstruction = currentOpGroup->pushInstruction("OR Immediate" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "ori";
-			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
-		}
-		// Op Code 25
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORIS, { 0, 6, 11, 16 });
-		{
-			// Operation: ORI
-			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "oris";
-			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
-		}
-		// Op Code 28
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDI, { 0, 6, 11, 16 });
-		{
-			// Operation: ANDI
-			currentInstruction = currentOpGroup->pushInstruction("AND Immediate" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "andi.";
-			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
-		}
-		// Op Code 28
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDIS, { 0, 6, 11, 16 });
-		{
-			// Operation: ORI
-			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, USHRT_MAX);
-			currentInstruction->mneumonic = "andis.";
-			currentInstruction->convertInstructionArgumentsToString = integerAndOrImmInstrToString;
-		}
-
 	}
 
 	std::string convertOperationHexToString(unsigned long hexIn)
@@ -747,18 +635,12 @@ namespace lava
 		if (instructionDictionary.find(opCode) != instructionDictionary.end())
 		{
 			asmPrOpCodeGroup* opCodeGroup = &instructionDictionary[opCode];
-			std::vector<unsigned long> deconstructedArguments = opCodeGroup->splitHexIntoArguments(hexIn);
-			
-			unsigned short secondaryOpCode = USHRT_MAX;
-			if (opCodeGroup->secondaryOpCodeArgumentIndex != UCHAR_MAX)
-			{
-				secondaryOpCode = deconstructedArguments[opCodeGroup->secondaryOpCodeArgumentIndex];
-			}
+			unsigned short secondaryOpCode = (unsigned short)extractInstructionArg(hexIn, opCodeGroup->secondaryOpCodeStartBit, opCodeGroup->secondaryOpCodeLength);
 
 			if (opCodeGroup->secondaryOpCodeToInstructions.find(secondaryOpCode) != opCodeGroup->secondaryOpCodeToInstructions.end())
 			{
 				asmInstruction* targetInstruction = &opCodeGroup->secondaryOpCodeToInstructions[secondaryOpCode];
-				result << targetInstruction->convertInstructionArgumentsToString(targetInstruction, deconstructedArguments);
+				result << targetInstruction->getArgLayoutPtr()->conversionFunc(targetInstruction, hexIn);
 			}
 		}
 

@@ -5,11 +5,12 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <array>
 #include <map>
 
 namespace lava
 {
-	// lavaASMHexConvert v1.0.0 - A utility for converting 32-bit IBM PowerPC Assembly Instruction Hex into readable code.
+	// lavaASMHexConvert v1.1.0 - A utility for converting 32-bit IBM PowerPC Assembly Instruction Hex into readable code.
 	// Conventions and Concessions:
 	// - This library presently supports only a subset of the 32-bit PPC ASM instruction set. It offers no support for 64-bit
 	//		exclusive instructions.
@@ -60,15 +61,48 @@ namespace lava
 		aPOC_ANDI = 28,
 		aPOC_ANDIS = 29,
 	};
-
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
 	unsigned long getInstructionOpCode(unsigned long hexIn);
 
+
 	struct asmInstruction;
-
 	// Default function, just returns mneumonic.
-	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, std::vector<unsigned long> argumentsIn);
+	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn);
 
+	enum asmInstructionArgLayout
+	{
+		aIAL_NULL = -1,
+		aIAL_IntADDI = 0,
+		aIAL_IntORI,
+		aIAL_IntLogical,
+		aIAL_IntLoadStore,
+		aIAL_Int2RegWithSIMM,
+		aIAL_Int2RegWithUIMM,
+		aIAL_Int3RegWithRC,
+		aIAL_Int3RegSASwapWithRC,
+		aIAL_Int2RegSASwapWithSHAndRC,
+		aIAL_FltLoadStore,
+		aIAL_Flt2RegOmitAWithRC,
+		aIAL_Flt3RegOmitBWithRC,
+		aIAL_Flt3RegOmitCWithRC,
+		aIAL_LAYOUT_COUNT,
+	};
+	struct argumentLayout
+	{
+		asmInstructionArgLayout layoutID = aIAL_NULL;
+		std::vector<unsigned char> argumentStartBits{};
+		std::string(*conversionFunc)(asmInstruction*, unsigned long hexIn) = defaultAsmInstrToStrFunc;
+		unsigned char secondaryOpCodeArgIndex = UCHAR_MAX;
+		
+		argumentLayout() {};
+
+		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
+	};
+	extern std::array<argumentLayout, aIAL_LAYOUT_COUNT> layoutDictionary;
+	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn, 
+		std::string(*convFuncIn)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc, unsigned char secOpCodeArgIndex = UCHAR_MAX);
+
+	
 	struct asmInstruction
 	{
 		asmPrimaryOpCodes primaryOpCode = aPOC_NULL;
@@ -76,32 +110,29 @@ namespace lava
 		std::string mneumonic = "";
 		unsigned long canonForm = ULONG_MAX;
 		unsigned short secondaryOpCode = USHRT_MAX;
+		asmInstructionArgLayout layoutID = aIAL_NULL;
 
 		asmInstruction() {};
 		asmInstruction(asmPrimaryOpCodes prOpIn, std::string nameIn, std::string mneumIn, unsigned short secOpIn, unsigned long canonIn) :
 			primaryOpCode(prOpIn), name(nameIn), mneumonic(mneumIn), secondaryOpCode(secOpIn), canonForm(canonIn) {};
 
-		std::string(*convertInstructionArgumentsToString)(asmInstruction*, std::vector<unsigned long>) = defaultAsmInstrToStrFunc;
+		argumentLayout* getArgLayoutPtr();
 	};
 	struct asmPrOpCodeGroup
 	{
 		asmPrimaryOpCodes primaryOpCode = aPOC_NULL;
-		std::vector<unsigned char> argumentStartBits{};
+		unsigned char secondaryOpCodeStartBit = UCHAR_MAX;
+		unsigned char secondaryOpCodeLength = UCHAR_MAX;
 		std::map<unsigned short, asmInstruction> secondaryOpCodeToInstructions{};
-		unsigned char secondaryOpCodeArgumentIndex = UCHAR_MAX;
 
 		asmPrOpCodeGroup() {};
-		asmPrOpCodeGroup(std::vector<unsigned char> argStartsIn, std::map<unsigned short, asmInstruction> secOpToInsIn) :
-			argumentStartBits(argStartsIn), secondaryOpCodeToInstructions(secOpToInsIn) {};
 
-		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
-
-		asmInstruction* pushInstruction(std::string nameIn, unsigned short secOpIn);
+		asmInstruction* pushInstruction(std::string nameIn, std::string mneumIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn = USHRT_MAX);
 		asmInstruction* pushOverflowVersionOfInstruction(asmInstruction* originalInstrIn);
 	};
 
 	extern std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary;
-	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, std::vector<unsigned char> argStartsIn, unsigned char secOpCodeArgIndex = UCHAR_MAX);
+	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, unsigned char secOpCodeStart = UCHAR_MAX, unsigned char secOpCodeLength = UCHAR_MAX);
 	void buildInstructionDictionary();
 
 	std::string convertOperationHexToString(unsigned long hexIn);
