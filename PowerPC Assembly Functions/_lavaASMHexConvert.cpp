@@ -113,10 +113,27 @@ namespace lava
 			}
 			else
 			{
-				result << instructionIn->mneumonic;
+				std::string immediateString = unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
+				std::size_t minusLoc = immediateString.find('-');
+				if (minusLoc != std::string::npos)
+				{
+					if (instructionIn->mneumonic.back() == 's')
+					{
+						result << "subis";
+					}
+					else
+					{
+						result << "subi";
+					}
+					immediateString.erase(minusLoc, 1);
+				}
+				else
+				{
+					result << instructionIn->mneumonic;
+				}
 				result << " r" << argumentsIn[1];
 				result << ", r" << argumentsIn[2] << ", ";
-				result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
+				result << immediateString;
 			}
 		}
 
