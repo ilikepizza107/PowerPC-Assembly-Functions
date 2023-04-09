@@ -90,6 +90,60 @@ namespace lava
 	{
 		return instructionIn->mneumonic;
 	}
+	std::string cmpwConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 8)
+		{
+			result << instructionIn->mneumonic << " ";
+			if (argumentsIn[1] != 0)
+			{
+				result << "cr" << argumentsIn[1] << ", ";
+			}
+			result << "r" << argumentsIn[4];
+			result << ", r" << argumentsIn[5];
+		}
+
+		return result.str();
+	}
+	std::string cmpwiConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mneumonic << " ";
+			if (argumentsIn[1] != 0)
+			{
+				result << "cr" << argumentsIn[1] << ", ";
+			}
+			result << "r" << argumentsIn[4];
+			result << ", " << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
+		}
+
+		return result.str();
+	}
+	std::string cmplwiConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mneumonic << " ";
+			if (argumentsIn[1] != 0)
+			{
+				result << "cr" << argumentsIn[1] << ", ";
+			}
+			result << "r" << argumentsIn[4];
+			result << ", 0x" << std::hex << argumentsIn[5];
+		}
+
+		return result.str();
+	}
 	std::string integerAddImmConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -432,6 +486,9 @@ namespace lava
 		asmInstruction* currentInstruction = nullptr;
 
 		// Setup Instruction Argument Layouts
+		defineArgLayout(aIAL_CMPW, { 0, 6, 9, 10, 11, 16, 21, 30 }, cmpwConv);
+		defineArgLayout(aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv);
+		defineArgLayout(aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv);
 		defineArgLayout(aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
 		defineArgLayout(aIAL_IntORI, { 0, 6, 11, 16 }, integerORImmConv);
 		defineArgLayout(aIAL_IntLogical, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
@@ -446,6 +503,16 @@ namespace lava
 		defineArgLayout(aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
 		defineArgLayout(aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
+
+		// Compare Instructions
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_CMPWI);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Compare Word Immediate", "cmpwi", aIAL_CMPWI);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_CMPLWI);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Compare Logical Word Immediate", "cmplwi", aIAL_CMPLWI);
+		}
 
 		// Integer Arithmetic Instructions
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_MULLI);
@@ -677,6 +744,11 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word", "sraw", aIAL_Int3RegSASwapWithRC, 792);
 			// Operation: SRAWI
 			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", "srawi", aIAL_Int2RegSASwapWithSHAndRC, 824);
+
+			// Operation: CMPW
+			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", aIAL_CMPW, 0);
+			// Operation: CMPLW
+			currentInstruction = currentOpGroup->pushInstruction("Compare Word Logical", "cmplw", aIAL_CMPW, 32);
 		}
 	}
 

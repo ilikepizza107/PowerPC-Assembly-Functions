@@ -24,6 +24,9 @@ namespace lava
 	{
 		aPOC_NULL = -1,
 		aPOC_31 = 31,
+		// Comparison Instructions
+		aPOC_CMPLWI = 10,
+		aPOC_CMPWI = 11,
 		// Arithmetic Instructions
 		aPOC_MULLI = 7,
 		aPOC_ADDIC = 12,
@@ -74,7 +77,10 @@ namespace lava
 	enum asmInstructionArgLayout
 	{
 		aIAL_NULL = -1,
-		aIAL_IntADDI = 0,
+		aIAL_CMPW = 0,
+		aIAL_CMPWI,
+		aIAL_CMPLWI,
+		aIAL_IntADDI,
 		aIAL_IntORI,
 		aIAL_IntLogical,
 		aIAL_IntLoadStore,
