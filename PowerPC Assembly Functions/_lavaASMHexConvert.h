@@ -80,6 +80,7 @@ namespace lava
 		aIAL_IntLoadStore,
 		aIAL_Int2RegWithSIMM,
 		aIAL_Int2RegWithUIMM,
+		aIAL_Int2RegWithRC,
 		aIAL_Int3RegWithRC,
 		aIAL_Int3RegSASwapWithRC,
 		aIAL_Int2RegSASwapWithSHAndRC,

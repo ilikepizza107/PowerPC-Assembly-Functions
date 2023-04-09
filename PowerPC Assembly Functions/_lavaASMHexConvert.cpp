@@ -206,6 +206,24 @@ namespace lava
 
 		return result.str();
 	}
+	std::string integer2RegWithRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mneumonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+		}
+
+		return result.str();
+	}
 	std::string integer3RegWithRc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -420,6 +438,7 @@ namespace lava
 		defineArgLayout(aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
 		defineArgLayout(aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
 		defineArgLayout(aIAL_Int2RegWithUIMM, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
+		defineArgLayout(aIAL_Int2RegWithRC, {0, 6, 11, 16, 21, 31}, integer2RegWithRc);
 		defineArgLayout(aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
 		defineArgLayout(aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
 		defineArgLayout(aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
@@ -627,6 +646,10 @@ namespace lava
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: SUBFE, SUBFEO
 			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", aIAL_Int3RegWithRC, 136);
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+
+			// Operation: NEG, NEGO
+			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", aIAL_Int2RegWithRC, 104);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: AND
