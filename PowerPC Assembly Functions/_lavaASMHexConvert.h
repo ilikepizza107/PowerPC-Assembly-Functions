@@ -24,6 +24,10 @@ namespace lava
 	{
 		aPOC_NULL = -1,
 		aPOC_31 = 31,
+		// Branching Instructions
+		aPOC_BC = 16,
+		aPOC_B = 18,
+		aPOC_B_SpReg = 19,
 		// Comparison Instructions
 		aPOC_CMPLWI = 10,
 		aPOC_CMPWI = 11,
@@ -66,6 +70,17 @@ namespace lava
 		aPOC_ANDI = 28,
 		aPOC_ANDIS = 29,
 	};
+	enum asmBOEncodings
+	{
+		aBOE_IF_CR_FALSE = 0b00100,
+		aBOE_IF_CR_FALSE_UNLIKELY = 0b00110,
+		aBOE_IF_CR_FALSE_LIKELY = 0b00111,
+		aBOE_IF_CR_TRUE = 0b01100,
+		aBOE_IF_CR_TRUE_UNLIKELY = 0b01110,
+		aBOE_IF_CR_TRUE_LIKELY = 0b01111,
+		aBOE_ALWAYS = 0b10100,
+	};
+
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
 	unsigned long getInstructionOpCode(unsigned long hexIn);
 
@@ -77,7 +92,11 @@ namespace lava
 	enum asmInstructionArgLayout
 	{
 		aIAL_NULL = -1,
-		aIAL_CMPW = 0,
+		aIAL_B,
+		aIAL_BC,
+		aIAL_BCLR,
+		aIAL_BCCTR,
+		aIAL_CMPW,
 		aIAL_CMPWI,
 		aIAL_CMPLWI,
 		aIAL_IntADDI,
@@ -100,8 +119,7 @@ namespace lava
 	{
 		asmInstructionArgLayout layoutID = aIAL_NULL;
 		std::vector<unsigned char> argumentStartBits{};
-		std::string(*conversionFunc)(asmInstruction*, unsigned long hexIn) = defaultAsmInstrToStrFunc;
-		unsigned char secondaryOpCodeArgIndex = UCHAR_MAX;
+		std::string(*conversionFunc)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc;
 		
 		argumentLayout() {};
 
@@ -109,7 +127,7 @@ namespace lava
 	};
 	extern std::array<argumentLayout, aIAL_LAYOUT_COUNT> layoutDictionary;
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn, 
-		std::string(*convFuncIn)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc, unsigned char secOpCodeArgIndex = UCHAR_MAX);
+		std::string(*convFuncIn)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc);
 
 	
 	struct asmInstruction
@@ -126,6 +144,7 @@ namespace lava
 			primaryOpCode(prOpIn), name(nameIn), mneumonic(mneumIn), secondaryOpCode(secOpIn), canonForm(canonIn) {};
 
 		argumentLayout* getArgLayoutPtr();
+		bool isRightInstruction(unsigned long hexIn);
 	};
 	struct asmPrOpCodeGroup
 	{

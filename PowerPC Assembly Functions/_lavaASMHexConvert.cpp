@@ -52,6 +52,114 @@ namespace lava
 
 		return result.str();
 	}
+	std::string parseBOAndBIToBranchMneum(unsigned char BOIn, unsigned char BIIn, std::string suffixIn)
+	{
+		std::stringstream result;
+		
+		char crField = BIIn >> 2;
+		char crBit = BIIn & 0b1111;
+
+		bool aBit = 0;
+		bool tBit = 0;
+
+		if (crField == 0)
+		{
+			if (BOIn & 0b00100)
+			{
+				// This is the always branch condition, mostly used for blr and bctr
+				if (BOIn & 0b10000)
+				{
+					result << "b";
+				}
+				else
+				{
+					// This is the CR Bit True condition
+					if (BOIn & 0b01000)
+					{
+						switch (crBit)
+						{
+						case 0:
+						{
+							result << "blt";
+							break;
+						}
+						case 1:
+						{
+							result << "bgt";
+							break;
+						}
+						case 2:
+						{
+							result << "beq";
+							break;
+						}
+						case 3:
+						{
+							result << "bso";
+						}
+						default:
+						{
+							break;
+						}
+						}
+					}
+					// This is the CR Bit False condition
+					else
+					{
+						switch (crBit)
+						{
+						case 0:
+						{
+							result << "bge";
+							break;
+						}
+						case 1:
+						{
+							result << "ble";
+							break;
+						}
+						case 2:
+						{
+							result << "bne";
+							break;
+						}
+						case 3:
+						{
+							result << "bns";
+							break;
+						}
+						default:
+						{
+							break;
+						}
+						}
+
+					}
+					aBit = BOIn & 0b10;
+					tBit = BOIn & 0b01;
+				}
+
+				// If we've written to result / if a mneumonic was found.
+				if (result.tellp() != 0)
+				{
+					result << suffixIn;
+					if (aBit != 0)
+					{
+						if (tBit != 0)
+						{
+							result << "+";
+						}
+						else
+						{
+							result << "-";
+						}
+					}
+				}
+			}
+		}
+
+		return result.str();
+	}
 
 	// argumentLayout
 	std::array<argumentLayout, aIAL_LAYOUT_COUNT> layoutDictionary{};
@@ -76,11 +184,10 @@ namespace lava
 		return result;
 	}
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn,
-		std::string(*convFuncIn)(asmInstruction*, unsigned long), unsigned char secOpCodeArgIndex)
+		std::string(*convFuncIn)(asmInstruction*, unsigned long))
 	{
 		layoutDictionary[IDIn].layoutID = IDIn;
 		layoutDictionary[IDIn].argumentStartBits = argStartsIn;
-		layoutDictionary[IDIn].secondaryOpCodeArgIndex = secOpCodeArgIndex;
 		layoutDictionary[IDIn].conversionFunc = convFuncIn;
 		return &layoutDictionary[IDIn];
 	}
@@ -89,6 +196,150 @@ namespace lava
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		return instructionIn->mneumonic;
+	}
+	std::string bcConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			bool useAbsolute = 0;
+			unsigned char BO = argumentsIn[1];
+			unsigned char BI = argumentsIn[2];
+
+			std::string simpleMneum = parseBOAndBIToBranchMneum(BO, BI, "");
+			if (!simpleMneum.empty())
+			{
+				result << simpleMneum;
+				if (argumentsIn[4] != 0)
+				{
+					result << "a";
+				}
+				if (argumentsIn[5] != 0)
+				{
+					result << "l";
+				}
+			}
+			else
+			{
+				result << instructionIn->mneumonic;
+				if (argumentsIn[5] != 0)
+				{
+					result << "l";
+				}
+				if (argumentsIn[4] != 0)
+				{
+					result << "a";
+				}
+
+				result << " " << (unsigned long)BO << ", " << (unsigned long)BI;
+			}
+			
+			if (argumentsIn[4] != 0)
+			{
+				result << " 0x" << std::hex << (argumentsIn[3] << 2);
+			}
+			else
+			{
+				result << " " << unsignedImmArgToSignedString((argumentsIn[3] << 2), 14, 1);
+			}
+		}
+
+		return result.str();
+	}
+	std::string bclrConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			bool useAbsolute = 0;
+			unsigned char BO = argumentsIn[1];
+			unsigned char BI = argumentsIn[2];
+			unsigned char BH = argumentsIn[4];
+
+			std::string simpleMneum = (BH == 0) ? parseBOAndBIToBranchMneum(BO, BI, "lr") : "";
+			if (!simpleMneum.empty())
+			{
+				result << simpleMneum;
+			}
+			else
+			{
+				result << instructionIn->mneumonic;
+				if (argumentsIn[6] != 0)
+				{
+					result << "l";
+				}
+
+				result << " " << BO << ", " << BI << ", " << BH;
+			}
+		}
+
+		return result.str();
+	}
+	std::string bcctrConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			bool useAbsolute = 0;
+			unsigned char BO = argumentsIn[1];
+			unsigned char BI = argumentsIn[2];
+			unsigned char BH = argumentsIn[4];
+
+			std::string simpleMneum = (BH == 0) ? parseBOAndBIToBranchMneum(BO, BI, "ctr") : "";
+			if (!simpleMneum.empty())
+			{
+				result << simpleMneum;
+			}
+			else
+			{
+				result << instructionIn->mneumonic;
+				if (argumentsIn[6] != 0)
+				{
+					result << "l";
+				}
+
+				result << " " << BO << ", " << BI << ", " << BH;
+			}
+		}
+
+		return result.str();
+	}
+	std::string bConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 4)
+		{
+			bool useAbsolute = 0;
+			result << instructionIn->mneumonic;
+			if (argumentsIn[3] != 0)
+			{
+				result << "l";
+			}
+			if (argumentsIn[2] != 0)
+			{
+				result << "a";
+				useAbsolute = 1;
+			}
+			result << " ";
+			if (useAbsolute)
+			{
+				result << "0x" << std::hex << (argumentsIn[1] << 2);
+			}
+			else
+			{
+				result << unsignedImmArgToSignedString((argumentsIn[1] << 2), 24, 1);
+			}
+		}
+
+		return result.str();
 	}
 	std::string cmpwConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
@@ -419,6 +670,10 @@ namespace lava
 
 		return result;
 	}
+	bool asmInstruction::isRightInstruction(unsigned long hexIn)
+	{
+		return (hexIn & canonForm) == hexIn;
+	}
 
 	// asmPrOpCodeGroup
 	asmInstruction* asmPrOpCodeGroup::pushInstruction(std::string nameIn, std::string mneumIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn)
@@ -437,14 +692,9 @@ namespace lava
 
 			argumentLayout* layoutPtr = result->getArgLayoutPtr();
 
-			if (layoutPtr != nullptr && layoutPtr->secondaryOpCodeArgIndex != UCHAR_MAX)
+			if (secondaryOpCodeStartBit != UCHAR_MAX && secondaryOpCodeLength != UCHAR_MAX)
 			{
-				int secOpShiftAmount = 0;
-				if ((layoutPtr->secondaryOpCodeArgIndex + 1) < layoutPtr->argumentStartBits.size())
-				{
-					secOpShiftAmount = 32 - layoutPtr->argumentStartBits[layoutPtr->secondaryOpCodeArgIndex + 1];
-				}
-
+				int secOpShiftAmount = 32 - (secondaryOpCodeStartBit + secondaryOpCodeLength);
 				result->canonForm |= result->secondaryOpCode << secOpShiftAmount;
 			}
 		}
@@ -486,6 +736,10 @@ namespace lava
 		asmInstruction* currentInstruction = nullptr;
 
 		// Setup Instruction Argument Layouts
+		defineArgLayout(aIAL_B, { 0, 6, 30, 31 }, bConv);
+		defineArgLayout(aIAL_BC, { 0, 6, 11, 16, 30, 31 }, bcConv);
+		defineArgLayout(aIAL_BCLR, { 0, 6, 11, 16, 19, 21, 31 }, bclrConv);
+		defineArgLayout(aIAL_BCCTR, { 0, 6, 11, 16, 19, 21, 31 }, bcctrConv);
 		defineArgLayout(aIAL_CMPW, { 0, 6, 9, 10, 11, 16, 21, 30 }, cmpwConv);
 		defineArgLayout(aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv);
 		defineArgLayout(aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv);
@@ -503,6 +757,23 @@ namespace lava
 		defineArgLayout(aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
 		defineArgLayout(aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
+
+		// Branch Instructions
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_BC);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional", "bc", aIAL_BC);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_B);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Branch", "b", aIAL_B);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_B_SpReg, 21, 10);
+		{
+			// Operation:: BCCTR
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Count Register ", "bcctr", aIAL_BCCTR, 528);
+			// Operation:: BCLR
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Link Register ", "bclr", aIAL_BCLR, 16);
+		}
 
 		// Compare Instructions
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_CMPWI);
