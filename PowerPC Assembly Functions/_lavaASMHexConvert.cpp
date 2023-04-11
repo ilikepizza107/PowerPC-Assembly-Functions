@@ -52,7 +52,7 @@ namespace lava
 
 		return result.str();
 	}
-	std::string parseBOAndBIToBranchMneum(unsigned char BOIn, unsigned char BIIn, std::string suffixIn)
+	std::string parseBOAndBIToBranchMnem(unsigned char BOIn, unsigned char BIIn, std::string suffixIn)
 	{
 		std::stringstream result;
 		
@@ -139,7 +139,7 @@ namespace lava
 					tBit = BOIn & 0b01;
 				}
 
-				// If we've written to result / if a mneumonic was found.
+				// If we've written to result / if a mnemonic was found.
 				if (result.tellp() != 0)
 				{
 					result << suffixIn;
@@ -195,7 +195,7 @@ namespace lava
 	// Instruction to String Conversion Predicates
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
-		return instructionIn->mneumonic;
+		return instructionIn->mnemonic;
 	}
 	std::string bcConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
@@ -208,10 +208,10 @@ namespace lava
 			unsigned char BO = argumentsIn[1];
 			unsigned char BI = argumentsIn[2];
 
-			std::string simpleMneum = parseBOAndBIToBranchMneum(BO, BI, "");
-			if (!simpleMneum.empty())
+			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI, "");
+			if (!simpleMnem.empty())
 			{
-				result << simpleMneum;
+				result << simpleMnem;
 				if (argumentsIn[4] != 0)
 				{
 					result << "a";
@@ -223,7 +223,7 @@ namespace lava
 			}
 			else
 			{
-				result << instructionIn->mneumonic;
+				result << instructionIn->mnemonic;
 				if (argumentsIn[5] != 0)
 				{
 					result << "l";
@@ -260,14 +260,14 @@ namespace lava
 			unsigned char BI = argumentsIn[2];
 			unsigned char BH = argumentsIn[4];
 
-			std::string simpleMneum = (BH == 0) ? parseBOAndBIToBranchMneum(BO, BI, "lr") : "";
-			if (!simpleMneum.empty())
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, "lr") : "";
+			if (!simpleMnem.empty())
 			{
-				result << simpleMneum;
+				result << simpleMnem;
 			}
 			else
 			{
-				result << instructionIn->mneumonic;
+				result << instructionIn->mnemonic;
 				if (argumentsIn[6] != 0)
 				{
 					result << "l";
@@ -291,14 +291,14 @@ namespace lava
 			unsigned char BI = argumentsIn[2];
 			unsigned char BH = argumentsIn[4];
 
-			std::string simpleMneum = (BH == 0) ? parseBOAndBIToBranchMneum(BO, BI, "ctr") : "";
-			if (!simpleMneum.empty())
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, "ctr") : "";
+			if (!simpleMnem.empty())
 			{
-				result << simpleMneum;
+				result << simpleMnem;
 			}
 			else
 			{
-				result << instructionIn->mneumonic;
+				result << instructionIn->mnemonic;
 				if (argumentsIn[6] != 0)
 				{
 					result << "l";
@@ -318,7 +318,7 @@ namespace lava
 		if (argumentsIn.size() >= 4)
 		{
 			bool useAbsolute = 0;
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			if (argumentsIn[3] != 0)
 			{
 				result << "l";
@@ -348,7 +348,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 8)
 		{
-			result << instructionIn->mneumonic << " ";
+			result << instructionIn->mnemonic << " ";
 			if (argumentsIn[1] != 0)
 			{
 				result << "cr" << argumentsIn[1] << ", ";
@@ -366,7 +366,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 6)
 		{
-			result << instructionIn->mneumonic << " ";
+			result << instructionIn->mnemonic << " ";
 			if (argumentsIn[1] != 0)
 			{
 				result << "cr" << argumentsIn[1] << ", ";
@@ -384,7 +384,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 6)
 		{
-			result << instructionIn->mneumonic << " ";
+			result << instructionIn->mnemonic << " ";
 			if (argumentsIn[1] != 0)
 			{
 				result << "cr" << argumentsIn[1] << ", ";
@@ -402,10 +402,10 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 4)
 		{
-			// Activate "li"/"lis" mneumonic if rA == 0
+			// Activate "li"/"lis" mnemonic if rA == 0
 			if (argumentsIn[2] == 0)
 			{
-				if (instructionIn->mneumonic.back() == 's')
+				if (instructionIn->mnemonic.back() == 's')
 				{
 					result << "lis";
 				}
@@ -422,7 +422,7 @@ namespace lava
 				std::size_t minusLoc = immediateString.find('-');
 				if (minusLoc != std::string::npos)
 				{
-					if (instructionIn->mneumonic.back() == 's')
+					if (instructionIn->mnemonic.back() == 's')
 					{
 						result << "subis";
 					}
@@ -434,7 +434,7 @@ namespace lava
 				}
 				else
 				{
-					result << instructionIn->mneumonic;
+					result << instructionIn->mnemonic;
 				}
 				result << " r" << argumentsIn[1];
 				result << ", r" << argumentsIn[2] << ", ";
@@ -457,7 +457,7 @@ namespace lava
 			}
 			else
 			{
-				result << instructionIn->mneumonic;
+				result << instructionIn->mnemonic;
 				result << " r" << argumentsIn[1];
 				result << ", r" << argumentsIn[2];
 				result << ", " << std::hex << "0x" << argumentsIn[3];
@@ -473,7 +473,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 4)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			result << " r" << argumentsIn[1] << ", ";
 			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
 			result << "(r" << argumentsIn[2] << ")";
@@ -488,7 +488,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 4)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			result << " r" << argumentsIn[1];
 			result << ", r" << argumentsIn[2] << ", ";
 			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
@@ -503,7 +503,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 4)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			result << " r" << argumentsIn[1];
 			result << ", r" << argumentsIn[2] << ", ";
 			result << std::hex << "0x" << argumentsIn[3];
@@ -518,7 +518,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 6)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			if (argumentsIn[5])
 			{
 				result << '.';
@@ -536,7 +536,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 6)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			if (argumentsIn[5])
 			{
 				result << '.';
@@ -555,14 +555,21 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 6)
 		{
-			result << instructionIn->mneumonic;
-			if (argumentsIn[5])
+			if (instructionIn->mnemonic == "or" && argumentsIn[1] == argumentsIn[3])
 			{
-				result << '.';
+				result << "mr r" << argumentsIn[2] << ", r" << argumentsIn[1];
 			}
-			result << " r" << argumentsIn[2];
-			result << ", r" << argumentsIn[1];
-			result << ", r" << argumentsIn[3];
+			else
+			{
+				result << instructionIn->mnemonic;
+				if (argumentsIn[5])
+				{
+					result << '.';
+				}
+				result << " r" << argumentsIn[2];
+				result << ", r" << argumentsIn[1];
+				result << ", r" << argumentsIn[3];
+			}
 		}
 
 		return result.str();
@@ -574,7 +581,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 6)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			if (argumentsIn[5])
 			{
 				result << '.';
@@ -593,7 +600,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 4)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			result << " f" << argumentsIn[1] << ", ";
 			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
 			result << "(r" << argumentsIn[2] << ")";
@@ -608,7 +615,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 7)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			if (argumentsIn[6])
 			{
 				result << '.';
@@ -626,7 +633,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 7)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			if (argumentsIn[6])
 			{
 				result << '.';
@@ -645,7 +652,7 @@ namespace lava
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 7)
 		{
-			result << instructionIn->mneumonic;
+			result << instructionIn->mnemonic;
 			if (argumentsIn[6])
 			{
 				result << '.';
@@ -676,7 +683,7 @@ namespace lava
 	}
 
 	// asmPrOpCodeGroup
-	asmInstruction* asmPrOpCodeGroup::pushInstruction(std::string nameIn, std::string mneumIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn)
+	asmInstruction* asmPrOpCodeGroup::pushInstruction(std::string nameIn, std::string mnemIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn)
 	{
 		asmInstruction* result = nullptr;
 
@@ -685,7 +692,7 @@ namespace lava
 			result = &secondaryOpCodeToInstructions[secOpIn];
 			result->primaryOpCode = this->primaryOpCode;
 			result->name = nameIn;
-			result->mneumonic = mneumIn;
+			result->mnemonic = mnemIn;
 			result->secondaryOpCode = secOpIn;
 			result->canonForm = result->primaryOpCode << (32 - 6);
 			result->layoutID = layoutIDIn;
@@ -707,7 +714,7 @@ namespace lava
 
 		if (originalInstrIn != nullptr)
 		{
-			result = pushInstruction(originalInstrIn->name + opName_WithOverflowString, originalInstrIn->mneumonic + "o",
+			result = pushInstruction(originalInstrIn->name + opName_WithOverflowString, originalInstrIn->mnemonic + "o",
 				originalInstrIn->layoutID, originalInstrIn->secondaryOpCode | overflowSecondaryOpcodeFlag);
 		}
 

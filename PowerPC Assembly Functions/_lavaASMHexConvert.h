@@ -86,7 +86,7 @@ namespace lava
 
 
 	struct asmInstruction;
-	// Default function, just returns mneumonic.
+	// Default function, just returns mnemonic.
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn);
 
 	enum asmInstructionArgLayout
@@ -134,14 +134,14 @@ namespace lava
 	{
 		asmPrimaryOpCodes primaryOpCode = aPOC_NULL;
 		std::string name = "";
-		std::string mneumonic = "";
+		std::string mnemonic = "";
 		unsigned long canonForm = ULONG_MAX;
 		unsigned short secondaryOpCode = USHRT_MAX;
 		asmInstructionArgLayout layoutID = aIAL_NULL;
 
 		asmInstruction() {};
-		asmInstruction(asmPrimaryOpCodes prOpIn, std::string nameIn, std::string mneumIn, unsigned short secOpIn, unsigned long canonIn) :
-			primaryOpCode(prOpIn), name(nameIn), mneumonic(mneumIn), secondaryOpCode(secOpIn), canonForm(canonIn) {};
+		asmInstruction(asmPrimaryOpCodes prOpIn, std::string nameIn, std::string mnemIn, unsigned short secOpIn, unsigned long canonIn) :
+			primaryOpCode(prOpIn), name(nameIn), mnemonic(mnemIn), secondaryOpCode(secOpIn), canonForm(canonIn) {};
 
 		argumentLayout* getArgLayoutPtr();
 		bool isRightInstruction(unsigned long hexIn);
@@ -155,7 +155,7 @@ namespace lava
 
 		asmPrOpCodeGroup() {};
 
-		asmInstruction* pushInstruction(std::string nameIn, std::string mneumIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn = USHRT_MAX);
+		asmInstruction* pushInstruction(std::string nameIn, std::string mnemIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn = USHRT_MAX);
 		asmInstruction* pushOverflowVersionOfInstruction(asmInstruction* originalInstrIn);
 	};
 
