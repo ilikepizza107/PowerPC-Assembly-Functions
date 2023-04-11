@@ -47,6 +47,8 @@ namespace lava
 		aPOC_LBZU = 35,
 		aPOC_LHZ = 40,
 		aPOC_LHZU = 41,
+		aPOC_LHA = 42,
+		aPOC_LHAU = 43,
 		aPOC_LFS = 48,
 		aPOC_LFSU = 49,
 		aPOC_LFD = 50,

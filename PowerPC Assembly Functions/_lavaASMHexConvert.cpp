@@ -5,6 +5,8 @@ namespace lava
 	constexpr unsigned long overflowSecondaryOpcodeFlag = 0b1000000000;
 	const std::string opName_WithOverflowString = " w/ Overflow";
 	const std::string opName_WithUpdateString = " w/ Update";
+	const std::string opName_IndexedString = " Indexed";
+	const std::string opName_WithUpdateIndexedString = opName_WithUpdateString + opName_IndexedString;
 	const std::string opName_WithComplString = " w/ Complement";
 	const std::string opName_DoublePrecision = " (Double-Precision)";
 	const std::string opName_SinglePrecision = " Single";
@@ -865,6 +867,14 @@ namespace lava
 		{
 			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateString, "lhzu", aIAL_IntLoadStore);
 		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHA);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic", "lha", aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHAU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateString, "lhau", aIAL_IntLoadStore);
+		}
 		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFS);
 		{
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single", "lfs", aIAL_FltLoadStore);
@@ -993,6 +1003,29 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", aIAL_Int3RegWithRC, 136);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
+			// Operation: LBZX, LBZUX
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_IndexedString, "lbzx", aIAL_Int3RegWithRC, 87);
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateIndexedString, "lbzux", aIAL_Int3RegWithRC, 119);
+			// Operation: LHZX, LHZUX
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_IndexedString, "lhzx", aIAL_Int3RegWithRC, 279);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateIndexedString, "lhzux", aIAL_Int3RegWithRC, 311);
+			// Operation: LHAX, LHAUX
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_IndexedString, "lhax", aIAL_Int3RegWithRC, 343);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateIndexedString, "lhaux", aIAL_Int3RegWithRC, 375);
+			// Operation: LWZX, LWZUX
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_IndexedString, "lwzx", aIAL_Int3RegWithRC, 23);
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateIndexedString, "lwzux", aIAL_Int3RegWithRC, 55);
+
+			// Operation: STBX, STBUX
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_IndexedString, "stbx", aIAL_Int3RegWithRC, 215);
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateIndexedString, "stbux", aIAL_Int3RegWithRC, 247);
+			// Operation: STHX, STHUX
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_IndexedString, "sthx", aIAL_Int3RegWithRC, 407);
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateIndexedString, "sthux", aIAL_Int3RegWithRC, 439);
+			// Operation: STWX, STWUX
+			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_IndexedString, "stwx", aIAL_Int3RegWithRC, 151);
+			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateIndexedString, "stwux", aIAL_Int3RegWithRC, 183);
+
 			// Operation: NEG, NEGO
 			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", aIAL_Int2RegWithRC, 104);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
@@ -1023,10 +1056,12 @@ namespace lava
 			// Operation: SRAWI
 			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", "srawi", aIAL_Int2RegSASwapWithSHAndRC, 824);
 
+
 			// Operation: CMPW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", aIAL_CMPW, 0);
 			// Operation: CMPLW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word Logical", "cmplw", aIAL_CMPW, 32);
+
 		}
 	}
 
