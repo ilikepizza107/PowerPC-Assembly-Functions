@@ -876,6 +876,10 @@ namespace lava
 		{
 			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateString, "lhau", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LMW);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Load Multiple Word", "lmw", asmInstructionArgLayout::aIAL_IntLoadStore);
+		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LFS);
 		{
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single", "lfs", asmInstructionArgLayout::aIAL_FltLoadStore);
@@ -918,6 +922,10 @@ namespace lava
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STHU);
 		{
 			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateString, "sthu", asmInstructionArgLayout::aIAL_IntLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STMW);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Store Multiple Word", "lmw", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STFS);
 		{
