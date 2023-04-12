@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <array>
+#include <bitset>
 #include <map>
 
 namespace lava
@@ -48,7 +49,7 @@ namespace lava
 		aPOC_LHZU = 41,
 		aPOC_LHA = 42,
 		aPOC_LHAU = 43,
-		aPOC_LMW = 46, 
+		aPOC_LMW = 46,
 		aPOC_LFS = 48,
 		aPOC_LFSU = 49,
 		aPOC_LFD = 50,
@@ -72,6 +73,10 @@ namespace lava
 		aPOC_XORIS = 27,
 		aPOC_ANDI = 28,
 		aPOC_ANDIS = 29,
+		// Bitwise Rotation Instructions
+		aPOC_RLWIMI = 20,
+		aPOC_RLWINM = 21,
+		aPOC_RLWNM = 23,
 	};
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
@@ -102,6 +107,8 @@ namespace lava
 		aIAL_Int3RegWithRC,
 		aIAL_Int3RegSASwapWithRC,
 		aIAL_Int2RegSASwapWithSHAndRC,
+		aIAL_RLWINM,
+		aIAL_RLWNM,
 		aIAL_FltLoadStore,
 		aIAL_Flt2RegOmitAWithRC,
 		aIAL_Flt3RegOmitBWithRC,

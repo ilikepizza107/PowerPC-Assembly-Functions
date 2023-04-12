@@ -162,6 +162,21 @@ namespace lava
 
 		return result.str();
 	}
+	std::string getMaskFromMBMESH(unsigned char MBIn, unsigned char MEIn, unsigned char SHIn)
+	{
+		std::stringstream result;
+
+		bool invertMask = MBIn > MEIn;
+		unsigned long maskComp1 = (unsigned long long(1) << (32 - MBIn)) - 1;
+		unsigned long maskComp2 = ~((unsigned long long(1) << (31 - MEIn)) - 1);
+		unsigned long finalMask = (!invertMask) ? maskComp1 & maskComp2 : maskComp1 | maskComp2;
+		finalMask = (finalMask >> SHIn) | (finalMask << (32 - SHIn));
+		result << std::hex << finalMask << std::dec;
+		std::string maskStr = result.str();
+		maskStr = std::string(8 - maskStr.size(), '0') + maskStr;
+
+		return maskStr;
+	}
 
 	// argumentLayout
 	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
@@ -596,6 +611,57 @@ namespace lava
 
 		return result.str();
 	}
+	std::string rlwinmConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			unsigned char SH = argumentsIn[3];
+			unsigned char MB = argumentsIn[4];
+			unsigned char ME = argumentsIn[5];
+
+			result << instructionIn->mnemonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1];
+			result << ", " << argumentsIn[3];
+			result << ", " << argumentsIn[4];
+			result << ", " << argumentsIn[5];
+			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, SH) << ")";
+		}
+
+		return result.str();
+	}
+	std::string rlwnmConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			unsigned char MB = argumentsIn[4];
+			unsigned char ME = argumentsIn[5];
+
+			result << instructionIn->mnemonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1];
+			result << ", r" << argumentsIn[3];
+			result << ", " << argumentsIn[4];
+			result << ", " << argumentsIn[5];
+			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, 0) << ")";
+		}
+
+		return result.str();
+	}
 	std::string floatLoadStoreConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -763,6 +829,8 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
+		defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_RLWNM, { 0, 6, 11, 16, 21, 26, 31 }, rlwnmConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
@@ -970,6 +1038,19 @@ namespace lava
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ANDIS);
 		{
 			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, "andis.", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
+		}
+
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_RLWINM);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Rotate Left Word Immediate then AND with Mask", "rlwinm", asmInstructionArgLayout::aIAL_RLWINM);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_RLWIMI);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Rotate Left Word Immediate then Mask Insert", "rlwimi", asmInstructionArgLayout::aIAL_RLWINM);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_RLWNM);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Rotate Left Word then AND with Mask", "rlwnm", asmInstructionArgLayout::aIAL_RLWNM);
 		}
 
 		// Op Code 31
