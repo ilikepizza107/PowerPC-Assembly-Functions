@@ -164,7 +164,7 @@ namespace lava
 	}
 
 	// argumentLayout
-	std::array<argumentLayout, aIAL_LAYOUT_COUNT> layoutDictionary{};
+	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
 	std::vector<unsigned long> argumentLayout::splitHexIntoArguments(unsigned long instructionHexIn)
 	{
 		std::vector<unsigned long> result{};
@@ -188,10 +188,11 @@ namespace lava
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn,
 		std::string(*convFuncIn)(asmInstruction*, unsigned long))
 	{
-		layoutDictionary[IDIn].layoutID = IDIn;
-		layoutDictionary[IDIn].argumentStartBits = argStartsIn;
-		layoutDictionary[IDIn].conversionFunc = convFuncIn;
-		return &layoutDictionary[IDIn];
+		argumentLayout* targetLayout = &layoutDictionary[(int)IDIn];
+		targetLayout->layoutID = IDIn;
+		targetLayout->argumentStartBits = argStartsIn;
+		targetLayout->conversionFunc = convFuncIn;
+		return targetLayout;
 	}
 
 	// Instruction to String Conversion Predicates
@@ -672,9 +673,9 @@ namespace lava
 	{
 		argumentLayout* result = nullptr;
 
-		if (layoutID != aIAL_NULL)
+		if (layoutID != asmInstructionArgLayout::aIAL_NULL)
 		{
-			result = &layoutDictionary[layoutID];
+			result = &layoutDictionary[(int)layoutID];
 		}
 
 		return result;
@@ -696,7 +697,7 @@ namespace lava
 			result->name = nameIn;
 			result->mnemonic = mnemIn;
 			result->secondaryOpCode = secOpIn;
-			result->canonForm = result->primaryOpCode << (32 - 6);
+			result->canonForm = (int)result->primaryOpCode << (32 - 6);
 			result->layoutID = layoutIDIn;
 
 			argumentLayout* layoutPtr = result->getArgLayoutPtr();
@@ -729,9 +730,9 @@ namespace lava
 	{
 		asmPrOpCodeGroup* result = nullptr;
 
-		if (instructionDictionary.find(opCodeIn) == instructionDictionary.end())
+		if (instructionDictionary.find((int)opCodeIn) == instructionDictionary.end())
 		{
-			result = &instructionDictionary[opCodeIn];
+			result = &instructionDictionary[(int)opCodeIn];
 			result->primaryOpCode = opCodeIn;
 			result->secondaryOpCodeStartBit = secOpCodeStart;
 			result->secondaryOpCodeLength = secOpCodeLength;
@@ -745,322 +746,322 @@ namespace lava
 		asmInstruction* currentInstruction = nullptr;
 
 		// Setup Instruction Argument Layouts
-		defineArgLayout(aIAL_B, { 0, 6, 30, 31 }, bConv);
-		defineArgLayout(aIAL_BC, { 0, 6, 11, 16, 30, 31 }, bcConv);
-		defineArgLayout(aIAL_BCLR, { 0, 6, 11, 16, 19, 21, 31 }, bclrConv);
-		defineArgLayout(aIAL_BCCTR, { 0, 6, 11, 16, 19, 21, 31 }, bcctrConv);
-		defineArgLayout(aIAL_CMPW, { 0, 6, 9, 10, 11, 16, 21, 30 }, cmpwConv);
-		defineArgLayout(aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv);
-		defineArgLayout(aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv);
-		defineArgLayout(aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
-		defineArgLayout(aIAL_IntORI, { 0, 6, 11, 16 }, integerORImmConv);
-		defineArgLayout(aIAL_IntLogical, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
-		defineArgLayout(aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
-		defineArgLayout(aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
-		defineArgLayout(aIAL_Int2RegWithUIMM, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
-		defineArgLayout(aIAL_Int2RegWithRC, {0, 6, 11, 16, 21, 31}, integer2RegWithRc);
-		defineArgLayout(aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
-		defineArgLayout(aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
-		defineArgLayout(aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
-		defineArgLayout(aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
-		defineArgLayout(aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
-		defineArgLayout(aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
-		defineArgLayout(aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_B, { 0, 6, 30, 31 }, bConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_BC, { 0, 6, 11, 16, 30, 31 }, bcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_BCLR, { 0, 6, 11, 16, 19, 21, 31 }, bclrConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_BCCTR, { 0, 6, 11, 16, 19, 21, 31 }, bcctrConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_CMPW, { 0, 6, 9, 10, 11, 16, 21, 30 }, cmpwConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_IntORI, { 0, 6, 11, 16 }, integerORImmConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_IntLogical, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithUIMM, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithRC, {0, 6, 11, 16, 21, 31}, integer2RegWithRc);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
+		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
 
 		// Branch Instructions
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_BC);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional", "bc", aIAL_BC);
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional", "bc", asmInstructionArgLayout::aIAL_BC);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_B);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_B);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Branch", "b", aIAL_B);
+			currentInstruction = currentOpGroup->pushInstruction("Branch", "b", asmInstructionArgLayout::aIAL_B);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_B_SpReg, 21, 10);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_B_SpReg, 21, 10);
 		{
 			// Operation:: BCCTR
-			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Count Register ", "bcctr", aIAL_BCCTR, 528);
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Count Register ", "bcctr", asmInstructionArgLayout::aIAL_BCCTR, 528);
 			// Operation:: BCLR
-			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Link Register ", "bclr", aIAL_BCLR, 16);
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Link Register ", "bclr", asmInstructionArgLayout::aIAL_BCLR, 16);
 		}
 
 		// Compare Instructions
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_CMPWI);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_CMPWI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Compare Word Immediate", "cmpwi", aIAL_CMPWI);
+			currentInstruction = currentOpGroup->pushInstruction("Compare Word Immediate", "cmpwi", asmInstructionArgLayout::aIAL_CMPWI);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_CMPLWI);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_CMPLWI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Compare Logical Word Immediate", "cmplwi", aIAL_CMPLWI);
+			currentInstruction = currentOpGroup->pushInstruction("Compare Logical Word Immediate", "cmplwi", asmInstructionArgLayout::aIAL_CMPLWI);
 		}
 
 		// Integer Arithmetic Instructions
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_MULLI);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_MULLI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Immediate", "mulli", aIAL_Int2RegWithSIMM);
+			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Immediate", "mulli", asmInstructionArgLayout::aIAL_Int2RegWithSIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_SUBFIC);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_SUBFIC);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Immediate Carrying", "subfic", aIAL_Int2RegWithSIMM);
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Immediate Carrying", "subfic", asmInstructionArgLayout::aIAL_Int2RegWithSIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ADDIC);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying", "addic", aIAL_Int2RegWithSIMM);
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying", "addic", asmInstructionArgLayout::aIAL_Int2RegWithSIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIC_DOT);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ADDIC_DOT);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying and Record", "addic.", aIAL_Int2RegWithSIMM);
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Carrying and Record", "addic.", asmInstructionArgLayout::aIAL_Int2RegWithSIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDI);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ADDI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate", "addi", aIAL_IntADDI);
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate", "addi", asmInstructionArgLayout::aIAL_IntADDI);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ADDIS);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ADDIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", "addis", aIAL_IntADDI);
+			currentInstruction = currentOpGroup->pushInstruction("Add Immediate Shifted", "addis", asmInstructionArgLayout::aIAL_IntADDI);
 		}
 
 
 		// Float Arithmetic Instructions
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_D_ARTH, 26, 5);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_FLOAT_D_ARTH, 26, 5);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_DoublePrecision, "fadd", aIAL_Flt3RegOmitCWithRC, 21);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_DoublePrecision, "fdiv", aIAL_Flt3RegOmitCWithRC, 18);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_DoublePrecision, "fmul", aIAL_Flt3RegOmitBWithRC, 25);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_DoublePrecision, "fsub", aIAL_Flt3RegOmitCWithRC, 20);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_DoublePrecision, "fadd", asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, 21);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_DoublePrecision, "fdiv", asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, 18);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_DoublePrecision, "fmul", asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, 25);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_DoublePrecision, "fsub", asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, 20);
 
-			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word", "fctiw", aIAL_Flt2RegOmitAWithRC, 14);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word with Round toward Zero", "fctiwz", aIAL_Flt2RegOmitAWithRC, 15);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Round to Single", "frsp", aIAL_Flt2RegOmitAWithRC, 12);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word", "fctiw", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 14);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word with Round toward Zero", "fctiwz", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 15);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Round to Single", "frsp", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 12);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_FLOAT_S_ARTH, 26, 5);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_FLOAT_S_ARTH, 26, 5);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_SinglePrecision, "fadds", aIAL_Flt3RegOmitCWithRC, 21);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_SinglePrecision, "fdivs", aIAL_Flt3RegOmitCWithRC, 18);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_SinglePrecision, "fmuls", aIAL_Flt3RegOmitBWithRC, 25);
-			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_SinglePrecision, "fsubs", aIAL_Flt3RegOmitCWithRC, 20);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Add" + opName_SinglePrecision, "fadds", asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, 21);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Divide" + opName_SinglePrecision, "fdivs", asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, 18);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_SinglePrecision, "fmuls", asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, 25);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_SinglePrecision, "fsubs", asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, 20);
 		}
 
 
 		// Load Instructions
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZ);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LWZ);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero", "lwz", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero", "lwz", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LWZU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LWZU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateString, "lwzu", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateString, "lwzu", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZ);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LBZ);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero", "lbz", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero", "lbz", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LBZU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LBZU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateString, "lbzu", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateString, "lbzu", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZ);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LHZ);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero", "lhz", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero", "lhz", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHZU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LHZU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateString, "lhzu", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateString, "lhzu", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHA);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LHA);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic", "lha", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic", "lha", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LHAU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LHAU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateString, "lhau", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateString, "lhau", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFS);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LFS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single", "lfs", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single", "lfs", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFSU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LFSU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single" + opName_WithUpdateString, "lfsu", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single" + opName_WithUpdateString, "lfsu", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFD);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LFD);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double", "lfd", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double", "lfd", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_LFDU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_LFDU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_WithUpdateString, "lfdu", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_WithUpdateString, "lfdu", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
 		
 
 		// Store Instructions
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STW);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STW);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Word", "stw", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Word", "stw", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STWU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STWU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateString, "stwu", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateString, "stwu", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STB);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STB);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Byte", "stb", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte", "stb", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STBU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STBU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateString, "stbu", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateString, "stbu", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STH);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STH);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Word", "sth", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word", "sth", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STHU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STHU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateString, "sthu", aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateString, "sthu", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFS);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STFS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single", "stfs", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single", "stfs", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFSU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STFSU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Floating-Point Single" + opName_WithUpdateString, "stfsu", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Floating-Point Single" + opName_WithUpdateString, "stfsu", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFD);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STFD);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double", "stfd", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double", "stfd", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_STFDU);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STFDU);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Floating-Point Double" + opName_WithUpdateString, "stfdu", aIAL_FltLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Floating-Point Double" + opName_WithUpdateString, "stfdu", asmInstructionArgLayout::aIAL_FltLoadStore);
 		}
 
 		
 		// Logical Integer Instructions
 			
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORI);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ORI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("OR Immediate", "ori", aIAL_IntORI);
+			currentInstruction = currentOpGroup->pushInstruction("OR Immediate", "ori", asmInstructionArgLayout::aIAL_IntORI);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ORIS);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ORIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted", "oris", aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted", "oris", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_XORI);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_XORI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate", "xori", aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate", "xori", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_XORIS);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_XORIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate Shifted", "xoris", aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate Shifted", "xoris", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDI);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ANDI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("AND Immediate" + opName_WithUpdateString, "andi.", aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate" + opName_WithUpdateString, "andi.", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
 		}
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_ANDIS);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ANDIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, "andis.", aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, "andis.", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
 		}
 
 		// Op Code 31
-		currentOpGroup = pushOpCodeGroupToDict(aPOC_31, 21, 10);
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_31, 21, 10);
 		{
 			// Operation: ADD, ADDO
-			currentInstruction = currentOpGroup->pushInstruction("Add", "add", aIAL_Int3RegWithRC, 266);
+			currentInstruction = currentOpGroup->pushInstruction("Add", "add", asmInstructionArgLayout::aIAL_Int3RegWithRC, 266);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: ADDC, ADDCO
-			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", "addc", aIAL_Int3RegWithRC, 10);
+			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", "addc", asmInstructionArgLayout::aIAL_Int3RegWithRC, 10);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: ADDE
-			currentInstruction = currentOpGroup->pushInstruction("Add Extended", "adde", aIAL_Int3RegWithRC, 138);
+			currentInstruction = currentOpGroup->pushInstruction("Add Extended", "adde", asmInstructionArgLayout::aIAL_Int3RegWithRC, 138);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: DIVW, DIVWO
-			currentInstruction = currentOpGroup->pushInstruction("Divide Word", "divw", aIAL_Int3RegWithRC, 491);
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word", "divw", asmInstructionArgLayout::aIAL_Int3RegWithRC, 491);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: DIVWU, DIVWUO
-			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", "divwu", aIAL_Int3RegWithRC, 459);
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", "divwu", asmInstructionArgLayout::aIAL_Int3RegWithRC, 459);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: MULHW, MULHWO
-			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", "mulhw", aIAL_Int3RegWithRC, 75);
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", "mulhw", asmInstructionArgLayout::aIAL_Int3RegWithRC, 75);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: MULHWU, MULHWUO
-			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", "mulhwu", aIAL_Int3RegWithRC, 11);
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", "mulhwu", asmInstructionArgLayout::aIAL_Int3RegWithRC, 11);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: MULLW, MULLWO
-			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", "mullw", aIAL_Int3RegWithRC, 235);
+			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", "mullw", asmInstructionArgLayout::aIAL_Int3RegWithRC, 235);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: SUBF, SUBFO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From", "subf", aIAL_Int3RegWithRC, 40);
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From", "subf", asmInstructionArgLayout::aIAL_Int3RegWithRC, 40);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: SUBFC, SUBFCO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", "subfc", aIAL_Int3RegWithRC, 8);
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", "subfc", asmInstructionArgLayout::aIAL_Int3RegWithRC, 8);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 			// Operation: SUBFE, SUBFEO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", aIAL_Int3RegWithRC, 136);
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", asmInstructionArgLayout::aIAL_Int3RegWithRC, 136);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: LBZX, LBZUX
-			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_IndexedString, "lbzx", aIAL_Int3RegWithRC, 87);
-			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateIndexedString, "lbzux", aIAL_Int3RegWithRC, 119);
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_IndexedString, "lbzx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 87);
+			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_WithUpdateIndexedString, "lbzux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 119);
 			// Operation: LHZX, LHZUX
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_IndexedString, "lhzx", aIAL_Int3RegWithRC, 279);
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateIndexedString, "lhzux", aIAL_Int3RegWithRC, 311);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_IndexedString, "lhzx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 279);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word and Zero" + opName_WithUpdateIndexedString, "lhzux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 311);
 			// Operation: LHAX, LHAUX
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_IndexedString, "lhax", aIAL_Int3RegWithRC, 343);
-			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateIndexedString, "lhaux", aIAL_Int3RegWithRC, 375);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_IndexedString, "lhax", asmInstructionArgLayout::aIAL_Int3RegWithRC, 343);
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateIndexedString, "lhaux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 375);
 			// Operation: LWZX, LWZUX
-			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_IndexedString, "lwzx", aIAL_Int3RegWithRC, 23);
-			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateIndexedString, "lwzux", aIAL_Int3RegWithRC, 55);
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_IndexedString, "lwzx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 23);
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateIndexedString, "lwzux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 55);
 
 			// Operation: STBX, STBUX
-			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_IndexedString, "stbx", aIAL_Int3RegWithRC, 215);
-			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateIndexedString, "stbux", aIAL_Int3RegWithRC, 247);
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_IndexedString, "stbx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 215);
+			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_WithUpdateIndexedString, "stbux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 247);
 			// Operation: STHX, STHUX
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_IndexedString, "sthx", aIAL_Int3RegWithRC, 407);
-			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateIndexedString, "sthux", aIAL_Int3RegWithRC, 439);
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_IndexedString, "sthx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 407);
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateIndexedString, "sthux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 439);
 			// Operation: STWX, STWUX
-			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_IndexedString, "stwx", aIAL_Int3RegWithRC, 151);
-			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateIndexedString, "stwux", aIAL_Int3RegWithRC, 183);
+			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_IndexedString, "stwx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 151);
+			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateIndexedString, "stwux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 183);
 
 			// Operation: NEG, NEGO
-			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", aIAL_Int2RegWithRC, 104);
+			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", asmInstructionArgLayout::aIAL_Int2RegWithRC, 104);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
 			// Operation: AND
-			currentInstruction = currentOpGroup->pushInstruction("AND", "and", aIAL_Int3RegSASwapWithRC, 28);
+			currentInstruction = currentOpGroup->pushInstruction("AND", "and", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 28);
 			// Operation: ANDC
-			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, "andc", aIAL_Int3RegSASwapWithRC, 60);
+			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, "andc", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 60);
 
 			// Operation: OR
-			currentInstruction = currentOpGroup->pushInstruction("OR", "or", aIAL_Int3RegSASwapWithRC, 444);
+			currentInstruction = currentOpGroup->pushInstruction("OR", "or", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 444);
 			// Operation: ORC
-			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, "orc", aIAL_Int3RegSASwapWithRC, 412);
+			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, "orc", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 412);
 
 			// Operation: EQV
-			currentInstruction = currentOpGroup->pushInstruction("Equivalent", "eqv", aIAL_Int3RegSASwapWithRC, 284);
+			currentInstruction = currentOpGroup->pushInstruction("Equivalent", "eqv", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 284);
 
 			// Operation: NOR
-			currentInstruction = currentOpGroup->pushInstruction("NOR", "nor", aIAL_Int3RegSASwapWithRC, 124);
+			currentInstruction = currentOpGroup->pushInstruction("NOR", "nor", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 124);
 
 			// Operation: XOR
-			currentInstruction = currentOpGroup->pushInstruction("XOR", "xor", aIAL_Int3RegSASwapWithRC, 316);
+			currentInstruction = currentOpGroup->pushInstruction("XOR", "xor", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 316);
 
 			// Operation: SLW
-			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", "slw", aIAL_Int3RegSASwapWithRC, 24);
+			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", "slw", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 24);
 			// Operation: SRAW
-			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word", "sraw", aIAL_Int3RegSASwapWithRC, 792);
+			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word", "sraw", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 792);
 			// Operation: SRAWI
-			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", "srawi", aIAL_Int2RegSASwapWithSHAndRC, 824);
+			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", "srawi", asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, 824);
 
 
 			// Operation: CMPW
-			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", aIAL_CMPW, 0);
+			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", asmInstructionArgLayout::aIAL_CMPW, 0);
 			// Operation: CMPLW
-			currentInstruction = currentOpGroup->pushInstruction("Compare Word Logical", "cmplw", aIAL_CMPW, 32);
+			currentInstruction = currentOpGroup->pushInstruction("Compare Word Logical", "cmplw", asmInstructionArgLayout::aIAL_CMPW, 32);
 
 		}
 	}

@@ -19,8 +19,7 @@ namespace lava
 	//		using the "o" suffix have had 0b1000000000 ORed into their recorded secondary opcode so that they still parse correctly.
 	//
 
-
-	enum asmPrimaryOpCodes
+	enum class asmPrimaryOpCodes
 	{
 		aPOC_NULL = -1,
 		aPOC_31 = 31,
@@ -72,16 +71,6 @@ namespace lava
 		aPOC_ANDI = 28,
 		aPOC_ANDIS = 29,
 	};
-	enum asmBOEncodings
-	{
-		aBOE_IF_CR_FALSE = 0b00100,
-		aBOE_IF_CR_FALSE_UNLIKELY = 0b00110,
-		aBOE_IF_CR_FALSE_LIKELY = 0b00111,
-		aBOE_IF_CR_TRUE = 0b01100,
-		aBOE_IF_CR_TRUE_UNLIKELY = 0b01110,
-		aBOE_IF_CR_TRUE_LIKELY = 0b01111,
-		aBOE_ALWAYS = 0b10100,
-	};
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
 	unsigned long getInstructionOpCode(unsigned long hexIn);
@@ -91,7 +80,7 @@ namespace lava
 	// Default function, just returns mnemonic.
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn);
 
-	enum asmInstructionArgLayout
+	enum class asmInstructionArgLayout
 	{
 		aIAL_NULL = -1,
 		aIAL_B,
@@ -119,7 +108,7 @@ namespace lava
 	};
 	struct argumentLayout
 	{
-		asmInstructionArgLayout layoutID = aIAL_NULL;
+		asmInstructionArgLayout layoutID = asmInstructionArgLayout::aIAL_NULL;
 		std::vector<unsigned char> argumentStartBits{};
 		std::string(*conversionFunc)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc;
 		
@@ -127,19 +116,19 @@ namespace lava
 
 		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
 	};
-	extern std::array<argumentLayout, aIAL_LAYOUT_COUNT> layoutDictionary;
+	extern std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary;
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn, 
 		std::string(*convFuncIn)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc);
 
 	
 	struct asmInstruction
 	{
-		asmPrimaryOpCodes primaryOpCode = aPOC_NULL;
+		asmPrimaryOpCodes primaryOpCode = asmPrimaryOpCodes::aPOC_NULL;
 		std::string name = "";
 		std::string mnemonic = "";
 		unsigned long canonForm = ULONG_MAX;
 		unsigned short secondaryOpCode = USHRT_MAX;
-		asmInstructionArgLayout layoutID = aIAL_NULL;
+		asmInstructionArgLayout layoutID = asmInstructionArgLayout::aIAL_NULL;
 
 		asmInstruction() {};
 		asmInstruction(asmPrimaryOpCodes prOpIn, std::string nameIn, std::string mnemIn, unsigned short secOpIn, unsigned long canonIn) :
@@ -150,7 +139,7 @@ namespace lava
 	};
 	struct asmPrOpCodeGroup
 	{
-		asmPrimaryOpCodes primaryOpCode = aPOC_NULL;
+		asmPrimaryOpCodes primaryOpCode = asmPrimaryOpCodes::aPOC_NULL;
 		unsigned char secondaryOpCodeStartBit = UCHAR_MAX;
 		unsigned char secondaryOpCodeLength = UCHAR_MAX;
 		std::map<unsigned short, asmInstruction> secondaryOpCodeToInstructions{};
