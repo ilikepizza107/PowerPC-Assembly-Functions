@@ -113,6 +113,7 @@ namespace lava
 		aIAL_Flt2RegOmitAWithRC,
 		aIAL_Flt3RegOmitBWithRC,
 		aIAL_Flt3RegOmitCWithRC,
+		aIAL_MoveToFromSPReg,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout

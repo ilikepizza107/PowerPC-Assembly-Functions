@@ -733,6 +733,43 @@ namespace lava
 
 		return result.str();
 	}
+	std::string moveToFromSPRegConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 5)
+		{
+			int shiftedSpReg = argumentsIn[2] >> 5;
+			switch (shiftedSpReg)
+			{
+			case 1:
+			{
+				result << instructionIn->mnemonic.substr(0, 2) << "xer";
+				break;
+			}
+			case 8:
+			{
+				result << instructionIn->mnemonic.substr(0, 2) << "lr";
+				break;
+			}
+			case 9:
+			{
+				result << instructionIn->mnemonic.substr(0, 2) << "ctr";
+				break;
+			}
+			default:
+			{
+				result << instructionIn->mnemonic << " " << argumentsIn[2] << ",";
+				break;
+			}
+			}
+			result << " r" << argumentsIn[1];
+		}
+
+		return result.str();
+	}
+
 
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr()
@@ -835,6 +872,7 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, 21, 31 }, moveToFromSPRegConv);
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1146,13 +1184,17 @@ namespace lava
 			// Operation: SRAWI
 			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", "srawi", asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, 824);
 
-
 			// Operation: CMPW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", asmInstructionArgLayout::aIAL_CMPW, 0);
 			// Operation: CMPLW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word Logical", "cmplw", asmInstructionArgLayout::aIAL_CMPW, 32);
 
+			// Operation: MFSPR
+			currentInstruction = currentOpGroup->pushInstruction("Move from Special-Purpose Register", "mfspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 339);
+			currentInstruction = currentOpGroup->pushInstruction("Move to Special-Purpose Register", "mtspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 467);
 		}
+
+		return;
 	}
 
 	std::string convertOperationHexToString(unsigned long hexIn)
