@@ -648,7 +648,6 @@ namespace lava
 
 		return result.str();
 	}
-
 	std::string rlwnmConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -696,6 +695,21 @@ namespace lava
 			result << ", " << argumentsIn[4];
 			result << ", " << argumentsIn[5];
 			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, SH) << ")";
+		}
+
+		return result.str();
+	}
+	std::string floatCompareConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			result << " cr" << argumentsIn[1];
+			result << ", f" << argumentsIn[3];
+			result << ", f" << argumentsIn[4];
 		}
 
 		return result.str();
@@ -843,10 +857,10 @@ namespace lava
 
 			argumentLayout* layoutPtr = result->getArgLayoutPtr();
 
-			if (secondaryOpCodeStartBit != UCHAR_MAX && secondaryOpCodeLength != UCHAR_MAX)
+			if (!secondaryOpCodeStartsAndLengths.empty())
 			{
-				int secOpShiftAmount = 32 - (secondaryOpCodeStartBit + secondaryOpCodeLength);
-				result->canonForm |= result->secondaryOpCode << secOpShiftAmount;
+				unsigned char expectedSecOpCodeEnd = secondaryOpCodeStartsAndLengths[0].first + secondaryOpCodeStartsAndLengths[0].second;
+				result->canonForm |= result->secondaryOpCode << (32 - expectedSecOpCodeEnd);
 			}
 		}
 
@@ -875,8 +889,10 @@ namespace lava
 		{
 			result = &instructionDictionary[(int)opCodeIn];
 			result->primaryOpCode = opCodeIn;
-			result->secondaryOpCodeStartBit = secOpCodeStart;
-			result->secondaryOpCodeLength = secOpCodeLength;
+			if (secOpCodeStart != UCHAR_MAX && secOpCodeLength != UCHAR_MAX)
+			{
+				result->secondaryOpCodeStartsAndLengths.push_back({ secOpCodeStart, secOpCodeLength });
+			}
 		}
 
 		return result;
@@ -907,6 +923,7 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_LSWI, {0, 6, 11, 16, 21, 31}, lswiConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_RLWNM, { 0, 6, 11, 16, 21, 26, 31 }, rlwnmConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_FltCompare, { 0, 6, 9, 11, 16, 21, 31 }, floatCompareConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
@@ -975,9 +992,17 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply" + opName_DoublePrecision, "fmul", asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, 25);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Subtract" + opName_DoublePrecision, "fsub", asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, 20);
 
+			// Instructions Which Use Extended Length SecOp
+			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({21, 10});
 			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word", "fctiw", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 14);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word with Round toward Zero", "fctiwz", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 15);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Round to Single", "frsp", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 12);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Move Register" + opName_DoublePrecision, "fmr", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 72);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Negate", "fneg", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 40);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Absolute Value", "fabs", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 264);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Negative Absolute Value", "fnabs", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 136);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Compare Unordered", "fcmpu", asmInstructionArgLayout::aIAL_FltCompare, 0);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Compare Ordered", "fcmpo", asmInstructionArgLayout::aIAL_FltCompare, 32);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_FLOAT_S_ARTH, 26, 5);
 		{
@@ -1252,11 +1277,29 @@ namespace lava
 		if (instructionDictionary.find(opCode) != instructionDictionary.end())
 		{
 			asmPrOpCodeGroup* opCodeGroup = &instructionDictionary[opCode];
-			unsigned short secondaryOpCode = (unsigned short)extractInstructionArg(hexIn, opCodeGroup->secondaryOpCodeStartBit, opCodeGroup->secondaryOpCodeLength);
+			asmInstruction* targetInstruction = nullptr;
 
-			if (opCodeGroup->secondaryOpCodeToInstructions.find(secondaryOpCode) != opCodeGroup->secondaryOpCodeToInstructions.end())
+			if (opCodeGroup->secondaryOpCodeStartsAndLengths.empty())
 			{
-				asmInstruction* targetInstruction = &opCodeGroup->secondaryOpCodeToInstructions[secondaryOpCode];
+				targetInstruction = &opCodeGroup->secondaryOpCodeToInstructions.begin()->second;
+			}
+			else
+			{
+				unsigned short secondaryOpCode = USHRT_MAX;
+				std::pair<unsigned char, unsigned char>* currPair = nullptr;
+				for (unsigned long i = 0; targetInstruction == nullptr && i < opCodeGroup->secondaryOpCodeStartsAndLengths.size(); i++)
+				{
+					currPair = &opCodeGroup->secondaryOpCodeStartsAndLengths[i];
+					secondaryOpCode = (unsigned short)extractInstructionArg(hexIn, currPair->first, currPair->second);
+					if (opCodeGroup->secondaryOpCodeToInstructions.find(secondaryOpCode) != opCodeGroup->secondaryOpCodeToInstructions.end())
+					{
+						targetInstruction = &opCodeGroup->secondaryOpCodeToInstructions[secondaryOpCode];
+					}
+				}
+			}
+
+			if (targetInstruction != nullptr)
+			{
 				result << targetInstruction->getArgLayoutPtr()->conversionFunc(targetInstruction, hexIn);
 			}
 		}

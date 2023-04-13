@@ -79,6 +79,10 @@ namespace lava
 		aPOC_RLWNM = 23,
 	};
 
+	// Plan for supporting Float Ops:
+	// - Observation: if HexIn & 0b10000, SecOp is 5 bits
+	//
+
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
 	unsigned long getInstructionOpCode(unsigned long hexIn);
 
@@ -111,6 +115,7 @@ namespace lava
 		aIAL_LSWI,
 		aIAL_RLWNM,
 		aIAL_RLWINM,
+		aIAL_FltCompare,
 		aIAL_FltLoadStore,
 		aIAL_Flt2RegOmitAWithRC,
 		aIAL_Flt3RegOmitBWithRC,
@@ -152,8 +157,7 @@ namespace lava
 	struct asmPrOpCodeGroup
 	{
 		asmPrimaryOpCodes primaryOpCode = asmPrimaryOpCodes::aPOC_NULL;
-		unsigned char secondaryOpCodeStartBit = UCHAR_MAX;
-		unsigned char secondaryOpCodeLength = UCHAR_MAX;
+		std::vector<std::pair<unsigned char, unsigned char>> secondaryOpCodeStartsAndLengths{};
 		std::map<unsigned short, asmInstruction> secondaryOpCodeToInstructions{};
 
 		asmPrOpCodeGroup() {};
