@@ -566,6 +566,24 @@ namespace lava
 
 		return result.str();
 	}
+	std::string integer2RegSASwapWithRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1];
+		}
+
+		return result.str();
+	}
 	std::string integer3RegSASwapWithRc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -611,6 +629,51 @@ namespace lava
 
 		return result.str();
 	}
+	std::string lswiConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+			result << ", " << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+
+	std::string rlwnmConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			unsigned char MB = argumentsIn[4];
+			unsigned char ME = argumentsIn[5];
+
+			result << instructionIn->mnemonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1];
+			result << ", r" << argumentsIn[3];
+			result << ", " << argumentsIn[4];
+			result << ", " << argumentsIn[5];
+			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, 0) << ")";
+		}
+
+		return result.str();
+	}
 	std::string rlwinmConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -633,31 +696,6 @@ namespace lava
 			result << ", " << argumentsIn[4];
 			result << ", " << argumentsIn[5];
 			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, SH) << ")";
-		}
-
-		return result.str();
-	}
-	std::string rlwnmConv(asmInstruction* instructionIn, unsigned long hexIn)
-	{
-		std::stringstream result;
-
-		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
-		if (argumentsIn.size() >= 7)
-		{
-			unsigned char MB = argumentsIn[4];
-			unsigned char ME = argumentsIn[5];
-
-			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
-			{
-				result << '.';
-			}
-			result << " r" << argumentsIn[2];
-			result << ", r" << argumentsIn[1];
-			result << ", r" << argumentsIn[3];
-			result << ", " << argumentsIn[4];
-			result << ", " << argumentsIn[5];
-			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, 0) << ")";
 		}
 
 		return result.str();
@@ -862,12 +900,13 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithUIMM, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithRC, {0, 6, 11, 16, 21, 31}, integer2RegWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
-		defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_LSWI, {0, 6, 11, 16, 21, 31}, lswiConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_RLWNM, { 0, 6, 11, 16, 21, 26, 31 }, rlwnmConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
@@ -1158,14 +1197,12 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", asmInstructionArgLayout::aIAL_Int2RegWithRC, 104);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
 
-			// Operation: AND
+			// Operation: AND, ANDC
 			currentInstruction = currentOpGroup->pushInstruction("AND", "and", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 28);
-			// Operation: ANDC
 			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, "andc", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 60);
 
-			// Operation: OR
+			// Operation: OR, ORC
 			currentInstruction = currentOpGroup->pushInstruction("OR", "or", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 444);
-			// Operation: ORC
 			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, "orc", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 412);
 
 			// Operation: EQV
@@ -1184,12 +1221,22 @@ namespace lava
 			// Operation: SRAWI
 			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word Immediate", "srawi", asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, 824);
 
-			// Operation: CMPW
+			// Operation: CNTLZW
+			currentInstruction = currentOpGroup->pushInstruction("Count Leading Zeros Word", "cntlzw", asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, 26);
+			// Operation: EXTSB
+			currentInstruction = currentOpGroup->pushInstruction("Extend Sign Byte", "extsb", asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, 954);
+			// Operation: EXTSH
+			currentInstruction = currentOpGroup->pushInstruction("Extend Sign Half Word", "extsh", asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, 922);
+
+			// Operation: LSWI, LSWX
+			currentInstruction = currentOpGroup->pushInstruction("Load String Word Immediate", "lswi", asmInstructionArgLayout::aIAL_LSWI, 597);
+			currentInstruction = currentOpGroup->pushInstruction("Load String Word Immediate" + opName_IndexedString, "lswx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 533);
+
+			// Operation: CMPW, CMPLW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", asmInstructionArgLayout::aIAL_CMPW, 0);
-			// Operation: CMPLW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word Logical", "cmplw", asmInstructionArgLayout::aIAL_CMPW, 32);
 
-			// Operation: MFSPR
+			// Operation: MFSPR, MTSPR
 			currentInstruction = currentOpGroup->pushInstruction("Move from Special-Purpose Register", "mfspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 339);
 			currentInstruction = currentOpGroup->pushInstruction("Move to Special-Purpose Register", "mtspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 467);
 		}
