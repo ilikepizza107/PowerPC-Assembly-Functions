@@ -282,6 +282,10 @@ namespace lava
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
+				if (argumentsIn[6] != 0)
+				{
+					result << "l";
+				}
 			}
 			else
 			{
@@ -313,6 +317,10 @@ namespace lava
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
+				if (argumentsIn[6] != 0)
+				{
+					result << "l";
+				}
 			}
 			else
 			{
@@ -390,7 +398,7 @@ namespace lava
 				result << "cr" << argumentsIn[1] << ", ";
 			}
 			result << "r" << argumentsIn[4];
-			result << ", " << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
+			result << ", " << unsignedImmArgToSignedString(argumentsIn[5], 16, 1);
 		}
 
 		return result.str();
@@ -476,10 +484,25 @@ namespace lava
 			else
 			{
 				result << instructionIn->mnemonic;
-				result << " r" << argumentsIn[1];
-				result << ", r" << argumentsIn[2];
+				result << " r" << argumentsIn[2];
+				result << ", r" << argumentsIn[1];
 				result << ", " << std::hex << "0x" << argumentsIn[3];
 			}
+		}
+
+		return result.str();
+	}
+	std::string integerLogicalIMMConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 4)
+		{
+			result << instructionIn->mnemonic;
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[1] << ", ";
+			result << std::hex << "0x" << argumentsIn[3];
 		}
 
 		return result.str();
@@ -510,21 +533,6 @@ namespace lava
 			result << " r" << argumentsIn[1];
 			result << ", r" << argumentsIn[2] << ", ";
 			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
-		}
-
-		return result.str();
-	}
-	std::string integer2RegWithUIMMConv(asmInstruction* instructionIn, unsigned long hexIn)
-	{
-		std::stringstream result;
-
-		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
-		if (argumentsIn.size() >= 4)
-		{
-			result << instructionIn->mnemonic;
-			result << " r" << argumentsIn[1];
-			result << ", r" << argumentsIn[2] << ", ";
-			result << std::hex << "0x" << argumentsIn[3];
 		}
 
 		return result.str();
@@ -714,6 +722,7 @@ namespace lava
 
 		return result.str();
 	}
+	
 	std::string floatLoadStoreConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -869,6 +878,7 @@ namespace lava
 	}
 
 	// asmPrOpCodeGroup
+	unsigned long instructionCount = 0x00;
 	asmInstruction* asmPrOpCodeGroup::pushInstruction(std::string nameIn, std::string mnemIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn)
 	{
 		asmInstruction* result = nullptr;
@@ -890,6 +900,8 @@ namespace lava
 				unsigned char expectedSecOpCodeEnd = secondaryOpCodeStartsAndLengths[0].first + secondaryOpCodeStartsAndLengths[0].second;
 				result->canonForm |= result->secondaryOpCode << (32 - expectedSecOpCodeEnd);
 			}
+
+			instructionCount++;
 		}
 
 		return result;
@@ -940,10 +952,9 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_IntORI, { 0, 6, 11, 16 }, integerORImmConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_IntLogical, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_IntLogicalIMM, { 0, 6, 11, 16 }, integerLogicalIMMConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithUIMM, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithRc);
@@ -1144,7 +1155,7 @@ namespace lava
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STMW);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("Store Multiple Word", "lmw", asmInstructionArgLayout::aIAL_IntLoadStore);
+			currentInstruction = currentOpGroup->pushInstruction("Store Multiple Word", "stmw", asmInstructionArgLayout::aIAL_IntLoadStore);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_STFS);
 		{
@@ -1172,23 +1183,23 @@ namespace lava
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ORIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted", "oris", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("OR Immediate Shifted", "oris", asmInstructionArgLayout::aIAL_IntLogicalIMM);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_XORI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate", "xori", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate", "xori", asmInstructionArgLayout::aIAL_IntLogicalIMM);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_XORIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate Shifted", "xoris", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("XOR Immediate Shifted", "xoris", asmInstructionArgLayout::aIAL_IntLogicalIMM);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ANDI);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("AND Immediate" + opName_WithUpdateString, "andi.", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate" + opName_WithUpdateString, "andi.", asmInstructionArgLayout::aIAL_IntLogicalIMM);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_ANDIS);
 		{
-			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, "andis.", asmInstructionArgLayout::aIAL_Int2RegWithUIMM);
+			currentInstruction = currentOpGroup->pushInstruction("AND Immediate Shifted" + opName_WithUpdateString, "andis.", asmInstructionArgLayout::aIAL_IntLogicalIMM);
 		}
 
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_RLWINM);
