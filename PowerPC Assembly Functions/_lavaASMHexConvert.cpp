@@ -821,7 +821,35 @@ namespace lava
 
 		return result.str();
 	}
+	std::string conditionRegLogicalsConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " " << argumentsIn[1];
+			result << ", " << argumentsIn[2];
+			result << ", " << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string conditionRegMoveFieldConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 8)
+		{
+			result << instructionIn->mnemonic;
+			result << " cr" << argumentsIn[1];
+			result << ", cr" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr()
@@ -929,6 +957,8 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, 21, 31 }, moveToFromSPRegConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, 21, 31 }, conditionRegLogicalsConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegMoveField, { 0, 6, 9, 11, 14, 16, 21, 31 }, conditionRegMoveFieldConv);
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -942,9 +972,27 @@ namespace lava
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_B_SpReg, 21, 10);
 		{
 			// Operation:: BCCTR
-			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Count Register ", "bcctr", asmInstructionArgLayout::aIAL_BCCTR, 528);
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Count Register", "bcctr", asmInstructionArgLayout::aIAL_BCCTR, 528);
 			// Operation:: BCLR
-			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Link Register ", "bclr", asmInstructionArgLayout::aIAL_BCLR, 16);
+			currentInstruction = currentOpGroup->pushInstruction("Branch Conditional to Link Register", "bclr", asmInstructionArgLayout::aIAL_BCLR, 16);
+
+			// Operation:: CRAND, CRANDC
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register AND", "crand", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 257);
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register AND" + opName_WithComplString, "crandc", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 129);
+			// Operation:: CREQV
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register Equivalent", "creqv", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 289);
+			// Operation:: CRNAND
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register NAND", "crnand", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 225);
+			// Operation:: CNOR
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register NOR", "crnor", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 33);
+			// Operation:: CROR, CRORC
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register OR", "cror", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 499);
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register OR" + opName_WithComplString, "crorc", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 417);
+			// Operation:: CRXOR
+			currentInstruction = currentOpGroup->pushInstruction("Condition Register XOR", "crxor", asmInstructionArgLayout::aIAL_ConditionRegLogicals, 193);
+			
+			// Operation: MCRF
+			currentInstruction = currentOpGroup->pushInstruction("Move Condition Register Field", "mcrf", asmInstructionArgLayout::aIAL_ConditionRegMoveField, 0);
 		}
 
 		// Compare Instructions
