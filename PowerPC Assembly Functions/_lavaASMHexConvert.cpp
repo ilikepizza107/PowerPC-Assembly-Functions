@@ -944,6 +944,7 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithUIMM, { 0, 6, 11, 16 }, integer2RegWithUIMMConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithRc);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
@@ -1212,9 +1213,16 @@ namespace lava
 			// Operation: ADDC, ADDCO
 			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", "addc", asmInstructionArgLayout::aIAL_Int3RegWithRC, 10);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: ADDE
+			// Operation: ADDE, ADDEO
 			currentInstruction = currentOpGroup->pushInstruction("Add Extended", "adde", asmInstructionArgLayout::aIAL_Int3RegWithRC, 138);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: ADDME, ADDMEO
+			currentInstruction = currentOpGroup->pushInstruction("Add to Minus One Extended", "addme", asmInstructionArgLayout::aIAL_Int2RegWithRC, 234);
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: ADDZE, ADDZEO
+			currentInstruction = currentOpGroup->pushInstruction("Add to Zero Extended", "addze", asmInstructionArgLayout::aIAL_Int2RegWithRC, 202);
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+
 
 			// Operation: DIVW, DIVWO
 			currentInstruction = currentOpGroup->pushInstruction("Divide Word", "divw", asmInstructionArgLayout::aIAL_Int3RegWithRC, 491);
@@ -1242,6 +1250,13 @@ namespace lava
 			// Operation: SUBFE, SUBFEO
 			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", asmInstructionArgLayout::aIAL_Int3RegWithRC, 136);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: SUBFME, SUBFMEO
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Minus One Extended", "subfme", asmInstructionArgLayout::aIAL_Int2RegWithRC, 232);
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: SUBFZE, SUBFZEO
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Zero Extended", "subfze", asmInstructionArgLayout::aIAL_Int2RegWithRC, 200);
+			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+
 
 			// Operation: LBZX, LBZUX
 			currentInstruction = currentOpGroup->pushInstruction("Load Byte and Zero" + opName_IndexedString, "lbzx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 87);
