@@ -102,6 +102,7 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 	std::size_t position = 0;
 	std::size_t numLines = codeIn.size() / 0x10;
 
+	//codeUnattested = 1;
 	if (!codeUnattested)
 	{
 		bool inHook = 0;
@@ -174,7 +175,7 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 
 std::string instructionHexToGCTRMString(unsigned long hexIn)
 {
-	return lava::convertOperationHexToString(hexIn);
+	return lava::convertInstructionHexToString(hexIn);
 }
 std::string instructionHexToGCTRMString(std::string hexIn)
 {

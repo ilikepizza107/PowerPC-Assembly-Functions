@@ -8,10 +8,11 @@
 #include <array>
 #include <bitset>
 #include <map>
+#include <fstream>
 
 namespace lava
 {
-	// lavaASMHexConvert v1.1.0 - A utility for converting 32-bit IBM PowerPC Assembly Instruction Hex into readable code.
+	// lavaASMHexConvert v1.1.0 - A utility for disassembling 32-bit IBM PowerPC Assembly Instruction Hex into readable code.
 	// Conventions and Concessions:
 	// - This library presently supports only a subset of the 32-bit PPC ASM instruction set. It offers no support for 64-bit
 	//		exclusive instructions.
@@ -78,10 +79,6 @@ namespace lava
 		aPOC_RLWINM = 21,
 		aPOC_RLWNM = 23,
 	};
-
-	// Plan for supporting Float Ops:
-	// - Observation: if HexIn & 0b10000, SecOp is 5 bits
-	//
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
 	unsigned long getInstructionOpCode(unsigned long hexIn);
@@ -172,7 +169,9 @@ namespace lava
 	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, unsigned char secOpCodeStart = UCHAR_MAX, unsigned char secOpCodeLength = UCHAR_MAX);
 	void buildInstructionDictionary();
 
-	std::string convertOperationHexToString(unsigned long hexIn);
+	std::string convertInstructionHexToString(unsigned long hexIn);
+	bool summarizeInstructionDictionary(std::ostream& output);
+	bool summarizeInstructionDictionary(std::string outputFilepath);
 }
 
 #endif

@@ -1370,10 +1370,11 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Move to Special-Purpose Register", "mtspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 467);
 		}
 
+		summarizeInstructionDictionary("ASMOut.txt");
 		return;
 	}
 
-	std::string convertOperationHexToString(unsigned long hexIn)
+	std::string convertInstructionHexToString(unsigned long hexIn)
 	{
 		std::stringstream result;
 
@@ -1409,5 +1410,43 @@ namespace lava
 		}
 
 		return result.str();
+	}
+	bool summarizeInstructionDictionary(std::ostream& output)
+	{
+		bool result = 0;
+
+		if (output.good())
+		{
+			output << "PowerPC Assembly Instruction Dictionary:\n";
+
+			for (auto i = instructionDictionary.cbegin(); i != instructionDictionary.end(); i++)
+			{
+				for (auto u = i->second.secondaryOpCodeToInstructions.cbegin(); u != i->second.secondaryOpCodeToInstructions.end(); u++)
+				{
+					output << "[" << i->first;
+					if (u->second.secondaryOpCode != USHRT_MAX)
+					{
+						output << ", " << u->first;
+					}
+					output << "] " << u->second.mnemonic << " (" << u->second.name << ") [0x" << std::hex << u->second.canonForm << std::dec << "]\n";
+				}
+			}
+
+			result = output.good();
+		}
+
+		return result;
+	}
+	bool summarizeInstructionDictionary(std::string outputFilepath)
+	{
+		bool result = 0;
+
+		std::ofstream output(outputFilepath, std::ios_base::out);
+		if (output.is_open())
+		{
+			result = summarizeInstructionDictionary(output);
+		}
+
+		return result;
 	}
 }
