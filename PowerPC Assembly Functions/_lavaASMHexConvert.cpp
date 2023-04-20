@@ -295,7 +295,7 @@ namespace lava
 					result << "l";
 				}
 
-				result << " " << BO << ", " << BI << ", " << BH;
+				result << " " << (int)BO << ", " << (int)BI << ", " << (int)BH;
 			}
 		}
 
@@ -330,7 +330,7 @@ namespace lava
 					result << "l";
 				}
 
-				result << " " << BO << ", " << BI << ", " << BH;
+				result << " " << (int)BO << ", " << (int)BI << ", " << (int)BH;
 			}
 		}
 
@@ -934,10 +934,47 @@ namespace lava
 		{
 			result << instructionIn->mnemonic;
 			result << " f" << argumentsIn[1] << ", ";
-			result << " r" << argumentsIn[2] << ", ";
-			result << " r" << argumentsIn[3] << ", ";
+			result << "r" << argumentsIn[2] << ", ";
+			result << "r" << argumentsIn[3] << ", ";
 			result << argumentsIn[4] << ", ";
 			result << argumentsIn[5];
+		}
+
+		return result.str();
+	}
+	std::string pairedSingle3RegWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " f" << argumentsIn[1];
+			result << ", f" << argumentsIn[2];
+			result << ", f" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string pairedSingle3RegOmitAWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " f" << argumentsIn[1];
+			result << ", f" << argumentsIn[3];
 		}
 
 		return result.str();
@@ -1057,6 +1094,8 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleCompare, { 0, 6, 9, 11, 16, 21, 31 }, pairedSingleCompareConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStore, { 0, 6, 11, 16, 17, 20 }, pairedSingleQLoadStoreConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, { 0, 6, 11, 16, 21, 22, 25, 31 }, pairedSingleQLoadStoreIndexedConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3Reg, { 0, 6, 11, 16, 21, 31 }, pairedSingle3RegWithRcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, { 0, 6, 11, 16, 21, 31 }, pairedSingle3RegOmitAWithRcConv);
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1460,8 +1499,20 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Paired Singles Compare Ordered Low", "ps_cmpo1", asmInstructionArgLayout::aIAL_PairedSingleCompare, 96);
 			currentInstruction = currentOpGroup->pushInstruction("Paired Singles Compare Unordered High", "ps_cmpu0", asmInstructionArgLayout::aIAL_PairedSingleCompare, 0);
 			currentInstruction = currentOpGroup->pushInstruction("Paired Singles Compare Unordered Low", "ps_cmpu1", asmInstructionArgLayout::aIAL_PairedSingleCompare, 64);
+
+			// Manip Instructions
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Negate", "ps_neg", asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, 40);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Move Register", "ps_mr", asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, 72);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Absolute Value", "ps_abs", asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, 264);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Negative Absolute Value", "ps_nabs", asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, 136);
+
+			// Merge Instructions
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Merge High", "ps_merge00", asmInstructionArgLayout::aIAL_PairedSingle3Reg, 528);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Merge Direct", "ps_merge01", asmInstructionArgLayout::aIAL_PairedSingle3Reg, 560);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Merge Swapped", "ps_merge10", asmInstructionArgLayout::aIAL_PairedSingle3Reg, 592);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Merge Low", "ps_merge11", asmInstructionArgLayout::aIAL_PairedSingle3Reg, 624);
 			
-			// Indexed LoadStore Instructions
+			// Indexed LoadStore Instructions (Sec Op Starts at bit 25)
 			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({25, 6});
 			// PSQ_LX, PSQ_LUX
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Load" + opName_IndexedString, "psq_lx", asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, 6);
@@ -1550,7 +1601,8 @@ namespace lava
 					{
 						output << ", " << u->first;
 					}
-					output << "] " << u->second.mnemonic << " (" << u->second.name << ") [0x" << std::hex << u->second.canonForm << std::dec << "]\n";
+					output << "] " << u->second.mnemonic << " (" << u->second.name << ") [0x" << std::hex << u->second.canonForm << std::dec << "]";
+					output << " {Ex: " << convertInstructionHexToString(u->second.canonForm) << "}\n";
 				}
 			}
 
