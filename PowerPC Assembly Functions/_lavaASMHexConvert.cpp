@@ -738,6 +738,21 @@ namespace lava
 
 		return result.str();
 	}
+	std::string floatLoadStoreIndexedConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " f" << argumentsIn[1] << ", ";
+			result << " r" << argumentsIn[2] << ", ";
+			result << " r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 	std::string float2RegOmitAWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -986,6 +1001,7 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_FltCompare, { 0, 6, 9, 11, 16, 21, 31 }, floatCompareConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, { 0, 6, 11, 16, 21, 31 }, floatLoadStoreIndexedConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
@@ -1312,6 +1328,13 @@ namespace lava
 			// Operation: LWZX, LWZUX
 			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_IndexedString, "lwzx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 23);
 			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateIndexedString, "lwzux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 55);
+			// Operation: LFDX, LFDUX
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_IndexedString, "lfdx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 599);
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_WithUpdateIndexedString, "lfdux", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 631);
+			// Operation: LFSX, LFSUX
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single" + opName_IndexedString, "lfsx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 535);
+			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Single" + opName_WithUpdateIndexedString, "lfsux", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 567);
+
 
 			// Operation: STBX, STBUX
 			currentInstruction = currentOpGroup->pushInstruction("Store Byte" + opName_IndexedString, "stbx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 215);
@@ -1322,6 +1345,15 @@ namespace lava
 			// Operation: STWX, STWUX
 			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_IndexedString, "stwx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 151);
 			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateIndexedString, "stwux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 183);
+			// Operation: STFDX, STFDUX
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double" + opName_IndexedString, "stfdx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 727);
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double" + opName_WithUpdateIndexedString, "stfdux", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 759);
+			// Operation: STFSX, STFSUX
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single" + opName_IndexedString, "stfsx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 663);
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Single" + opName_WithUpdateIndexedString, "stfsux", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 695);
+			// Operation: STFIWX
+			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point as Integer Word Indexed", "stfiwx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 983);
+
 
 			// Operation: NEG, NEGO
 			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", asmInstructionArgLayout::aIAL_Int2RegWithRC, 104);

@@ -113,6 +113,7 @@ namespace lava
 		aIAL_RLWINM,
 		aIAL_FltCompare,
 		aIAL_FltLoadStore,
+		aIAL_FltLoadStoreIndexed,
 		aIAL_Flt2RegOmitAWithRC,
 		aIAL_Flt3RegOmitBWithRC,
 		aIAL_Flt3RegOmitCWithRC,
