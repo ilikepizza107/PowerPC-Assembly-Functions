@@ -1029,15 +1029,10 @@ void CodeMenu()
 
 	Page Main("Main", MainLines);
 	
-
 	//Unclepunch fps code
-	vector<unsigned int> x = { 3254926684, 3, 2288895028, 946012161, 2557330484, 2283733000, 1610612736, 0, 3254926716, 6, 2288895029, 946012161, 2557330485, 738394172, 1098907672, 2288895028, 2959983670, 945815552, 2557330484, 2557330485, 2147549204, 0 };
-
-	ledger::openLedgerEntry("[CM: Code Menu] FPS Code [UnclePunch]");
-	for(auto a: x) {
-		WriteIntToFile(a);
-	}
-	ledger::closeLedgerEntry();
+	ASMRaw("[CM: Code Menu] FPS Code [UnclePunch]", "", {
+		3254926684, 3, 2288895028, 946012161, 2557330484, 2283733000, 1610612736, 0, 3254926716, 6, 2288895029, 946012161, 2557330485, 738394172, 1098907672, 2288895028, 2959983670, 945815552, 2557330484, 2557330485, 2147549204, 0
+		});
 
 	/*
 	Causes target smash to load lvl 1.  Fixed by Duke in seperate code

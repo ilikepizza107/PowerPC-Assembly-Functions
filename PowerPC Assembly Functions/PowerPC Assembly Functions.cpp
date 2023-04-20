@@ -760,6 +760,16 @@ void ASMEnd(int Replacement)
 	ASMEnd();
 }
 
+void ASMRaw(std::string name, std::string blurb, const std::vector<unsigned long>& rawHexIn)
+{
+	ledger::openLedgerEntry(name, blurb);
+	for (std::size_t i = 0; i < rawHexIn.size(); i++)
+	{
+		WriteIntToFile(rawHexIn[i]);
+	}
+	ledger::closeLedgerEntry();
+}
+
 void Label(int LabelNum)
 {
 	if(LabelNum >= MAX_LABELS)
