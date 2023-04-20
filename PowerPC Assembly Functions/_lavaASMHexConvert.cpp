@@ -934,6 +934,7 @@ namespace lava
 		{
 			result = pushInstruction(originalInstrIn->name + opName_WithOverflowString, originalInstrIn->mnemonic + "o",
 				originalInstrIn->layoutID, originalInstrIn->secondaryOpCode | overflowSecondaryOpcodeFlag);
+			result->isUnofficialInstr = 1;
 		}
 
 		return result;
@@ -1423,6 +1424,10 @@ namespace lava
 			{
 				for (auto u = i->second.secondaryOpCodeToInstructions.cbegin(); u != i->second.secondaryOpCodeToInstructions.end(); u++)
 				{
+					if (u->second.isUnofficialInstr)
+					{
+						output << "[Note: Unofficial] ";
+					}
 					output << "[" << i->first;
 					if (u->second.secondaryOpCode != USHRT_MAX)
 					{

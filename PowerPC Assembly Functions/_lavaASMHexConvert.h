@@ -145,6 +145,7 @@ namespace lava
 		unsigned long canonForm = ULONG_MAX;
 		unsigned short secondaryOpCode = USHRT_MAX;
 		asmInstructionArgLayout layoutID = asmInstructionArgLayout::aIAL_NULL;
+		bool isUnofficialInstr = 0;
 
 		asmInstruction() {};
 		asmInstruction(asmPrimaryOpCodes prOpIn, std::string nameIn, std::string mnemIn, unsigned short secOpIn, unsigned long canonIn) :
