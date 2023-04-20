@@ -78,6 +78,12 @@ namespace lava
 		aPOC_RLWIMI = 20,
 		aPOC_RLWINM = 21,
 		aPOC_RLWNM = 23,
+		// Paired Single Instructions
+		aPOC_PS_GENERAL = 4,
+		aPOC_PSQ_L = 56,
+		aPOC_PSQ_LU = 57,
+		aPOC_PSQ_ST = 60,
+		aPOC_PSQ_STU = 61,
 	};
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
@@ -121,6 +127,9 @@ namespace lava
 		aIAL_MoveToFromSPReg,
 		aIAL_ConditionRegLogicals,
 		aIAL_ConditionRegMoveField,
+		aIAL_PairedSingleCompare,
+		aIAL_PairedSingleQLoadStore,
+		aIAL_PairedSingleQLoadStoreIdx,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout
@@ -153,7 +162,6 @@ namespace lava
 			primaryOpCode(prOpIn), name(nameIn), mnemonic(mnemIn), secondaryOpCode(secOpIn), canonForm(canonIn) {};
 
 		argumentLayout* getArgLayoutPtr();
-		bool isRightInstruction(unsigned long hexIn);
 	};
 	struct asmPrOpCodeGroup
 	{

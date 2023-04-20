@@ -722,7 +722,6 @@ namespace lava
 
 		return result.str();
 	}
-	
 	std::string floatLoadStoreConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -894,6 +893,56 @@ namespace lava
 
 		return result.str();
 	}
+	std::string pairedSingleCompareConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			result << " cr" << argumentsIn[1];
+			result << ", f" << argumentsIn[3];
+			result << ", f" << argumentsIn[4];
+		}
+
+		return result.str();
+	}
+	std::string pairedSingleQLoadStoreConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " f" << argumentsIn[1] << ", ";
+			result << unsignedImmArgToSignedString(argumentsIn[5], 16, 1);
+			result << "(r" << argumentsIn[2] << "), ";
+			result << argumentsIn[3] << ", ";
+			result << argumentsIn[4];
+		}
+
+		return result.str();
+	}
+	std::string pairedSingleQLoadStoreIndexedConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 8)
+		{
+			result << instructionIn->mnemonic;
+			result << " f" << argumentsIn[1] << ", ";
+			result << " r" << argumentsIn[2] << ", ";
+			result << " r" << argumentsIn[3] << ", ";
+			result << argumentsIn[4] << ", ";
+			result << argumentsIn[5];
+		}
+
+		return result.str();
+	}
+
 
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr()
@@ -906,10 +955,6 @@ namespace lava
 		}
 
 		return result;
-	}
-	bool asmInstruction::isRightInstruction(unsigned long hexIn)
-	{
-		return (hexIn & canonForm) == hexIn;
 	}
 
 	// asmPrOpCodeGroup
@@ -1009,6 +1054,9 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, 21, 31 }, moveToFromSPRegConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, 21, 31 }, conditionRegLogicalsConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegMoveField, { 0, 6, 9, 11, 14, 16, 21, 31 }, conditionRegMoveFieldConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleCompare, { 0, 6, 9, 11, 16, 21, 31 }, pairedSingleCompareConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStore, { 0, 6, 11, 16, 17, 20 }, pairedSingleQLoadStoreConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, { 0, 6, 11, 16, 21, 22, 25, 31 }, pairedSingleQLoadStoreIndexedConv);
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1402,6 +1450,43 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Move from Special-Purpose Register", "mfspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 339);
 			currentInstruction = currentOpGroup->pushInstruction("Move to Special-Purpose Register", "mtspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 467);
 		}
+
+
+		// Paired Single Instructions
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_PS_GENERAL, 21, 10);
+		{
+			// Compare Instructions
+			currentInstruction = currentOpGroup->pushInstruction("Paired Singles Compare Ordered High", "ps_cmpo0", asmInstructionArgLayout::aIAL_PairedSingleCompare, 32);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Singles Compare Ordered Low", "ps_cmpo1", asmInstructionArgLayout::aIAL_PairedSingleCompare, 96);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Singles Compare Unordered High", "ps_cmpu0", asmInstructionArgLayout::aIAL_PairedSingleCompare, 0);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Singles Compare Unordered Low", "ps_cmpu1", asmInstructionArgLayout::aIAL_PairedSingleCompare, 64);
+			
+			// Indexed LoadStore Instructions
+			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({25, 6});
+			// PSQ_LX, PSQ_LUX
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Load" + opName_IndexedString, "psq_lx", asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, 6);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Load" + opName_WithUpdateIndexedString, "psq_lux", asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, 38);
+			// PSQ_STX, PSQ_STUX
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Store" + opName_IndexedString, "psq_stx", asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, 7);
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Store" + opName_WithUpdateIndexedString, "psq_stux", asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, 39);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_PSQ_L);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Load", "psq_l", asmInstructionArgLayout::aIAL_PairedSingleQLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_PSQ_LU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Load" + opName_WithUpdateString, "psq_lu", asmInstructionArgLayout::aIAL_PairedSingleQLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_PSQ_ST);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Store", "psq_st", asmInstructionArgLayout::aIAL_PairedSingleQLoadStore);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_PSQ_STU);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Store" + opName_WithUpdateString, "psq_stu", asmInstructionArgLayout::aIAL_PairedSingleQLoadStore);
+		}
+
 
 		summarizeInstructionDictionary("ASMOut.txt");
 		return;
