@@ -251,7 +251,7 @@ namespace lava
 					result << "a";
 				}
 
-				result << " " << (unsigned long)BO << ", " << (unsigned long)BI;
+				result << " " << (unsigned long)BO << ", " << (unsigned long)BI << ", ";
 			}
 			
 			if (argumentsIn[4] != 0)
