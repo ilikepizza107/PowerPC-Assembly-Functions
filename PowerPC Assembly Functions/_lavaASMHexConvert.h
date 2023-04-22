@@ -132,6 +132,10 @@ namespace lava
 		aIAL_PairedSingleQLoadStoreIdx,
 		aIAL_PairedSingle3Reg,
 		aIAL_PairedSingle3RegOmitA,
+		aIAL_PairedSingle4Reg,
+		aIAL_PairedSingle4RegOmitB,
+		aIAL_PairedSingle4RegOmitC,
+		aIAL_PairedSingle4RegOmitAC,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout

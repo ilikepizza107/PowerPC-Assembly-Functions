@@ -120,6 +120,11 @@ int main(int argc, char** argv)
 	if (std::filesystem::is_directory(outputFolder))
 	{
 		lava::buildInstructionDictionary();
+		if (OUTPUT_ASM_INSTRUCTION_DICTIONARY)
+		{
+			lava::summarizeInstructionDictionary(outputFolder + "ASMDictionary.txt");
+		}
+
 		initMenuFileStream();
 		string OutputTextPath = asmTextOutputFilePath;
 
