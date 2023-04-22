@@ -1491,9 +1491,13 @@ namespace lava
 			// Operation: LHAX, LHAUX
 			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_IndexedString, "lhax", asmInstructionArgLayout::aIAL_Int3RegWithRC, 343);
 			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Algebraic" + opName_WithUpdateIndexedString, "lhaux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 375);
+			// Operation: LHBRX
+			currentInstruction = currentOpGroup->pushInstruction("Load Half Word Byte-Reverse" + opName_IndexedString, "lhbrx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 790);
 			// Operation: LWZX, LWZUX
 			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_IndexedString, "lwzx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 23);
 			currentInstruction = currentOpGroup->pushInstruction("Load Word and Zero" + opName_WithUpdateIndexedString, "lwzux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 55);
+			// Operation: LWBRX
+			currentInstruction = currentOpGroup->pushInstruction("Load Word Byte-Reverse" + opName_IndexedString, "lwbrx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 534);
 			// Operation: LFDX, LFDUX
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_IndexedString, "lfdx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 599);
 			currentInstruction = currentOpGroup->pushInstruction("Load Floating-Point Double" + opName_WithUpdateIndexedString, "lfdux", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 631);
@@ -1508,9 +1512,13 @@ namespace lava
 			// Operation: STHX, STHUX
 			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_IndexedString, "sthx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 407);
 			currentInstruction = currentOpGroup->pushInstruction("Store Half Word" + opName_WithUpdateIndexedString, "sthux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 439);
+			// Operation: STHBRX
+			currentInstruction = currentOpGroup->pushInstruction("Store Half Word Byte-Reverse" + opName_WithUpdateIndexedString, "sthbrx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 918);
 			// Operation: STWX, STWUX
 			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_IndexedString, "stwx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 151);
 			currentInstruction = currentOpGroup->pushInstruction("Store Word" + opName_WithUpdateIndexedString, "stwux", asmInstructionArgLayout::aIAL_Int3RegWithRC, 183);
+			// Operation: STWBRX
+			currentInstruction = currentOpGroup->pushInstruction("Store Word Byte-Reverse" + opName_WithUpdateIndexedString, "stwbrx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 662);
 			// Operation: STFDX, STFDUX
 			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double" + opName_IndexedString, "stfdx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 727);
 			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point Double" + opName_WithUpdateIndexedString, "stfdux", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 759);
@@ -1544,6 +1552,8 @@ namespace lava
 
 			// Operation: SLW
 			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", "slw", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 24);
+			// Operation: SRW
+			currentInstruction = currentOpGroup->pushInstruction("Shift Right Word", "srw", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 536);
 			// Operation: SRAW
 			currentInstruction = currentOpGroup->pushInstruction("Shift Right Algebraic Word", "sraw", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 792);
 			// Operation: SRAWI
