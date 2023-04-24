@@ -1532,23 +1532,20 @@ namespace lava
 			// Operation: NEG, NEGO
 			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", asmInstructionArgLayout::aIAL_Int2RegWithRC, 104);
 			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-
 			// Operation: AND, ANDC
 			currentInstruction = currentOpGroup->pushInstruction("AND", "and", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 28);
 			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, "andc", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 60);
-
 			// Operation: OR, ORC
 			currentInstruction = currentOpGroup->pushInstruction("OR", "or", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 444);
 			currentInstruction = currentOpGroup->pushInstruction("OR" + opName_WithComplString, "orc", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 412);
-
 			// Operation: EQV
 			currentInstruction = currentOpGroup->pushInstruction("Equivalent", "eqv", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 284);
-
 			// Operation: NOR
 			currentInstruction = currentOpGroup->pushInstruction("NOR", "nor", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 124);
-
 			// Operation: XOR
 			currentInstruction = currentOpGroup->pushInstruction("XOR", "xor", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 316);
+			// Operation: NAND
+			currentInstruction = currentOpGroup->pushInstruction("NAND", "nand", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 476);
 
 			// Operation: SLW
 			currentInstruction = currentOpGroup->pushInstruction("Shift Left Word", "slw", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 24);
