@@ -123,6 +123,7 @@ namespace lava
 		aIAL_Flt2RegOmitAWithRC,
 		aIAL_Flt3RegOmitBWithRC,
 		aIAL_Flt3RegOmitCWithRC,
+		aIAL_Flt3RegOmitACWithRC,
 		aIAL_Flt4RegBCSwapWithRC,
 		aIAL_MoveToFromSPReg,
 		aIAL_ConditionRegLogicals,

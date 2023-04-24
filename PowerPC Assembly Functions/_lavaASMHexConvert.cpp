@@ -789,6 +789,24 @@ namespace lava
 
 		return result.str();
 	}
+	std::string float3RegOmitACWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " f" << argumentsIn[1];
+			result << ", f" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 	std::string float3RegOmitBWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -1162,6 +1180,7 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitACWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitACWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float4RegBCSwapWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, 21, 31 }, moveToFromSPRegConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, 21, 31 }, conditionRegLogicalsConv);
@@ -1260,6 +1279,8 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Floating Negative Multiply-Add" + opName_DoublePrecision, "fnmadd", asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, 31);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Negative Multiply-Subtract" + opName_DoublePrecision, "fnmsub", asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, 30);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Select", "fsel", asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, 23);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Reciprocal Square Root Estimate", "frsqrte", asmInstructionArgLayout::aIAL_Flt3RegOmitACWithRC, 26);
+			
 
 			// Instructions Which Use Extended Length SecOp
 			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({21, 10});
@@ -1283,6 +1304,7 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Floating Multiply-Subtract" + opName_SinglePrecision, "fmsubs", asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, 28);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Negative Multiply-Add" + opName_SinglePrecision, "fnmadds", asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, 31);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Negative Multiply-Subtract" + opName_SinglePrecision, "fnmsubs", asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, 30);
+			currentInstruction = currentOpGroup->pushInstruction("Floating Reciprocal Estimate Single", "fres", asmInstructionArgLayout::aIAL_Flt3RegOmitACWithRC, 24);
 		}
 
 
