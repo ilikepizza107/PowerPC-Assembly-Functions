@@ -1073,6 +1073,20 @@ namespace lava
 
 		return result.str();
 	}
+	std::string dataCache3RegOmitDConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " r" << argumentsIn[2];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr()
@@ -1194,6 +1208,7 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitB, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitBWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitCWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitAC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitACWithRcConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_DataCache3RegOmitD, {0, 6, 11, 16, 21, 31}, dataCache3RegOmitDConv);
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1596,6 +1611,17 @@ namespace lava
 			// Operation: MFSPR, MTSPR
 			currentInstruction = currentOpGroup->pushInstruction("Move from Special-Purpose Register", "mfspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 339);
 			currentInstruction = currentOpGroup->pushInstruction("Move to Special-Purpose Register", "mtspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 467);
+
+			// Operation: DCBF, DCBI
+			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Flush", "dcbf", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 86);
+			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Invalidate", "dcbi", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 470);
+			// Operation: DCBST, DCBT, DCBTST, DCBZ
+			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Store", "dcbst", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 54);
+			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Touch", "dcbt", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 278);
+			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Touch for Store", "dcbtst", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 246);
+			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Clear to Zero", "dcbz", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 1014);
+			// Operation:: ICBI
+			currentInstruction = currentOpGroup->pushInstruction("Instruction Cache Block Invalidate", "icbi", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 982);
 		}
 
 
@@ -1617,7 +1643,8 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Merge Direct", "ps_merge01", asmInstructionArgLayout::aIAL_PairedSingle3Reg, 560);
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Merge Swapped", "ps_merge10", asmInstructionArgLayout::aIAL_PairedSingle3Reg, 592);
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Merge Low", "ps_merge11", asmInstructionArgLayout::aIAL_PairedSingle3Reg, 624);
-			
+			// Data Cache Instructions
+			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Set to Zero Locked", "dcbz_l", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 1014);
 
 			// Math Instructions (Sec Op Starts at bit 26)
 			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({26, 5});

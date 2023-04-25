@@ -137,6 +137,7 @@ namespace lava
 		aIAL_PairedSingle4RegOmitB,
 		aIAL_PairedSingle4RegOmitC,
 		aIAL_PairedSingle4RegOmitAC,
+		aIAL_DataCache3RegOmitD,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout
