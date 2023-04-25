@@ -94,6 +94,12 @@ namespace lava
 	// Default function, just returns mnemonic.
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn);
 
+	enum class asmInstructionArgReservationStatus
+	{
+		aIARS_NULL = -1,
+		aIARS_MUST_BE_Zero = 0,
+		aIARS_MUST_BE_One = 1,
+	};
 	enum class asmInstructionArgLayout
 	{
 		aIAL_NULL = -1,
@@ -146,10 +152,16 @@ namespace lava
 	{
 		asmInstructionArgLayout layoutID = asmInstructionArgLayout::aIAL_NULL;
 		std::vector<unsigned char> argumentStartBits{};
+		unsigned long reservedZeroMask = 0;
+		unsigned long reservedOneMask = 0;
+		std::vector<std::pair<unsigned char, asmInstructionArgReservationStatus>> argumentReservationStatuses{};
 		std::string(*conversionFunc)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc;
 		
 		argumentLayout() {};
 
+		// First is Reserved Zero Mask, Second is Reserved One Mask (If Bit == 1, Must Respect Reservation)
+		void generateReservedArgumentMasks();
+		bool validateReservedArgs(unsigned long instructionHexIn);
 		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
 	};
 	extern std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary;

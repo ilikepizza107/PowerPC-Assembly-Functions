@@ -162,14 +162,32 @@ namespace lava
 
 		return result.str();
 	}
+	unsigned long maskBetweenBitsInclusive(unsigned char maskStartBit, unsigned char maskEndBit, bool allowWrapAround)
+	{
+		unsigned long result = 0;
+
+		if (maskStartBit < 32 && maskEndBit < 32)
+		{
+			bool invertMask = maskStartBit > maskEndBit;
+			unsigned long maskComp1 = (unsigned long long(1) << (32 - maskStartBit)) - 1;
+			unsigned long maskComp2 = ~((unsigned long long(1) << (31 - maskEndBit)) - 1);
+			if (invertMask && allowWrapAround)
+			{
+				result = maskComp1 | maskComp2;
+			}
+			else
+			{
+				result = maskComp1 & maskComp2;
+			}
+		}
+
+		return result;
+	}
 	std::string getMaskFromMBMESH(unsigned char MBIn, unsigned char MEIn, unsigned char SHIn)
 	{
 		std::stringstream result;
 
-		bool invertMask = MBIn > MEIn;
-		unsigned long maskComp1 = (unsigned long long(1) << (32 - MBIn)) - 1;
-		unsigned long maskComp2 = ~((unsigned long long(1) << (31 - MEIn)) - 1);
-		unsigned long finalMask = (!invertMask) ? maskComp1 & maskComp2 : maskComp1 | maskComp2;
+		unsigned long finalMask = maskBetweenBitsInclusive(MBIn, MEIn, 1);
 		finalMask = (finalMask >> SHIn) | (finalMask << (32 - SHIn));
 		result << std::hex << finalMask << std::dec;
 		std::string maskStr = result.str();
@@ -180,6 +198,42 @@ namespace lava
 
 	// argumentLayout
 	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
+	void argumentLayout::generateReservedArgumentMasks()
+	{
+		reservedZeroMask = 0;
+		reservedOneMask = 0;
+
+		unsigned char argMaskStart = UCHAR_MAX;
+		unsigned char argMaskEnd = UCHAR_MAX;
+		std::pair<unsigned char, asmInstructionArgReservationStatus>* currRes = nullptr;
+		for (std::size_t i = 0; i < argumentReservationStatuses.size(); i++)
+		{
+			currRes = &argumentReservationStatuses[i];
+			if (currRes->first < argumentStartBits.size())
+			{
+				argMaskStart = argumentStartBits[currRes->first];
+				argMaskEnd = ((currRes->first + 1) < argumentStartBits.size()) ? (argumentStartBits[currRes->first + 1] - 1) : 31;
+				if (currRes->second == asmInstructionArgReservationStatus::aIARS_MUST_BE_Zero)
+				{
+					reservedZeroMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
+				}
+				else
+				{
+					reservedOneMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
+				}
+			}
+		}
+	}
+	bool argumentLayout::validateReservedArgs(unsigned long instructionHexIn)
+	{
+		bool result = 1;
+
+		generateReservedArgumentMasks();
+		result &= (instructionHexIn & reservedZeroMask) == 0;
+		result &= (instructionHexIn & reservedOneMask) == reservedOneMask;
+
+		return result;
+	}
 	std::vector<unsigned long> argumentLayout::splitHexIntoArguments(unsigned long instructionHexIn)
 	{
 		std::vector<unsigned long> result{};
@@ -1165,53 +1219,55 @@ namespace lava
 	}
 	void buildInstructionDictionary()
 	{
+		argumentLayout* currLayout = nullptr;
 		asmPrOpCodeGroup* currentOpGroup = nullptr;
 		asmInstruction* currentInstruction = nullptr;
 
 		// Setup Instruction Argument Layouts
-		defineArgLayout(asmInstructionArgLayout::aIAL_B, { 0, 6, 30, 31 }, bConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_BC, { 0, 6, 11, 16, 30, 31 }, bcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_BCLR, { 0, 6, 11, 16, 19, 21, 31 }, bclrConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_BCCTR, { 0, 6, 11, 16, 19, 21, 31 }, bcctrConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_CMPW, { 0, 6, 9, 10, 11, 16, 21, 30 }, cmpwConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_IntORI, { 0, 6, 11, 16 }, integerORImmConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_IntLogicalIMM, { 0, 6, 11, 16 }, integerLogicalIMMConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegWithRc);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithRc);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
-		defineArgLayout(asmInstructionArgLayout::aIAL_LSWI, {0, 6, 11, 16, 21, 31}, lswiConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_RLWNM, { 0, 6, 11, 16, 21, 26, 31 }, rlwnmConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_FltCompare, { 0, 6, 9, 11, 16, 21, 31 }, floatCompareConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, { 0, 6, 11, 16, 21, 31 }, floatLoadStoreIndexedConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitACWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitACWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float4RegBCSwapWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, 21, 31 }, moveToFromSPRegConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, 21, 31 }, conditionRegLogicalsConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegMoveField, { 0, 6, 9, 11, 14, 16, 21, 31 }, conditionRegMoveFieldConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleCompare, { 0, 6, 9, 11, 16, 21, 31 }, pairedSingleCompareConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStore, { 0, 6, 11, 16, 17, 20 }, pairedSingleQLoadStoreConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, { 0, 6, 11, 16, 21, 22, 25, 31 }, pairedSingleQLoadStoreIndexedConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3Reg, { 0, 6, 11, 16, 21, 31 }, pairedSingle3RegWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, { 0, 6, 11, 16, 21, 31 }, pairedSingle3RegOmitAWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4Reg, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitB, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitBWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitCWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitAC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitACWithRcConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_DataCache3RegOmitD, {0, 6, 11, 16, 21, 31}, dataCache3RegOmitDConv);
-		defineArgLayout(asmInstructionArgLayout::aIAL_MemSync3Reg, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
-		defineArgLayout(asmInstructionArgLayout::aIAL_MemSyncNoReg, {0, 6, 11, 16, 21, 31}, defaultAsmInstrToStrFunc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_B, { 0, 6, 30, 31 }, bConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_BC, { 0, 6, 11, 16, 30, 31 }, bcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_BCLR, { 0, 6, 11, 16, 19, 21, 31 }, bclrConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_BCCTR, { 0, 6, 11, 16, 19, 21, 31 }, bcctrConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPW, { 0, 6, 9, 10, 11, 16, 21, 30 }, cmpwConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntORI, { 0, 6, 11, 16 }, integerORImmConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntLogicalIMM, { 0, 6, 11, 16 }, integerLogicalIMMConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegWithRc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithRc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, 21, 31 }, integer3RegSASwapWithRc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, 21, 31 }, integer2RegSASwapWithSHAndRc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_LSWI, {0, 6, 11, 16, 21, 31}, lswiConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RLWNM, { 0, 6, 11, 16, 21, 26, 31 }, rlwnmConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltCompare, { 0, 6, 9, 11, 16, 21, 31 }, floatCompareConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, { 0, 6, 11, 16, 21, 31 }, floatLoadStoreIndexedConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float2RegOmitAWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitBWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitCWithRcConv);
+		currLayout->argumentReservationStatuses.push_back({4, asmInstructionArgReservationStatus::aIARS_MUST_BE_Zero});
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitACWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float3RegOmitACWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, { 0, 6, 11, 16, 21, 26, 31 }, float4RegBCSwapWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, 21, 31 }, moveToFromSPRegConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, 21, 31 }, conditionRegLogicalsConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegMoveField, { 0, 6, 9, 11, 14, 16, 21, 31 }, conditionRegMoveFieldConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleCompare, { 0, 6, 9, 11, 16, 21, 31 }, pairedSingleCompareConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStore, { 0, 6, 11, 16, 17, 20 }, pairedSingleQLoadStoreConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, { 0, 6, 11, 16, 21, 22, 25, 31 }, pairedSingleQLoadStoreIndexedConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3Reg, { 0, 6, 11, 16, 21, 31 }, pairedSingle3RegWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, { 0, 6, 11, 16, 21, 31 }, pairedSingle3RegOmitAWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4Reg, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitB, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitBWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitCWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitAC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitACWithRcConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_DataCache3RegOmitD, {0, 6, 11, 16, 21, 31}, dataCache3RegOmitDConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MemSync3Reg, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MemSyncNoReg, {0, 6, 11, 16, 21, 31}, defaultAsmInstrToStrFunc);
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1741,7 +1797,7 @@ namespace lava
 				}
 			}
 
-			if (targetInstruction != nullptr)
+			if (targetInstruction != nullptr && targetInstruction->getArgLayoutPtr()->validateReservedArgs(~targetInstruction->canonForm & 0xFFFFFFFF))
 			{
 				result << targetInstruction->getArgLayoutPtr()->conversionFunc(targetInstruction, hexIn);
 			}
