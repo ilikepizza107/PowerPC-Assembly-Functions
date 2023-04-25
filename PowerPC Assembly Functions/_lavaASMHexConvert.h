@@ -138,6 +138,8 @@ namespace lava
 		aIAL_PairedSingle4RegOmitC,
 		aIAL_PairedSingle4RegOmitAC,
 		aIAL_DataCache3RegOmitD,
+		aIAL_MemSync3Reg,
+		aIAL_MemSyncNoReg,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout

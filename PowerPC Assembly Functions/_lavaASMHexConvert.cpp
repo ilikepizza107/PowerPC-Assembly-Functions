@@ -1088,6 +1088,7 @@ namespace lava
 		return result.str();
 	}
 
+
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr()
 	{
@@ -1209,6 +1210,8 @@ namespace lava
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitCWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitAC, { 0, 6, 11, 16, 21, 26, 31 }, pairedSingle4RegOmitACWithRcConv);
 		defineArgLayout(asmInstructionArgLayout::aIAL_DataCache3RegOmitD, {0, 6, 11, 16, 21, 31}, dataCache3RegOmitDConv);
+		defineArgLayout(asmInstructionArgLayout::aIAL_MemSync3Reg, { 0, 6, 11, 16, 21, 31 }, integer3RegWithRc);
+		defineArgLayout(asmInstructionArgLayout::aIAL_MemSyncNoReg, {0, 6, 11, 16, 21, 31}, defaultAsmInstrToStrFunc);
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1243,6 +1246,9 @@ namespace lava
 			
 			// Operation: MCRF
 			currentInstruction = currentOpGroup->pushInstruction("Move Condition Register Field", "mcrf", asmInstructionArgLayout::aIAL_ConditionRegMoveField, 0);
+
+			// Operation: ISYNC
+			currentInstruction = currentOpGroup->pushInstruction("Instruction Synchronize", "isync", asmInstructionArgLayout::aIAL_MemSyncNoReg, 150);
 		}
 
 		// Compare Instructions
@@ -1622,6 +1628,13 @@ namespace lava
 			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Clear to Zero", "dcbz", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 1014);
 			// Operation:: ICBI
 			currentInstruction = currentOpGroup->pushInstruction("Instruction Cache Block Invalidate", "icbi", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 982);
+
+			// Operation: EIEIO, SYNC
+			currentInstruction = currentOpGroup->pushInstruction("Enforce In-Order Execution of I/O", "eieio", asmInstructionArgLayout::aIAL_MemSyncNoReg, 854);
+			currentInstruction = currentOpGroup->pushInstruction("Synchronize", "sync", asmInstructionArgLayout::aIAL_MemSyncNoReg, 598);
+			// Operation: LWARX, STWCX.
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Reserve Indexed", "lwarx", asmInstructionArgLayout::aIAL_MemSync3Reg, 20);
+			currentInstruction = currentOpGroup->pushInstruction("Store Word Conditional Indexed", "stwcx.", asmInstructionArgLayout::aIAL_MemSync3Reg, 150);
 		}
 
 
