@@ -97,7 +97,7 @@ namespace lava
 	enum class asmInstructionArgReservationStatus
 	{
 		aIARS_NULL = -1,
-		aIARS_MUST_BE_Zero = 0,
+		aIARS_MUST_BE_ZERO = 0,
 		aIARS_MUST_BE_One = 1,
 	};
 	enum class asmInstructionArgLayout
@@ -114,6 +114,7 @@ namespace lava
 		aIAL_IntORI,
 		aIAL_IntLogicalIMM,
 		aIAL_IntLoadStore,
+		aIAL_IntLoadStoreIdx,
 		aIAL_Int2RegWithSIMM,
 		aIAL_Int2RegWithRC,
 		aIAL_Int3RegWithRC,
@@ -154,20 +155,18 @@ namespace lava
 		std::vector<unsigned char> argumentStartBits{};
 		unsigned long reservedZeroMask = 0;
 		unsigned long reservedOneMask = 0;
-		std::vector<std::pair<unsigned char, asmInstructionArgReservationStatus>> argumentReservationStatuses{};
 		std::string(*conversionFunc)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc;
 		
 		argumentLayout() {};
 
 		// First is Reserved Zero Mask, Second is Reserved One Mask (If Bit == 1, Must Respect Reservation)
-		void generateReservedArgumentMasks();
+		void setArgumentReservations(std::vector<std::pair<char, asmInstructionArgReservationStatus>> reservationsIn);
 		bool validateReservedArgs(unsigned long instructionHexIn);
 		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
 	};
 	extern std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary;
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn, 
 		std::string(*convFuncIn)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc);
-
 	
 	struct asmInstruction
 	{
