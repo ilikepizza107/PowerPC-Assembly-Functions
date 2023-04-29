@@ -175,7 +175,7 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 
 std::string instructionHexToGCTRMString(unsigned long hexIn)
 {
-	return lava::convertInstructionHexToString(hexIn);
+	return lava::ppc::convertInstructionHexToString(hexIn);
 }
 std::string instructionHexToGCTRMString(std::string hexIn)
 {

@@ -10,7 +10,7 @@
 #include <map>
 #include <fstream>
 
-namespace lava
+namespace lava::ppc
 {
 	// lavaASMHexConvert v1.1.0 - A utility for disassembling 32-bit IBM PowerPC Assembly Instruction Hex into readable code.
 	// Conventions and Concessions:

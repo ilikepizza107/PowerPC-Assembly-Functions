@@ -1,6 +1,6 @@
 #include "_lavaASMHexConvert.h"
 
-namespace lava
+namespace lava::ppc
 {
 	constexpr unsigned long overflowSecondaryOpcodeFlag = 0b1000000000;
 	const std::string opName_WithOverflowString = " w/ Overflow";
