@@ -132,6 +132,7 @@ namespace lava::ppc
 		aIAL_Flt3RegOmitACWithRC,
 		aIAL_Flt4RegBCSwapWithRC,
 		aIAL_MoveToFromSPReg,
+		aIAL_MoveToFromMSReg,
 		aIAL_ConditionRegLogicals,
 		aIAL_ConditionRegMoveField,
 		aIAL_PairedSingleCompare,
@@ -147,6 +148,8 @@ namespace lava::ppc
 		aIAL_LWARX,
 		aIAL_STWCX,
 		aIAL_MemSyncNoReg,
+		aIAL_MFTB,
+		aIAL_MCRXR,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout

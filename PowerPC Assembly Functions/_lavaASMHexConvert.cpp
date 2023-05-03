@@ -997,6 +997,19 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string moveToFromMSRegConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " r" << argumentsIn[1];
+		}
+
+		return result.str();
+	}
 	std::string conditionRegLogicalsConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -1202,7 +1215,49 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string mftbConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 5)
+		{
+			int fixedTBRArg = (argumentsIn[2] >> 5) | ((argumentsIn[2] & 0b11111) << 5);
+			result << instructionIn->mnemonic;
+			switch (fixedTBRArg)
+			{
+			case 268:
+			{
+				result << ", r" << argumentsIn[1];
+				break;
+			}
+			case 269:
+			{
+				result << "u, r" << argumentsIn[1];
+			}
+			default:
+			{
+				result << ", r" << argumentsIn[1] << ", " << fixedTBRArg;
+				break;
+			}
+			}
+		}
+
+		return result.str();
+	}
+	std::string mcrxrConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			result << " cr" << argumentsIn[1];
+		}
+
+		return result.str();
+	}
 
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr() const
@@ -1453,7 +1508,18 @@ namespace lava::ppc
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float4RegBCSwapWithRcConv);
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, isSecOpArgFlag | 21, 31 }, moveToFromSPRegConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, isSecOpArgFlag | 21, 31 }, moveToFromSPRegConv); {
+			currLayout->setArgumentReservations({
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromMSReg, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, moveToFromMSRegConv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, conditionRegLogicalsConv); {
 			currLayout->setArgumentReservations({
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
@@ -1523,6 +1589,19 @@ namespace lava::ppc
 				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MFTB, { 0, 6, 11, isSecOpArgFlag | 21, 31 }, mftbConv); {
+			currLayout->setArgumentReservations({
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MCRXR, { 0, 6, 9, 11, 16, isSecOpArgFlag | 21, 31 }, mcrxrConv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
@@ -1932,6 +2011,11 @@ namespace lava::ppc
 			currentInstruction = currentOpGroup->pushInstruction("Move from Special-Purpose Register", "mfspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 339);
 			currentInstruction = currentOpGroup->pushInstruction("Move to Special-Purpose Register", "mtspr", asmInstructionArgLayout::aIAL_MoveToFromSPReg, 467);
 
+			// Operation: MFMSR, MTMSR, MFCR
+			currentInstruction = currentOpGroup->pushInstruction("Move from Machine State Register", "mfmsr", asmInstructionArgLayout::aIAL_MoveToFromMSReg, 83);
+			currentInstruction = currentOpGroup->pushInstruction("Move to Machine State Register", "mtmsr", asmInstructionArgLayout::aIAL_MoveToFromMSReg, 146);
+			currentInstruction = currentOpGroup->pushInstruction("Move from Condition Register", "mfcr", asmInstructionArgLayout::aIAL_MoveToFromMSReg, 19);
+
 			// Operation: DCBF, DCBI
 			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Flush", "dcbf", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 86);
 			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Invalidate", "dcbi", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 470);
@@ -1949,6 +2033,12 @@ namespace lava::ppc
 			// Operation: LWARX, STWCX.
 			currentInstruction = currentOpGroup->pushInstruction("Load Word and Reserve Indexed", "lwarx", asmInstructionArgLayout::aIAL_LWARX, 20);
 			currentInstruction = currentOpGroup->pushInstruction("Store Word Conditional Indexed", "stwcx", asmInstructionArgLayout::aIAL_STWCX, 150);
+
+			// Operation: MFTB
+			currentInstruction = currentOpGroup->pushInstruction("Move from Time Base", "mftb", asmInstructionArgLayout::aIAL_MFTB, 371);
+
+			// Operation: MCRXR
+			currentInstruction = currentOpGroup->pushInstruction("Move to Condition Register from XER", "mcrxr", asmInstructionArgLayout::aIAL_MCRXR, 512);
 		}
 
 
