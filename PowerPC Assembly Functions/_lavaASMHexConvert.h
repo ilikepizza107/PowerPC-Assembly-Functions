@@ -98,7 +98,7 @@ namespace lava::ppc
 	{
 		aIARS_NULL = -1,
 		aIARS_MUST_BE_ZERO = 0,
-		aIARS_MUST_BE_One = 1,
+		aIARS_MUST_BE_ONE = 1,
 	};
 	enum class asmInstructionArgLayout
 	{
@@ -145,7 +145,8 @@ namespace lava::ppc
 		aIAL_PairedSingle4RegOmitC,
 		aIAL_PairedSingle4RegOmitAC,
 		aIAL_DataCache3RegOmitD,
-		aIAL_MemSync3Reg,
+		aIAL_LWARX,
+		aIAL_STWCX,
 		aIAL_MemSyncNoReg,
 		aIAL_LAYOUT_COUNT,
 	};
@@ -155,12 +156,14 @@ namespace lava::ppc
 		std::vector<unsigned char> argumentStartBits{};
 		unsigned long reservedZeroMask = 0;
 		unsigned long reservedOneMask = 0;
+		unsigned char secOpArgIndex = UCHAR_MAX;
 		std::string(*conversionFunc)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc;
 		
 		argumentLayout() {};
 
 		// First is Reserved Zero Mask, Second is Reserved One Mask (If Bit == 1, Must Respect Reservation)
 		void setArgumentReservations(std::vector<std::pair<char, asmInstructionArgReservationStatus>> reservationsIn);
+		unsigned long getSecOpMask();
 		bool validateReservedArgs(unsigned long instructionHexIn);
 		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
 	};
@@ -182,7 +185,8 @@ namespace lava::ppc
 		asmInstruction(asmPrimaryOpCodes prOpIn, std::string nameIn, std::string mnemIn, unsigned short secOpIn, unsigned long canonIn) :
 			primaryOpCode(prOpIn), name(nameIn), mnemonic(mnemIn), secondaryOpCode(secOpIn), canonForm(canonIn) {};
 
-		argumentLayout* getArgLayoutPtr();
+		argumentLayout* getArgLayoutPtr() const;
+		unsigned long getTestHex() const;
 	};
 	struct asmPrOpCodeGroup
 	{
