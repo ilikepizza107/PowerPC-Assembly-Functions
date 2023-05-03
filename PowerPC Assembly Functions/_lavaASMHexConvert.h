@@ -6,7 +6,6 @@
 #include <sstream>
 #include <vector>
 #include <array>
-#include <bitset>
 #include <map>
 #include <fstream>
 
@@ -166,6 +165,8 @@ namespace lava::ppc
 		unsigned long getSecOpMask();
 		bool validateReservedArgs(unsigned long instructionHexIn);
 		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
+		unsigned char getArgLengthInBits(unsigned char argIndex) const;
+		asmInstructionArgReservationStatus getArgReservation(unsigned char argIndex) const;
 	};
 	extern std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary;
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn, 
@@ -187,6 +188,7 @@ namespace lava::ppc
 
 		argumentLayout* getArgLayoutPtr() const;
 		unsigned long getTestHex() const;
+		std::string getArgLayoutString() const;
 	};
 	struct asmPrOpCodeGroup
 	{

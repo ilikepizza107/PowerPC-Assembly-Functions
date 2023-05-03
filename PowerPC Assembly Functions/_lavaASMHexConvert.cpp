@@ -277,6 +277,45 @@ namespace lava::ppc
 
 		return result;
 	}
+	unsigned char argumentLayout::getArgLengthInBits(unsigned char argIndex) const
+	{
+		unsigned char result = UCHAR_MAX;
+
+		if (argIndex < argumentStartBits.size())
+		{
+			if ((argIndex + 1) < argumentStartBits.size())
+			{
+				result = argumentStartBits[argIndex + 1] - argumentStartBits[argIndex];
+			}
+			else
+			{
+				result = 32 - argumentStartBits.back();
+			}
+		}
+
+		return result;
+	}
+	asmInstructionArgReservationStatus argumentLayout::getArgReservation(unsigned char argIndex) const
+	{
+		asmInstructionArgReservationStatus result = asmInstructionArgReservationStatus::aIARS_NULL;
+
+		if (argIndex < argumentStartBits.size())
+		{
+			unsigned long argBottomBitMask = 0b1 << (31 - argumentStartBits[argIndex]);
+			if (argBottomBitMask & reservedZeroMask)
+			{
+				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO;
+			}
+			else if (argBottomBitMask & reservedOneMask)
+			{
+				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE;
+			}
+		}
+
+		return result;
+	}
+
+
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn,
 		std::string(*convFuncIn)(asmInstruction*, unsigned long))
 	{
@@ -1213,6 +1252,61 @@ namespace lava::ppc
 
 		return result;
 	}
+	std::string asmInstruction::getArgLayoutString() const
+	{
+		std::stringstream tempArgString("");
+		std::string argContentStr = "";
+		std::string argPaddingStr = "";
+		constexpr unsigned char bitLength = 4;
+		argContentStr.reserve(16 * bitLength);
+		std::size_t targetStrLen = SIZE_MAX;
+
+		argumentLayout* currInstrLayout = getArgLayoutPtr();
+		if (currInstrLayout != nullptr)
+		{
+			if (currInstrLayout->argumentStartBits.size() > 1)
+			{
+				for (std::size_t argIdx = 0; argIdx < currInstrLayout->argumentStartBits.size(); argIdx++)
+				{
+					if (argIdx == 0)
+					{
+						argContentStr = "PrOp: " + std::to_string((int)primaryOpCode);
+					}
+					else if (argIdx == currInstrLayout->secOpArgIndex)
+					{
+						argContentStr = "SecOp: " + std::to_string(secondaryOpCode);
+					}
+					else if (currInstrLayout->getArgReservation(argIdx) != asmInstructionArgReservationStatus::aIARS_NULL)
+					{
+						if (currInstrLayout->getArgReservation(argIdx) == asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO)
+						{
+							argContentStr =  "R0";
+						}
+						else
+						{
+							argContentStr = "R1";
+						}
+					}
+					else
+					{
+						argContentStr = "A" + std::to_string(argIdx);
+					}
+
+					targetStrLen = (currInstrLayout->getArgLengthInBits(argIdx) * bitLength) - 2;
+					argPaddingStr = (targetStrLen > argContentStr.size()) ? std::string((targetStrLen - argContentStr.size()) / 2, ' ') : "";
+
+					tempArgString << "[" << argPaddingStr << argContentStr << argPaddingStr;
+					if (argContentStr.size() % 2)
+					{
+						tempArgString << " ";
+					}
+					tempArgString << "]";
+				}
+			}
+		}
+		
+		return tempArgString.str();
+	}
 
 	// asmPrOpCodeGroup
 	unsigned long instructionCount = 0x00;
@@ -1369,8 +1463,19 @@ namespace lava::ppc
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float4RegBCSwapWithRcConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, isSecOpArgFlag | 21, 31 }, moveToFromSPRegConv);
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, conditionRegLogicalsConv);
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegMoveField, { 0, 6, 9, 11, 14, 16, isSecOpArgFlag | 21, 31 }, conditionRegMoveFieldConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, conditionRegLogicalsConv); {
+			currLayout->setArgumentReservations({
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegMoveField, { 0, 6, 9, 11, 14, 16, isSecOpArgFlag | 21, 31 }, conditionRegMoveFieldConv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 5, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleCompare, { 0, 6, 9, 11, 16, isSecOpArgFlag | 21, 31 }, pairedSingleCompareConv); {
 			currLayout->setArgumentReservations({
 				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
@@ -1974,23 +2079,30 @@ namespace lava::ppc
 
 		if (output.good())
 		{
-			output << "PowerPC Assembly Instruction Dictionary:\n";
+			output << "PowerPC Assembly Instruction Dictionary - lavaASMHexConvert\n\n";
+			output << "Definitions (" << instructionCount << " Instruction(s)):\n";
 
+			argumentLayout* currInstrLayout = nullptr;
 			for (auto i = instructionDictionary.cbegin(); i != instructionDictionary.end(); i++)
 			{
 				for (auto u = i->second.secondaryOpCodeToInstructions.cbegin(); u != i->second.secondaryOpCodeToInstructions.end(); u++)
 				{
+					output << "\t";
 					if (u->second.isUnofficialInstr)
 					{
-						output << "[Note: Unofficial] ";
+						output << "*";
 					}
+					currInstrLayout = u->second.getArgLayoutPtr();
+
 					output << "[" << i->first;
 					if (u->second.secondaryOpCode != USHRT_MAX)
 					{
 						output << ", " << u->first;
 					}
-					output << "] " << u->second.mnemonic << " (" << u->second.name << ") [0x" << std::hex << u->second.canonForm << std::dec << "]";
+					output << "] ";
+					output << u->second.mnemonic << " (" << u->second.name << ") [0x" << std::hex << u->second.canonForm << std::dec << "]";
 					output << " {Ex: " << convertInstructionHexToString(u->second.getTestHex()) << "}\n";
+					output << "\t\tArgs: " << u->second.getArgLayoutString() << "\n";
 				}
 			}
 
