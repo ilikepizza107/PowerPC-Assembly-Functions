@@ -1548,7 +1548,11 @@ namespace lava::ppc
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegSASwapWithRc);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer2RegSASwapWithSHAndRc);
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_LSWI, {0, 6, 11, 16, isSecOpArgFlag | 21, 31}, lswiConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_LSWI, {0, 6, 11, 16, isSecOpArgFlag | 21, 31}, lswiConv); {
+			currLayout->setArgumentReservations({
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RLWNM, { 0, 6, 11, 16, 21, 26, 31 }, rlwnmConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltCompare, { 0, 6, 9, 11, 16, isSecOpArgFlag | 21, 31 }, floatCompareConv); {
@@ -1660,7 +1664,6 @@ namespace lava::ppc
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
-		
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MemSyncNoReg, {0, 6, 11, 16, isSecOpArgFlag | 21, 31}, defaultAsmInstrToStrFunc); {
 			currLayout->setArgumentReservations({
 				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
@@ -2083,8 +2086,9 @@ namespace lava::ppc
 			// Operation: EXTSH
 			currentInstruction = currentOpGroup->pushInstruction("Extend Sign Half Word", "extsh", asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, 922);
 
-			// Operation: LSWI, LSWX
+			// Operation: LSWI, STSWI
 			currentInstruction = currentOpGroup->pushInstruction("Load String Word Immediate", "lswi", asmInstructionArgLayout::aIAL_LSWI, 597);
+			currentInstruction = currentOpGroup->pushInstruction("Store String Word Immediate", "stswi", asmInstructionArgLayout::aIAL_LSWI, 725);
 
 			// Operation: CMPW, CMPLW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", asmInstructionArgLayout::aIAL_CMPW, 0);
