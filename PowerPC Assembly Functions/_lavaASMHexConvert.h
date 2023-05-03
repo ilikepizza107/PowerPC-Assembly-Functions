@@ -133,6 +133,8 @@ namespace lava::ppc
 		aIAL_Flt4RegBCSwapWithRC,
 		aIAL_MoveToFromSPReg,
 		aIAL_MoveToFromMSReg,
+		aIAL_MoveToFromSegReg,
+		aIAL_MoveToFromSegInReg,
 		aIAL_ConditionRegLogicals,
 		aIAL_ConditionRegMoveField,
 		aIAL_PairedSingleCompare,

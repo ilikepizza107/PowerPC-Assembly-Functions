@@ -1010,6 +1010,34 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string moveToFromSegRegConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			result << " r" << argumentsIn[1];
+			result << ", " << argumentsIn[3];
+		}
+
+		return result.str();
+	}
+	std::string moveToFromSegInRegConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 	std::string conditionRegLogicalsConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -1520,6 +1548,19 @@ namespace lava::ppc
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSegReg, { 0, 6, 11, 12, 16, isSecOpArgFlag | 21, 31 }, moveToFromSegRegConv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSegInReg, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, moveToFromSegInRegConv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, conditionRegLogicalsConv); {
 			currLayout->setArgumentReservations({
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
@@ -2015,6 +2056,14 @@ namespace lava::ppc
 			currentInstruction = currentOpGroup->pushInstruction("Move from Machine State Register", "mfmsr", asmInstructionArgLayout::aIAL_MoveToFromMSReg, 83);
 			currentInstruction = currentOpGroup->pushInstruction("Move to Machine State Register", "mtmsr", asmInstructionArgLayout::aIAL_MoveToFromMSReg, 146);
 			currentInstruction = currentOpGroup->pushInstruction("Move from Condition Register", "mfcr", asmInstructionArgLayout::aIAL_MoveToFromMSReg, 19);
+
+			// Operation: MFSR, MTSR
+			currentInstruction = currentOpGroup->pushInstruction("Move from Segment Register", "mfsr", asmInstructionArgLayout::aIAL_MoveToFromSegReg, 595);
+			currentInstruction = currentOpGroup->pushInstruction("Move to Segment Register", "mtsr", asmInstructionArgLayout::aIAL_MoveToFromSegReg, 210);
+
+			// Operation: MFSRIN, MTSRIN
+			currentInstruction = currentOpGroup->pushInstruction("Move from Segment Register Indirect", "mfsrin", asmInstructionArgLayout::aIAL_MoveToFromSegInReg, 659);
+			currentInstruction = currentOpGroup->pushInstruction("Move to Segment Register Indirect", "mtsrin", asmInstructionArgLayout::aIAL_MoveToFromSegInReg, 242);
 
 			// Operation: DCBF, DCBI
 			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Flush", "dcbf", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 86);
