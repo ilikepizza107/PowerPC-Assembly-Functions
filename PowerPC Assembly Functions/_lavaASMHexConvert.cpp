@@ -222,7 +222,7 @@ namespace lava::ppc
 			if (currResTargetIndex < argumentStartBits.size())
 			{
 				argMaskStart = argumentStartBits[currResTargetIndex];
-				argMaskEnd = ((currResTargetIndex + 1) < argumentStartBits.size()) ? (argumentStartBits[currResTargetIndex + 1] - 1) : 31;
+				argMaskEnd = argMaskStart + (getArgLengthInBits(currResTargetIndex) - 1);
 				if (currRes->second == asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO)
 				{
 					reservedZeroMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
@@ -261,18 +261,9 @@ namespace lava::ppc
 	{
 		std::vector<unsigned long> result{};
 
-		unsigned long argumentLength = ULONG_MAX;
 		for (unsigned long i = 0; i < argumentStartBits.size(); i++)
 		{
-			if (i < (argumentStartBits.size() - 1))
-			{
-				argumentLength = argumentStartBits[i + 1] - argumentStartBits[i];
-			}
-			else
-			{
-				argumentLength = 32 - argumentStartBits[i];
-			}
-			result.push_back(extractInstructionArg(instructionHexIn, argumentStartBits[i], argumentLength));
+			result.push_back(extractInstructionArg(instructionHexIn, argumentStartBits[i], getArgLengthInBits(i)));
 		}
 
 		return result;
