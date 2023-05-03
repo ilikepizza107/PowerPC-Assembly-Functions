@@ -1286,7 +1286,27 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string mtcrfConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
 
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			if (argumentsIn[3] == 0xFF)
+			{
+				result << "mtcr";
+			}
+			else
+			{
+				result << instructionIn->mnemonic;
+				result << " 0x" << std::hex << argumentsIn[3] << std::dec << ",";
+			}
+			result << " r" << argumentsIn[1];
+		}
+
+		return result.str();
+	}
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr() const
 	{
@@ -1642,6 +1662,13 @@ namespace lava::ppc
 			currLayout->setArgumentReservations({
 				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTCRF, { 0, 6, 11, 12, 20, isSecOpArgFlag | 21, 31 }, mtcrfConv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
@@ -2088,6 +2115,9 @@ namespace lava::ppc
 
 			// Operation: MCRXR
 			currentInstruction = currentOpGroup->pushInstruction("Move to Condition Register from XER", "mcrxr", asmInstructionArgLayout::aIAL_MCRXR, 512);
+
+			// Operation: MTCRF
+			currentInstruction = currentOpGroup->pushInstruction("Move to Condition Register Fields", "mtcrf", asmInstructionArgLayout::aIAL_MTCRF, 144);
 		}
 
 

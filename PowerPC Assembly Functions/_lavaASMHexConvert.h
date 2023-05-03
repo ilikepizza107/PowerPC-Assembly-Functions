@@ -152,6 +152,7 @@ namespace lava::ppc
 		aIAL_MemSyncNoReg,
 		aIAL_MFTB,
 		aIAL_MCRXR,
+		aIAL_MTCRF,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout
