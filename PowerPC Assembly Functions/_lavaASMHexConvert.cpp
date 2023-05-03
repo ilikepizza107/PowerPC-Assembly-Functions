@@ -670,6 +670,21 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string integer3RegNoRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 	std::string integer3RegWithRc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -1515,6 +1530,16 @@ namespace lava::ppc
 				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_STWCX, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegNoRc); {
+			currLayout->setArgumentReservations({
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegNoRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegNoRc); {
+			currLayout->setArgumentReservations({
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegWithRc);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer2RegSASwapWithRc); {
 			currLayout->setArgumentReservations({
@@ -1635,16 +1660,7 @@ namespace lava::ppc
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_LWARX, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegWithRc); {
-			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				});
-		}
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_STWCX, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegWithRc); {
-			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE },
-				});
-		}
+		
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MemSyncNoReg, {0, 6, 11, 16, isSecOpArgFlag | 21, 31}, defaultAsmInstrToStrFunc); {
 			currLayout->setArgumentReservations({
 				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
@@ -2069,7 +2085,6 @@ namespace lava::ppc
 
 			// Operation: LSWI, LSWX
 			currentInstruction = currentOpGroup->pushInstruction("Load String Word Immediate", "lswi", asmInstructionArgLayout::aIAL_LSWI, 597);
-			currentInstruction = currentOpGroup->pushInstruction("Load String Word Immediate" + opName_IndexedString, "lswx", asmInstructionArgLayout::aIAL_Int3RegWithRC, 533);
 
 			// Operation: CMPW, CMPLW
 			currentInstruction = currentOpGroup->pushInstruction("Compare Word", "cmpw", asmInstructionArgLayout::aIAL_CMPW, 0);
@@ -2106,9 +2121,15 @@ namespace lava::ppc
 			// Operation: EIEIO, SYNC
 			currentInstruction = currentOpGroup->pushInstruction("Enforce In-Order Execution of I/O", "eieio", asmInstructionArgLayout::aIAL_MemSyncNoReg, 854);
 			currentInstruction = currentOpGroup->pushInstruction("Synchronize", "sync", asmInstructionArgLayout::aIAL_MemSyncNoReg, 598);
-			// Operation: LWARX, STWCX.
-			currentInstruction = currentOpGroup->pushInstruction("Load Word and Reserve Indexed", "lwarx", asmInstructionArgLayout::aIAL_LWARX, 20);
-			currentInstruction = currentOpGroup->pushInstruction("Store Word Conditional Indexed", "stwcx", asmInstructionArgLayout::aIAL_STWCX, 150);
+
+			// Operation: LWARX, LSWX, STSWX, ECIWX, ECOWX
+			currentInstruction = currentOpGroup->pushInstruction("Load Word and Reserve" + opName_IndexedString, "lwarx", asmInstructionArgLayout::aIAL_Int3RegNoRC, 20);
+			currentInstruction = currentOpGroup->pushInstruction("Load String Word" + opName_IndexedString, "lswx", asmInstructionArgLayout::aIAL_Int3RegNoRC, 533);
+			currentInstruction = currentOpGroup->pushInstruction("Store String Word" + opName_IndexedString, "stswx", asmInstructionArgLayout::aIAL_Int3RegNoRC, 661);
+			currentInstruction = currentOpGroup->pushInstruction("External Control In Word" + opName_IndexedString, "eciwx", asmInstructionArgLayout::aIAL_Int3RegNoRC, 310);
+			currentInstruction = currentOpGroup->pushInstruction("External Control Out Word" + opName_IndexedString, "ecowx", asmInstructionArgLayout::aIAL_Int3RegNoRC, 438);
+			// Operation: STWCX.
+			currentInstruction = currentOpGroup->pushInstruction("Store Word Conditional" + opName_IndexedString, "stwcx.", asmInstructionArgLayout::aIAL_STWCX, 150);
 
 			// Operation: MFTB
 			currentInstruction = currentOpGroup->pushInstruction("Move from Time Base", "mftb", asmInstructionArgLayout::aIAL_MFTB, 371);
