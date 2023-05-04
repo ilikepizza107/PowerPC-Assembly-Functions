@@ -7,6 +7,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <set>
 #include <fstream>
 
 namespace lava::ppc
@@ -128,6 +129,7 @@ namespace lava::ppc
 		aIAL_FltCompare,
 		aIAL_FltLoadStore,
 		aIAL_FltLoadStoreIndexed,
+		aIAL_Flt1RegWithRC,
 		aIAL_Flt2RegOmitAWithRC,
 		aIAL_Flt3RegOmitBWithRC,
 		aIAL_Flt3RegOmitCWithRC,
@@ -153,6 +155,9 @@ namespace lava::ppc
 		aIAL_MFTB,
 		aIAL_MCRXR,
 		aIAL_MTCRF,
+		aIAL_MTFSB0,
+		aIAL_MTFSF,
+		aIAL_MTFSFI,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout
@@ -198,8 +203,14 @@ namespace lava::ppc
 	};
 	struct asmPrOpCodeGroup
 	{
+	private:
+		struct startLenPairCompare
+		{
+			bool operator() (std::pair<unsigned char, unsigned char> a, std::pair<unsigned char, unsigned char> b) const;
+		};
+	public:
 		asmPrimaryOpCodes primaryOpCode = asmPrimaryOpCodes::aPOC_NULL;
-		std::vector<std::pair<unsigned char, unsigned char>> secondaryOpCodeStartsAndLengths{};
+		std::set<std::pair<unsigned char, unsigned char>, startLenPairCompare> secOpCodeStartsAndLengths;
 		std::map<unsigned short, asmInstruction> secondaryOpCodeToInstructions{};
 
 		asmPrOpCodeGroup() {};

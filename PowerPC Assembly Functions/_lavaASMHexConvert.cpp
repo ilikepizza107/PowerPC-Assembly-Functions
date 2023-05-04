@@ -882,6 +882,23 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string float1RegWithRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " f" << argumentsIn[1];
+		}
+
+		return result.str();
+	}
 	std::string float2RegOmitAWithRcConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -1322,6 +1339,60 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string mtfsb0Conv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[5])
+			{
+				result << '.';
+			}
+			result << " cr" << argumentsIn[1];
+		}
+
+		return result.str();
+	}
+	std::string mtfsfConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " 0x" << std::hex << argumentsIn[2] << std::dec;
+			result << ", f" << argumentsIn[4];
+		}
+
+		return result.str();
+	}
+	std::string mtfsfiConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 8)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[7])
+			{
+				result << '.';
+			}
+			result << " cr" << argumentsIn[1];
+			result << ", " << argumentsIn[4];
+		}
+
+		return result.str();
+	}
+
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr() const
 	{
@@ -1418,6 +1489,10 @@ namespace lava::ppc
 	}
 
 	// asmPrOpCodeGroup
+	bool asmPrOpCodeGroup::startLenPairCompare::operator() (std::pair<unsigned char, unsigned char> a, std::pair<unsigned char, unsigned char> b) const
+	{
+		return (a.first != b.first) ? a.first < b.first : a.second > b.second;
+	}
 	unsigned long instructionCount = 0x00;
 	asmInstruction* asmPrOpCodeGroup::pushInstruction(std::string nameIn, std::string mnemIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn)
 	{
@@ -1435,9 +1510,9 @@ namespace lava::ppc
 
 			argumentLayout* layoutPtr = result->getArgLayoutPtr();
 
-			if (!secondaryOpCodeStartsAndLengths.empty())
+			if (!secOpCodeStartsAndLengths.empty())
 			{
-				unsigned char expectedSecOpCodeEnd = secondaryOpCodeStartsAndLengths[0].first + secondaryOpCodeStartsAndLengths[0].second;
+				unsigned char expectedSecOpCodeEnd = secOpCodeStartsAndLengths.begin()->first + secOpCodeStartsAndLengths.begin()->second;
 				result->canonForm |= result->secondaryOpCode << (32 - expectedSecOpCodeEnd);
 			}
 
@@ -1474,7 +1549,7 @@ namespace lava::ppc
 			result->primaryOpCode = opCodeIn;
 			if (secOpCodeStart != UCHAR_MAX && secOpCodeLength != UCHAR_MAX)
 			{
-				result->secondaryOpCodeStartsAndLengths.push_back({ secOpCodeStart, secOpCodeLength });
+				result->secOpCodeStartsAndLengths.insert({ secOpCodeStart, secOpCodeLength });
 			}
 		}
 
@@ -1563,6 +1638,12 @@ namespace lava::ppc
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, floatLoadStoreIndexedConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt1RegWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, float1RegWithRc); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float2RegOmitAWithRcConv); {
 			currLayout->setArgumentReservations({
 				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
@@ -1692,6 +1773,25 @@ namespace lava::ppc
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTFSB0, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, mtfsb0Conv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTFSF, { 0, 6, 7, 15, 16, isSecOpArgFlag | 21, 31 }, mtfsfConv); {
+			currLayout->setArgumentReservations({
+				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTFSFI, { 0, 6, 9, 11, 16, 20, isSecOpArgFlag | 21, 31 }, mtfsfiConv); {
+			currLayout->setArgumentReservations({
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 5, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1784,7 +1884,7 @@ namespace lava::ppc
 			
 
 			// Instructions Which Use Extended Length SecOp
-			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({21, 10});
+			currentOpGroup->secOpCodeStartsAndLengths.insert({ 21, 10 });
 			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word", "fctiw", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 14);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Convert to Integer Word with Round toward Zero", "fctiwz", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 15);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Round to Single", "frsp", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 12);
@@ -1794,6 +1894,12 @@ namespace lava::ppc
 			currentInstruction = currentOpGroup->pushInstruction("Floating Negative Absolute Value", "fnabs", asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, 136);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Compare Unordered", "fcmpu", asmInstructionArgLayout::aIAL_FltCompare, 0);
 			currentInstruction = currentOpGroup->pushInstruction("Floating Compare Ordered", "fcmpo", asmInstructionArgLayout::aIAL_FltCompare, 32);
+			currentInstruction = currentOpGroup->pushInstruction("Move to Condition Register from FPSCR", "mcrfs", asmInstructionArgLayout::aIAL_ConditionRegMoveField, 64);
+			currentInstruction = currentOpGroup->pushInstruction("Move from FPSCR", "mffs", asmInstructionArgLayout::aIAL_Flt1RegWithRC, 583);
+			currentInstruction = currentOpGroup->pushInstruction("Move to FPSCR Bit 0", "mtfsb0", asmInstructionArgLayout::aIAL_MTFSB0, 70);
+			currentInstruction = currentOpGroup->pushInstruction("Move to FPSCR Bit 1", "mtfsb1", asmInstructionArgLayout::aIAL_MTFSB0, 38);
+			currentInstruction = currentOpGroup->pushInstruction("Move to FPSCR Fields", "mtfsf", asmInstructionArgLayout::aIAL_MTFSF, 711);
+			currentInstruction = currentOpGroup->pushInstruction("Move to FPSCR Field Immediate", "mtfsfi", asmInstructionArgLayout::aIAL_MTFSFI, 134);
 		}
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_FLOAT_S_ARTH, 26, 5);
 		{
@@ -2168,7 +2274,7 @@ namespace lava::ppc
 			currentInstruction = currentOpGroup->pushInstruction("Data Cache Block Set to Zero Locked", "dcbz_l", asmInstructionArgLayout::aIAL_DataCache3RegOmitD, 1014);
 
 			// Math Instructions (Sec Op Starts at bit 26)
-			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({26, 5});
+			currentOpGroup->secOpCodeStartsAndLengths.insert({ 26, 5 });
 			// Full 4 Reg
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Vector Sum High", "ps_sum0", asmInstructionArgLayout::aIAL_PairedSingle4Reg, 10);
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Vector Sum Low", "ps_sum1", asmInstructionArgLayout::aIAL_PairedSingle4Reg, 11);
@@ -2193,7 +2299,7 @@ namespace lava::ppc
 
 
 			// Indexed LoadStore Instructions (Sec Op Starts at bit 25)
-			currentOpGroup->secondaryOpCodeStartsAndLengths.push_back({25, 6});
+			currentOpGroup->secOpCodeStartsAndLengths.insert({ 25, 6 });
 			// PSQ_LX, PSQ_LUX
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Load" + opName_IndexedString, "psq_lx", asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, 6);
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Load" + opName_WithUpdateIndexedString, "psq_lux", asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, 38);
@@ -2230,17 +2336,15 @@ namespace lava::ppc
 			asmPrOpCodeGroup* opCodeGroup = &instructionDictionary[opCode];
 			asmInstruction* targetInstruction = nullptr;
 
-			if (opCodeGroup->secondaryOpCodeStartsAndLengths.empty())
+			if (opCodeGroup->secOpCodeStartsAndLengths.empty())
 			{
 				targetInstruction = &opCodeGroup->secondaryOpCodeToInstructions.begin()->second;
 			}
 			else
 			{
 				unsigned short secondaryOpCode = USHRT_MAX;
-				std::pair<unsigned char, unsigned char>* currPair = nullptr;
-				for (unsigned long i = 0; targetInstruction == nullptr && i < opCodeGroup->secondaryOpCodeStartsAndLengths.size(); i++)
+				for (auto currPair = opCodeGroup->secOpCodeStartsAndLengths.cbegin(); targetInstruction == nullptr && currPair != opCodeGroup->secOpCodeStartsAndLengths.cend(); currPair++)
 				{
-					currPair = &opCodeGroup->secondaryOpCodeStartsAndLengths[i];
 					secondaryOpCode = (unsigned short)extractInstructionArg(hexIn, currPair->first, currPair->second);
 					if (opCodeGroup->secondaryOpCodeToInstructions.find(secondaryOpCode) != opCodeGroup->secondaryOpCodeToInstructions.end())
 					{
