@@ -196,6 +196,28 @@ namespace lava::ppc
 
 		return maskStr;
 	}
+	std::string getTOEncodingString(unsigned char TOIn)
+	{
+		std::string result = "";
+
+		switch (TOIn)
+		{
+		case 16: {result = "lt"; break; } // Lesser
+		case 20: {result = "le"; break; } // Lesser or Equal
+		case 8: {result = "gt"; break; } // Greater
+		case 12: {result = "ge"; break; } // Greater or Equal
+		case 2: {result = "llt"; break; } // Logically Lesser
+		case 6: {result = "lle"; break; } // Logically Lesser or Equal
+		case 1: {result = "lgt"; break; } // Logically Greater
+		case 5: {result = "lge"; break; } // Logically Greater or Equal
+		case 4: {result = "eq"; break; } // Equal
+		case 24: {result = "ne"; break; } // Not Equal
+		case 31: {result = "-"; break; } // Unconditional
+		default: {break; }
+		}
+
+		return result;
+	}
 
 	// argumentLayout
 	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
@@ -1392,6 +1414,68 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string twConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			std::string simpleTOMnem = getTOEncodingString(argumentsIn[1]);
+			if (!simpleTOMnem.empty())
+			{
+				if (simpleTOMnem.front() == '-')
+				{
+					result << "trap";
+				}
+				else
+				{
+					result << instructionIn->mnemonic << simpleTOMnem << " r" << argumentsIn[2] << ", r" << argumentsIn[3];
+				}
+			}
+			else
+			{
+				result << instructionIn->mnemonic << " " << argumentsIn[1] << ", r" << argumentsIn[2] << ", r" << argumentsIn[3];
+
+			}
+		}
+
+		return result.str();
+	}
+	std::string twiConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 4)
+		{
+			std::string simpleTOMnem = getTOEncodingString(argumentsIn[1]);
+			std::string signedImmString = unsignedImmArgToSignedString(argumentsIn[3], instructionIn->getArgLayoutPtr()->getArgLengthInBits(3));
+			if (!simpleTOMnem.empty() && simpleTOMnem.front() != '-')
+			{
+				result << "tw" << simpleTOMnem << "i r" << argumentsIn[2] << ", " << signedImmString;
+			}
+			else
+			{
+				result << instructionIn->mnemonic << " " << argumentsIn[1] << ", r" << argumentsIn[2] << ", " << signedImmString;
+			}
+		}
+
+		return result.str();
+	}
+	std::string tlbieConv(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 6)
+		{
+			result << instructionIn->mnemonic;
+			result << " r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 
 	// asmInstruction
 	argumentLayout* asmInstruction::getArgLayoutPtr() const
@@ -1792,6 +1876,36 @@ namespace lava::ppc
 				{ 5, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_TW, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, twConv); {
+			currLayout->setArgumentReservations({
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_TWI, { 0, 6, 11, 16 }, twiConv);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_TLBIE, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, tlbieConv); {
+			currLayout->setArgumentReservations({
+				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RFI, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, defaultAsmInstrToStrFunc); {
+			currLayout->setArgumentReservations({
+				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_SC, { 0, 6, 11, 16, 30, 31 }, defaultAsmInstrToStrFunc); {
+			currLayout->setArgumentReservations({
+				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE },
+				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
 
 		// Branch Instructions
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_BC);
@@ -1829,6 +1943,9 @@ namespace lava::ppc
 
 			// Operation: ISYNC
 			currentInstruction = currentOpGroup->pushInstruction("Instruction Synchronize", "isync", asmInstructionArgLayout::aIAL_MemSyncNoReg, 150);
+
+			// Operation: RFI
+			currentInstruction = currentOpGroup->pushInstruction("Return from Interrupt", "rfi", asmInstructionArgLayout::aIAL_RFI, 50);
 		}
 
 		// Compare Instructions
@@ -2249,6 +2366,13 @@ namespace lava::ppc
 
 			// Operation: MTCRF
 			currentInstruction = currentOpGroup->pushInstruction("Move to Condition Register Fields", "mtcrf", asmInstructionArgLayout::aIAL_MTCRF, 144);
+
+			// Operation: TW
+			currentInstruction = currentOpGroup->pushInstruction("Trap Word", "tw", asmInstructionArgLayout::aIAL_TW, 4);
+
+			// Operation: TLBIE, TLBSYNC
+			currentInstruction = currentOpGroup->pushInstruction("Translation Lookaside Buffer Invalidate Entry", "tlbie", asmInstructionArgLayout::aIAL_TLBIE, 306);
+			currentInstruction = currentOpGroup->pushInstruction("TLB Synchronize", "tlbsync", asmInstructionArgLayout::aIAL_RFI, 566);
 		}
 
 
@@ -2323,6 +2447,14 @@ namespace lava::ppc
 		{
 			currentInstruction = currentOpGroup->pushInstruction("Paired Single Quantized Store" + opName_WithUpdateString, "psq_stu", asmInstructionArgLayout::aIAL_PairedSingleQLoadStore);
 		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_TWI);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("Trap Word Immediate", "twi", asmInstructionArgLayout::aIAL_TWI);
+		}
+		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_SC);
+		{
+			currentInstruction = currentOpGroup->pushInstruction("System Call", "sc", asmInstructionArgLayout::aIAL_SC);
+		}
 		return;
 	}
 
@@ -2372,6 +2504,7 @@ namespace lava::ppc
 			output << "Definitions (" << instructionCount << " Instruction(s)):\n";
 
 			argumentLayout* currInstrLayout = nullptr;
+			unsigned long currInstrTestHex = ULONG_MAX;
 			for (auto i = instructionDictionary.cbegin(); i != instructionDictionary.end(); i++)
 			{
 				for (auto u = i->second.secondaryOpCodeToInstructions.cbegin(); u != i->second.secondaryOpCodeToInstructions.end(); u++)
@@ -2390,7 +2523,8 @@ namespace lava::ppc
 					}
 					output << "] ";
 					output << u->second.mnemonic << " (" << u->second.name << ") [0x" << std::hex << u->second.canonForm << std::dec << "]";
-					output << " {Ex: " << convertInstructionHexToString(u->second.getTestHex()) << "}\n";
+					currInstrTestHex = u->second.getTestHex();
+					output << " {Ex: " << convertInstructionHexToString(currInstrTestHex) << "\t# 0x" << std::hex << currInstrTestHex << std::dec << "}\n";
 					output << "\t\tArgs: " << u->second.getArgLayoutString() << "\n";
 				}
 			}

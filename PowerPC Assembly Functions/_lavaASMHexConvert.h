@@ -84,6 +84,9 @@ namespace lava::ppc
 		aPOC_PSQ_LU = 57,
 		aPOC_PSQ_ST = 60,
 		aPOC_PSQ_STU = 61,
+		// Misc.
+		aPOC_SC = 17,
+		aPOC_TWI = 3,
 	};
 
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
@@ -158,6 +161,11 @@ namespace lava::ppc
 		aIAL_MTFSB0,
 		aIAL_MTFSF,
 		aIAL_MTFSFI,
+		aIAL_TW,
+		aIAL_TWI,
+		aIAL_RFI,
+		aIAL_SC,
+		aIAL_TLBIE,
 		aIAL_LAYOUT_COUNT,
 	};
 	struct argumentLayout
