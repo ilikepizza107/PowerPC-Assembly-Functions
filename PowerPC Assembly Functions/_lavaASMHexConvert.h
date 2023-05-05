@@ -12,14 +12,11 @@
 
 namespace lava::ppc
 {
-	// lavaASMHexConvert v1.1.0 - A utility for disassembling 32-bit IBM PowerPC Assembly Instruction Hex into readable code.
-	// Conventions and Concessions:
-	// - This library presently supports only a subset of the 32-bit PPC ASM instruction set. It offers no support for 64-bit
-	//		exclusive instructions.
-	// - To simplify parsing, some opcode 31 integer arithmetic operations which use bit 21 to encode the OE flag have instead
-	//		had their definitions split into two explicit operations, one with the "o" suffix, and one without. The variants
-	//		using the "o" suffix have had 0b1000000000 ORed into their recorded secondary opcode so that they still parse correctly.
-	//
+	// lavaASMHexConvert v1.0.0 - A utility for disassembling 32-bit IBM PowerPC Assembly Instruction Hex into readable PPC ASM.
+	// This library provides support for the 32-bit PPC ASM instruction set, along with most additional instructions introduced by
+	// or required by the Broadway instruction set (Paired Single instructions being the most significant addition from that set).
+	// It offers no support for 64-bit exclusive instructions whatsoever, nor for any optional instructions not used in the Broadway
+	// instruction set.
 
 	enum class asmPrimaryOpCodes
 	{
@@ -118,8 +115,10 @@ namespace lava::ppc
 		aIAL_IntLogicalIMM,
 		aIAL_IntLoadStore,
 		aIAL_IntLoadStoreIdx,
+		aIAL_IntArith2RegWithOEAndRC,
+		aIAL_IntArith3RegWithOEAndRC,
+		aIAL_IntArith3RegWithNoOEAndRC,
 		aIAL_Int2RegWithSIMM,
-		aIAL_Int2RegWithRC,
 		aIAL_STWCX,
 		aIAL_Int3RegNoRC,
 		aIAL_Int3RegWithRC,
@@ -199,7 +198,6 @@ namespace lava::ppc
 		unsigned long canonForm = ULONG_MAX;
 		unsigned short secondaryOpCode = USHRT_MAX;
 		asmInstructionArgLayout layoutID = asmInstructionArgLayout::aIAL_NULL;
-		bool isUnofficialInstr = 0;
 
 		asmInstruction() {};
 		asmInstruction(asmPrimaryOpCodes prOpIn, std::string nameIn, std::string mnemIn, unsigned short secOpIn, unsigned long canonIn) :
@@ -224,7 +222,6 @@ namespace lava::ppc
 		asmPrOpCodeGroup() {};
 
 		asmInstruction* pushInstruction(std::string nameIn, std::string mnemIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn = USHRT_MAX);
-		asmInstruction* pushOverflowVersionOfInstruction(asmInstruction* originalInstrIn);
 	};
 
 	extern std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary;

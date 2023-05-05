@@ -2,7 +2,6 @@
 
 namespace lava::ppc
 {
-	constexpr unsigned long overflowSecondaryOpcodeFlag = 0b1000000000;
 	constexpr unsigned char isSecOpArgFlag = 0b10000000;
 	const std::string opName_WithOverflowString = " w/ Overflow";
 	const std::string opName_WithUpdateString = " w/ Update";
@@ -659,6 +658,51 @@ namespace lava::ppc
 
 		return result.str();
 	}
+	std::string integerArith2RegWithOEAndRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[4])
+			{
+				result << "o";
+			}
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+		}
+
+		return result.str();
+	}
+	std::string integerArith3RegWithOEAndRc(asmInstruction* instructionIn, unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
+		if (argumentsIn.size() >= 7)
+		{
+			result << instructionIn->mnemonic;
+			if (argumentsIn[4])
+			{
+				result << "o";
+			}
+			if (argumentsIn[6])
+			{
+				result << '.';
+			}
+			result << " r" << argumentsIn[1];
+			result << ", r" << argumentsIn[2];
+			result << ", r" << argumentsIn[3];
+		}
+
+		return result.str();
+	}
 	std::string integer2RegWithSIMMConv(asmInstruction* instructionIn, unsigned long hexIn)
 	{
 		std::stringstream result;
@@ -670,24 +714,6 @@ namespace lava::ppc
 			result << " r" << argumentsIn[1];
 			result << ", r" << argumentsIn[2] << ", ";
 			result << unsignedImmArgToSignedString(argumentsIn[3], 16, 1);
-		}
-
-		return result.str();
-	}
-	std::string integer2RegWithRc(asmInstruction* instructionIn, unsigned long hexIn)
-	{
-		std::stringstream result;
-
-		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
-		if (argumentsIn.size() >= 6)
-		{
-			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
-			{
-				result << '.';
-			}
-			result << " r" << argumentsIn[1];
-			result << ", r" << argumentsIn[2];
 		}
 
 		return result.str();
@@ -1607,19 +1633,6 @@ namespace lava::ppc
 
 		return result;
 	}
-	asmInstruction* asmPrOpCodeGroup::pushOverflowVersionOfInstruction(asmInstruction* originalInstrIn)
-	{
-		asmInstruction* result = nullptr;
-
-		if (originalInstrIn != nullptr)
-		{
-			result = pushInstruction(originalInstrIn->name + opName_WithOverflowString, originalInstrIn->mnemonic + "o",
-				originalInstrIn->layoutID, originalInstrIn->secondaryOpCode | overflowSecondaryOpcodeFlag);
-			result->isUnofficialInstr = 1;
-		}
-
-		return result;
-	}
 
 	// instructionDictionary
 	std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary{};
@@ -1683,12 +1696,18 @@ namespace lava::ppc
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
-		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer2RegWithRc); {
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntArith2RegWithOEAndRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 22, 31 }, integerArith2RegWithOEAndRc); {
 			currLayout->setArgumentReservations({
 				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 22, 31 }, integerArith3RegWithOEAndRc);
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntArith3RegWithNoOEAndRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 22, 31 }, integerArith3RegWithOEAndRc); {
+			currLayout->setArgumentReservations({
+				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				});
+		}
+		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_STWCX, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegNoRc); {
 			currLayout->setArgumentReservations({
 				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE },
@@ -2177,55 +2196,44 @@ namespace lava::ppc
 		// Op Code 31
 		currentOpGroup = pushOpCodeGroupToDict(asmPrimaryOpCodes::aPOC_31, 21, 10);
 		{
-			// Operation: ADD, ADDO
-			currentInstruction = currentOpGroup->pushInstruction("Add", "add", asmInstructionArgLayout::aIAL_Int3RegWithRC, 266);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: ADDC, ADDCO
-			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", "addc", asmInstructionArgLayout::aIAL_Int3RegWithRC, 10);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: ADDE, ADDEO
-			currentInstruction = currentOpGroup->pushInstruction("Add Extended", "adde", asmInstructionArgLayout::aIAL_Int3RegWithRC, 138);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: ADDME, ADDMEO
-			currentInstruction = currentOpGroup->pushInstruction("Add to Minus One Extended", "addme", asmInstructionArgLayout::aIAL_Int2RegWithRC, 234);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: ADDZE, ADDZEO
-			currentInstruction = currentOpGroup->pushInstruction("Add to Zero Extended", "addze", asmInstructionArgLayout::aIAL_Int2RegWithRC, 202);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Arithmetic Instructions with OE (Sec Op Starts at bit 22)
+			currentOpGroup->secOpCodeStartsAndLengths.insert({ 22, 9 });
+			// Operation: ADD
+			currentInstruction = currentOpGroup->pushInstruction("Add", "add", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 266);
+			// Operation: ADDC
+			currentInstruction = currentOpGroup->pushInstruction("Add Carrying", "addc", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 10);
+			// Operation: ADDE
+			currentInstruction = currentOpGroup->pushInstruction("Add Extended", "adde", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 138);
+			// Operation: ADDME
+			currentInstruction = currentOpGroup->pushInstruction("Add to Minus One Extended", "addme", asmInstructionArgLayout::aIAL_IntArith2RegWithOEAndRC, 234);
+			// Operation: ADDZE
+			currentInstruction = currentOpGroup->pushInstruction("Add to Zero Extended", "addze", asmInstructionArgLayout::aIAL_IntArith2RegWithOEAndRC, 202);
 
+			// Operation: DIVW
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word", "divw", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 491);
+			// Operation: DIVWU
+			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", "divwu", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 459);
 
-			// Operation: DIVW, DIVWO
-			currentInstruction = currentOpGroup->pushInstruction("Divide Word", "divw", asmInstructionArgLayout::aIAL_Int3RegWithRC, 491);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: DIVWU, DIVWUO
-			currentInstruction = currentOpGroup->pushInstruction("Divide Word Unsigned", "divwu", asmInstructionArgLayout::aIAL_Int3RegWithRC, 459);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: MULHW
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", "mulhw", asmInstructionArgLayout::aIAL_IntArith3RegWithNoOEAndRC, 75);
+			// Operation: MULHWU
+			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", "mulhwu", asmInstructionArgLayout::aIAL_IntArith3RegWithNoOEAndRC, 11);
+			// Operation: MULLW
+			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", "mullw", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 235);
 
-			// Operation: MULHW, MULHWO
-			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word", "mulhw", asmInstructionArgLayout::aIAL_Int3RegWithRC, 75);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: MULHWU, MULHWUO
-			currentInstruction = currentOpGroup->pushInstruction("Multiply High Word Unsigned", "mulhwu", asmInstructionArgLayout::aIAL_Int3RegWithRC, 11);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: MULLW, MULLWO
-			currentInstruction = currentOpGroup->pushInstruction("Multiply Low Word", "mullw", asmInstructionArgLayout::aIAL_Int3RegWithRC, 235);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: SUBF
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From", "subf", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 40);
+			// Operation: SUBFC
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", "subfc", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 8);
+			// Operation: SUBFE
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, 136);
+			// Operation: SUBFME
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Minus One Extended", "subfme", asmInstructionArgLayout::aIAL_IntArith2RegWithOEAndRC, 232);
+			// Operation: SUBFZE
+			currentInstruction = currentOpGroup->pushInstruction("Subtract From Zero Extended", "subfze", asmInstructionArgLayout::aIAL_IntArith2RegWithOEAndRC, 200);
 
-			// Operation: SUBF, SUBFO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From", "subf", asmInstructionArgLayout::aIAL_Int3RegWithRC, 40);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: SUBFC, SUBFCO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Carrying", "subfc", asmInstructionArgLayout::aIAL_Int3RegWithRC, 8);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: SUBFE, SUBFEO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Extended", "subfe", asmInstructionArgLayout::aIAL_Int3RegWithRC, 136);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: SUBFME, SUBFMEO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Minus One Extended", "subfme", asmInstructionArgLayout::aIAL_Int2RegWithRC, 232);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
-			// Operation: SUBFZE, SUBFZEO
-			currentInstruction = currentOpGroup->pushInstruction("Subtract From Zero Extended", "subfze", asmInstructionArgLayout::aIAL_Int2RegWithRC, 200);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			// Operation: NEG
+			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", asmInstructionArgLayout::aIAL_IntArith2RegWithOEAndRC, 104);
 
 
 			// Operation: LBZX, LBZUX
@@ -2274,10 +2282,7 @@ namespace lava::ppc
 			// Operation: STFIWX
 			currentInstruction = currentOpGroup->pushInstruction("Store Floating-Point as Integer Word Indexed", "stfiwx", asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, 983);
 
-
-			// Operation: NEG, NEGO
-			currentInstruction = currentOpGroup->pushInstruction("Negate", "neg", asmInstructionArgLayout::aIAL_Int2RegWithRC, 104);
-			currentInstruction = currentOpGroup->pushOverflowVersionOfInstruction(currentInstruction);
+			
 			// Operation: AND, ANDC
 			currentInstruction = currentOpGroup->pushInstruction("AND", "and", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 28);
 			currentInstruction = currentOpGroup->pushInstruction("AND" + opName_WithComplString, "andc", asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, 60);
@@ -2510,10 +2515,6 @@ namespace lava::ppc
 				for (auto u = i->second.secondaryOpCodeToInstructions.cbegin(); u != i->second.secondaryOpCodeToInstructions.end(); u++)
 				{
 					output << "\t";
-					if (u->second.isUnofficialInstr)
-					{
-						output << "*";
-					}
 					currInstrLayout = u->second.getArgLayoutPtr();
 
 					output << "[" << i->first;
