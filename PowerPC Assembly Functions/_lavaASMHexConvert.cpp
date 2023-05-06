@@ -1380,14 +1380,14 @@ namespace lava::ppc
 
 	// asmInstruction Functions
 	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
-	void argumentLayout::setArgumentReservations(std::vector<std::pair<char, asmInstructionArgReservationStatus>> reservationsIn)
+	void argumentLayout::setArgumentReservations(std::vector<std::pair<char, asmInstructionArgResStatus>> reservationsIn)
 	{
 		reservedZeroMask = 0;
 		reservedOneMask = 0;
 
 		unsigned char argMaskStart = UCHAR_MAX;
 		unsigned char argMaskEnd = UCHAR_MAX;
-		std::pair<char, asmInstructionArgReservationStatus>* currRes = nullptr;
+		std::pair<char, asmInstructionArgResStatus>* currRes = nullptr;
 		unsigned char currResTargetIndex = UCHAR_MAX;
 		for (std::size_t i = 0; i < reservationsIn.size(); i++)
 		{
@@ -1404,7 +1404,7 @@ namespace lava::ppc
 			{
 				argMaskStart = argumentStartBits[currResTargetIndex];
 				argMaskEnd = argMaskStart + (getArgLengthInBits(currResTargetIndex) - 1);
-				if (currRes->second == asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO)
+				if (currRes->second == asmInstructionArgResStatus::aIARS_MUST_BE_ZERO)
 				{
 					reservedZeroMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
 				}
@@ -1467,20 +1467,20 @@ namespace lava::ppc
 
 		return result;
 	}
-	asmInstructionArgReservationStatus argumentLayout::getArgReservation(unsigned char argIndex) const
+	asmInstructionArgResStatus argumentLayout::getArgReservation(unsigned char argIndex) const
 	{
-		asmInstructionArgReservationStatus result = asmInstructionArgReservationStatus::aIARS_NULL;
+		asmInstructionArgResStatus result = asmInstructionArgResStatus::aIARS_NULL;
 
 		if (argIndex < argumentStartBits.size())
 		{
 			unsigned long argBottomBitMask = 0b1 << (31 - argumentStartBits[argIndex]);
 			if (argBottomBitMask & reservedZeroMask)
 			{
-				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO;
+				result = asmInstructionArgResStatus::aIARS_MUST_BE_ZERO;
 			}
 			else if (argBottomBitMask & reservedOneMask)
 			{
-				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE;
+				result = asmInstructionArgResStatus::aIARS_MUST_BE_ONE;
 			}
 		}
 
@@ -1568,9 +1568,9 @@ namespace lava::ppc
 					{
 						argContentStr = "SecOp: " + std::to_string(secondaryOpCode);
 					}
-					else if (currInstrLayout->getArgReservation(argIdx) != asmInstructionArgReservationStatus::aIARS_NULL)
+					else if (currInstrLayout->getArgReservation(argIdx) != asmInstructionArgResStatus::aIARS_NULL)
 					{
-						if (currInstrLayout->getArgReservation(argIdx) == asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO)
+						if (currInstrLayout->getArgReservation(argIdx) == asmInstructionArgResStatus::aIARS_MUST_BE_ZERO)
 						{
 							argContentStr =  "R0";
 						}
@@ -1667,28 +1667,28 @@ namespace lava::ppc
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_BC, { 0, 6, 11, 16, 30, 31 }, bcConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_BCLR, { 0, 6, 11, 16, 19, isSecOpArgFlag | 21, 31 }, bclrConv); {
 			currLayout->setArgumentReservations({
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_BCCTR, { 0, 6, 11, 16, 19, isSecOpArgFlag | 21, 31 }, bcctrConv); {
 			currLayout->setArgumentReservations({
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPW, { 0, 6, 9, 10, 11, 16, isSecOpArgFlag | 21, 31 }, cmpwConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
@@ -1697,236 +1697,236 @@ namespace lava::ppc
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStore, { 0, 6, 11, 16 }, integerLoadStoreConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntLoadStoreIdx, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegWithRc); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntArith2RegWithOEAndRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 22, 31 }, integerArith2RegWithOEAndRc); {
 			currLayout->setArgumentReservations({
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntArith3RegWithOEAndRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 22, 31 }, integerArith3RegWithOEAndRc);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntArith3RegWithNoOEAndRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 22, 31 }, integerArith3RegWithOEAndRc); {
 			currLayout->setArgumentReservations({
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegWithSIMM, { 0, 6, 11, 16 }, integer2RegWithSIMMConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_STWCX, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegNoRc); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ONE },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegNoRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegNoRc); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegWithRc);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer2RegSASwapWithRc); {
 			currLayout->setArgumentReservations({
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int3RegSASwapWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer3RegSASwapWithRc);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Int2RegSASwapWithSHAndRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, integer2RegSASwapWithSHAndRc);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_LSWI, {0, 6, 11, 16, isSecOpArgFlag | 21, 31}, lswiConv); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RLWNM, { 0, 6, 11, 16, 21, 26, 31 }, rlwnmConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RLWINM, { 0, 6, 11, 16, 21, 26, 31 }, rlwinmConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltCompare, { 0, 6, 9, 11, 16, isSecOpArgFlag | 21, 31 }, floatCompareConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStore, { 0, 6, 11, 16 }, floatLoadStoreConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_FltLoadStoreIndexed, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, floatLoadStoreIndexedConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt1RegWithRC, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, float1RegWithRc); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt2RegOmitAWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float2RegOmitAWithRcConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitBWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float3RegOmitBWithRcConv); {
 			currLayout->setArgumentReservations({
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitCWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float3RegOmitCWithRcConv); {
 			currLayout->setArgumentReservations({ 
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt3RegOmitACWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float3RegOmitACWithRcConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_Flt4RegBCSwapWithRC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, float4RegBCSwapWithRcConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSPReg, { 0, 6, 11, isSecOpArgFlag | 21, 31 }, moveToFromSPRegConv); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromMSReg, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, moveToFromMSRegConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSegReg, { 0, 6, 11, 12, 16, isSecOpArgFlag | 21, 31 }, moveToFromSegRegConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MoveToFromSegInReg, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, moveToFromSegInRegConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegLogicals, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, conditionRegLogicalsConv); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_ConditionRegMoveField, { 0, 6, 9, 11, 14, 16, isSecOpArgFlag | 21, 31 }, conditionRegMoveFieldConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 5, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 5, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleCompare, { 0, 6, 9, 11, 16, isSecOpArgFlag | 21, 31 }, pairedSingleCompareConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStore, { 0, 6, 11, 16, 17, 20 }, pairedSingleQLoadStoreConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingleQLoadStoreIdx, { 0, 6, 11, 16, 21, 22, isSecOpArgFlag | 25, 31 }, pairedSingleQLoadStoreIndexedConv); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3Reg, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, pairedSingle3RegWithRcConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle3RegOmitA, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, pairedSingle3RegOmitAWithRcConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4Reg, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, pairedSingle4RegWithRcConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitB, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, pairedSingle4RegOmitBWithRcConv); {
 			currLayout->setArgumentReservations({
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, pairedSingle4RegOmitCWithRcConv); {
 			currLayout->setArgumentReservations({
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_PairedSingle4RegOmitAC, { 0, 6, 11, 16, 21, isSecOpArgFlag | 26, 31 }, pairedSingle4RegOmitACWithRcConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_DataCache3RegOmitD, {0, 6, 11, 16, isSecOpArgFlag | 21, 31}, dataCache3RegOmitDConv); {
 			currLayout->setArgumentReservations({
-				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MemSyncNoReg, {0, 6, 11, 16, isSecOpArgFlag | 21, 31}, defaultAsmInstrToStrFunc); {
 			currLayout->setArgumentReservations({
-				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MFTB, { 0, 6, 11, isSecOpArgFlag | 21, 31 }, mftbConv); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MCRXR, { 0, 6, 9, 11, 16, isSecOpArgFlag | 21, 31 }, mcrxrConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTCRF, { 0, 6, 11, 12, 20, isSecOpArgFlag | 21, 31 }, mtcrfConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTFSB0, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, mtfsb0Conv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTFSF, { 0, 6, 7, 15, 16, isSecOpArgFlag | 21, 31 }, mtfsfConv); {
 			currLayout->setArgumentReservations({
-				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_MTFSFI, { 0, 6, 9, 11, 16, 20, isSecOpArgFlag | 21, 31 }, mtfsfiConv); {
 			currLayout->setArgumentReservations({
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 5, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 5, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_TW, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, twConv); {
 			currLayout->setArgumentReservations({
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_TWI, { 0, 6, 11, 16 }, twiConv);
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_TLBIE, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, tlbieConv); {
 			currLayout->setArgumentReservations({
-				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_RFI, { 0, 6, 11, 16, isSecOpArgFlag | 21, 31 }, defaultAsmInstrToStrFunc); {
 			currLayout->setArgumentReservations({
-				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_SC, { 0, 6, 11, 16, 30, 31 }, defaultAsmInstrToStrFunc); {
 			currLayout->setArgumentReservations({
-				{ 1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 2, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 3, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
-				{ 4, asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE },
-				{ -1, asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO },
+				{ 1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 4, asmInstructionArgResStatus::aIARS_MUST_BE_ONE },
+				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 

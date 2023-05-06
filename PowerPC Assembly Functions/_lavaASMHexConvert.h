@@ -96,12 +96,6 @@ namespace lava::ppc
 		aPOC_SC = 17,
 		aPOC_TWI = 3,
 	};
-	enum class asmInstructionArgReservationStatus
-	{
-		aIARS_NULL = -1,
-		aIARS_MUST_BE_ZERO = 0,
-		aIARS_MUST_BE_ONE = 1,
-	};
 	enum class asmInstructionArgLayout
 	{
 		aIAL_NULL = -1,
@@ -169,6 +163,12 @@ namespace lava::ppc
 		aIAL_TLBIE,
 		aIAL_LAYOUT_COUNT,
 	};
+	enum class asmInstructionArgResStatus
+	{
+		aIARS_NULL = -1,
+		aIARS_MUST_BE_ZERO = 0,
+		aIARS_MUST_BE_ONE = 1,
+	};
 
 	// Utility
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
@@ -190,12 +190,12 @@ namespace lava::ppc
 		argumentLayout() {};
 
 		// First is Reserved Zero Mask, Second is Reserved One Mask (If Bit == 1, Must Respect Reservation)
-		void setArgumentReservations(std::vector<std::pair<char, asmInstructionArgReservationStatus>> reservationsIn);
+		void setArgumentReservations(std::vector<std::pair<char, asmInstructionArgResStatus>> reservationsIn);
 		unsigned long getSecOpMask();
 		bool validateReservedArgs(unsigned long instructionHexIn);
 		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
 		unsigned char getArgLengthInBits(unsigned char argIndex) const;
-		asmInstructionArgReservationStatus getArgReservation(unsigned char argIndex) const;
+		asmInstructionArgResStatus getArgReservation(unsigned char argIndex) const;
 	};
 	extern std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary;
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn, 
