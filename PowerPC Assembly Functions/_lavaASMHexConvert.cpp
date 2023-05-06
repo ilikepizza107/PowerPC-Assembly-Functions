@@ -670,7 +670,7 @@ namespace lava::ppc
 			{
 				result << "o";
 			}
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -692,7 +692,7 @@ namespace lava::ppc
 			{
 				result << "o";
 			}
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -741,7 +741,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -760,7 +760,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -784,7 +784,7 @@ namespace lava::ppc
 			else
 			{
 				result << instructionIn->mnemonic;
-				if (argumentsIn[5])
+				if (argumentsIn.back())
 				{
 					result << '.';
 				}
@@ -804,7 +804,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -823,7 +823,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -845,7 +845,7 @@ namespace lava::ppc
 			unsigned char ME = argumentsIn[5];
 
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -871,7 +871,7 @@ namespace lava::ppc
 			unsigned char ME = argumentsIn[5];
 
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -938,7 +938,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -955,7 +955,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -973,7 +973,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -992,7 +992,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1010,7 +1010,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1029,7 +1029,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1204,7 +1204,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1223,7 +1223,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1241,7 +1241,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1261,7 +1261,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1280,7 +1280,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1299,7 +1299,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1395,7 +1395,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 6)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[5])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1412,7 +1412,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 7)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[6])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
@@ -1430,7 +1430,7 @@ namespace lava::ppc
 		if (argumentsIn.size() >= 8)
 		{
 			result << instructionIn->mnemonic;
-			if (argumentsIn[7])
+			if (argumentsIn.back())
 			{
 				result << '.';
 			}
