@@ -7,6 +7,9 @@ namespace lava
 	int GCTBuildOverride = INT_MAX;
 	int CloseOnFinishBypass = INT_MAX;
 
+	decConvStream::decConvStream() { buf << std::setfill('0'); };
+	hexConvStream::hexConvStream() { buf << std::hex << std::uppercase << std::internal << std::setfill('0'); };
+	fltConvStream::fltConvStream() { buf << std::fixed << std::showpoint << std::uppercase << std::internal << std::setfill('0'); };
 	int stringToNum(const std::string& stringIn, bool allowNeg, int defaultVal)
 	{
 		int result = defaultVal;
@@ -24,57 +27,21 @@ namespace lava
 		}
 		return result;
 	}
-	std::string numToHexStringWithPadding(unsigned long long numIn, unsigned char paddingLength)
-	{
-		std::stringstream convBuff;
-		convBuff << std::hex << numIn;
-		std::string result = convBuff.str();
-		for (int i = 0; i < result.size(); i++)
-		{
-			result[i] = std::toupper(result[i]);
-		}
-		if (result.size() < paddingLength)
-		{
-			result = std::string(paddingLength - result.size(), '0') + result;
-		}
-		return result;
-	}
-	std::string numToDecStringWithPadding(unsigned long long numIn, unsigned char paddingLength)
-	{
-		std::string result = std::to_string(numIn);
-		if (result.size() < paddingLength)
-		{
-			result = std::string(paddingLength - result.size(), '0') + result;
-		}
-		return result;
-	}
-	std::string numToDecStringWithPadding(signed long long numIn, unsigned char paddingLength)
-	{
-		std::string result = std::to_string(numIn);
-		if (result.size() < paddingLength)
-		{
-			result = std::string(paddingLength - result.size(), '0') + result;
-		}
-		return result;
-	}
 	std::string doubleToStringWithPadding(double dblIn, unsigned char paddingLength, unsigned long precisionIn)
 	{
-		std::string result = "";
-
-		std::ostringstream out;
-		out.precision(precisionIn);
-		out << std::fixed << dblIn;
-		result = out.str();
-		if (result.size() < paddingLength)
-		{
-			result = std::string(paddingLength - result.size(), '0') + result;
-		}
-
-		return result;
+		static fltConvStream conv;
+		conv.buf.str("");
+		conv.buf.precision(precisionIn);
+		conv.buf << std::setw(paddingLength) << dblIn;
+		return conv.buf.str();
 	}
 	std::string floatToStringWithPadding(float fltIn, unsigned char paddingLength, unsigned long precisionIn)
 	{
-		return doubleToStringWithPadding(fltIn, paddingLength, precisionIn);
+		static fltConvStream conv;
+		conv.buf.str("");
+		conv.buf.precision(precisionIn);
+		conv.buf << std::setw(paddingLength) << fltIn;
+		return conv.buf.str();
 	}
 
 	bool copyFile(std::string sourceFile, std::string targetFile, bool overwriteExistingFile)
