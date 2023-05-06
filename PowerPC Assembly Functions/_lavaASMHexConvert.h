@@ -28,6 +28,7 @@ namespace lava::ppc
 	//		URL: https://github.com/terorie/ppc750cl
 	//		Used for: Primary reference for Broadway-specific instruction set.
 
+	// Enums
 	enum class asmPrimaryOpCodes
 	{
 		aPOC_NULL = -1,
@@ -95,15 +96,6 @@ namespace lava::ppc
 		aPOC_SC = 17,
 		aPOC_TWI = 3,
 	};
-
-	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
-	unsigned long getInstructionOpCode(unsigned long hexIn);
-
-
-	struct asmInstruction;
-	// Default function, just returns mnemonic.
-	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn);
-
 	enum class asmInstructionArgReservationStatus
 	{
 		aIARS_NULL = -1,
@@ -177,6 +169,15 @@ namespace lava::ppc
 		aIAL_TLBIE,
 		aIAL_LAYOUT_COUNT,
 	};
+
+	// Utility
+	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
+	unsigned long getInstructionOpCode(unsigned long hexIn);
+
+	// Argument Layouts
+	struct asmInstruction;
+	// Default function, just returns mnemonic.
+	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn);
 	struct argumentLayout
 	{
 		asmInstructionArgLayout layoutID = asmInstructionArgLayout::aIAL_NULL;
@@ -200,6 +201,7 @@ namespace lava::ppc
 	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn, 
 		std::string(*convFuncIn)(asmInstruction*, unsigned long) = defaultAsmInstrToStrFunc);
 	
+	// Instructions
 	struct asmInstruction
 	{
 		asmPrimaryOpCodes primaryOpCode = asmPrimaryOpCodes::aPOC_NULL;
@@ -217,6 +219,8 @@ namespace lava::ppc
 		unsigned long getTestHex() const;
 		std::string getArgLayoutString() const;
 	};
+
+	// Primary Op Code Groups
 	struct asmPrOpCodeGroup
 	{
 	private:
@@ -234,10 +238,10 @@ namespace lava::ppc
 		asmInstruction* pushInstruction(std::string nameIn, std::string mnemIn, asmInstructionArgLayout layoutIDIn, unsigned short secOpIn = USHRT_MAX);
 	};
 
+	// Dictionary
 	extern std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary;
 	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, unsigned char secOpCodeStart = UCHAR_MAX, unsigned char secOpCodeLength = UCHAR_MAX);
 	void buildInstructionDictionary();
-
 	std::string convertInstructionHexToString(unsigned long hexIn);
 	bool summarizeInstructionDictionary(std::ostream& output);
 	bool summarizeInstructionDictionary(std::string outputFilepath);

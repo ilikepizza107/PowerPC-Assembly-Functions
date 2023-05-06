@@ -11,6 +11,7 @@ namespace lava::ppc
 	const std::string opName_DoublePrecision = " (Double-Precision)";
 	const std::string opName_SinglePrecision = " Single";
 
+
 	// Utility
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length)
 	{
@@ -218,134 +219,7 @@ namespace lava::ppc
 		return result;
 	}
 
-	// argumentLayout
-	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
-	void argumentLayout::setArgumentReservations(std::vector<std::pair<char, asmInstructionArgReservationStatus>> reservationsIn)
-	{
-		reservedZeroMask = 0;
-		reservedOneMask = 0;
-
-		unsigned char argMaskStart = UCHAR_MAX;
-		unsigned char argMaskEnd = UCHAR_MAX;
-		std::pair<char, asmInstructionArgReservationStatus>* currRes = nullptr;
-		unsigned char currResTargetIndex = UCHAR_MAX;
-		for (std::size_t i = 0; i < reservationsIn.size(); i++)
-		{
-			currRes = &reservationsIn[i];
-			if (currRes->first < 0)
-			{
-				currResTargetIndex = argumentStartBits.size() + currRes->first;
-			}
-			else
-			{
-				currResTargetIndex = currRes->first;
-			}
-			if (currResTargetIndex < argumentStartBits.size())
-			{
-				argMaskStart = argumentStartBits[currResTargetIndex];
-				argMaskEnd = argMaskStart + (getArgLengthInBits(currResTargetIndex) - 1);
-				if (currRes->second == asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO)
-				{
-					reservedZeroMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
-				}
-				else
-				{
-					reservedOneMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
-				}
-			}
-		}
-	}
-	unsigned long argumentLayout::getSecOpMask()
-	{
-		unsigned long result = 0;
-
-		if (secOpArgIndex < argumentStartBits.size())
-		{
-			unsigned char maskStart = argumentStartBits[secOpArgIndex];
-			unsigned char maskEnd = ((secOpArgIndex + 1) < argumentStartBits.size()) ? argumentStartBits[secOpArgIndex + 1] - 1 : 31;
-
-			result = maskBetweenBitsInclusive(maskStart, maskEnd, 0);
-		}
-
-		return result;
-	}
-	bool argumentLayout::validateReservedArgs(unsigned long instructionHexIn)
-	{
-		bool result = 1;
-
-		result &= (instructionHexIn & reservedZeroMask) == 0;
-		result &= (instructionHexIn & reservedOneMask) == reservedOneMask;
-
-		return result;
-	}
-	std::vector<unsigned long> argumentLayout::splitHexIntoArguments(unsigned long instructionHexIn)
-	{
-		std::vector<unsigned long> result{};
-
-		for (unsigned long i = 0; i < argumentStartBits.size(); i++)
-		{
-			result.push_back(extractInstructionArg(instructionHexIn, argumentStartBits[i], getArgLengthInBits(i)));
-		}
-
-		return result;
-	}
-	unsigned char argumentLayout::getArgLengthInBits(unsigned char argIndex) const
-	{
-		unsigned char result = UCHAR_MAX;
-
-		if (argIndex < argumentStartBits.size())
-		{
-			if ((argIndex + 1) < argumentStartBits.size())
-			{
-				result = argumentStartBits[argIndex + 1] - argumentStartBits[argIndex];
-			}
-			else
-			{
-				result = 32 - argumentStartBits.back();
-			}
-		}
-
-		return result;
-	}
-	asmInstructionArgReservationStatus argumentLayout::getArgReservation(unsigned char argIndex) const
-	{
-		asmInstructionArgReservationStatus result = asmInstructionArgReservationStatus::aIARS_NULL;
-
-		if (argIndex < argumentStartBits.size())
-		{
-			unsigned long argBottomBitMask = 0b1 << (31 - argumentStartBits[argIndex]);
-			if (argBottomBitMask & reservedZeroMask)
-			{
-				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO;
-			}
-			else if (argBottomBitMask & reservedOneMask)
-			{
-				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE;
-			}
-		}
-
-		return result;
-	}
-
-
-	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn,
-		std::string(*convFuncIn)(asmInstruction*, unsigned long))
-	{
-		argumentLayout* targetLayout = &layoutDictionary[(int)IDIn];
-		targetLayout->layoutID = IDIn;
-		targetLayout->argumentStartBits = argStartsIn;
-		for (std::size_t i = 0; targetLayout->secOpArgIndex == UCHAR_MAX && i < targetLayout->argumentStartBits.size(); i++)
-		{
-			if (targetLayout->argumentStartBits[i] & isSecOpArgFlag)
-			{
-				targetLayout->argumentStartBits[i] &= ~isSecOpArgFlag;
-				targetLayout->secOpArgIndex = i;
-			}
-		}
-		targetLayout->conversionFunc = convFuncIn;
-		return targetLayout;
-	}
-
+	
 	// Instruction to String Conversion Predicates
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn)
 	{
@@ -1503,7 +1377,135 @@ namespace lava::ppc
 		return result.str();
 	}
 
-	// asmInstruction
+
+	// asmInstruction Functions
+	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
+	void argumentLayout::setArgumentReservations(std::vector<std::pair<char, asmInstructionArgReservationStatus>> reservationsIn)
+	{
+		reservedZeroMask = 0;
+		reservedOneMask = 0;
+
+		unsigned char argMaskStart = UCHAR_MAX;
+		unsigned char argMaskEnd = UCHAR_MAX;
+		std::pair<char, asmInstructionArgReservationStatus>* currRes = nullptr;
+		unsigned char currResTargetIndex = UCHAR_MAX;
+		for (std::size_t i = 0; i < reservationsIn.size(); i++)
+		{
+			currRes = &reservationsIn[i];
+			if (currRes->first < 0)
+			{
+				currResTargetIndex = argumentStartBits.size() + currRes->first;
+			}
+			else
+			{
+				currResTargetIndex = currRes->first;
+			}
+			if (currResTargetIndex < argumentStartBits.size())
+			{
+				argMaskStart = argumentStartBits[currResTargetIndex];
+				argMaskEnd = argMaskStart + (getArgLengthInBits(currResTargetIndex) - 1);
+				if (currRes->second == asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO)
+				{
+					reservedZeroMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
+				}
+				else
+				{
+					reservedOneMask |= maskBetweenBitsInclusive(argMaskStart, argMaskEnd, 0);
+				}
+			}
+		}
+	}
+	unsigned long argumentLayout::getSecOpMask()
+	{
+		unsigned long result = 0;
+
+		if (secOpArgIndex < argumentStartBits.size())
+		{
+			unsigned char maskStart = argumentStartBits[secOpArgIndex];
+			unsigned char maskEnd = ((secOpArgIndex + 1) < argumentStartBits.size()) ? argumentStartBits[secOpArgIndex + 1] - 1 : 31;
+
+			result = maskBetweenBitsInclusive(maskStart, maskEnd, 0);
+		}
+
+		return result;
+	}
+	bool argumentLayout::validateReservedArgs(unsigned long instructionHexIn)
+	{
+		bool result = 1;
+
+		result &= (instructionHexIn & reservedZeroMask) == 0;
+		result &= (instructionHexIn & reservedOneMask) == reservedOneMask;
+
+		return result;
+	}
+	std::vector<unsigned long> argumentLayout::splitHexIntoArguments(unsigned long instructionHexIn)
+	{
+		std::vector<unsigned long> result{};
+
+		for (unsigned long i = 0; i < argumentStartBits.size(); i++)
+		{
+			result.push_back(extractInstructionArg(instructionHexIn, argumentStartBits[i], getArgLengthInBits(i)));
+		}
+
+		return result;
+	}
+	unsigned char argumentLayout::getArgLengthInBits(unsigned char argIndex) const
+	{
+		unsigned char result = UCHAR_MAX;
+
+		if (argIndex < argumentStartBits.size())
+		{
+			if ((argIndex + 1) < argumentStartBits.size())
+			{
+				result = argumentStartBits[argIndex + 1] - argumentStartBits[argIndex];
+			}
+			else
+			{
+				result = 32 - argumentStartBits.back();
+			}
+		}
+
+		return result;
+	}
+	asmInstructionArgReservationStatus argumentLayout::getArgReservation(unsigned char argIndex) const
+	{
+		asmInstructionArgReservationStatus result = asmInstructionArgReservationStatus::aIARS_NULL;
+
+		if (argIndex < argumentStartBits.size())
+		{
+			unsigned long argBottomBitMask = 0b1 << (31 - argumentStartBits[argIndex]);
+			if (argBottomBitMask & reservedZeroMask)
+			{
+				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ZERO;
+			}
+			else if (argBottomBitMask & reservedOneMask)
+			{
+				result = asmInstructionArgReservationStatus::aIARS_MUST_BE_ONE;
+			}
+		}
+
+		return result;
+	}
+	argumentLayout* defineArgLayout(asmInstructionArgLayout IDIn, std::vector<unsigned char> argStartsIn,
+		std::string(*convFuncIn)(asmInstruction*, unsigned long))
+	{
+		argumentLayout* targetLayout = &layoutDictionary[(int)IDIn];
+		targetLayout->layoutID = IDIn;
+		targetLayout->argumentStartBits = argStartsIn;
+		for (std::size_t i = 0; targetLayout->secOpArgIndex == UCHAR_MAX && i < targetLayout->argumentStartBits.size(); i++)
+		{
+			if (targetLayout->argumentStartBits[i] & isSecOpArgFlag)
+			{
+				targetLayout->argumentStartBits[i] &= ~isSecOpArgFlag;
+				targetLayout->secOpArgIndex = i;
+			}
+		}
+		targetLayout->conversionFunc = convFuncIn;
+		return targetLayout;
+	}
+
+
+	// asmInstruction Functions
 	argumentLayout* asmInstruction::getArgLayoutPtr() const
 	{
 		argumentLayout* result = nullptr;
@@ -1598,7 +1600,8 @@ namespace lava::ppc
 		return tempArgString.str();
 	}
 
-	// asmPrOpCodeGroup
+
+	// asmPrOpCodeGroup Functions
 	bool asmPrOpCodeGroup::startLenPairCompare::operator() (std::pair<unsigned char, unsigned char> a, std::pair<unsigned char, unsigned char> b) const
 	{
 		return (a.first != b.first) ? a.first < b.first : a.second > b.second;
@@ -1633,6 +1636,7 @@ namespace lava::ppc
 
 		return result;
 	}
+
 
 	// instructionDictionary
 	std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary{};
@@ -2462,7 +2466,6 @@ namespace lava::ppc
 		}
 		return;
 	}
-
 	std::string convertInstructionHexToString(unsigned long hexIn)
 	{
 		std::stringstream result;
