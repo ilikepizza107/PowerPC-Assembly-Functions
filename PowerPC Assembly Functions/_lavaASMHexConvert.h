@@ -17,6 +17,16 @@ namespace lava::ppc
 	// or required by the Broadway instruction set (Paired Single instructions being the most significant addition from that set).
 	// It offers no support for 64-bit exclusive instructions whatsoever, nor for any optional instructions not used in the Broadway
 	// instruction set.
+	// Based Directly on Info From:
+	// - "PowerPC Microprocessor Family: The Programming Environments Manual for 32 and 64-bit Microprocessors (Version 2.3)" - IBM
+	//		URL: http://refspecs.linux-foundation.org/PPC_hrm.2005mar31.pdf
+	//		Used for: Primary reference for info on PowerPC Assembly instruction set and conventions.
+	// - Dolphin Emulator (and associated Github Repository) - Dolphin-EMU Team
+	//		URL: https://github.com/dolphin-emu/dolphin
+	//		Used for: Validating disassembled output, as well as extra formatting reference (particularly with Paired Single instructions).
+	// - ppc750cl: Rust tools for working with the PowerPC 750CL family of processors. - terorie
+	//		URL: https://github.com/terorie/ppc750cl
+	//		Used for: Primary reference for Broadway-specific instruction set.
 
 	enum class asmPrimaryOpCodes
 	{
