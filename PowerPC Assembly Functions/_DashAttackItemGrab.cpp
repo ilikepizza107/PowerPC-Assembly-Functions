@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "_DashAttackItemGrab.h"
 
 const std::string codeVersion = "v1.0.0";

@@ -1,6 +1,7 @@
 #ifndef LAVA_OUTPUT_BUNDLE_V1
 #define LAVA_OUTPUT_BUNDLE_V1
 
+#include "stdafx.h"
 #include <map>
 #include <memory>
 #include <iostream>

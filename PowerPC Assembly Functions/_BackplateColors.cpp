@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "_CSSRosterChange.h"
 
 const std::string codeVersion = "v1.0.0";

@@ -111,6 +111,9 @@
     <ClInclude Include="_lavaASMHexConvert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_AdditionalCode_Util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">
@@ -204,6 +207,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_lavaASMHexConvert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_AdditionalCode_Util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

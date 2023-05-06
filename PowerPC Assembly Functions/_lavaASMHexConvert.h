@@ -1,6 +1,7 @@
 #ifndef LAVA_ASM_HEX_CONVERT_V1_H
 #define LAVA_ASM_HEX_CONVERT_V1_H
 
+#include "stdafx.h"
 #include <functional>
 #include <string>
 #include <sstream>
@@ -9,6 +10,7 @@
 #include <map>
 #include <set>
 #include <fstream>
+#include "_AdditionalCode_Util.h"
 
 namespace lava::ppc
 {

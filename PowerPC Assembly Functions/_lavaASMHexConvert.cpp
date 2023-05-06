@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "_lavaASMHexConvert.h"
 
 namespace lava::ppc

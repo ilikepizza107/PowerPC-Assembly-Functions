@@ -1,6 +1,7 @@
 #ifndef THEME_CHANGE_ASM_H
 #define THEME_CHANGE_ASM_H
 
+#include "stdafx.h"
 #include "_AdditionalCode.h"
 
 //constexpr unsigned long stringStagingLocation = 0x800002B0;

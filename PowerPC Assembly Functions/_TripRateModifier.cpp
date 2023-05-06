@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "_TripRateModifier.h"
 
 const std::string codeVersion = "v1.0.0";

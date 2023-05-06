@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "_lavaOutputSplitter.h"
 
 namespace lava
