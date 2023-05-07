@@ -195,6 +195,7 @@
     <ClInclude Include="_CSSRosterChange.h" />
     <ClInclude Include="_DashAttackItemGrab.h" />
     <ClInclude Include="_lavaBytes.h" />
+    <ClInclude Include="_lavaGeckoHexConvert.h" />
     <ClInclude Include="_lavaOutputSplitter.h" />
     <ClInclude Include="_ThemeChange.h" />
     <ClInclude Include="_TripRateModifier.h" />
@@ -269,6 +270,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="_lavaGeckoHexConvert.cpp" />
     <ClCompile Include="_lavaOutputSplitter.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>

@@ -114,6 +114,9 @@
     <ClInclude Include="_AdditionalCode_Util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_lavaGeckoHexConvert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">
@@ -210,6 +213,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_AdditionalCode_Util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_lavaGeckoHexConvert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
