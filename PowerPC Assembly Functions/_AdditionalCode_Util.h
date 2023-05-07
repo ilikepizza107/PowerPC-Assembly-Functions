@@ -24,7 +24,52 @@ namespace lava
 		std::stringstream buf;
 		fltConvStream();
 	};
-	int stringToNum(const std::string& stringIn, bool allowNeg = 1, int defaultVal = INT_MAX);
+
+	template <typename numType>
+	numType ___stringToNumImpl(const char* stringIn, char** res, int base, std::true_type)
+	{
+		return (numType)std::strtoll(stringIn, res, base);
+	}
+	template <typename numType>
+	numType ___stringToNumImpl(const char* stringIn, char** res, int base, std::false_type)
+	{
+		return (numType)std::strtoull(stringIn, res, base);
+	}
+	template <typename numType>
+	numType stringToNum(const std::string& stringIn, bool allowNeg, numType defaultVal, bool forceHex = 0)
+	{
+		static_assert(std::is_integral<numType>::value == 1, "Type must be an integer primitve.");
+
+		numType result = defaultVal;
+
+		if (!stringIn.empty())
+		{
+			std::size_t firstNonWhitespaceCharFound = SIZE_MAX;
+			for (std::size_t i = 0; i < stringIn.size() && firstNonWhitespaceCharFound == SIZE_MAX; i++)
+			{
+				if (!isblank(static_cast<unsigned char>(stringIn[i])))
+				{
+					firstNonWhitespaceCharFound = i;
+				}
+			}
+			if (firstNonWhitespaceCharFound != SIZE_MAX)
+			{
+				int base = (forceHex || stringIn.find("0x") == firstNonWhitespaceCharFound) ? 16 : 10;
+				char* res = nullptr;
+				result = ___stringToNumImpl<numType>(stringIn.c_str(), &res, base, std::is_signed<numType>());
+				if (res != (stringIn.c_str() + stringIn.size()))
+				{
+					result = defaultVal;
+				}
+				if (result < 0 && !allowNeg)
+				{
+					result = defaultVal;
+				}
+			}
+		}
+
+		return result;
+	}
 	template <typename numType>
 	std::string numToHexStringWithPadding(numType numIn, unsigned char paddingLength)
 	{
@@ -47,6 +92,7 @@ namespace lava
 	}
 	std::string doubleToStringWithPadding(double dblIn, unsigned char paddingLength, unsigned long precisionIn = 2);
 	std::string floatToStringWithPadding(float fltIn, unsigned char paddingLength, unsigned long precisionIn = 2);
+	bool readNCharsFromStream(std::string& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos = 0);
 }
 
 #endif

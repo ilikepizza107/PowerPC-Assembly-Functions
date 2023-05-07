@@ -6,23 +6,6 @@ namespace lava
 	decConvStream::decConvStream() { buf << std::setfill('0'); };
 	hexConvStream::hexConvStream() { buf << std::hex << std::uppercase << std::internal << std::setfill('0'); };
 	fltConvStream::fltConvStream() { buf << std::fixed << std::showpoint << std::uppercase << std::internal << std::setfill('0'); };
-	int stringToNum(const std::string& stringIn, bool allowNeg, int defaultVal)
-	{
-		int result = defaultVal;
-		std::string manipStr = stringIn;
-		int base = (manipStr.find("0x") == 0) ? 16 : 10;
-		char* res = nullptr;
-		result = std::strtoul(manipStr.c_str(), &res, base);
-		if (res != (manipStr.c_str() + manipStr.size()))
-		{
-			result = defaultVal;
-		}
-		if (result < 0 && !allowNeg)
-		{
-			result = defaultVal;
-		}
-		return result;
-	}
 	std::string doubleToStringWithPadding(double dblIn, unsigned char paddingLength, unsigned long precisionIn)
 	{
 		static fltConvStream conv;
@@ -38,5 +21,25 @@ namespace lava
 		conv.buf.precision(precisionIn);
 		conv.buf << std::setw(paddingLength) << fltIn;
 		return conv.buf.str();
+	}
+	bool readNCharsFromStream(std::string& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos)
+	{
+		bool result = 0;
+
+		if (source.good())
+		{
+			std::size_t originalPos = source.tellg();
+			destination.resize(numToRead);
+			source.read(&destination[0], numToRead);
+			result = source.gcount() == numToRead;
+
+			if (resetStreamPos)
+			{
+				source.seekg(originalPos);
+				source.clear();
+			}
+		}
+
+		return result;
 	}
 }
