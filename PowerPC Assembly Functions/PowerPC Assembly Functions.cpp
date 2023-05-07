@@ -56,7 +56,8 @@ bool ledger::closeLedgerEntry()
 
 	return result;
 }
-bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn, bool codeUnattested)
+
+bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, const std::string codeNameIn, const std::string codeBlurbIn, bool codeUnattested)
 {
 	// Determine Hashtag Border Length
 	std::size_t hashtagStrLength = (codeNameIn.empty()) ? 0 : std::max((int)codeNameIn.size(), 20);
@@ -80,7 +81,6 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 			}
 		}
 	}
-
 	if (hashtagStrLength > 0)
 	{
 		// Write Code Name, Blurb, and Hashtags
@@ -98,110 +98,8 @@ bool ledger::writeCodeToASMStream(std::ostream& output, const std::string codeNa
 		output << std::string(hashtagStrLength, '#') << "\n";
 	}
 
-	// Write Code Body
-	std::size_t position = 0;
-	std::size_t numLines = codeIn.size() / 0x10;
-
-	//codeUnattested = 1;
-	if (!codeUnattested)
-	{
-		bool inHook = 0;
-		std::string instruction = "";
-		std::string currHex = "";
-		for (std::size_t i = 0; i < numLines * 2; i++)
-		{
-			currHex = std::string(codeIn.data() + position, 0x8);
-			if (!inHook)
-			{
-				if (currHex.find("C2") == 0)
-				{
-					output << "HOOK @ $80" << currHex.substr(2, 6) << "\n{\n";
-					i++;
-					position += 0x8;
-					inHook = 1;
-				}
-				else if (currHex.find("C3") == 0)
-				{
-					output << "HOOK @ $81" << currHex.substr(2, 6) << "\n{\n";
-					i++;
-					position += 0x8;
-					inHook = 1;
-				}
-			}
-			else
-			{
-				if (currHex == "00000000")
-				{
-					output << "}\n";
-					inHook = 0;
-				}
-				else
-				{
-					output << "\t";
-					instruction = instructionHexToGCTRMString(currHex);
-					if (!instruction.empty())
-					{
-						output << instruction;
-					}
-					else
-					{
-						output << "* " << currHex;
-					}
-					output << "\n";
-				}
-			}
-			position += 0x8;
-		}
-	}
-	else
-	{
-		for (std::size_t i = 0; i < numLines; i++)
-		{
-			output << "* ";
-			output.write(codeIn.data() + position, 0x08);
-			output << " ";
-			output.write(codeIn.data() + position + 0x08, 0x08);
-			output << "\n";
-			position += 0x10;
-		}
-	}
-	if ((position + 1) < codeIn.size())
-	{
-		std::cerr << "[ERROR] Code Alignment Incorrect!\n";
-	}
-
-	return output.good();
+	return lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength) == expectedLength;
 }
-
-std::string instructionHexToGCTRMString(unsigned long hexIn)
-{
-	return lava::ppc::convertInstructionHexToString(hexIn);
-}
-std::string instructionHexToGCTRMString(std::string hexIn)
-{
-	std::string result = "";
-
-	unsigned long integerConversion = ULONG_MAX;
-	char* res = nullptr;
-	integerConversion = std::strtoul(hexIn.c_str(), &res, 16);
-	if (res == (hexIn.c_str() + hexIn.size()))
-	{
-		result = instructionHexToGCTRMString(integerConversion);
-		if (PRINT_INSTRUCTION_HEX_ALONGSIDE_ASM && !result.empty())
-		{
-			std::size_t relativeCommentLocation = 0x20;
-			std::size_t paddingLength = (result.size() > relativeCommentLocation) ? 0x00 : relativeCommentLocation - result.size();
-			if (paddingLength > 0)
-			{
-				result += std::string(paddingLength, ' ');
-			}
-			result += "# 0x" + hexIn;
-		}
-	}
-
-	return result;
-}
-
 
 //converts char hex digit to decimal
 int HexToDec(char x)
@@ -280,47 +178,16 @@ void MakeGCT(string TextFilePath, string OldGCTFilePath, string NewGCTFilePath)
 
 bool MakeASM(string TextFilePath, string OutputAsmPath)
 {
-	string codeString;
-
 	ifstream textFile(TextFilePath);
-	if (textFile.is_open())
+	if (!textFile.is_open())
 	{
-		getline(textFile, codeString);
-	}
-
-	else {
 		cout << "Error: Unable to open txt file";
 		return false;
 	}
 
-	/*
-	ofstream asmFile(OutputAsmPath);
-	if (asmFile.is_open())
-	{
-		for (int i = 0; i < codeString.length(); i += 16) {
-			asmFile << "* " << codeString.substr(i + 0, 8) << " " << codeString.substr(i + 8, 8);
-			// Minor change here to avoid emitting an extra newline at the very end of the file
-			// Makes output perfectly 1-to-1 with ASMConvert
-			if (i + 16 < codeString.length())
-			{
-				asmFile << "\n";
-			}
-		}
-
-		asmFile.close();
-	}
-	else {
-		cout << "Unable to open ASM file, check the OutputAsmPath";
-		return false;
-	}
-	*/
-
 	ofstream neoASMFile(OutputAsmPath);
 	if (!codeLedger.empty() && neoASMFile.is_open())
 	{
-		std::vector<char> temp{};
-		temp.reserve(0x200);
-
 		std::string tempName = "";
 		unsigned long unknownCount = 0x00;
 		unsigned long unnamedCount = 0x00;
@@ -333,29 +200,22 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 			{
 				tempName = "Unattested Code " + std::to_string(unknownCount);
 				std::size_t unattestedLength = currEntry->codeStartPos - textFile.tellg();
-				temp.resize(unattestedLength);
-				textFile.read(temp.data(), unattestedLength);
-
-				ledger::writeCodeToASMStream(neoASMFile, tempName, "", temp, 1);
-				
+				ledger::writeCodeToASMStream(neoASMFile, textFile, unattestedLength, tempName, "", 1);
 				neoASMFile << "\n";
 				unknownCount++;
 			}
 
-			tempName = currEntry->codeName;
-			if (tempName.empty() && !ALLOW_BLANK_CODE_NAMES_IN_ASM)
-			{
-				tempName = "Unnamed Code " + std::to_string(unnamedCount);
-				unnamedCount++;
-			}
 			std::size_t entryLength = currEntry->length();
 			if (entryLength != SIZE_MAX)
 			{
-				temp.resize(entryLength);
+				tempName = currEntry->codeName;
+				if (tempName.empty() && !ALLOW_BLANK_CODE_NAMES_IN_ASM)
+				{
+					tempName = "Unnamed Code " + std::to_string(unnamedCount);
+					unnamedCount++;
+				}
 				textFile.seekg(currEntry->codeStartPos);
-				textFile.read(temp.data(), entryLength);
-
-				ledger::writeCodeToASMStream(neoASMFile, tempName, currEntry->codeBlurb, temp);
+				ledger::writeCodeToASMStream(neoASMFile, textFile, entryLength, tempName, currEntry->codeBlurb, 0);
 				neoASMFile << "\n";
 			}
 		}

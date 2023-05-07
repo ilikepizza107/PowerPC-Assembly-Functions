@@ -120,6 +120,7 @@ int main(int argc, char** argv)
 	if (std::filesystem::is_directory(outputFolder))
 	{
 		lava::ppc::buildInstructionDictionary();
+		lava::gecko::buildGeckoCodeDictionary();
 		if (OUTPUT_ASM_INSTRUCTION_DICTIONARY)
 		{
 			lava::ppc::summarizeInstructionDictionary(outputFolder + "ASMDictionary.txt");

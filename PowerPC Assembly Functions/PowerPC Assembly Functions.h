@@ -10,7 +10,7 @@
 #include <iostream>
 #include <cassert>
 #include <sstream>
-#include "_lavaASMHexConvert.h"
+#include "_lavaGeckoHexConvert.h"
 using namespace std;
 
 typedef unsigned int u32;
@@ -59,7 +59,6 @@ extern long characterListVersion;
 
 // ASM Output Formatting Settings
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
-#define PRINT_INSTRUCTION_HEX_ALONGSIDE_ASM true
 #define OUTPUT_ASM_INSTRUCTION_DICTIONARY false
 
 //ROTC floating offsets
@@ -295,10 +294,8 @@ namespace ledger
 	bool openLedgerEntry(std::string codeName, std::string codeBlurb = "");
 	bool closeLedgerEntry();
 
-	bool writeCodeToASMStream(std::ostream& output, const std::string codeNameIn, const std::string codeBlurbIn, const std::vector<char>& codeIn, bool codeUnattested = 0);
+	bool writeCodeToASMStream(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, const std::string codeNameIn = "", const std::string codeBlurbIn = "", bool codeUnattested = 0);
 }
-std::string instructionHexToGCTRMString(unsigned long hexIn);
-std::string instructionHexToGCTRMString(std::string hexIn);
 
 // Branch Conditions, Used for JumpToLabel and BC Operations
 struct branchConditionAndConditionBit
