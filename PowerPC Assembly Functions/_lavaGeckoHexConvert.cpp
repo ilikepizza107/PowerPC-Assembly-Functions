@@ -4,6 +4,7 @@
 namespace lava::gecko
 {
 	// Constants
+	constexpr unsigned long signatureBaPoMask = 0x10000000;
 	constexpr unsigned long signatureAddressMask = 0x1FFFFFF;
 	constexpr unsigned long signatureAddressBase = 0x80000000;
 
@@ -12,6 +13,16 @@ namespace lava::gecko
 	{
 		return (signatureAddressMask & codeSignatureIn) | signatureAddressBase;
 	}
+	void appendCommentToString(std::string& destination, std::string commentStr, unsigned long relativeCommentLoc = 0x20)
+	{
+		std::size_t paddingLength = (destination.size() > relativeCommentLoc) ? 0x00 : relativeCommentLoc - destination.size();
+		if (paddingLength > 0)
+		{
+			destination += std::string(paddingLength, ' ');
+		}
+		destination += "# " + commentStr;
+	}
+
 	std::string convertPPCInstructionHex(unsigned long hexIn)
 	{
 		std::string result = "";
@@ -19,13 +30,7 @@ namespace lava::gecko
 		result = lava::ppc::convertInstructionHexToString(hexIn);
 		if (!result.empty())
 		{
-			std::size_t relativeCommentLocation = 0x20;
-			std::size_t paddingLength = (result.size() > relativeCommentLocation) ? 0x00 : relativeCommentLocation - result.size();
-			if (paddingLength > 0)
-			{
-				result += std::string(paddingLength, ' ');
-			}
-			result += "# 0x" + lava::numToHexStringWithPadding(hexIn, 8);
+			appendCommentToString(result, "0x" + lava::numToHexStringWithPadding(hexIn, 8));
 		}
 
 		return result;
@@ -44,6 +49,200 @@ namespace lava::gecko
 	std::size_t defaultGeckoConversionConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		return 0;
+	}
+	std::size_t gecko06CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			bool allPrintChars = 1;
+			bool isEscaped = 0;
+			std::vector<unsigned char> bytesToWrite{};
+			bytesToWrite.reserve(immNum);
+			std::string byteInStr("");
+			unsigned char byteIn = CHAR_MAX;
+			for (unsigned long i = 0; i < immNum; i++)
+			{
+				lava::readNCharsFromStream(byteInStr, codeStreamIn, 2, 0);
+				byteIn = lava::stringToNum<unsigned char>(byteInStr, 0, UCHAR_MAX, 1);
+				bytesToWrite.push_back(byteIn);
+				if (!std::isprint(byteIn))
+				{
+					if (((i + 1) == immNum) && allPrintChars && (byteIn == 0))
+					{
+						isEscaped = 1;
+					}
+					else
+					{
+						allPrintChars = 0;
+					}
+				}
+			}
+
+			std::string outputString = "* " + signatureWord + " " + immWord;
+			appendCommentToString(outputString, codeTypeIn->name + " (" + std::to_string(immNum) + " characters):");
+			std::stringstream commentString("");
+			outputStreamIn << outputString << "\n";
+			std::size_t cursor = 0;
+			std::size_t numFullLines = bytesToWrite.size() / 8;
+			for (unsigned long i = 0; i < numFullLines; i++)
+			{
+				outputString = "* " + lava::numToHexStringWithPadding(lava::bytesToFundamental<unsigned long>(bytesToWrite.data() + cursor), 8);
+				outputString += " " + lava::numToHexStringWithPadding(lava::bytesToFundamental<unsigned long>(bytesToWrite.data() + cursor + 4), 8);
+				commentString.str("");
+				commentString << "\t";
+				if (allPrintChars)
+				{
+					commentString << "\"";
+					for (unsigned long u = 0; u < 8; u++)
+					{
+						commentString << *(char*)(bytesToWrite.data() + cursor + u);
+					}
+					commentString << "\"";
+				}
+				else
+				{
+					commentString << "0x" << lava::numToHexStringWithPadding(*(bytesToWrite.data() + cursor), 2);
+					for (unsigned long u = 1; u < 8; u++)
+					{
+						commentString << ", 0x" << lava::numToHexStringWithPadding(*(bytesToWrite.data() + cursor + u), 2);
+					}
+				}
+				appendCommentToString(outputString, commentString.str());
+				outputStreamIn << outputString << "\n";
+				cursor += 8;
+			}
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t geckoCompareCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			std::string outputStr = "* " + signatureWord + " " + immWord;
+
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name;
+			if (signatureNum & 1)
+			{
+				commentStr << " (With EndIf)";
+				signatureNum &= ~1;
+			}
+			commentStr << ": If Val @ $(";
+			if (signatureNum & signatureBaPoMask)
+			{
+				commentStr << "po +";
+			}
+			else
+			{
+				commentStr << "ba +";
+			}
+			commentStr << " 0x" << lava::numToHexStringWithPadding(signatureNum & signatureAddressMask, 7);
+			commentStr << ") ";
+
+			switch (codeTypeIn->secondaryCodeType % 8)
+			{
+			case 0: { commentStr << "=="; break; }
+			case 2: { commentStr << "!="; break; }
+			case 4: { commentStr << ">"; break; }
+			case 6: { commentStr << "<"; break; }
+			default: {break; }
+			}
+
+			if (codeTypeIn->secondaryCodeType <= 6)
+			{
+				commentStr << " 0x" << lava::numToHexStringWithPadding(immNum, 8);
+			}
+			else
+			{
+				commentStr << " (0x" << lava::numToHexStringWithPadding(immNum >> 0x10, 4) << " & 0x" << lava::numToHexStringWithPadding(immNum & 0xFFFF, 4) << ")";
+			}
+
+			appendCommentToString(outputStr, commentStr.str());
+			outputStreamIn << outputStr << "\n";
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t gecko42CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string addrWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(addrWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long addrNum = lava::stringToNum<unsigned long>(addrWord, 0, ULONG_MAX, 1);
+
+			std::string outputStr = "* " + signatureWord + " " + addrWord;
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name << ": ba ";
+			if (signatureNum & 0x00100000)
+			{
+				commentStr << "+";
+			}
+			commentStr << "= ";
+			if (signatureNum & 0x00010000)
+			{
+				if (signatureNum & signatureBaPoMask)
+				{
+					commentStr << "po + ";
+				}
+				else
+				{
+					commentStr << "ba + ";
+				}
+			}
+			if (signatureNum & 0x00001000)
+			{
+				commentStr << "gr" + lava::numToDecStringWithPadding(signatureNum & 0xF, 0) << " + ";
+			}
+			commentStr << "0x" + addrWord;
+			appendCommentToString(outputStr, commentStr.str());
+
+			outputStreamIn << outputStr << "\n";
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
 	}
 	std::size_t geckoC2CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
@@ -78,6 +277,52 @@ namespace lava::gecko
 			}
 
 			outputStreamIn << "}\n";
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t geckoE0CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			std::string outputStr = "* " + signatureWord + " " + immWord;
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name << ": ";
+			if (immNum >> 0x10)
+			{
+				commentStr << "ba = 0x" << lava::numToHexStringWithPadding(immNum >> 0x10, 4) << "0000";
+			}
+			else
+			{
+				commentStr << "ba unchanged";
+			}
+			commentStr << ", ";
+			if (immNum & 0xFFFF)
+			{
+				commentStr << "po = 0x" << lava::numToHexStringWithPadding(immNum & 0xFFFF, 4) << "0000";
+			}
+			else
+			{
+				commentStr << "po unchanged";
+			}
+
+			appendCommentToString(outputStr, commentStr.str());
+			outputStreamIn << outputStr << "\n";
 
 			result = codeStreamIn.tellg() - initialPos;
 		}
@@ -121,9 +366,32 @@ namespace lava::gecko
 		geckoPrTypeGroup* currentCodeTypeGroup = nullptr;
 		geckoCodeType* currentCodeType = nullptr;
 
+		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_RAMWrite);
+		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("String Write", 0x6, gecko06CodeConv);
+		}
+		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_If);
+		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("32-Bit If Equal", 0x0, geckoCompareCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("32-Bit If Not Equal", 0x2, geckoCompareCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("32-Bit If Greater", 0x4, geckoCompareCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("32-Bit If Lesser", 0x6, geckoCompareCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("16-Bit If Equal", 0x8, geckoCompareCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("16-Bit If Not Equal", 0xA, geckoCompareCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("16-Bit If Greater", 0xC, geckoCompareCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("16-Bit If Lesser", 0xE, geckoCompareCodeConv);
+		}
+		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_BaseAddr);
+		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Base Address", 2, gecko42CodeConv);
+		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM", 2, geckoC2CodeConv);
+		}
+		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Misc);
+		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Full Terminator", 0, geckoE0CodeConv);
 		}
 	}
 

@@ -73,11 +73,11 @@ namespace lava
 	template <typename numType>
 	std::string numToHexStringWithPadding(numType numIn, unsigned char paddingLength)
 	{
-		static_assert(std::is_integral<numType>::value, "Type must be an integer primitve.");
+		static_assert(std::is_integral<numType>::value, "Template type must be a valid integer primitve.");
 
 		static hexConvStream conv;
 		conv.buf.str("");
-		conv.buf << std::setw(paddingLength) << numIn;
+		conv.buf << std::setw(paddingLength) << +numIn;
 		return conv.buf.str();
 	}
 	template <typename numType>
@@ -87,7 +87,7 @@ namespace lava
 
 		static decConvStream conv;
 		conv.buf.str("");
-		conv.buf << std::setw(paddingLength) << numIn;
+		conv.buf << std::setw(paddingLength) << +numIn;
 		return conv.buf.str();
 	}
 	std::string doubleToStringWithPadding(double dblIn, unsigned char paddingLength, unsigned long precisionIn = 2);

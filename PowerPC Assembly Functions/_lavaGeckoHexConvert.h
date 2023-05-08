@@ -2,6 +2,8 @@
 #define GECKO_HEX_CONVERT_V1_H
 
 #include "stdafx.h"
+#include <cctype>
+#include "_lavaBytes.h"
 #include "_lavaASMHexConvert.h"
 
 namespace lava::gecko
