@@ -22,15 +22,14 @@ namespace lava
 		conv.buf << std::setw(paddingLength) << fltIn;
 		return conv.buf.str();
 	}
-	bool readNCharsFromStream(std::string& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos)
+	bool readNCharsFromStream(char* destination, std::istream& source, std::size_t numToRead, bool resetStreamPos)
 	{
 		bool result = 0;
 
 		if (source.good())
 		{
 			std::size_t originalPos = source.tellg();
-			destination.resize(numToRead);
-			source.read(&destination[0], numToRead);
+			source.read(destination, numToRead);
 			result = source.gcount() == numToRead;
 
 			if (resetStreamPos)
@@ -38,6 +37,54 @@ namespace lava
 				source.seekg(originalPos);
 				source.clear();
 			}
+		}
+
+		return result;
+	}
+	bool readNCharsFromStream(std::string& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos)
+	{
+		bool result = 0;
+
+		if (source.good())
+		{
+			std::size_t originalPos = source.tellg();
+			if (destination.size() < numToRead)
+			{
+				destination.resize(numToRead);
+			}
+			readNCharsFromStream(&destination[0], source, numToRead, resetStreamPos);
+		}
+
+		return result;
+	}
+	bool readNCharsFromStream(std::vector<char>& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos)
+	{
+		bool result = 0;
+
+		if (source.good())
+		{
+			std::size_t originalPos = source.tellg();
+			if (destination.size() < numToRead)
+			{
+				destination.resize(numToRead);
+			}
+			readNCharsFromStream(&destination[0], source, numToRead, resetStreamPos);
+		}
+
+		return result;
+	}
+	bool readNCharsFromStream(std::vector<unsigned char>& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos)
+	{
+		bool result = 0;
+
+		if (source.good())
+		{
+			std::size_t originalPos = source.tellg();
+			if (destination.size() < numToRead)
+			{
+				destination.resize(numToRead);
+			}
+			readNCharsFromStream((char*)&destination[0], source, numToRead, resetStreamPos);
 		}
 
 		return result;

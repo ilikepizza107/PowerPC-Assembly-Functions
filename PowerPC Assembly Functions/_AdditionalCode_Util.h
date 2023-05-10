@@ -92,7 +92,20 @@ namespace lava
 	}
 	std::string doubleToStringWithPadding(double dblIn, unsigned char paddingLength, unsigned long precisionIn = 2);
 	std::string floatToStringWithPadding(float fltIn, unsigned char paddingLength, unsigned long precisionIn = 2);
+	bool readNCharsFromStream(char* destination, std::istream& source, std::size_t numToRead, bool resetStreamPos = 0);
 	bool readNCharsFromStream(std::string& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos = 0);
+	bool readNCharsFromStream(std::vector<unsigned char>& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos = 0);
+	bool readNCharsFromStream(std::vector<char>& destination, std::istream& source, std::size_t numToRead, bool resetStreamPos = 0);
+	template <typename numType>
+	numType padLengthTo(numType lengthIn, numType padTo, bool allowZeroPaddingLength = 1)
+	{
+		numType padLength = padTo - (lengthIn % padTo);
+		if (allowZeroPaddingLength && padLength == padTo)
+		{
+			padLength = 0x00;
+		}
+		return lengthIn + padLength;
+	}
 }
 
 #endif
