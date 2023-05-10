@@ -50,6 +50,77 @@ namespace lava::gecko
 	{
 		return 0;
 	}
+	std::size_t geckoBasicRAMWriteCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// Initialize Strings For Output
+			std::string outputString("");
+			std::stringstream commentString("");
+
+			// Output First Line
+			outputString = "* " + signatureWord + " " + immWord;
+			commentString << codeTypeIn->name << " @ $(";
+			if (!(signatureBaPoMask & signatureNum))
+			{
+				commentString << "ba + ";
+			}
+			else
+			{
+				commentString << "po + ";
+			}
+			commentString << "0x" << lava::numToHexStringWithPadding(signatureAddressMask & signatureNum, 7) << "): ";
+			switch (codeTypeIn->secondaryCodeType)
+			{
+			case 00:
+			{
+				commentString << " 0x" << lava::numToHexStringWithPadding((immNum & 0xFF), 2);
+				if (immNum >> 4)
+				{
+					commentString << " (" << ((immNum >> 4) + 1) << " times)";
+				}
+				break;
+			}
+			case 02:
+			{
+				commentString << " 0x" << lava::numToHexStringWithPadding((immNum & 0xFFFF), 4);
+				if (immNum >> 4)
+				{
+					commentString << " (" << ((immNum >> 4) + 1) << " times)";
+				}
+				break;
+			}
+			case 04:
+			{
+				commentString << " 0x" << lava::numToHexStringWithPadding(immNum, 8);
+				break;
+			}
+			default:
+			{
+				break;
+			}
+			}
+			appendCommentToString(outputString, commentString.str());
+			outputStreamIn << outputString << "\n";
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t gecko06CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -438,6 +509,9 @@ namespace lava::gecko
 
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_RAMWrite);
 		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("8-Bit Write", 0x0,  geckoBasicRAMWriteCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("16-Bit Write", 0x2, geckoBasicRAMWriteCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("32-Bit Write", 0x4, geckoBasicRAMWriteCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("String Write", 0x6, gecko06CodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_If);
