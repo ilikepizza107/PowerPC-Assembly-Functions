@@ -386,7 +386,7 @@ namespace lava::gecko
 
 		return result;
 	}
-	std::size_t geckoSetAddressCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	std::size_t geckoSetLoadStoreAddressCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
 
@@ -404,7 +404,9 @@ namespace lava::gecko
 			unsigned long addrNum = lava::stringToNum<unsigned long>(addrWord, 0, ULONG_MAX, 1);
 
 			// 1 if we're overwriting PO, 0 if overwriting BA
-			bool settingPO = codeTypeIn->secondaryCodeType != 2;
+			bool settingPO = codeTypeIn->secondaryCodeType >= 8;
+			// Is 0 for Load, 2 for Set, 6 for Store
+			unsigned char setLoadStoreMode = codeTypeIn->secondaryCodeType % 8;
 			// 1 if we're adding result to current value, 0 if we're just overwriting it.
 			bool incrementMode = signatureNum & 0x00100000;
 			// If UCHAR_MAX, no Add. If 0, add BA. If 1, add PO.
@@ -431,128 +433,47 @@ namespace lava::gecko
 
 			std::string outputStr = "* " + signatureWord + " " + addrWord;
 			std::stringstream commentStr("");
-			commentStr << codeTypeIn->name << ": ";
-			if (!settingPO)
-			{
-				commentStr << "ba ";
-			}
-			else
-			{
-				commentStr << "po ";
-			}
-			if (incrementMode)
-			{
-				commentStr << "+";
-			}
-			commentStr << "= ";
+
+			// Build string for value we'll actually be using to set/load/store.
+			std::stringstream setLoadStoreString("");
 			if (bapoAdd != UCHAR_MAX)
 			{
 				if (bapoAdd == 0)
 				{
-					commentStr << "ba + ";
+					setLoadStoreString << "ba + ";
 				}
 				else
 				{
-					commentStr << "po + ";
+					setLoadStoreString << "po + ";
 				}
 			}
 			if (geckoRegisterAddIndex != UCHAR_MAX)
 			{
-				commentStr << "gr" + +geckoRegisterAddIndex << " + ";
+				setLoadStoreString << "gr" + +geckoRegisterAddIndex << " + ";
 			}
-			commentStr << "0x" + addrWord;
-			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+			setLoadStoreString << "0x" + addrWord;
 
-			// Apply changes to saved BAPO values.
-			bool componentsAllValid = 1;
-			// If the current value is implicated in the result of the calculation...
-			if (incrementMode)
+			commentStr << codeTypeIn->name << ": ";
+
+			// If this is a Load Mode codetype...
+			if (setLoadStoreMode == 0)
 			{
-				// ... and we're setting BA...
+				// ... build Load Mode comment string.
 				if (!settingPO)
 				{
-					// ... require that BA is valid.
-					componentsAllValid &= validateCurrentBAValue();
+					commentStr << "ba ";
 				}
-				// Otherwise, if we're setting PO...
 				else
 				{
-					// ... require that PO is valid.
-					componentsAllValid &= validateCurrentPOValue();
+					commentStr << "po ";
 				}
-			}
-			// If we're adding either BA or PO separately...
-			if (bapoAdd != UCHAR_MAX)
-			{
-				// ... if we're adding BA...
-				if (bapoAdd == 0)
-				{
-					// ... require that it's valid.
-					componentsAllValid &= validateCurrentBAValue();
-				}
-				// Else, if we're adding PO instead...
-				else
-				{
-					// ... require that *that's* valid.
-					componentsAllValid &= validateCurrentPOValue();
-				}
-			}
-			// Last, if we're adding a Gecko Register...
-			if (geckoRegisterAddIndex != UCHAR_MAX)
-			{
-				// ... require that it too is valid.
-				componentsAllValid &= validateGeckoRegister(geckoRegisterAddIndex);
-			}
-			// If after all that, our components are all valid, we can overwrite our target value!
-			if (componentsAllValid)
-			{
-				// We can start with the passed in address value, since that's always part of the result.
-				unsigned long result = addrNum;
-				// If we need to add either BA or PO, add that.
-				if (bapoAdd != UCHAR_MAX)
-				{
-					if (bapoAdd == 0)
-					{
-						result += currentBAValue;
-					}
-					else
-					{
-						result += currentPOValue;;
-					}
-				}
-				// If we need to add a geckoRegister's value, add that too.
-				if (geckoRegisterAddIndex != UCHAR_MAX)
-				{
-					result += geckoRegisters[geckoRegisterAddIndex];
-				}
-				// Lastly, if we're in increment mode, we can add our result to our target value.
 				if (incrementMode)
 				{
-					if (!settingPO)
-					{
-						currentBAValue += result;
-					}
-					else
-					{
-						currentPOValue += result;
-					}
+					commentStr << "+";
 				}
-				// Otherwise, we can just overwrite it.
-				else
-				{
-					if (!settingPO)
-					{
-						currentBAValue = result;
-					}
-					else
-					{
-						currentPOValue = result;
-					}
-				}
-			}
-			// Otherwise, we have to invalidate our target value, cuz we can't calculate it.
-			else
-			{
+				commentStr << "= Val @ $(" << setLoadStoreString.str() << ")";
+
+				// Invalidate targeted value; we can't know what it is after loading from RAM.
 				if (!settingPO)
 				{
 					invalidateCurrentBAValue();
@@ -562,6 +483,142 @@ namespace lava::gecko
 					invalidateCurrentPOValue();
 				}
 			}
+			// Else, if this is a Set Mode codetype...
+			else if (setLoadStoreMode == 2)
+			{
+				// ... build Set Mode comment string.
+				if (!settingPO)
+				{
+					commentStr << "ba ";
+				}
+				else
+				{
+					commentStr << "po ";
+				}
+				if (incrementMode)
+				{
+					commentStr << "+";
+				}
+				commentStr << "= " << setLoadStoreString.str();
+
+				// Apply changes to saved BAPO values.
+				bool componentsAllValid = 1;
+				// If the current value is implicated in the result of the calculation...
+				if (incrementMode)
+				{
+					// ... and we're setting BA...
+					if (!settingPO)
+					{
+						// ... require that BA is valid.
+						componentsAllValid &= validateCurrentBAValue();
+					}
+					// Otherwise, if we're setting PO...
+					else
+					{
+						// ... require that PO is valid.
+						componentsAllValid &= validateCurrentPOValue();
+					}
+				}
+				// If we're adding either BA or PO separately...
+				if (bapoAdd != UCHAR_MAX)
+				{
+					// ... if we're adding BA...
+					if (bapoAdd == 0)
+					{
+						// ... require that it's valid.
+						componentsAllValid &= validateCurrentBAValue();
+					}
+					// Else, if we're adding PO instead...
+					else
+					{
+						// ... require that *that's* valid.
+						componentsAllValid &= validateCurrentPOValue();
+					}
+				}
+				// Last, if we're adding a Gecko Register...
+				if (geckoRegisterAddIndex != UCHAR_MAX)
+				{
+					// ... require that it too is valid.
+					componentsAllValid &= validateGeckoRegister(geckoRegisterAddIndex);
+				}
+				// If after all that, our components are all valid, we can overwrite our target value!
+				if (componentsAllValid)
+				{
+					// We can start with the passed in address value, since that's always part of the result.
+					unsigned long result = addrNum;
+					// If we need to add either BA or PO, add that.
+					if (bapoAdd != UCHAR_MAX)
+					{
+						if (bapoAdd == 0)
+						{
+							result += currentBAValue;
+						}
+						else
+						{
+							result += currentPOValue;;
+						}
+					}
+					// If we need to add a geckoRegister's value, add that too.
+					if (geckoRegisterAddIndex != UCHAR_MAX)
+					{
+						result += geckoRegisters[geckoRegisterAddIndex];
+					}
+					// Lastly, if we're in increment mode, we can add our result to our target value.
+					if (incrementMode)
+					{
+						if (!settingPO)
+						{
+							currentBAValue += result;
+						}
+						else
+						{
+							currentPOValue += result;
+						}
+					}
+					// Otherwise, we can just overwrite it.
+					else
+					{
+						if (!settingPO)
+						{
+							currentBAValue = result;
+						}
+						else
+						{
+							currentPOValue = result;
+						}
+					}
+				}
+				// Otherwise, we have to invalidate our target value, cuz we can't calculate it.
+				else
+				{
+					if (!settingPO)
+					{
+						invalidateCurrentBAValue();
+					}
+					else
+					{
+						invalidateCurrentPOValue();
+					}
+				}
+			}
+			// Else, if this is a Store Mode codetype...
+			else if (setLoadStoreMode == 6)
+			{
+				// ... build Store Mode comment string.
+				commentStr << "Val @ $(" << setLoadStoreString.str() << ") = ";
+				if (!settingPO)
+				{
+					commentStr << "ba";
+				}
+				else
+				{
+					commentStr << "po";
+				}
+
+				// Note, we don't do anything to the targeted BAPO value here cuz we aren't changing it.
+			}
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
 
 			result = codeStreamIn.tellg() - initialPos;
 		}
@@ -758,8 +815,12 @@ namespace lava::gecko
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_BaseAddr);
 		{
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Base Address", 0x2, geckoSetAddressCodeConv);
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Pointer Address", 0xA, geckoSetAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Base Address", 0x0, geckoSetLoadStoreAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Base Address", 0x2, geckoSetLoadStoreAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Base Address", 0x4, geckoSetLoadStoreAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Pointer Offset", 0x8, geckoSetLoadStoreAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Pointer Offset", 0xA, geckoSetLoadStoreAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Pointer Offset", 0xC, geckoSetLoadStoreAddressCodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
