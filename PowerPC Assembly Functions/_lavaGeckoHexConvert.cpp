@@ -301,6 +301,11 @@ namespace lava::gecko
 			commentStr << " 0x" << lava::numToHexStringWithPadding(signatureNum & signatureAddressMask, 7);
 			commentStr << ") ";
 
+			if (codeTypeIn->secondaryCodeType > 6 && ((immNum >> 0x10) != 0))
+			{
+				commentStr << "& 0x" << lava::numToHexStringWithPadding<unsigned short>(~(immNum >> 0x10), 4) << " ";
+			}
+
 			switch (codeTypeIn->secondaryCodeType % 8)
 			{
 			case 0: { commentStr << "=="; break; }
@@ -316,7 +321,7 @@ namespace lava::gecko
 			}
 			else
 			{
-				commentStr << " (0x" << lava::numToHexStringWithPadding(immNum >> 0x10, 4) << " & 0x" << lava::numToHexStringWithPadding(immNum & 0xFFFF, 4) << ")";
+				commentStr << " 0x" << lava::numToHexStringWithPadding<unsigned short>(immNum & 0xFFFF, 4);
 			}
 
 			appendCommentToString(outputStr, commentStr.str());
