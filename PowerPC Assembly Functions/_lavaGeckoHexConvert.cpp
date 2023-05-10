@@ -8,11 +8,88 @@ namespace lava::gecko
 	constexpr unsigned long signatureAddressMask = 0x1FFFFFF;
 	constexpr unsigned long signatureAddressBase = 0x80000000;
 
+	// Dynamic Values
+	// These are used to try to keep track of BA and PO so they can be used in GCTRM syntax instructions.
+	// We can't *always* know what these values are, since they can be loaded from and stored to memory technically,
+	// and we have no guarantees about what's in memory at any given moment; so we have to settle for just tracking
+	// what we can, and paying close attention to invalidate our stored values when we lose their values. For this
+	// purpose, ULONG_MAX (0xFFFFFFFF) will be used as our invalidation value.
+	unsigned long currentBAValue = 0x80000000;
+	unsigned long currentPOValue = 0x80000000;
+	std::array<unsigned long, 0xF> geckoRegisters{};
+	bool validateCurrentBAValue()
+	{
+		return currentBAValue != ULONG_MAX;
+	}
+	void invalidateCurrentBAValue()
+	{
+		currentBAValue = ULONG_MAX;
+	}
+	bool validateCurrentPOValue()
+	{
+		return currentPOValue != ULONG_MAX;
+	}
+	void invalidateCurrentPOValue()
+	{
+		currentPOValue = ULONG_MAX;
+	}
+	bool validateGeckoRegister(unsigned char regIndex)
+	{
+		bool result = 0;
+
+		if (regIndex < geckoRegisters.size())
+		{
+			result = geckoRegisters[regIndex] != ULONG_MAX;
+		}
+
+		return result;
+	}
+	bool invalidateGeckoRegister(unsigned char regIndex)
+	{
+		bool result = 0;
+
+		if (regIndex < geckoRegisters.size())
+		{
+			geckoRegisters[regIndex] = ULONG_MAX;
+			result = 1;
+		}
+
+		return result;
+	}
+
 	// Utility
 	unsigned long getAddressFromCodeSignature(unsigned long codeSignatureIn)
 	{
-		return (signatureAddressMask & codeSignatureIn) | signatureAddressBase;
+		unsigned long result = ULONG_MAX;
+
+		// If we're using BA
+		if ((codeSignatureIn & signatureBaPoMask) == 0)
+		{
+			result = (currentBAValue != ULONG_MAX) ? currentBAValue + (signatureAddressMask & codeSignatureIn) : ULONG_MAX;
+		}
+		// Else, if we're using PO
+		else
+		{
+			result = (currentPOValue != ULONG_MAX) ? currentPOValue + (signatureAddressMask & codeSignatureIn) : ULONG_MAX;
+		}
+
+		return result;
 	}
+	std::string getAddressComponentString(unsigned long codeSignatureIn)
+	{
+		std::string result = "$(";
+		if (codeSignatureIn & signatureBaPoMask)
+		{
+			result += "po";
+		}
+		else
+		{
+			result += "ba";
+		}
+		result += " + 0x" + lava::numToHexStringWithPadding(codeSignatureIn & signatureAddressMask, 8) + ")";
+		return result;
+	}
+
 	void appendCommentToString(std::string& destination, std::string commentStr, unsigned long relativeCommentLoc = 0x20)
 	{
 		std::size_t paddingLength = (destination.size() > relativeCommentLoc) ? 0x00 : relativeCommentLoc - destination.size();
@@ -23,24 +100,24 @@ namespace lava::gecko
 		destination += "# " + commentStr;
 	}
 
-	std::string convertPPCInstructionHex(unsigned long hexIn)
+	std::string convertPPCInstructionHex(unsigned long hexIn, bool enableComment)
 	{
 		std::string result = "";
 
 		result = lava::ppc::convertInstructionHexToString(hexIn);
-		if (!result.empty())
+		if (enableComment && !result.empty())
 		{
 			appendCommentToString(result, "0x" + lava::numToHexStringWithPadding(hexIn, 8));
 		}
 
 		return result;
 	}
-	std::string convertPPCInstructionHex(std::string hexIn)
+	std::string convertPPCInstructionHex(std::string hexIn, bool enableComment)
 	{
 		std::string result = "";
 
 		unsigned long integerConversion = lava::stringToNum<unsigned long>(hexIn, 0, ULONG_MAX, 1);
-		result = convertPPCInstructionHex(integerConversion);
+		result = convertPPCInstructionHex(integerConversion, enableComment);
 
 		return result;
 	}
@@ -349,10 +426,36 @@ namespace lava::gecko
 			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
 			unsigned long addrNum = lava::stringToNum<unsigned long>(addrWord, 0, ULONG_MAX, 1);
 
+			// 1 if we're overwriting PO, 0 if overwriting BA
+			bool settingPO = codeTypeIn->secondaryCodeType != 2;
+			// 1 if we're adding result to current value, 0 if we're just overwriting it.
+			bool incrementMode = signatureNum & 0x00100000;
+			// If UCHAR_MAX, no Add. If 0, add BA. If 1, add PO.
+			unsigned char bapoAdd = UCHAR_MAX;
+			if (signatureNum & 0x00010000)
+			{
+				// If adding BA
+				if ((signatureNum & signatureBaPoMask) == 0)
+				{
+					bapoAdd = 0;
+				}
+				// If adding PO
+				else
+				{
+					bapoAdd = 1;
+				}
+			}
+			// If UCHAR_MAX, no Add. Otherwise, use the indexed register.
+			unsigned char geckoRegisterAddIndex = UCHAR_MAX;
+			if (signatureNum & 0xF)
+			{
+				geckoRegisterAddIndex = signatureNum & 0xF;
+			}
+
 			std::string outputStr = "* " + signatureWord + " " + addrWord;
 			std::stringstream commentStr("");
 			commentStr << codeTypeIn->name << ": ";
-			if (codeTypeIn->secondaryCodeType == 2)
+			if (!settingPO)
 			{
 				commentStr << "ba ";
 			}
@@ -360,30 +463,130 @@ namespace lava::gecko
 			{
 				commentStr << "po ";
 			}
-			if (signatureNum & 0x00100000)
+			if (incrementMode)
 			{
 				commentStr << "+";
 			}
 			commentStr << "= ";
-			if (signatureNum & 0x00010000)
+			if (bapoAdd != UCHAR_MAX)
 			{
-				if (signatureNum & signatureBaPoMask)
-				{
-					commentStr << "po + ";
-				}
-				else
+				if (bapoAdd == 0)
 				{
 					commentStr << "ba + ";
 				}
+				else
+				{
+					commentStr << "po + ";
+				}
 			}
-			if (signatureNum & 0x00001000)
+			if (geckoRegisterAddIndex != UCHAR_MAX)
 			{
-				commentStr << "gr" + lava::numToDecStringWithPadding(signatureNum & 0xF, 0) << " + ";
+				commentStr << "gr" + +geckoRegisterAddIndex << " + ";
 			}
 			commentStr << "0x" + addrWord;
 			appendCommentToString(outputStr, commentStr.str());
 
 			outputStreamIn << outputStr << "\n";
+
+			// Apply changes to saved BAPO values.
+			bool componentsAllValid = 1;
+			// If the current value is implicated in the result of the calculation...
+			if (incrementMode)
+			{
+				// ... and we're setting BA...
+				if (!settingPO)
+				{
+					// ... require that BA is valid.
+					componentsAllValid &= validateCurrentBAValue();
+				}
+				// Otherwise, if we're setting PO...
+				else
+				{
+					// ... require that PO is valid.
+					componentsAllValid &= validateCurrentPOValue();
+				}
+			}
+			// If we're adding either BA or PO separately...
+			if (bapoAdd != UCHAR_MAX)
+			{
+				// ... if we're adding BA...
+				if (bapoAdd == 0)
+				{
+					// ... require that it's valid.
+					componentsAllValid &= validateCurrentBAValue();
+				}
+				// Else, if we're adding PO instead...
+				else
+				{
+					// ... require that *that's* valid.
+					componentsAllValid &= validateCurrentPOValue();
+				}
+			}
+			// Last, if we're adding a Gecko Register...
+			if (geckoRegisterAddIndex != UCHAR_MAX)
+			{
+				// ... require that it too is valid.
+				componentsAllValid &= validateGeckoRegister(geckoRegisterAddIndex);
+			}
+			// If after all that, our components are all valid, we can overwrite our target value!
+			if (componentsAllValid)
+			{
+				// We can start with the passed in address value, since that's always part of the result.
+				unsigned long result = addrNum;
+				// If we need to add either BA or PO, add that.
+				if (bapoAdd != UCHAR_MAX)
+				{
+					if (bapoAdd == 0)
+					{
+						result += currentBAValue;
+					}
+					else
+					{
+						result += currentPOValue;;
+					}
+				}
+				// If we need to add a geckoRegister's value, add that too.
+				if (geckoRegisterAddIndex != UCHAR_MAX)
+				{
+					result += geckoRegisters[geckoRegisterAddIndex];
+				}
+				// Lastly, if we're in increment mode, we can add our result to our target value.
+				if (incrementMode)
+				{
+					if (!settingPO)
+					{
+						currentBAValue += result;
+					}
+					else
+					{
+						currentPOValue += result;
+					}
+				}
+				// Otherwise, we can just overwrite it.
+				else
+				{
+					if (!settingPO)
+					{
+						currentBAValue = result;
+					}
+					else
+					{
+						currentPOValue = result;
+					}
+				}
+			}
+			// Otherwise, we have to invalidate our target value, cuz we can't calculate it.
+			else
+			{
+				if (!settingPO)
+				{
+					invalidateCurrentBAValue();
+				}
+				else
+				{
+					invalidateCurrentPOValue();
+				}
+			}
 
 			result = codeStreamIn.tellg() - initialPos;
 		}
@@ -407,22 +610,72 @@ namespace lava::gecko
 			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
 			unsigned long lengthNum = lava::stringToNum<unsigned long>(lengthWord, 0, ULONG_MAX, 1);
 			
-			outputStreamIn << "HOOK @ $" << lava::numToHexStringWithPadding(getAddressFromCodeSignature(signatureNum), 8) << "\n";
-			outputStreamIn << "{\n";
+			unsigned long inferredHookAddress = getAddressFromCodeSignature(signatureNum);
+			bool canDoGCTRMOutput = inferredHookAddress != ULONG_MAX;
 
 			std::string hexWord("");
 			std::string conversion("");
-			for (unsigned long i = 0; i < lengthNum * 2; i++)
+			std::string outputString("");
+			std::stringstream commentString("");
+			if (canDoGCTRMOutput)
 			{
-				lava::readNCharsFromStream(hexWord, codeStreamIn, 8, 0);
-				conversion = convertPPCInstructionHex(hexWord);
-				if (!conversion.empty())
+				outputString = "HOOK @ $" + lava::numToHexStringWithPadding(inferredHookAddress, 8);
+				commentString << "Address = " << getAddressComponentString(signatureNum);
+				appendCommentToString(outputString, commentString.str());
+				outputStreamIn << outputString << "\n";
+				outputStreamIn << "{\n";
+				for (unsigned long i = 0; i < lengthNum * 2; i++)
 				{
-					outputStreamIn << "\t" << conversion << "\n";
+					lava::readNCharsFromStream(hexWord, codeStreamIn, 8, 0);
+					conversion = convertPPCInstructionHex(hexWord, 1);
+					if (!conversion.empty())
+					{
+						outputStreamIn << "\t" << conversion << "\n";
+					}
+				}
+				outputStreamIn << "}\n";
+			}
+			else
+			{
+				outputString = "* " + signatureWord + " " + lengthWord;
+				commentString << codeTypeIn->name << " (" << lengthNum << " line(s)) @ " << getAddressComponentString(signatureNum) << ":";
+				appendCommentToString(outputString, commentString.str());
+				outputStreamIn << outputString << "\n";
+				for (unsigned long i = 0; i < lengthNum; i++)
+				{
+					commentString.str("");
+
+					lava::readNCharsFromStream(hexWord, codeStreamIn, 8, 0);
+					outputString = "* " + hexWord + " ";
+					commentString << "\t";
+					conversion = convertPPCInstructionHex(hexWord, 0);
+					if (!conversion.empty())
+					{
+						commentString << conversion;
+					}
+					else
+					{
+						commentString << "---";
+					}
+
+					lava::readNCharsFromStream(hexWord, codeStreamIn, 8, 0);
+					outputString += hexWord;
+					commentString << ", ";
+					conversion = convertPPCInstructionHex(hexWord, 0);
+					if (!conversion.empty())
+					{
+						commentString << conversion;
+					}
+					else
+					{
+						commentString << "---";
+					}
+
+					appendCommentToString(outputString, commentString.str());
+					outputStreamIn << outputString << "\n";
 				}
 			}
-
-			outputStreamIn << "}\n";
+			
 
 			result = codeStreamIn.tellg() - initialPos;
 		}
@@ -449,9 +702,10 @@ namespace lava::gecko
 			std::string outputStr = "* " + signatureWord + " " + immWord;
 			std::stringstream commentStr("");
 			commentStr << codeTypeIn->name << ": ";
-			if (immNum >> 0x10)
+			if (immNum & 0xFFFF0000)
 			{
-				commentStr << "ba = 0x" << lava::numToHexStringWithPadding(immNum >> 0x10, 4) << "0000";
+				currentBAValue = immNum & 0xFFFF0000;
+				commentStr << "ba = 0x" << lava::numToHexStringWithPadding(currentBAValue, 8);
 			}
 			else
 			{
@@ -460,7 +714,8 @@ namespace lava::gecko
 			commentStr << ", ";
 			if (immNum & 0xFFFF)
 			{
-				commentStr << "po = 0x" << lava::numToHexStringWithPadding(immNum & 0xFFFF, 4) << "0000";
+				currentPOValue = (immNum << 0x10);
+				commentStr << "po = 0x" << lava::numToHexStringWithPadding(currentPOValue, 8);
 			}
 			else
 			{
