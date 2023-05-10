@@ -158,16 +158,7 @@ namespace lava::gecko
 
 			// Output First Line
 			outputString = "* " + signatureWord + " " + immWord;
-			commentString << codeTypeIn->name << " @ $(";
-			if (!(signatureBaPoMask & signatureNum))
-			{
-				commentString << "ba + ";
-			}
-			else
-			{
-				commentString << "po + ";
-			}
-			commentString << "0x" << lava::numToHexStringWithPadding(signatureAddressMask & signatureNum, 7) << "): ";
+			commentString << codeTypeIn->name << " @ " << getAddressComponentString(signatureNum) << ": ";
 			switch (codeTypeIn->secondaryCodeType)
 			{
 			case 00:
@@ -264,16 +255,7 @@ namespace lava::gecko
 			{
 				commentString << ", " << terminatorCount << " strings";
 			}
-			commentString << ") @ $(";
-			if (!(signatureBaPoMask & signatureNum))
-			{
-				commentString << "ba + ";
-			}
-			else
-			{
-				commentString << "po + ";
-			}
-			commentString << "0x" << lava::numToHexStringWithPadding(signatureAddressMask & signatureNum, 7) << "):";
+			commentString << ") @ " << getAddressComponentString(signatureNum) << ":";
 			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 
 			// Loop through the rest of the output
@@ -372,17 +354,7 @@ namespace lava::gecko
 				commentStr << " (With EndIf)";
 				signatureNum &= ~1;
 			}
-			commentStr << ": If Val @ $(";
-			if (signatureNum & signatureBaPoMask)
-			{
-				commentStr << "po +";
-			}
-			else
-			{
-				commentStr << "ba +";
-			}
-			commentStr << " 0x" << lava::numToHexStringWithPadding(signatureNum & signatureAddressMask, 7);
-			commentStr << ") ";
+			commentStr << ": If Val @ " << getAddressComponentString(signatureNum) << " ";
 
 			if (codeTypeIn->secondaryCodeType > 6 && ((immNum >> 0x10) != 0))
 			{
