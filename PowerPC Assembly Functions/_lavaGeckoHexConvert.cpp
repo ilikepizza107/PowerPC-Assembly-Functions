@@ -256,7 +256,7 @@ namespace lava::gecko
 
 		return result;
 	}
-	std::size_t gecko42CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	std::size_t geckoSetAddressCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
 
@@ -275,7 +275,15 @@ namespace lava::gecko
 
 			std::string outputStr = "* " + signatureWord + " " + addrWord;
 			std::stringstream commentStr("");
-			commentStr << codeTypeIn->name << ": ba ";
+			commentStr << codeTypeIn->name << ": ";
+			if (codeTypeIn->secondaryCodeType == 2)
+			{
+				commentStr << "ba ";
+			}
+			else
+			{
+				commentStr << "po ";
+			}
 			if (signatureNum & 0x00100000)
 			{
 				commentStr << "+";
@@ -445,7 +453,8 @@ namespace lava::gecko
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_BaseAddr);
 		{
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Base Address", 2, gecko42CodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Base Address", 0x2, geckoSetAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Pointer Address", 0xA, geckoSetAddressCodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
