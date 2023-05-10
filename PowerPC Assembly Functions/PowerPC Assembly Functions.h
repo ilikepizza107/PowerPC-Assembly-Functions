@@ -373,7 +373,7 @@ void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg);
 void ASMStart(int BranchAddress, std::string name = "", std::string blurb = "");
 void ASMEnd(int Replacement);
 void ASMEnd();
-void ASMRaw(std::string name, std::string blurb, const std::vector<unsigned long>& rawHexIn);
+void CodeRaw(std::string name, std::string blurb, const std::vector<unsigned long>& rawHexIn);
 void Label(int LabelNum);
 int GetNextLabel();
 void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn = bCACB_UNSPECIFIED);

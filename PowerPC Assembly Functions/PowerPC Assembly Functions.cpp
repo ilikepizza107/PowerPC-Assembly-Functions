@@ -620,7 +620,7 @@ void ASMEnd(int Replacement)
 	ASMEnd();
 }
 
-void ASMRaw(std::string name, std::string blurb, const std::vector<unsigned long>& rawHexIn)
+void CodeRaw(std::string name, std::string blurb, const std::vector<unsigned long>& rawHexIn)
 {
 	ledger::openLedgerEntry(name, blurb);
 	for (std::size_t i = 0; i < rawHexIn.size(); i++)
