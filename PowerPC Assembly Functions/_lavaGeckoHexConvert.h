@@ -22,7 +22,7 @@ namespace lava::gecko
 	};
 
 	struct geckoCodeType;
-	std::size_t defaultGeckoConversionConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn);
+	std::size_t defaultGeckoCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn);
 
 	// Code Type
 	struct geckoCodeType
@@ -31,7 +31,7 @@ namespace lava::gecko
 		std::string name = "";
 		unsigned char secondaryCodeType = UCHAR_MAX;
 		// Return Value is Number of Consumed Bytes
-		std::size_t(*conversionFunc)(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn) = defaultGeckoConversionConv;
+		std::size_t(*conversionFunc)(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn) = defaultGeckoCodeConv;
 	};
 	// Code Group
 	struct geckoPrTypeGroup

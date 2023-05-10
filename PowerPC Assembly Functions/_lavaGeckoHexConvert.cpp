@@ -131,7 +131,7 @@ namespace lava::gecko
 	}
 
 	// Conversion Predicates
-	std::size_t defaultGeckoConversionConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	std::size_t defaultGeckoCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		return 0;
 	}
