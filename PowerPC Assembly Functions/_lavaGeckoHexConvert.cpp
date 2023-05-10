@@ -66,58 +66,120 @@ namespace lava::gecko
 
 			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
 			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+			std::vector<unsigned char> bytesToWrite(lava::padLengthTo<unsigned long>(immNum, 0x08, 1), UCHAR_MAX);
 
-			bool allPrintChars = 1;
-			bool isEscaped = 0;
-			std::vector<unsigned char> bytesToWrite{};
-			bytesToWrite.reserve(immNum);
 			std::string byteInStr("");
 			unsigned char byteIn = CHAR_MAX;
-			for (unsigned long i = 0; i < immNum; i++)
+			bool allPrintChars = 1;
+			bool lastByteWasZero = 0;
+			bool isNullTerminated = 0;
+			unsigned long terminatorCount = 0x00;
+			for (unsigned long i = 0; i < bytesToWrite.size(); i++)
 			{
 				lava::readNCharsFromStream(byteInStr, codeStreamIn, 2, 0);
 				byteIn = lava::stringToNum<unsigned char>(byteInStr, 0, UCHAR_MAX, 1);
-				bytesToWrite.push_back(byteIn);
-				if (!std::isprint(byteIn))
+				bytesToWrite[i] = byteIn;
+				if (i < immNum)
 				{
-					if (((i + 1) == immNum) && allPrintChars && (byteIn == 0))
+					// We need to allow null terminators between strings, so we have to allow 0x00.
+					if (byteIn == 0x00)
 					{
-						isEscaped = 1;
+						if (allPrintChars && !lastByteWasZero)
+						{
+							terminatorCount++;
+						}
 					}
-					else
+					else if (!std::isprint(byteIn))
 					{
 						allPrintChars = 0;
 					}
 				}
+				lastByteWasZero = byteIn == 0x00;
 			}
+			isNullTerminated = allPrintChars && (bytesToWrite[immNum - 1] == 0x00);
 
-			std::string outputString = "* " + signatureWord + " " + immWord;
-			appendCommentToString(outputString, codeTypeIn->name + " (" + std::to_string(immNum) + " characters):");
+			// Initialize Strings For Output
+			std::string outputString("");
 			std::stringstream commentString("");
+
+			// Output First Line
+			outputString = "* " + signatureWord + " " + immWord;
+			commentString << codeTypeIn->name << " (" << std::to_string(immNum) << " characters";
+			if (allPrintChars && isNullTerminated && terminatorCount > 1)
+			{
+				commentString << ", " << terminatorCount << " strings";
+			}
+			commentString << ") @ $(";
+			if (!(signatureBaPoMask & signatureNum))
+			{
+				commentString << "ba + ";
+			}
+			else
+			{
+				commentString << "po + ";
+			}
+			commentString << "0x" << lava::numToHexStringWithPadding(signatureAddressMask & signatureNum, 7) << "):";
+			appendCommentToString(outputString, commentString.str());
 			outputStreamIn << outputString << "\n";
+
+			// Loop through the rest of the output
 			std::size_t cursor = 0;
 			std::size_t numFullLines = bytesToWrite.size() / 8;
+			bool stringCurrentlyOpen = 0;
 			for (unsigned long i = 0; i < numFullLines; i++)
 			{
 				outputString = "* " + lava::numToHexStringWithPadding(lava::bytesToFundamental<unsigned long>(bytesToWrite.data() + cursor), 8);
 				outputString += " " + lava::numToHexStringWithPadding(lava::bytesToFundamental<unsigned long>(bytesToWrite.data() + cursor + 4), 8);
 				commentString.str("");
 				commentString << "\t";
+				// String Comment Output
 				if (allPrintChars)
 				{
-					commentString << "\"";
-					for (unsigned long u = 0; u < 8; u++)
+					unsigned char currCharacter = UCHAR_MAX;
+					if (stringCurrentlyOpen)
 					{
-						commentString << *(char*)(bytesToWrite.data() + cursor + u);
+						commentString << "...";
 					}
-					commentString << "\"";
+					for (unsigned long u = 0; (u < 8) && ((u + cursor) < immNum); u++)
+					{
+						currCharacter = bytesToWrite[u + cursor];
+						if ((stringCurrentlyOpen && currCharacter == 0x00) || (!stringCurrentlyOpen && currCharacter != 0x00))
+						{
+							commentString << "\"";
+							stringCurrentlyOpen = !stringCurrentlyOpen;
+						}
+						if (currCharacter != 0x00)
+						{
+							commentString << currCharacter;
+						}
+					}
+					if (stringCurrentlyOpen)
+					{
+						if ((i + 1) < numFullLines)
+						{
+							if (bytesToWrite[cursor + 8] == 0x00)
+							{
+								commentString << "\"";
+								stringCurrentlyOpen = 0;
+							}
+							else
+							{
+								commentString << "...";
+							}
+						}
+						else
+						{
+							commentString << "\" (Note: Not Null-Terminated!)";
+						}
+					}
 				}
+				// Raw Hex Output
 				else
 				{
-					commentString << "0x" << lava::numToHexStringWithPadding(*(bytesToWrite.data() + cursor), 2);
-					for (unsigned long u = 1; u < 8; u++)
+					commentString << "0x" << lava::numToHexStringWithPadding(bytesToWrite[cursor], 2);
+					for (unsigned long u = 1; (u < 8) && ((u + cursor) < immNum); u++)
 					{
-						commentString << ", 0x" << lava::numToHexStringWithPadding(*(bytesToWrite.data() + cursor + u), 2);
+						commentString << ", 0x" << lava::numToHexStringWithPadding(bytesToWrite[u + cursor], 2);
 					}
 				}
 				appendCommentToString(outputString, commentString.str());
