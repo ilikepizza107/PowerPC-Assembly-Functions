@@ -19,6 +19,7 @@ namespace lava::gecko
 		gPCT_RegAndCounterIf = 0xA,
 		gPCT_Assembly = 0xC,
 		gPCT_Misc = 0xE,
+		gPCT_EndOfCodes = 0xF,
 	};
 
 	struct geckoCodeType;
