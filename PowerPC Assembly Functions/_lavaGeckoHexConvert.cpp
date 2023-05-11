@@ -89,6 +89,21 @@ namespace lava::gecko
 		result += " + 0x" + lava::numToHexStringWithPadding(codeSignatureIn & signatureAddressMask, 8) + ")";
 		return result;
 	}
+	std::string getCodeExecStatusString(unsigned long codeSignatureIn)
+	{
+		std::string result = "";
+
+		unsigned char executionCondition = (codeSignatureIn & 0x000F0000) >> 0x10;
+		switch (executionCondition)
+		{
+		case 0: { result = "If Exec Status is True"; break; }
+		case 1: { result = "If Exec Status is False"; break; }
+		case 2: { result = "Regardless of Execution Status"; break; }
+		default: { break; }
+		}
+
+		return result;
+	}
 
 	void printStringWithComment(std::ostream& outputStream, const std::string& primaryString, const std::string& commentString, bool printNewLine = 1, unsigned long relativeCommentLoc = 0x20)
 	{
@@ -386,6 +401,135 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t geckoSetRepeatConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// Initialize Strings For Output
+			std::string outputString("");
+			std::stringstream commentString("");
+
+			// Build and Print Line
+			outputString = "* " + signatureWord + " " + immWord;
+			commentString << codeTypeIn->name << ": Repeat " << (signatureNum & 0xFFFF) << " times, Store in b" << (immNum & 0xF);
+			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t geckoExecuteRepeatConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// Initialize Strings For Output
+			std::string outputString("");
+			std::stringstream commentString("");
+
+			// Build and Print Line
+			outputString = "* " + signatureWord + " " + immWord;
+			commentString << codeTypeIn->name << ": Execute Repeat in b" << (immNum & 0xF);
+			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t geckoReturnConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// Initialize Strings For Output
+			std::string outputString("");
+			std::stringstream commentString("");
+
+			// Start Building Lines
+			outputString = "* " + signatureWord + " " + immWord;
+			commentString << codeTypeIn->name << ": Jump to Addr. in b" << (immNum & 0xF) << " " << getCodeExecStatusString(signatureNum);
+			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t geckoGotoGosubConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// Initialize Strings For Output
+			std::string outputString("");
+			std::stringstream commentString("");
+
+			// Start Building Lines
+			outputString = "* " + signatureWord + " " + immWord;
+			commentString << codeTypeIn->name << ": "; 
+			if (codeTypeIn->secondaryCodeType == 8)
+			{
+				commentString << "Store Next Line Addr. in b" << (immNum & 0xF) << ", ";
+			}
+			commentString << "Jump to (Next Line Addr. + " << (signatureNum & 0xFFFF) << ") " << getCodeExecStatusString(signatureNum);
+			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoSetLoadStoreAddressCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -449,9 +593,9 @@ namespace lava::gecko
 			}
 			if (geckoRegisterAddIndex != UCHAR_MAX)
 			{
-				setLoadStoreString << "gr" + +geckoRegisterAddIndex << " + ";
+				setLoadStoreString << "gr" << +geckoRegisterAddIndex << " + ";
 			}
-			setLoadStoreString << "0x" + addrWord;
+			setLoadStoreString << "0x" << addrWord;
 
 			commentStr << codeTypeIn->name << ": ";
 
@@ -1057,6 +1201,14 @@ namespace lava::gecko
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Pointer Offset", 0x8, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Pointer Offset", 0xA, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Pointer Offset", 0xC, geckoSetLoadStoreAddressCodeConv);
+		}
+		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_FlowControl);
+		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Repeat", 0x0, geckoSetRepeatConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Execute Repeat", 0x2, geckoExecuteRepeatConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Return", 0x4, geckoReturnConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Goto", 0x6, geckoGotoGosubConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Gosub", 0x8, geckoGotoGosubConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_GeckoReg);
 		{
