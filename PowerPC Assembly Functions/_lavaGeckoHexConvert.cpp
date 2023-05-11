@@ -625,6 +625,240 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t geckoSetGeckoRegCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string addrWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(addrWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long addrNum = lava::stringToNum<unsigned long>(addrWord, 0, ULONG_MAX, 1);
+
+			// 1 if we're adding result to current value, 0 if we're just overwriting it.
+			bool incrementMode = signatureNum & 0x00100000;
+			// If UCHAR_MAX, no Add. If 0, add BA. If 1, add PO.
+			unsigned char bapoAdd = UCHAR_MAX;
+			if (signatureNum & 0x00010000)
+			{
+				// If adding BA
+				if ((signatureNum & signatureBaPoMask) == 0)
+				{
+					bapoAdd = 0;
+				}
+				// If adding PO
+				else
+				{
+					bapoAdd = 1;
+				}
+			}
+			// Gecko Register to work with
+			unsigned char targetGeckoRegister = signatureNum & 0xF;
+
+			std::string outputStr = "* " + signatureWord + " " + addrWord;
+			std::stringstream commentStr("");
+
+			// Build string for value we'll actually be using to set/load/store.
+			std::stringstream setLoadStoreString("");
+			if (bapoAdd != UCHAR_MAX)
+			{
+				if (bapoAdd == 0)
+				{
+					setLoadStoreString << "ba + ";
+				}
+				else
+				{
+					setLoadStoreString << "po + ";
+				}
+			}
+			setLoadStoreString << "0x" + addrWord;
+
+			commentStr << codeTypeIn->name << ": ";
+
+			commentStr << "gr" << +targetGeckoRegister << " ";
+			if (incrementMode)
+			{
+				commentStr << "+";
+			}
+			commentStr << "= " << setLoadStoreString.str();
+
+			// Apply changes to saved BAPO values.
+			bool componentsAllValid = 1;
+			// If our target gecko register is implicated in the result of the calculation...
+			if (incrementMode)
+			{
+				// ... ensure its current value is valid.
+				componentsAllValid &= validateGeckoRegister(targetGeckoRegister);
+			}
+			// If we're adding either BA or PO...
+			if (bapoAdd != UCHAR_MAX)
+			{
+				// ... if we're adding BA...
+				if (bapoAdd == 0)
+				{
+					// ... require that it's valid.
+					componentsAllValid &= validateCurrentBAValue();
+				}
+				// Else, if we're adding PO instead...
+				else
+				{
+					// ... require that *that's* valid.
+					componentsAllValid &= validateCurrentPOValue();
+				}
+			}
+			// If after all that, our components are all valid, we can overwrite our target value!
+			if (componentsAllValid)
+			{
+				// We can start with the passed in address value, since that's always part of the result.
+				unsigned long result = addrNum;
+				// If we need to add either BA or PO, add that.
+				if (bapoAdd != UCHAR_MAX)
+				{
+					if (bapoAdd == 0)
+					{
+						result += currentBAValue;
+					}
+					else
+					{
+						result += currentPOValue;;
+					}
+				}
+				// And if we're in increment mode...
+				if (incrementMode)
+				{
+					// ... then we'll add the result directly to the current register value.
+					geckoRegisters[targetGeckoRegister] += result;
+				}
+				// Otherwise...
+				else
+				{
+					// ... just overwrite the value.
+					geckoRegisters[targetGeckoRegister] = result;
+				}
+			}
+			// Otherwise, we have to invalidate our target value, cuz we can't calculate it.
+			else
+			{
+				invalidateGeckoRegister(targetGeckoRegister);
+			}
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t geckoLoadStoreGeckoRegCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string addrWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(addrWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long addrNum = lava::stringToNum<unsigned long>(addrWord, 0, ULONG_MAX, 1);
+
+			// Is 0 for Load, 1 for Store
+			bool loadStoreMode = codeTypeIn->secondaryCodeType == 2;
+			// 1 if we're adding result to current value, 0 if we're just overwriting it.
+			unsigned char valueSize = signatureNum & 0x00100000;
+			// If UCHAR_MAX, no Add. If 0, add BA. If 1, add PO.
+			unsigned char bapoAdd = UCHAR_MAX;
+			if (signatureNum & 0x00010000)
+			{
+				// If adding BA
+				if ((signatureNum & signatureBaPoMask) == 0)
+				{
+					bapoAdd = 0;
+				}
+				// If adding PO
+				else
+				{
+					bapoAdd = 1;
+				}
+			}
+			// Only used in store mode; number of times to store the register's value in subsequent addresses
+			unsigned short valueStoreCount = signatureNum & 0x0000FFF0;
+			// Gecko Register to work with
+			unsigned char targetGeckoRegister = signatureNum & 0xF;
+
+			std::string outputStr = "* " + signatureWord + " " + addrWord;
+			std::stringstream commentStr("");
+
+			// Build string for value we'll actually be using to set/load/store.
+			std::stringstream setLoadStoreString("");
+			if (bapoAdd != UCHAR_MAX)
+			{
+				if (bapoAdd == 0)
+				{
+					setLoadStoreString << "ba + ";
+				}
+				else
+				{
+					setLoadStoreString << "po + ";
+				}
+			}
+			setLoadStoreString << "0x" + addrWord;
+
+			commentStr << codeTypeIn->name << " (";
+			switch (valueSize)
+			{
+			case 0: { commentStr << "8-bit"; break; }
+			case 1: { commentStr << "16-bit"; break; }
+			case 2: { commentStr << "32-bit"; break; }
+			default: { break; }
+			}
+			commentStr << "): ";
+
+			// If in load mode
+			if (loadStoreMode)
+			{
+				commentStr << "gr" << +targetGeckoRegister << "= Val @ $(" << setLoadStoreString.str() << ")";
+
+				// And invalidate the register value cuz we can't know what it is after loading from RAM.
+				invalidateGeckoRegister(targetGeckoRegister);
+			}
+			// Else, if we're in store mode
+			else
+			{
+				commentStr << " Store ";
+				switch (valueSize)
+				{
+				case 0: { commentStr << "8 bits of"; break; }
+				case 1: { commentStr << "16 bits of"; break; }
+				default: { break; }
+				}
+				commentStr << "gr" << +targetGeckoRegister << " @ $(" << setLoadStoreString.str() << ")";
+				if (valueStoreCount > 0)
+				{
+					commentStr << " (move forward and repeat " << (valueStoreCount + 1) << " times)";
+				}
+
+				// And don't invalidate the register value cuz it hasn't been altered at all.
+			}
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoC2CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -795,6 +1029,8 @@ namespace lava::gecko
 		geckoPrTypeGroup* currentCodeTypeGroup = nullptr;
 		geckoCodeType* currentCodeType = nullptr;
 
+		geckoRegisters.fill(ULONG_MAX);
+
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_RAMWrite);
 		{
 			currentCodeType = currentCodeTypeGroup->pushInstruction("8-Bit Write", 0x0,  geckoBasicRAMWriteCodeConv);
@@ -821,6 +1057,12 @@ namespace lava::gecko
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Pointer Offset", 0x8, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Pointer Offset", 0xA, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Pointer Offset", 0xC, geckoSetLoadStoreAddressCodeConv);
+		}
+		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_GeckoReg);
+		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Gecko Register", 0x0, geckoSetGeckoRegCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Gecko Register", 0x2, geckoLoadStoreGeckoRegCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Gecko Register", 0x4, geckoLoadStoreGeckoRegCodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
