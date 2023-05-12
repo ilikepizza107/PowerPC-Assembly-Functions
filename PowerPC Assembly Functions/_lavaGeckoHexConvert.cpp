@@ -180,18 +180,18 @@ namespace lava::gecko
 			case 00:
 			{
 				commentString << " 0x" << lava::numToHexStringWithPadding((immNum & 0xFF), 2);
-				if (immNum >> 4)
+				if (immNum >> 0x10)
 				{
-					commentString << " (" << ((immNum >> 4) + 1) << " times)";
+					commentString << " (" << ((immNum >> 0x10) + 1) << " times)";
 				}
 				break;
 			}
 			case 02:
 			{
 				commentString << " 0x" << lava::numToHexStringWithPadding((immNum & 0xFFFF), 4);
-				if (immNum >> 4)
+				if (immNum >> 0x10)
 				{
-					commentString << " (" << ((immNum >> 4) + 1) << " times)";
+					commentString << " (" << ((immNum >> 0x10) + 1) << " times)";
 				}
 				break;
 			}
