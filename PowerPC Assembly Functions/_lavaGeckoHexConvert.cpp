@@ -586,7 +586,7 @@ namespace lava::gecko
 			}
 			// If UCHAR_MAX, no Add. Otherwise, use the indexed register.
 			unsigned char geckoRegisterAddIndex = UCHAR_MAX;
-			if (signatureNum & 0xF)
+			if (signatureNum & 0x00001000)
 			{
 				geckoRegisterAddIndex = signatureNum & 0xF;
 			}
@@ -1019,6 +1019,82 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t geckoRegisterArithCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string rightHandWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(rightHandWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long rightHandNum = lava::stringToNum<unsigned long>(rightHandWord, 0, ULONG_MAX, 1);
+
+			// 1 if Immediate is to be used as a Gecko Register ID, 0 otherwise
+			bool registerMode = codeTypeIn->secondaryCodeType == 0x8;
+			// Determines math operation to be performed
+			unsigned char operationType = (signatureNum & 0x00F00000) >> 0x14;
+			// Determines whether or not we're operating on the register/immediate values themselves, or the values at the
+			// addresses *pointed to* by them.
+			bool destinationRegIsAddress = signatureNum & 0x00010000;
+			bool rightHandIsAddress = signatureNum & 0x00020000;
+			// Gecko Register to work with
+			unsigned char targetGeckoRegister = signatureNum & 0xF;
+
+			std::string outputStr = "* " + signatureWord + " " + rightHandWord;
+			std::stringstream commentStr("");
+
+			std::string destinationRegString = "gr" + lava::numToDecStringWithPadding(targetGeckoRegister, 0);
+			if (destinationRegIsAddress)
+			{
+				destinationRegString = "Val @ $(" + destinationRegString + ")";
+			}
+
+			std::string rightHandString("");
+			if (registerMode)
+			{
+				rightHandString = "gr" + lava::numToDecStringWithPadding(rightHandNum & 0xF, 0);
+			}
+			else
+			{
+				rightHandString = "0x" + rightHandWord;
+			}
+			if (rightHandIsAddress)
+			{
+				rightHandString = "Val @ $(" + rightHandString + ")";
+			}
+
+			commentStr << codeTypeIn->name << ": " << destinationRegString << " = " << destinationRegString << " ";
+			switch (operationType)
+			{
+			case 0x0: { commentStr << "+"; break; }
+			case 0x1: { commentStr << "*"; break; }
+			case 0x2: { commentStr << "|"; break; }
+			case 0x3: { commentStr << "&"; break; }
+			case 0x4: { commentStr << "^"; break; }
+			case 0x5: { commentStr << "<<"; break; }
+			case 0x6: { commentStr << ">>"; break; }
+			case 0x7: { commentStr << "Rot.Left"; break; }
+			case 0x8: { commentStr << "Rot.Right.Arith"; break; }
+			case 0x9: { commentStr << "Single.Float.Add"; break; }
+			case 0xA: { commentStr << "Single.Float.Mull"; break; }
+			default: { break; }
+			}
+			commentStr << " " << rightHandString;
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoC2CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -1355,6 +1431,8 @@ namespace lava::gecko
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Gecko Register", 0x0, geckoSetGeckoRegCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Gecko Register", 0x2, geckoLoadStoreGeckoRegCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Gecko Register", 0x4, geckoLoadStoreGeckoRegCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg Arith (Immediate)", 0x6, geckoRegisterArithCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg Arith", 0x8, geckoRegisterArithCodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
