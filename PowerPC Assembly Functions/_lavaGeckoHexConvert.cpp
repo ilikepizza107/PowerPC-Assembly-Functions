@@ -1191,7 +1191,7 @@ namespace lava::gecko
 			unsigned long lengthNum = lava::stringToNum<unsigned long>(lengthWord, 0, ULONG_MAX, 1);
 			
 			unsigned long inferredHookAddress = getAddressFromCodeSignature(signatureNum);
-			bool canDoGCTRMOutput = inferredHookAddress != ULONG_MAX;
+			bool canDoGCTRMOutput = (inferredHookAddress != ULONG_MAX) && (codeTypeIn->secondaryCodeType == 2);
 
 			std::string hexWord("");
 			std::string conversion("");
@@ -1217,7 +1217,12 @@ namespace lava::gecko
 			else
 			{
 				outputString = "* " + signatureWord + " " + lengthWord;
-				commentString << codeTypeIn->name << " (" << lengthNum << " line(s)) @ " << getAddressComponentString(signatureNum) << ":";
+				commentString << codeTypeIn->name << " (" << lengthNum << " line(s))";
+				if (codeTypeIn->secondaryCodeType == 2)
+				{
+					commentString << "@ " << getAddressComponentString(signatureNum);
+				}
+				commentString << ":";
 				printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 				for (unsigned long i = 0; i < lengthNum; i++)
 				{
@@ -1227,6 +1232,7 @@ namespace lava::gecko
 					outputString = "* " + hexWord + " ";
 					commentString << "\t";
 					conversion = convertPPCInstructionHex(hexWord, 0);
+					commentString << std::left << std::setw(0x18);
 					if (!conversion.empty())
 					{
 						commentString << conversion;
@@ -1517,6 +1523,7 @@ namespace lava::gecko
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Execute ASM", 0x0, geckoC2CodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM", 0x2, geckoC2CodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("On/Off Switch", 0xC, geckoNameOnlyCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Address Range Check", 0xE, geckoCECodeConv);
