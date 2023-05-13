@@ -863,6 +863,58 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t gecko464ECodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+			signed short addressOffset = static_cast<signed short>(signatureNum & 0xFFFF);
+
+			std::string outputStr = "* " + signatureWord + " " + immWord;
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name << ": ";
+			// If we're setting BA
+			if ((signatureNum & signatureBaPoMask) == 0)
+			{
+				commentStr << "ba";
+				// We won't know the value for this, so invalidate.
+				invalidateCurrentBAValue();
+			}
+			// If we're setting PO
+			else
+			{
+				commentStr << "po";
+				// Same as above, we won't know the value, so we invalidate.
+				invalidateCurrentPOValue();
+			}
+			commentStr << " = (Next Code Address)";
+			if (addressOffset > 0)
+			{
+				commentStr << " + " << addressOffset;
+			}
+			else if (addressOffset < 0)
+			{
+				commentStr << " - " << -addressOffset;
+			}
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoSetGeckoRegCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -1501,9 +1553,11 @@ namespace lava::gecko
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Base Address", 0x0, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Base Address", 0x2, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Base Address", 0x4, geckoSetLoadStoreAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Put Next Code Loc in BA", 0x6, gecko464ECodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Load Pointer Offset", 0x8, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Set Pointer Offset", 0xA, geckoSetLoadStoreAddressCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Pointer Offset", 0xC, geckoSetLoadStoreAddressCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Put Next Code Loc in PO", 0xE, gecko464ECodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_FlowControl);
 		{
