@@ -58,6 +58,34 @@ namespace lava::gecko
 		return result;
 	}
 
+	// Data Embed Detection
+	// These are used to track locations where raw hex data may be embedded in the code stream.
+	// Parsing these as code can lead to bad times™, so we need to ensure we skip them wherever
+	// possible, hence this system. Core idea is: as we process 46/4E codes, we check if they're
+	// specifying an offset that might be signalling an embed. If so, we flag that location as a
+	// potential embed to look out for. From there, we look out for any GOTO codes which occur just
+	// before the suspected embed statement; and, if we find one, we know we've reached an embed, and
+	// we can dump it next go round of the parser, and continue translation from there.
+	unsigned short detectedDataEmbedLineCount = 0;
+	std::set<unsigned long> suspectedEmbedLocations{};
+	void removeExpiredEmbedSuspectLocations(unsigned long currentStreamLocation)
+	{
+		for (auto i = suspectedEmbedLocations.begin(); i != suspectedEmbedLocations.end();)
+		{
+			if (*i <= currentStreamLocation)
+			{
+				i = suspectedEmbedLocations.erase(i);
+			}
+			else
+			{
+				// The locations are sorted in ascending order, lowest first
+				// If a given number in the list is higher than our current location,
+				// everything after it is guaranteed higher as well.
+				break;
+			}
+		}
+	}
+
 	// Utility
 	unsigned long getAddressFromCodeSignature(unsigned long codeSignatureIn)
 	{
@@ -101,6 +129,41 @@ namespace lava::gecko
 		case 1: { result = "If Exec Status is False"; break; }
 		case 2: { result = "Regardless of Execution Status"; break; }
 		default: { break; }
+		}
+
+		return result;
+	}
+	std::size_t dumpUnannotatedHexToStream(std::istream& codeStreamIn, std::ostream& output, std::size_t linesToDump, std::string commentStr = "")
+	{
+		std::size_t result = 0;
+
+		bool startingNewLine = 1;
+		std::string dumpStr("");
+		dumpStr.reserve(8);
+
+		// Output first line, with comment:
+		lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
+		output << "* " << dumpStr;
+		lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
+		output << " " << dumpStr << "\t\t\t\t# " << commentStr << "\n";
+
+		result += 0x10;
+		std::size_t bytesToDump = linesToDump * 0x10;
+
+		while (result < bytesToDump)
+		{
+			if (startingNewLine)
+			{
+				output << "*";
+			}
+			lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
+			output << " " << dumpStr;
+			if (!startingNewLine)
+			{
+				output << "\n";
+			}
+			startingNewLine = !startingNewLine;
+			result += 0x8;
 		}
 
 		return result;
@@ -620,6 +683,13 @@ namespace lava::gecko
 			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 
 			result = codeStreamIn.tellg() - initialPos;
+
+			// Check if this GOTO corresponds to a suspected Data Embed location...
+			if (suspectedEmbedLocations.find(codeStreamIn.tellg()) != suspectedEmbedLocations.end() && codeTypeIn->secondaryCodeType == 6)
+			{
+				// ... and if so, signal the number of lines the embed takes up so we can dump it.
+				detectedDataEmbedLineCount = unsigned short(lineOffset);
+			}
 		}
 
 		return result;
@@ -840,7 +910,7 @@ namespace lava::gecko
 				}
 			}
 			// Else, if this is a Store Mode codetype...
-			else if (setLoadStoreMode == 6)
+			else if (setLoadStoreMode == 4)
 			{
 				// ... build Store Mode comment string.
 				commentStr << "Val @ $(" << setLoadStoreString.str() << ") = ";
@@ -911,6 +981,13 @@ namespace lava::gecko
 			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
 
 			result = codeStreamIn.tellg() - initialPos;
+
+			// If this offset is both properly aligned and large enough to be used for a Data Embed...
+			if (addressOffset >= 0x8 && (addressOffset % 0x8) == 0)
+			{
+				// ... report the suspected data location so we can check for it later.
+				suspectedEmbedLocations.insert(unsigned long(codeStreamIn.tellg()) + (addressOffset * 2));
+			}
 		}
 
 		return result;
@@ -1243,7 +1320,7 @@ namespace lava::gecko
 			unsigned long lengthNum = lava::stringToNum<unsigned long>(lengthWord, 0, ULONG_MAX, 1);
 			
 			unsigned long inferredHookAddress = getAddressFromCodeSignature(signatureNum);
-			bool canDoGCTRMOutput = (inferredHookAddress != ULONG_MAX) && (codeTypeIn->secondaryCodeType == 2);
+			bool canDoGCTRMOutput = (codeTypeIn->secondaryCodeType == 2) ? (inferredHookAddress != ULONG_MAX) : 1;
 
 			std::string hexWord("");
 			std::string conversion("");
@@ -1251,9 +1328,16 @@ namespace lava::gecko
 			std::stringstream commentString("");
 			if (canDoGCTRMOutput)
 			{
-				outputString = "HOOK @ $" + lava::numToHexStringWithPadding(inferredHookAddress, 8);
-				commentString << "Address = " << getAddressComponentString(signatureNum);
-				printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+				if (codeTypeIn->secondaryCodeType == 2)
+				{
+					outputString = "HOOK @ $" + lava::numToHexStringWithPadding(inferredHookAddress, 8);
+					commentString << "Address = " << getAddressComponentString(signatureNum);
+					printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+				}
+				else
+				{
+					outputStreamIn << "PULSE\n";
+				}
 				outputStreamIn << "{\n";
 				for (unsigned long i = 0; i < lengthNum * 2; i++)
 				{
@@ -1625,11 +1709,20 @@ namespace lava::gecko
 
 			std::string codeTypeStr("");
 			geckoCodeType* targetedGeckoCodeType = nullptr;
-			while (result < expectedLength)
+			while (codeStreamIn.good() && result < expectedLength)
 			{
+				if (detectedDataEmbedLineCount > 0x00)
+				{
+					result += dumpUnannotatedHexToStream(codeStreamIn, output, detectedDataEmbedLineCount, 
+						"DATA_EMBED (0x" + lava::numToHexStringWithPadding(detectedDataEmbedLineCount * 0x8, 0) + " bytes)");
+					detectedDataEmbedLineCount = 0;
+					continue;
+				}
+				removeExpiredEmbedSuspectLocations(codeStreamIn.tellg());
+
 				lava::readNCharsFromStream(codeTypeStr, codeStreamIn, 2, 1);
 
-				currCodeType = lava::stringToNum<unsigned long>(codeTypeStr, 1, UCHAR_MAX, 1);
+				currCodeType = lava::stringToNum<unsigned char>(codeTypeStr, 1, UCHAR_MAX, 1);
 				currCodePrType = (currCodeType & 0b11100000) >> 4;	// First hex digit (minus bit 4) is primary code type.
 				currCodeScType = (currCodeType & 0b00001110);		// Second hex digit (minus bit 8) is secondary code type.
 
@@ -1640,24 +1733,8 @@ namespace lava::gecko
 				}
 				else
 				{
-					bool startingNewLine = 1;
-					std::string dumpStr = "";
-					dumpStr.reserve(8);
-					while (result < expectedLength)
-					{
-						if (startingNewLine)
-						{
-							output << "*";
-						}
-						lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
-						output << " " << dumpStr;
-						if (!startingNewLine)
-						{
-							output << "\n";
-						}
-						startingNewLine = !startingNewLine;
-						result += 0x8;
-					}
+					result += dumpUnannotatedHexToStream(codeStreamIn, output, (expectedLength - result) / 0x10,
+						"UNRECOGNIZED CODETYPE, Parsing Aborted");
 				}
 			}
 		}
