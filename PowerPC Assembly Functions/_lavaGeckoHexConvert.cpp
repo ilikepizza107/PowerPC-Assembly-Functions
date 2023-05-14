@@ -67,6 +67,7 @@ namespace lava::gecko
 	// before the suspected embed statement; and, if we find one, we know we've reached an embed, and
 	// we can dump it next go round of the parser, and continue translation from there.
 	unsigned short detectedDataEmbedLineCount = 0;
+	bool didBAPOStoreToAddressWhileSuspectingEmbed = 0;
 	std::set<unsigned long> suspectedEmbedLocations{};
 	void removeExpiredEmbedSuspectLocations(unsigned long currentStreamLocation)
 	{
@@ -684,11 +685,26 @@ namespace lava::gecko
 
 			result = codeStreamIn.tellg() - initialPos;
 
-			// Check if this GOTO corresponds to a suspected Data Embed location...
-			if (suspectedEmbedLocations.find(codeStreamIn.tellg()) != suspectedEmbedLocations.end() && codeTypeIn->secondaryCodeType == 6)
+			// If we've arrived at a GOTO that skips forwards, and we're currently suspecting a data embed...
+			if ((codeTypeIn->secondaryCodeType == 6) && (lineOffset > 0) && !suspectedEmbedLocations.empty())
 			{
-				// ... and if so, signal the number of lines the embed takes up so we can dump it.
-				detectedDataEmbedLineCount = unsigned short(lineOffset);
+				// ... check if this GOTO corresponds to a suspected Data Embed location.
+				if (suspectedEmbedLocations.find(codeStreamIn.tellg()) != suspectedEmbedLocations.end())
+				{
+					// If so, signal the number of lines the embed takes up so we can dump it.
+					detectedDataEmbedLineCount = unsigned short(lineOffset);
+				}
+				// Otherwise...
+				else if (didBAPOStoreToAddressWhileSuspectingEmbed)
+				{
+					unsigned long currentGotoDestination = unsigned long(codeStreamIn.tellg()) + (lineOffset * 0x10);
+					// ... if this GOTO would take us *past* a suspected embed location...
+					if (currentGotoDestination > *suspectedEmbedLocations.begin())
+					{
+						// ... also signal, as this is probably an embed as well.
+						detectedDataEmbedLineCount = unsigned short(lineOffset);
+					}
+				}
 			}
 		}
 
@@ -929,6 +945,17 @@ namespace lava::gecko
 			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
 
 			result = codeStreamIn.tellg() - initialPos;
+
+			// If we're performing a BAPO store, and we're currently suspecting an embed somewhere...
+			if (setLoadStoreMode == 4 && !suspectedEmbedLocations.empty())
+			{
+				// ... and we're either not using BAPO in the address calculation, or at least aren't using the one we're storing...
+				if ((bapoAdd == UCHAR_MAX) || (bool(signatureNum & signatureBaPoMask) != bool(bapoAdd)))
+				{
+					// ... note that it's occurred; this is an extra hint that we're approaching an embed.
+					didBAPOStoreToAddressWhileSuspectingEmbed = 1;
+				}
+			}
 		}
 
 		return result;
@@ -1719,6 +1746,10 @@ namespace lava::gecko
 					continue;
 				}
 				removeExpiredEmbedSuspectLocations(codeStreamIn.tellg());
+				if (suspectedEmbedLocations.empty())
+				{
+					didBAPOStoreToAddressWhileSuspectingEmbed = 0;
+				}
 
 				lava::readNCharsFromStream(codeTypeStr, codeStreamIn, 2, 1);
 
