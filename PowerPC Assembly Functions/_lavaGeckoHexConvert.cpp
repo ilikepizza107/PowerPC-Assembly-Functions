@@ -1329,6 +1329,66 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t geckoMemoryCopyCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			unsigned short numBytesToCopy = (signatureNum & 0x00FFFF00) >> 0x8;
+			bool immSideIndex = codeTypeIn->secondaryCodeType == 0xA;
+			// 0 is left hand side, 1 is right hand side
+			std::array<unsigned char, 2> leftRightHandReg = { (signatureNum & 0xF0) >> 0x4,  signatureNum & 0x0F };
+			// 9 is left hand side, 1 is right hand side
+			std::array<std::stringstream, 2> leftRightHandStr{};
+
+			std::string outputStr = "* " + signatureWord + " " + immWord;
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name << ": Copy 0x" << lava::numToHexStringWithPadding(numBytesToCopy, 0) << " byte(s) from ";
+
+			leftRightHandStr[!immSideIndex] << "$(gr" << +leftRightHandReg[!immSideIndex] << ")";
+			leftRightHandStr[immSideIndex] << "$(";
+			if (leftRightHandReg[immSideIndex] == 0xF)
+			{
+				if ((signatureNum & signatureBaPoMask) == 0)
+				{
+					leftRightHandStr[immSideIndex] << "ba";
+				}
+				else
+				{
+					leftRightHandStr[immSideIndex] << "po";
+				}
+			}
+			else
+			{
+				leftRightHandStr[immSideIndex] << "gr" << +leftRightHandReg[immSideIndex];
+			}
+			if (immNum)
+			{
+				leftRightHandStr[immSideIndex] << " + 0x" << lava::numToHexStringWithPadding(immNum, 8);
+			}
+			leftRightHandStr[immSideIndex] << ")";
+			
+			commentStr << leftRightHandStr[0].str() << " to " << leftRightHandStr[1].str();
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoC2CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -1685,6 +1745,8 @@ namespace lava::gecko
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Store Gecko Register", 0x4, geckoLoadStoreGeckoRegCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg Arith (Immediate)", 0x6, geckoRegisterArithCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg Arith", 0x8, geckoRegisterArithCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Memory Copy 1", 0xA, geckoMemoryCopyCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Memory Copy 2", 0xC, geckoMemoryCopyCodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
