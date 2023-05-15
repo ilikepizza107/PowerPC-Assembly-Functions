@@ -923,8 +923,8 @@ namespace lava::ppc
 		std::vector<unsigned long> argumentsIn = instructionIn->getArgLayoutPtr()->splitHexIntoArguments(hexIn);
 		if (argumentsIn.size() >= 5)
 		{
-			int shiftedSpReg = argumentsIn[2] >> 5;
-			switch (shiftedSpReg)
+			unsigned long flippedSpRegID = ((argumentsIn[2] & 0b11111) << 5) | (argumentsIn[2] >> 5);
+			switch (flippedSpRegID)
 			{
 			case 1:
 			{
@@ -943,7 +943,7 @@ namespace lava::ppc
 			}
 			default:
 			{
-				result << instructionIn->mnemonic << " " << argumentsIn[2] << ",";
+				result << instructionIn->mnemonic << " " << flippedSpRegID << ",";
 				break;
 			}
 			}
