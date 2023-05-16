@@ -8,6 +8,7 @@ namespace lava::gecko
 	constexpr unsigned long signatureAddressMask = 0x1FFFFFF;
 	constexpr unsigned long signatureAddressBase = 0x80000000;
 	const std::string withEndifString = " (With Endif)";
+	const std::set<std::string> disallowedMnemonics = {"mfspr", "mtspr"};
 
 	// Dynamic Values
 	// These are used to try to keep track of BA and PO so they can be used in GCTRM syntax instructions.
@@ -1426,13 +1427,30 @@ namespace lava::gecko
 					outputStreamIn << "PULSE\n";
 				}
 				outputStreamIn << "{\n";
-				for (unsigned long i = 0; i < lengthNum * 2; i++)
+				bool mnemDisallowed = 0;
+				unsigned long convertedHex = ULONG_MAX;
+				unsigned long instructionsToConvert = lengthNum * 2;
+				for (unsigned long i = 0; i < instructionsToConvert; i++)
 				{
 					lava::readNCharsFromStream(hexWord, codeStreamIn, 8, 0);
+					convertedHex = lava::stringToNum<unsigned long>(hexWord, 0, ULONG_MAX, 1);
 					conversion = convertPPCInstructionHex(hexWord, 1);
-					if (!conversion.empty())
+					// Note: GCTRM doesn't properly support m[tf]spr's numeric SPR arguments, so for now, I'm including a check
+					// to ensure that these are output un-converted; hopefully this can be undone eventually. This is also set up
+					// to easily allow more mnemonics to be disallowed, though this won't be needed ideally.
+					mnemDisallowed = disallowedMnemonics.find(conversion.substr(0, conversion.find(' '))) != disallowedMnemonics.end();
+					// So, if we converted the instruction successfully, and the resulting mnemonic isn't disallowed...
+					if (!conversion.empty() && !mnemDisallowed)
 					{
+						// ... output the conversion.
 						outputStreamIn << "\t" << conversion << "\n";
+					}
+					// Otherwise, so long as the instruction isn't 0x00000000, or (if it is), isn't the final instruction in the code...
+					else if ((convertedHex != 0x00000000) || ((i + 1) < instructionsToConvert))
+					{
+						// ... output it as a word embed.
+						outputStreamIn << "\t";
+						printStringWithComment(outputStreamIn, "word 0x" + hexWord, conversion, 1);
 					}
 				}
 				outputStreamIn << "}\n";

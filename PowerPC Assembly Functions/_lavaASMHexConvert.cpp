@@ -1679,17 +1679,20 @@ namespace lava::ppc
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPW, { 0, 6, 9, 10, 11, 16, isSecOpArgFlag | 21, 31 }, cmpwConv); {
 			currLayout->setArgumentReservations({
 				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				{ -1, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPWI, { 0, 6, 9, 10, 11, 16 }, cmpwiConv); {
 			currLayout->setArgumentReservations({
 				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_CMPLWI, { 0, 6, 9, 10, 11, 16 }, cmplwiConv); {
 			currLayout->setArgumentReservations({
 				{ 2, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
+				{ 3, asmInstructionArgResStatus::aIARS_MUST_BE_ZERO },
 				});
 		}
 		currLayout = defineArgLayout(asmInstructionArgLayout::aIAL_IntADDI, { 0, 6, 11, 16 }, integerAddImmConv);
