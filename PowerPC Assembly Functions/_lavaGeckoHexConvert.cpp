@@ -1920,8 +1920,16 @@ namespace lava::gecko
 				lava::readNCharsFromStream(codeTypeStr, codeStreamIn, 2, 1);
 
 				currCodeType = lava::stringToNum<unsigned char>(codeTypeStr, 1, UCHAR_MAX, 1);
-				currCodePrType = (currCodeType & 0b11100000) >> 4;	// First hex digit (minus bit 4) is primary code type.
-				currCodeScType = (currCodeType & 0b00001110);		// Second hex digit (minus bit 8) is secondary code type.
+				if (currCodeType < 0xF0)
+				{
+					currCodePrType = (currCodeType & 0b11100000) >> 4;	// First hex digit (minus bit 4) is primary code type.
+					currCodeScType = (currCodeType & 0b00001110);		// Second hex digit (minus bit 8) is secondary code type.
+				}
+				else
+				{
+					currCodePrType = (currCodeType & 0b11110000) >> 4;	// First hex digit (including bit 4, 0xF is special) is primary code type.
+					currCodeScType = (currCodeType & 0b00001110);		// Second hex digit (minus bit 8) is secondary code type.
+				}
 
 				targetedGeckoCodeType = findRelevantGeckoCodeType(currCodePrType, currCodeScType);
 				if (targetedGeckoCodeType != nullptr)
