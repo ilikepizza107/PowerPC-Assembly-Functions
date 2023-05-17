@@ -6,7 +6,6 @@ namespace lava::gecko
 	// Constants
 	constexpr unsigned long signatureBaPoMask = 0x10000000;
 	constexpr unsigned long signatureAddressMask = 0x1FFFFFF;
-	constexpr unsigned long signatureAddressBase = 0x80000000;
 	const std::string withEndifString = " (With Endif)";
 	const std::set<std::string> disallowedMnemonics = {"mfspr", "mtspr"};
 
@@ -1358,7 +1357,7 @@ namespace lava::gecko
 			bool immSideIndex = codeTypeIn->secondaryCodeType == 0xA;
 			// 0 is left hand side, 1 is right hand side
 			std::array<unsigned char, 2> leftRightHandReg = { (signatureNum & 0xF0) >> 0x4,  signatureNum & 0x0F };
-			// 9 is left hand side, 1 is right hand side
+			// 0 is left hand side, 1 is right hand side
 			std::array<std::stringstream, 2> leftRightHandStr{};
 
 			std::string outputStr = "* " + signatureWord + " " + immWord;
@@ -1389,6 +1388,79 @@ namespace lava::gecko
 			leftRightHandStr[immSideIndex] << ")";
 			
 			commentStr << leftRightHandStr[0].str() << " to " << leftRightHandStr[1].str();
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
+	std::size_t geckoRegisterIfCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// 0 is left hand side, 1 is right hand side
+			std::array<unsigned char, 2> leftRightHandReg = { (immNum & 0x0F000000) >> 0x18,  (immNum & 0xF0000000) >> 0x1C };
+			// 9 is left hand side, 1 is right hand side
+			std::array<std::stringstream, 2> leftRightHandStr{};
+			// Value Mask
+			unsigned short valueMask = immNum & 0xFFFF;
+
+			// Prepare strings for each side.
+			for (unsigned long i = 0; i < 2; i++)
+			{
+				leftRightHandStr[i] << "Val @ ";
+				// If we're using BAPO for this reg...
+				if (leftRightHandReg[i] == 0xF)
+				{
+					// ... use component string.
+					leftRightHandStr[i] << getAddressComponentString(signatureNum) << " ";
+				}
+				// Otherwise...
+				else
+				{
+					// ... just print geck reg.
+					leftRightHandStr[i] << "$(gr" << +leftRightHandReg[i] << ") ";
+				}
+				// And apply value mask if necessary.
+				if (valueMask != 0)
+				{
+					leftRightHandStr[i] << "& 0x" << lava::numToHexStringWithPadding<unsigned short>(~valueMask, 4) << " ";
+				}
+			}
+
+			std::string outputStr = "* " + signatureWord + " " + immWord;
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name;
+			if (signatureNum & 1)
+			{
+				commentStr << withEndifString;
+			}
+			
+			commentStr << ": " << leftRightHandStr[0].str() << " ";
+			switch (codeTypeIn->secondaryCodeType % 8)
+			{
+			case 0: { commentStr << "=="; break; }
+			case 2: { commentStr << "!="; break; }
+			case 4: { commentStr << ">"; break; }
+			case 6: { commentStr << "<"; break; }
+			default: {break; }
+			}
+			commentStr << " " << leftRightHandStr[1].str();
 
 			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
 
@@ -1772,6 +1844,13 @@ namespace lava::gecko
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg Arith", 0x8, geckoRegisterArithCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Memory Copy 1", 0xA, geckoMemoryCopyCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Memory Copy 2", 0xC, geckoMemoryCopyCodeConv);
+		}
+		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_RegAndCounterIf);
+		{
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg 16-Bit If Equal", 0x0, geckoRegisterIfCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg 16-Bit If Not Equal", 0x2, geckoRegisterIfCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg 16-Bit If Greater", 0x4, geckoRegisterIfCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg 16-Bit If Lesser", 0x6, geckoRegisterIfCodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
