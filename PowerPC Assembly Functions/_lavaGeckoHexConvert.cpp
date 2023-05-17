@@ -355,13 +355,20 @@ namespace lava::gecko
 					unsigned char currCharacter = UCHAR_MAX;
 					if (stringCurrentlyOpen)
 					{
-						commentString << "...";
+						commentString << "... ";
 					}
 					for (unsigned long u = 0; (u < 8) && ((u + cursor) < immNum); u++)
 					{
 						currCharacter = bytesToWrite[u + cursor];
 						if ((stringCurrentlyOpen && currCharacter == 0x00) || (!stringCurrentlyOpen && currCharacter != 0x00))
 						{
+							// If we're starting a string on an empty line, and there are enough characters
+							// left to output to fill spill over into the next line...
+							if (!stringCurrentlyOpen && u == 0 && ((immNum - cursor) > 8))
+							{
+								// ... print some spaces before the line to align it with the rest of the string.
+								commentString << "   ";
+							}
 							commentString << "\"";
 							stringCurrentlyOpen = !stringCurrentlyOpen;
 						}
@@ -381,7 +388,7 @@ namespace lava::gecko
 							}
 							else
 							{
-								commentString << "...";
+								commentString << " ...";
 							}
 						}
 						else
