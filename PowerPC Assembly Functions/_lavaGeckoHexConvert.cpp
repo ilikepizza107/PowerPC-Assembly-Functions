@@ -1531,7 +1531,7 @@ namespace lava::gecko
 
 		return result;
 	}
-	std::size_t geckoC2CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	std::size_t geckoASMOutputodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
 
@@ -1548,16 +1548,27 @@ namespace lava::gecko
 			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
 			unsigned long lengthNum = lava::stringToNum<unsigned long>(lengthWord, 0, ULONG_MAX, 1);
 			
-			unsigned long inferredHookAddress = getAddressFromCodeSignature(signatureNum);
-			bool canDoGCTRMOutput = (codeTypeIn->secondaryCodeType == 2) ? (inferredHookAddress != ULONG_MAX) : 1;
-
+			bool canDoGCTRMOutput = 0;
+			unsigned char codeTypeHex = ((unsigned char)codeTypeIn->primaryCodeType << 4) | codeTypeIn->secondaryCodeType;
 			std::string hexWord("");
 			std::string conversion("");
 			std::string outputString("");
 			std::stringstream commentString("");
-			if (canDoGCTRMOutput)
+
+			// Handle codetype-unique output needs:
+			switch (codeTypeHex)
 			{
-				if (codeTypeIn->secondaryCodeType == 2)
+			case 0xC0:
+			{
+				canDoGCTRMOutput = 1;
+				outputStreamIn << "PULSE\n";
+				break;
+			}
+			case 0xC2:
+			{
+				unsigned long inferredHookAddress = getAddressFromCodeSignature(signatureNum);
+				canDoGCTRMOutput = inferredHookAddress != ULONG_MAX;
+				if (canDoGCTRMOutput)
 				{
 					outputString = "HOOK @ $" + lava::numToHexStringWithPadding(inferredHookAddress, 8);
 					commentString << "Address = " << getAddressComponentString(signatureNum);
@@ -1565,8 +1576,42 @@ namespace lava::gecko
 				}
 				else
 				{
-					outputStreamIn << "PULSE\n";
+					outputString = "* " + signatureWord + " " + lengthWord;
+					commentString << codeTypeIn->name << " (" << lengthNum << " line(s)) @ " << getAddressComponentString(signatureNum) << ":";
+					printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 				}
+				break;
+			}
+			case 0xF2:
+			{
+				canDoGCTRMOutput = 0;
+				// For these, only the final 8 bits are actually used for the length number.
+				lengthNum &= 0xFF;
+				unsigned short checksum = (lengthNum >> 8) & 0xFFFF;
+				signed char valueCount = static_cast<unsigned char>(lengthNum >> 0x18);
+				outputString = "* " + signatureWord + " " + lengthWord;
+				commentString << codeTypeIn->name << ": If XORing the " << std::abs(valueCount) << " Half-Words";
+				if (valueCount > 0)
+				{
+					commentString << " Following";
+				}
+				else
+				{
+					commentString << " Preceding";
+				}
+				commentString << " " << getAddressComponentString(signatureNum) << " == 0x" << lava::numToHexStringWithPadding(checksum, 4) << ":";
+				printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+				break;
+			}
+			default:
+			{
+				break;
+			}
+			}
+
+			// Handle rest of PPC output:
+			if (canDoGCTRMOutput)
+			{
 				outputStreamIn << "{\n";
 				bool mnemDisallowed = 0;
 				unsigned long convertedHex = ULONG_MAX;
@@ -1598,14 +1643,6 @@ namespace lava::gecko
 			}
 			else
 			{
-				outputString = "* " + signatureWord + " " + lengthWord;
-				commentString << codeTypeIn->name << " (" << lengthNum << " line(s))";
-				if (codeTypeIn->secondaryCodeType == 2)
-				{
-					commentString << "@ " << getAddressComponentString(signatureNum);
-				}
-				commentString << ":";
-				printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 				for (unsigned long i = 0; i < lengthNum; i++)
 				{
 					commentString.str("");
@@ -1952,20 +1989,21 @@ namespace lava::gecko
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Execute ASM", 0x0, geckoC2CodeConv);
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM", 0x2, geckoC2CodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Execute ASM", 0x0, geckoASMOutputodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM", 0x2, geckoASMOutputodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Create Branch", 0x6, geckoC6CodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("On/Off Switch", 0xC, geckoNameOnlyCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Address Range Check", 0xE, geckoCECodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Misc);
 		{
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Full Terminator", 0, geckoE0CodeConv);
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Endif", 2, geckoE2CodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Full Terminator", 0x0, geckoE0CodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Endif", 0x2, geckoE2CodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_EndOfCodes);
 		{
-			currentCodeType = currentCodeTypeGroup->pushInstruction("End of Codes", 0, geckoNameOnlyCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("End of Codes", 0x0, geckoNameOnlyCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM With 16-bit XOR Checksum", 0x2, geckoASMOutputodeConv);
 		}
 
 		return;
