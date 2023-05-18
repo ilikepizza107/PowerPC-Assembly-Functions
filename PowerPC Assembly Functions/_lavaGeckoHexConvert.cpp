@@ -1591,12 +1591,24 @@ namespace lava::gecko
 				break;
 			}
 			case 0xF2:
+			case 0xF4:
 			{
 				canDoGCTRMOutput = 0;
-				// For these, only the final 8 bits are actually used for the length number.
-				lengthNum &= 0xFF;
+				// These codes actually embed extra information in what normally is the length parameter.
+				// So, we need to get that info...
 				unsigned short checksum = (lengthNum >> 8) & 0xFFFF;
 				signed char valueCount = static_cast<unsigned char>(lengthNum >> 0x18);
+				// Then zero out all but the bottom 8 bits of the number (for use in the code output for loop later).
+				lengthNum &= 0xFF;
+				// This codetype also accesses PO in a slightly weird way; it can't set the normal BaPo
+				// bit to do it, so it instead sets the codetype to 0xF4. So, just for the sake of grabbing
+				// the address string in a way consistent with everything else, we unset the bapo bit then
+				// set it ourselves if the PO codetype is used.
+				unsigned long adjustedSignatureNum = signatureNum & ~signatureBaPoMask;
+				if (codeTypeHex == 0xF4)
+				{
+					adjustedSignatureNum |= signatureBaPoMask;
+				}
 				outputString = "* " + signatureWord + " " + lengthWord;
 				commentString << codeTypeIn->name << ": If XORing the " << std::abs(valueCount) << " Half-Words";
 				if (valueCount > 0)
@@ -1607,7 +1619,7 @@ namespace lava::gecko
 				{
 					commentString << " Preceding";
 				}
-				commentString << " " << getAddressComponentString(signatureNum) << " == 0x" << lava::numToHexStringWithPadding(checksum, 4) << ":";
+				commentString << " " << getAddressComponentString(adjustedSignatureNum) << " == 0x" << lava::numToHexStringWithPadding(checksum, 4) << ":";
 				printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 				break;
 			}
@@ -2053,7 +2065,9 @@ namespace lava::gecko
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_EndOfCodes);
 		{
 			currentCodeType = currentCodeTypeGroup->pushInstruction("End of Codes", 0x0, geckoNameOnlyCodeConv);
-			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM With 16-bit XOR Checksum", 0x2, geckoASMOutputodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM w/ Checksum", 0x2, geckoASMOutputodeConv);
+			// PO variant of above codetype, since it can't use the normal PO bit to do that.
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM w/ Checksum", 0x4, geckoASMOutputodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("If Search, Set Pointer", 0x6, geckoF6CodeConv);
 		}
 
