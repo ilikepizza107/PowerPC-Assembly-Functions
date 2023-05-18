@@ -134,51 +134,18 @@ namespace lava::gecko
 
 		return result;
 	}
-	std::size_t dumpUnannotatedHexToStream(std::istream& codeStreamIn, std::ostream& output, std::size_t linesToDump, std::string commentStr = "")
-	{
-		std::size_t result = 0;
-
-		bool startingNewLine = 1;
-		std::string dumpStr("");
-		dumpStr.reserve(8);
-
-		// Output first line, with comment:
-		lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
-		output << "* " << dumpStr;
-		lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
-		output << " " << dumpStr;
-		if (!commentStr.empty())
-		{
-			output << "\t\t\t\t# " << commentStr;
-		}
-		output << "\n";
-
-		result += 0x10;
-		std::size_t bytesToDump = linesToDump * 0x10;
-
-		while (result < bytesToDump)
-		{
-			if (startingNewLine)
-			{
-				output << "*";
-			}
-			lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
-			output << " " << dumpStr;
-			if (!startingNewLine)
-			{
-				output << "\n";
-			}
-			startingNewLine = !startingNewLine;
-			result += 0x8;
-		}
-
-		return result;
-	}
 
 	void printStringWithComment(std::ostream& outputStream, const std::string& primaryString, const std::string& commentString, bool printNewLine = 1, unsigned long relativeCommentLoc = 0x20)
 	{
 		unsigned long originalFlags = outputStream.flags();
-		outputStream << std::left << std::setw(relativeCommentLoc) << primaryString << "# " << commentString;
+		if (!commentString.empty())
+		{
+			outputStream << std::left << std::setw(relativeCommentLoc) << primaryString << "# " << commentString;
+		}
+		else
+		{
+			outputStream << primaryString;
+		}
 		if (printNewLine)
 		{
 			outputStream << "\n";
@@ -191,6 +158,47 @@ namespace lava::gecko
 		result.str("");
 		printStringWithComment(result, primaryString, commentString, 0, relativeCommentLoc);
 		return result.str();
+	}
+	std::size_t dumpUnannotatedHexToStream(std::istream& codeStreamIn, std::ostream& output, std::size_t linesToDump, std::string commentStr = "")
+	{
+		std::size_t result = 0;
+
+		if (linesToDump > 0)
+		{
+			bool startingNewLine = 1;
+
+			// Buffer for reading in bytes from stream.
+			std::string dumpStr("");
+			dumpStr.reserve(8);
+
+			// Output first line, with comment:
+			std::string outputString("");
+			lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
+			outputString = "* " + dumpStr;
+			lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
+			outputString += " " + dumpStr;
+			printStringWithComment(output, outputString, commentStr, 1);
+
+			result += 0x10;
+			std::size_t bytesToDump = linesToDump * 0x10;
+			while (result < bytesToDump)
+			{
+				if (startingNewLine)
+				{
+					output << "*";
+				}
+				lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
+				output << " " << dumpStr;
+				if (!startingNewLine)
+				{
+					output << "\n";
+				}
+				startingNewLine = !startingNewLine;
+				result += 0x8;
+			}
+		}
+
+		return result;
 	}
 
 	std::string convertPPCInstructionHex(unsigned long hexIn, bool enableComment)
@@ -1859,6 +1867,48 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t geckoF6CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// Number of lines to search for
+			unsigned char lineCount = signatureNum & 0xFF;
+			unsigned long searchRegionStart = immNum & 0xFFFF0000;
+			if (searchRegionStart == 0x80000000)
+			{
+				searchRegionStart =  0x80003000;
+			}
+			unsigned long searchRegionEnd = immNum << 0x10;
+
+			// Print first line:
+			std::string outputStr = "* " + signatureWord + " " + immWord;
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name << ": Search for Following " << +lineCount << " line(s) between " <<
+				"$" << lava::numToHexStringWithPadding(searchRegionStart, 8) << " and "
+				"$" << lava::numToHexStringWithPadding(searchRegionEnd, 8);
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			// Dump remaining lines:
+			dumpUnannotatedHexToStream(codeStreamIn, outputStreamIn, lineCount, "\tSearch Criteria:");
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoNameOnlyCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -2004,6 +2054,7 @@ namespace lava::gecko
 		{
 			currentCodeType = currentCodeTypeGroup->pushInstruction("End of Codes", 0x0, geckoNameOnlyCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM With 16-bit XOR Checksum", 0x2, geckoASMOutputodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("If Search, Set Pointer", 0x6, geckoF6CodeConv);
 		}
 
 		return;
