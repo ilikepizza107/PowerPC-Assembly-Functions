@@ -123,7 +123,7 @@ namespace lava::gecko
 	{
 		std::string result = "";
 
-		unsigned char executionCondition = (codeSignatureIn & 0x000F0000) >> 0x10;
+		unsigned char executionCondition = (codeSignatureIn & 0x00F00000) >> 0x14;
 		switch (executionCondition)
 		{
 		case 0: { result = "If Exec Status is True"; break; }
