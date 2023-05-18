@@ -1474,6 +1474,63 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t geckoCounterIfCodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			bool resetCountIfTrue = signatureNum & 0x8;
+
+			std::string outputStr = "* " + signatureWord + " " + immWord;
+
+			std::stringstream commentStr("");
+			commentStr << codeTypeIn->name;
+			if (signatureNum & 1)
+			{
+				commentStr << withEndifString;
+				signatureNum &= ~1;
+			}
+			commentStr << ": If 0x" << lava::numToHexStringWithPadding<unsigned short>(immNum & 0xFFFF, 4);
+			if ((immNum >> 0x10) != 0)
+			{
+				commentStr << " & 0x" << lava::numToHexStringWithPadding<unsigned short>(~(immNum >> 0x10), 4);
+			}
+			commentStr << " ";
+
+			switch (codeTypeIn->secondaryCodeType % 8)
+			{
+			case 0: { commentStr << "=="; break; }
+			case 2: { commentStr << "!="; break; }
+			case 4: { commentStr << ">"; break; }
+			case 6: { commentStr << "<"; break; }
+			default: {break; }
+			}
+
+			commentStr << " Counter, Execute";
+			if (resetCountIfTrue)
+			{
+				commentStr << " (and Reset Counter to Zero)";
+			}
+
+			printStringWithComment(outputStreamIn, outputStr, commentStr.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoC2CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -1856,6 +1913,10 @@ namespace lava::gecko
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg 16-Bit If Not Equal", 0x2, geckoRegisterIfCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg 16-Bit If Greater", 0x4, geckoRegisterIfCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Gecko Reg 16-Bit If Lesser", 0x6, geckoRegisterIfCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Counter 16-Bit If Equal", 0x8, geckoCounterIfCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Counter 16-Bit If Not Equal", 0xA, geckoCounterIfCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Counter 16-Bit If Greater", 0xC, geckoCounterIfCodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Counter 16-Bit If Lesser", 0xE, geckoCounterIfCodeConv);
 		}
 		currentCodeTypeGroup = pushPrTypeGroupToDict(geckoPrimaryCodeTypes::gPCT_Assembly);
 		{
