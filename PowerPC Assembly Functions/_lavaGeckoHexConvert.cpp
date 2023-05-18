@@ -1647,6 +1647,38 @@ namespace lava::gecko
 
 		return result;
 	}
+	std::size_t geckoC6CodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
+	{
+		std::size_t result = SIZE_MAX;
+
+		if (codeStreamIn.good() && outputStreamIn.good())
+		{
+			std::streampos initialPos = codeStreamIn.tellg();
+
+			std::string signatureWord("");
+			std::string immWord("");
+
+			lava::readNCharsFromStream(signatureWord, codeStreamIn, 8, 0);
+			lava::readNCharsFromStream(immWord, codeStreamIn, 8, 0);
+
+			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
+			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
+
+			// Initialize Strings For Output
+			std::string outputString("");
+			std::stringstream commentString("");
+
+			// Output First Line
+			outputString = "* " + signatureWord + " " + immWord;
+			commentString << codeTypeIn->name << " @ " << getAddressComponentString(signatureNum) << ": b 0x" << lava::numToHexStringWithPadding(immNum, 8);
+			
+			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
+
+			result = codeStreamIn.tellg() - initialPos;
+		}
+
+		return result;
+	}
 	std::size_t geckoCECodeConv(geckoCodeType* codeTypeIn, std::istream& codeStreamIn, std::ostream& outputStreamIn)
 	{
 		std::size_t result = SIZE_MAX;
@@ -1922,6 +1954,7 @@ namespace lava::gecko
 		{
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Execute ASM", 0x0, geckoC2CodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Insert ASM", 0x2, geckoC2CodeConv);
+			currentCodeType = currentCodeTypeGroup->pushInstruction("Create Branch", 0x6, geckoC6CodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("On/Off Switch", 0xC, geckoNameOnlyCodeConv);
 			currentCodeType = currentCodeTypeGroup->pushInstruction("Address Range Check", 0xE, geckoCECodeConv);
 		}
