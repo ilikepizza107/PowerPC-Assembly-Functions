@@ -146,7 +146,12 @@ namespace lava::gecko
 		lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
 		output << "* " << dumpStr;
 		lava::readNCharsFromStream(dumpStr, codeStreamIn, 0x8, 0);
-		output << " " << dumpStr << "\t\t\t\t# " << commentStr << "\n";
+		output << " " << dumpStr;
+		if (!commentStr.empty())
+		{
+			output << "\t\t\t\t# " << commentStr;
+		}
+		output << "\n";
 
 		result += 0x10;
 		std::size_t bytesToDump = linesToDump * 0x10;
