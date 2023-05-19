@@ -729,7 +729,8 @@ namespace lava::ppc
 			result << ", r" << argumentsIn[3];
 			result << ", " << argumentsIn[4];
 			result << ", " << argumentsIn[5];
-			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, 0) << ")";
+			result << std::string(std::max<signed long>(0x20 - result.tellp(), 0x00), ' ');
+			result << "# (Mask: 0x" << getMaskFromMBMESH(MB, ME, 0) << ")";
 		}
 
 		return result.str();
@@ -755,7 +756,8 @@ namespace lava::ppc
 			result << ", " << argumentsIn[3];
 			result << ", " << argumentsIn[4];
 			result << ", " << argumentsIn[5];
-			result << "    # (Mask: 0x" << getMaskFromMBMESH(MB, ME, SH) << ")";
+			result << std::string(std::max<signed long>(0x20 - result.tellp(), 0x00), ' ');
+			result << "# (Mask: 0x" << getMaskFromMBMESH(MB, ME, SH) << ")";
 		}
 
 		return result.str();
