@@ -69,13 +69,14 @@ namespace lava::gecko
 	unsigned short detectedDataEmbedLineCount = 0;
 	bool didBAPOStoreToAddressWhileSuspectingEmbed = 0;
 	std::set<unsigned long> suspectedEmbedLocations{};
-	void removeExpiredEmbedSuspectLocations(unsigned long currentStreamLocation)
+	std::set<unsigned long> activeGotoEndLocations{};
+	void removeExpiredLocationsFromSet(unsigned long currentStreamLocation, std::set<unsigned long>& targetSet)
 	{
-		for (auto i = suspectedEmbedLocations.begin(); i != suspectedEmbedLocations.end();)
+		for (auto i = targetSet.begin(); i != targetSet.end();)
 		{
 			if (*i <= currentStreamLocation)
 			{
-				i = suspectedEmbedLocations.erase(i);
+				i = targetSet.erase(i);
 			}
 			else
 			{
@@ -86,6 +87,17 @@ namespace lava::gecko
 			}
 		}
 	}
+	void removeExpiredEmbedSuspectLocations(unsigned long currentStreamLocation)
+	{
+		removeExpiredLocationsFromSet(currentStreamLocation, suspectedEmbedLocations);
+	}
+	void removeExpiredGotoEndLocations(unsigned long currentStreamLocation)
+	{
+		removeExpiredLocationsFromSet(currentStreamLocation, activeGotoEndLocations);
+	}
+
+	// Gecko Loop Tracking
+	std::stack<unsigned long> activeRepeatStartLocations{};
 
 	// Utility
 	unsigned long getAddressFromCodeSignature(unsigned long codeSignatureIn)
@@ -140,7 +152,8 @@ namespace lava::gecko
 		unsigned long originalFlags = outputStream.flags();
 		if (!commentString.empty())
 		{
-			outputStream << std::left << std::setw(relativeCommentLoc) << primaryString << "# " << commentString;
+			std::size_t indentationLevel = activeRepeatStartLocations.size();
+			outputStream << std::left << std::setw(relativeCommentLoc) << primaryString << "# " << std::string(indentationLevel, '\t') << commentString;
 		}
 		else
 		{
@@ -591,6 +604,9 @@ namespace lava::gecko
 			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 
 			result = codeStreamIn.tellg() - initialPos;
+
+			// Lastly, signal that we've entered a Repeat block.
+			activeRepeatStartLocations.push(initialPos);
 		}
 
 		return result;
@@ -619,6 +635,10 @@ namespace lava::gecko
 			// Build and Print Line
 			outputString = "* " + signatureWord + " " + immWord;
 			commentString << codeTypeIn->name << ": Execute Repeat in b" << (immNum & 0xF);
+
+			// Before we print, signal that we're leaving a Repeat block (before print to un-indent this line).
+			activeRepeatStartLocations.pop();
+
 			printStringWithComment(outputStreamIn, outputString, commentString.str(), 1);
 
 			result = codeStreamIn.tellg() - initialPos;
@@ -674,6 +694,8 @@ namespace lava::gecko
 			unsigned long signatureNum = lava::stringToNum<unsigned long>(signatureWord, 0, ULONG_MAX, 1);
 			unsigned long immNum = lava::stringToNum<unsigned long>(immWord, 0, ULONG_MAX, 1);
 
+			unsigned char executionCondition = (signatureNum & 0x00F00000) >> 0x14;
+
 			// Initialize Strings For Output
 			std::string outputString("");
 			std::stringstream commentString("");
@@ -705,26 +727,41 @@ namespace lava::gecko
 
 			result = codeStreamIn.tellg() - initialPos;
 
-			// If we've arrived at a GOTO that skips forwards, and we're currently suspecting a data embed...
-			if ((codeTypeIn->secondaryCodeType == 6) && (lineOffset > 0) && !suspectedEmbedLocations.empty())
+			// If we've arrived at a GOTO that skips forwards...
+			if ((codeTypeIn->secondaryCodeType == 6) && (lineOffset > 0))
 			{
-				// ... check if this GOTO corresponds to a suspected Data Embed location.
-				if (suspectedEmbedLocations.find(codeStreamIn.tellg()) != suspectedEmbedLocations.end())
+				unsigned long currentGotoEndLocation = unsigned long(codeStreamIn.tellg()) + (lineOffset * 0x10);
+				// ... and we're currently suspecting a data embed...
+				if (!suspectedEmbedLocations.empty())
 				{
-					// If so, signal the number of lines the embed takes up so we can dump it.
-					detectedDataEmbedLineCount = unsigned short(lineOffset);
-				}
-				// Otherwise...
-				else if (didBAPOStoreToAddressWhileSuspectingEmbed)
-				{
-					unsigned long currentGotoDestination = unsigned long(codeStreamIn.tellg()) + (lineOffset * 0x10);
-					// ... if this GOTO would take us *past* a suspected embed location...
-					if (currentGotoDestination > *suspectedEmbedLocations.begin())
+					// ... check if this GOTO corresponds to a suspected Data Embed location.
+					if (suspectedEmbedLocations.find(codeStreamIn.tellg()) != suspectedEmbedLocations.end())
 					{
-						// ... also signal, as this is probably an embed as well.
+						// If so, signal the number of lines the embed takes up so we can dump it.
 						detectedDataEmbedLineCount = unsigned short(lineOffset);
 					}
+					// Otherwise, if we've done a BAPO store since we established our suspicion...
+					else if (didBAPOStoreToAddressWhileSuspectingEmbed)
+					{
+						// ... AND this GOTO would take us *past* a suspected embed location...
+						if (currentGotoEndLocation > *suspectedEmbedLocations.begin())
+						{
+							// ... also signal, as this is probably an embed as well.
+							detectedDataEmbedLineCount = unsigned short(lineOffset);
+						}
+					}
 				}
+				// The only other situation under which we can expect we're looking at an embed is if this Goto
+				// is set to activate regardles of the current Execution Status, AND we can be sure that there isn't another
+				// Goto that would land us within the region skipped by this potential embed Goto. If both of those conditiosn are true...
+				else if ((executionCondition == 2) && (activeGotoEndLocations.empty() || (currentGotoEndLocation < *activeGotoEndLocations.begin())))
+				{
+					// ... signal that we've reached an embed.
+					detectedDataEmbedLineCount = unsigned short(lineOffset);
+				}
+
+				// Finally, record the expected end location for this Goto, it'll be removed once we pass it.
+				activeGotoEndLocations.insert(currentGotoEndLocation);
 			}
 		}
 
@@ -2118,6 +2155,7 @@ namespace lava::gecko
 				{
 					didBAPOStoreToAddressWhileSuspectingEmbed = 0;
 				}
+				removeExpiredGotoEndLocations(codeStreamIn.tellg());
 
 				lava::readNCharsFromStream(codeTypeStr, codeStreamIn, 2, 1);
 
