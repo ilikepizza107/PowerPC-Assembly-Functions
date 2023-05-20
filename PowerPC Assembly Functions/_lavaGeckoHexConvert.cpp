@@ -26,6 +26,10 @@ namespace lava::gecko
 	{
 		currentBAValue = ULONG_MAX;
 	}
+	void resetBAValue()
+	{
+		currentBAValue = 0x80000000;
+	}
 	bool validateCurrentPOValue()
 	{
 		return currentPOValue != ULONG_MAX;
@@ -33,6 +37,10 @@ namespace lava::gecko
 	void invalidateCurrentPOValue()
 	{
 		currentPOValue = ULONG_MAX;
+	}
+	void resetPOValue()
+	{
+		currentPOValue = 0x80000000;
 	}
 	bool validateGeckoRegister(unsigned char regIndex)
 	{
@@ -56,6 +64,16 @@ namespace lava::gecko
 		}
 
 		return result;
+	}
+	void invalidateAllGeckoRegisters()
+	{
+		geckoRegisters.fill(ULONG_MAX);
+	}
+	void resetParserDynamicValues()
+	{
+		resetBAValue();
+		resetPOValue();
+		invalidateAllGeckoRegisters();
 	}
 
 	// Data Embed Detection
@@ -95,9 +113,20 @@ namespace lava::gecko
 	{
 		removeExpiredLocationsFromSet(currentStreamLocation, activeGotoEndLocations);
 	}
-
 	// Gecko Loop Tracking
 	std::stack<unsigned long> activeRepeatStartLocations{};
+	void resetParserTrackingValues()
+	{
+		detectedDataEmbedLineCount = 0;
+		didBAPOStoreToAddressWhileSuspectingEmbed = 0;
+		suspectedEmbedLocations.clear();
+		activeGotoEndLocations.clear();
+		while (!activeRepeatStartLocations.empty())
+		{
+			activeRepeatStartLocations.pop();
+		}
+	}
+
 
 	// Utility
 	unsigned long getAddressFromCodeSignature(unsigned long codeSignatureIn)
@@ -2111,6 +2140,7 @@ namespace lava::gecko
 		return;
 	}
 
+	
 	geckoCodeType* findRelevantGeckoCodeType(unsigned char primaryType, unsigned char secondaryType)
 	{
 		geckoCodeType* result = nullptr;
@@ -2127,7 +2157,7 @@ namespace lava::gecko
 
 		return result;
 	}
-	std::size_t parseGeckoCode(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength)
+	std::size_t parseGeckoCode(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, bool resetDynamicValues, bool resetTrackingValues)
 	{
 		std::size_t result = SIZE_MAX;
 
@@ -2138,6 +2168,15 @@ namespace lava::gecko
 			unsigned char currCodeType = UCHAR_MAX;
 			unsigned char currCodePrType = UCHAR_MAX;
 			unsigned char currCodeScType = UCHAR_MAX;
+
+			if (resetDynamicValues)
+			{
+				resetParserDynamicValues();
+			}
+			if (resetTrackingValues)
+			{
+				resetParserTrackingValues();
+			}
 
 			std::string codeTypeStr("");
 			geckoCodeType* targetedGeckoCodeType = nullptr;

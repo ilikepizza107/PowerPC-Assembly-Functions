@@ -98,7 +98,7 @@ bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStream
 		output << std::string(hashtagStrLength, '#') << "\n";
 	}
 
-	return lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength) == expectedLength;
+	return lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0) == expectedLength;
 }
 
 //converts char hex digit to decimal
