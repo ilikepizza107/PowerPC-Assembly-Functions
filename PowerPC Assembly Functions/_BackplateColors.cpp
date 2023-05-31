@@ -205,93 +205,86 @@ void menSelChrElemntChange()
 	{
 		int reg1 = 11;
 		int reg2 = 12;
-
-		constexpr int stringReg = 4;
+		int reg3 = 4;
 
 		int applyChangeLabel = GetNextLabel();
 		int exitLabel = GetNextLabel();
 
-		ASMStart(0x800b5f20, "[CM: _BackplateColors] MenSelChr Element Override " + codeVersion + " [QuickLava]"); // Hooks "setActionNo/[MuObject]/mu_object.o".
+		ASMStart(0x8018da3c, "[CM: _BackplateColors] MenSelChr Element Override " + codeVersion + " [QuickLava]"); // Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFPCc]/g3d_resfile.o".
 
-		ADDI(stringReg, 1, 88); // Restore Original Instruction
-
-		LWZ(reg1, stringReg, 0x00);
-		SetRegister(reg2, "MenS");
-		If(reg1, EQUAL_L, reg2);
+		// If the previous search for the targeted CLR0 was successful...
+		If(3, NOT_EQUAL_I_L, 0x00);
 		{
-			LWZ(reg1, stringReg, 0x08);
-			SetRegister(reg2, "rCen");
-			If(reg1, EQUAL_L, reg2);
+			// ... check if returned CLR0 has the activator string set.
+			LWZ(reg2, 3, 0x18);
+			LWZX(reg2, reg2, 3);
+			SetRegister(reg1, "lCLR");
+
+			// If the activator string isn't set, then we can exit.
+			CMPL(reg2, reg1, 0);
+			JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
+			// Otherwise, we need to overwrite the target string's requested index.
+			// First, we need to use strlen to get the end of the string.
+			// That'll require overwriting the current r3 though, so we'll store that in reg1.
+			MR(reg1, 3);
+
+			// Then, load the string address into r3...
+			MR(3, 31);
+			// ... then load the strlen's address...
+			SetRegister(reg2, 0x803F0640);
+			// ... and run it.
+			MTCTR(reg2);
+			BCTRL();
+
+			// Now that r3 is the length of the string, we can Subtract one to get the index we'll actually be overwriting.
+			ADDI(3, 3, -1);
+			// Load the current index byte into r3...
+			LBZX(4, 3, 31);
+			// ... and subtract '0' from it so we get the index as a number. Keep this!
+			ADDI(4, 4, -1 * (unsigned char)'0');
+
+			// Calculate offset into Backplate Color LOC Entries
+			SetRegister(reg2, 0x4);
+			MULLW(reg2, reg2, 4);
+			// Add that to first entry's location
+			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+			ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+			// Load line INDEX value
+			LWZ(reg2, reg2, 0x00);
+			// Load the current value at that line.
+			LWZ(reg2, reg2, Line::VALUE);
+
+			// Restore r3's value before we continue.
+			// If we actually need to search for a new CLR0, we will, which will overwrite this.
+			// Otherwise, it'll be in place where it should be.
+			MR(3, reg1);
+
+			// If the retrieved line value isn't the same as the original value...
+			If(reg2, NOT_EQUAL_L, 4);
 			{
-				std::size_t indexDestinationOffset = std::string("MenSelchrCentry4_TopN__0").size() - 1;
-				ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
-				JumpToLabel(applyChangeLabel); // Jump to apply block if they match
-			}
-			EndIf();
-			SetRegister(reg2, "rChu");
-			If(reg1, EQUAL_L, reg2);
-			{
-				std::size_t indexDestinationOffset = std::string("MenSelchrChuman4_TopN__0").size() - 1;
-				ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
-				JumpToLabel(applyChangeLabel); // Jump to apply block if they match
-			}
-			EndIf();
-			SetRegister(reg2, "rCoi");
-			If(reg1, EQUAL_L, reg2);
-			{
-				LWZ(reg1, stringReg, 0x0C);
-				SetRegister(reg2, "n_To");
-				If(reg1, EQUAL_L, reg2);
-				{
-					std::size_t indexDestinationOffset = std::string("MenSelchrCoin_TopN__0").size() - 1;
-					ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
-					JumpToLabel(applyChangeLabel); // Jump to apply block if they match
-				}
-				EndIf();
-			}
-			EndIf();
-			SetRegister(reg2, "rCur");
-			If(reg1, EQUAL_L, reg2);
-			{
-				std::size_t indexDestinationOffset = std::string("MenSelchrCursorB_TopN__0").size() - 1;
-				ADDI(reg1, stringReg, indexDestinationOffset); // Location to Write Index
-				JumpToLabel(applyChangeLabel); // Jump to apply block if they match
+				// ... add '0' to it to get the ASCII hex for the index...
+				ADDI(reg2, reg2, '0');
+				// ... and store it at the destination location in the string, as calculated before.
+				STBX(reg2, 3, 31);
+
+				// Lastly, prepare to run _vc.
+				// Restore the params to what they were when we last ran _bv...
+				ADDI(3, 1, 0x08);
+				MR(4, 31);
+				// ... load the _vc's address...
+				SetRegister(reg2, 0x8018CF30);
+				// ... and run it.
+				MTCTR(reg2);
+				BCTRL();
 			}
 			EndIf();
 		}
 		EndIf();
-		JumpToLabel(exitLabel);
-
-
-		Label(applyChangeLabel);
-
-		// Borrow the stringRegister for a moment, to store the target index
-		// We'll put this back later lol
-		LBZ(stringReg, reg1, 0x00);
-		// Subtract '0' from it so we get the index as a number.
-		ADDI(stringReg, stringReg, -1 * (unsigned char)'0');
-
-		// Calculate offset into Backplate Color LOC Entries
-		SetRegister(reg2, 0x4);
-		MULLW(reg2, reg2, stringReg);
-		// Add that to first entry's location
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-		// Load line INDEX value
-		LWZ(reg2, reg2, 0x00);
-		// Load the current value at that line.
-		LWZ(reg2, reg2, Line::VALUE);
-		// Add '0' to it to get the ASCII hex for the index.
-		ADDI(reg2, reg2, '0');
-
-		// Store it at the destination location in the string, as calculated before.
-		STB(reg2, reg1, 0x00);
-
-		ADDI(stringReg, 1, 88); // Restore stringRegister's Value
 
 		Label(exitLabel);
 
-		ASMEnd();
+		ASMEnd(0x80010024); // Restore Original Instruction: lwz	r0, 0x0024 (sp)
 	}
 }
 
@@ -304,49 +297,29 @@ void shieldColorChange()
 		int reg2 = 12;
 		int reg3 = 4;
 
-		int applyChangeLabel = GetNextLabel();
 		int exitLabel = GetNextLabel();
 
 		ASMStart(0x8018db38, "[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]"); // Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/g3d_resfile.o".
 
-		// Get string offset for the first CLR0 in the list
-		LWZ(reg1, 3, 0x20);
-		// Add that offset to beginning of list to get string pointer
-		ADD(reg1, reg1, 3);
-		// Check string length >= 12
-		LWZ(reg2, reg1, -0x4);
-		If(reg2, GREATER_OR_EQUAL_I, 0xC);
-		{
-			// If so, check for the "ommo" string, which should help ensure we only look at common effects
-			LWZ(reg2, reg1, 0x4);
-			// And load "ommo" into reg3 to compare it against
-			SetRegister(reg3, "ommo");
-			If(reg2, EQUAL_L, reg3);
-			{
-				// If so, grab the 9th - 12th characters to check against our constants
-				LWZ(reg2, reg1, 0x8);
-				// And load "nShi" into reg3 to compare it against
-				SetRegister(reg3, "nShi");
-				If(reg2, EQUAL_L, reg3);
-				{
-					JumpToLabel(applyChangeLabel); // Jump to apply block if they match
-				}
-				EndIf();
-				// If that failed, load "nDea" to compare against next
-				SetRegister(reg3, "nDea");
-				If(reg2, EQUAL_L, reg3);
-				{
-					JumpToLabel(applyChangeLabel); // Jump to apply block if they match
-				}
-				EndIf();
-			}
-			EndIf();
-		}
-		EndIf();
-		JumpToLabel(exitLabel);
+		// Get data offset for the first CLR0 in the list
+		LWZ(reg2, 3, 0x24);
+		// Get the location for that entry's actual CLR0
+		ADD(reg1, reg2, 3);
 
 
-		Label(applyChangeLabel);
+
+		// Grab the offset for the "Original Path" Value
+		LWZ(reg2, reg1, 0x18);
+
+		// Grab the first 4 bytes of the Orig Path
+		LWZX(reg2, reg2, reg1);
+		// Set reg3 to our Activation String
+		SetRegister(reg3, "lCLR");
+		// Compare the 4 bytes we loaded to the target string...
+		CMPL(reg2, reg3, 0);
+		// ... and exit if they're not equal.
+		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
 
 		// Calculate offset into Backplate Color LOC Entries
 		SetRegister(reg2, 0x4);
@@ -387,7 +360,6 @@ void backplateColorChange()
 		int reg3 = 3;
 
 		int exitLabel = GetNextLabel();
-		int applyChangesLabel = GetNextLabel();
 
 		ASMStart(0x800b7a70, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
 
@@ -397,76 +369,18 @@ void backplateColorChange()
 		LWZ(reg1, reg1, 0x18);
 		// Now grab 0x2C past that, and we've got the original CLR0 data now.
 		LWZ(reg1, reg1, 0x2C);
-		// Grab the number of frames in the CLR0.
-		LHZ(reg2, reg1, 0x1C);
-		CMPLI(reg2, 10, 0);
-		JumpToLabel(exitLabel, bCACB_LESSER);
 
-		// Now grab the string offset, from 0x14 past the CLR0 pointer...
-		LWZ(reg2, reg1, 0x14);
-		// ... and add it to the CLR0 pointer to get the string.
-		ADD(reg2, reg1, reg2);
+		// Grab the offset for the "Original Path" Value
+		LWZ(reg2, reg1, 0x18);
 
-		// From here, we're going to do some checks to identify whether the CLR0 we're looking at is one we want to override.
-		// Each area will specify strings to try to catch, as well as a starting position, and will iterate through them all
-		// until we've found one.
-		std::vector<std::string> stringsToCatch;
-		std::size_t startingPos = SIZE_MAX;
-
-		// Load the first 4 bytes of the string.
-		LWZ(reg1, reg2, 0x00);
-
-		// Char Select CLR0s
-		SetRegister(reg3, "MenS");
-		If(reg1, EQUAL_L, reg3);
-		{
-			startingPos = 0x08;
-			stringsToCatch = {
-				"MenSelchrCbase4_TopN__0",
-				"MenSelchrCmark4_TopN__0",
-			};
-
-			LWZ(reg1, reg2, startingPos);
-			for (std::size_t i = 0; i < stringsToCatch.size(); i++)
-			{
-				SetRegister(reg3, stringsToCatch[i].substr(startingPos, 0x04));
-				CMPL(reg3, reg1, 0);
-				JumpToLabel(applyChangesLabel, bCACB_EQUAL);
-			}
-			JumpToLabel(exitLabel);
-		}
-		EndIf();
-		// In-Game, Results Creen CLR0s
-		SetRegister(reg3, "Inf");
-		// Set the bottom char of the string to 0.
-		// Note: because we're changing the reg holding the loaded part of the string, keep
-		// this group last, or your comparisons won't work as you expect.
-		RLWINM(reg1, reg1, 0x0, 0x00, 0x17);
-		If(reg1, EQUAL_L, reg3);
-		{
-			stringsToCatch = {
-				"InfArrow_TopN__0",
-				"InfFace_TopN__0",
-				"InfLoupe0_TopN__0",
-				"InfMark_TopN__0",
-				"InfPlynm_TopN__0",
-				"InfResultRank#_TopN__0",
-				"InfResultMark##_TopN",
-			};
-			startingPos = 0x06;
-
-			LWZ(reg1, reg2, startingPos);
-			for (std::size_t i = 0; i < stringsToCatch.size(); i++)
-			{
-				SetRegister(reg3, stringsToCatch[i].substr(startingPos, 0x04));
-				CMPL(reg3, reg1, 0);
-				JumpToLabel(applyChangesLabel, bCACB_EQUAL);
-			}
-			JumpToLabel(exitLabel);
-		}
-		EndIf();
-
-		Label(applyChangesLabel);
+		// Grab the first 4 bytes of the Orig Path
+		LWZX(reg2, reg2, reg1);
+		// Set reg3 to our Activation String
+		SetRegister(reg3, "lCLR");
+		// Compare the 4 bytes we loaded to the target string...
+		CMPL(reg2, reg3, 0);
+		// ... and exit if they're not equal.
+		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 		
 		// Convert target frame to an integer, and copy it into reg1
 		SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
