@@ -154,13 +154,16 @@ void handColorChange()
 		int reg2 = 12;
 		int reg3 = 3;
 
-		ASMStart(0x8069ca3c, "[CM: _BackplateColors] CSS Hand Color Change (meleeKind) " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
+		// That Hand Size code in RSBE01.txt (HOOKS @ 8069c030) is breaking one of the constants used for calcing hand colors
+		// doesn't have any impact under normal circumstances I suppose, but mad annoying lol, gotta fix it for these functions
+
+		ASMStart(0x8069ca3c, "[CM: _BackplateColors] CSS Hand Color Change (meleeKind) " + codeVersion + " [QuickLava]"); // Hooks "updateMeleeKind/[muSelCharHand]/mu_selchar_hand.o".
 
 		handColorChangeBody(reg1, reg2, reg3);
 		
 		ASMEnd(0x807f004c); // Restore original instruction: lwz	r3, 0x004C (r31)
 
-		ASMStart(0x8069caf0, "[CM: _BackplateColors] CSS Hand Color Change (teamColor) " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
+		ASMStart(0x8069caf0, "[CM: _BackplateColors] CSS Hand Color Change (teamColor) " + codeVersion + " [QuickLava]"); // Hooks "updateTeamColor/[muSelCharHand]/mu_selchar_hand.o".
 
 		handColorChangeBody(reg1, reg2, reg3);
 
@@ -207,10 +210,17 @@ void menSelChrElemntChange()
 		int reg2 = 12;
 		int reg3 = 4;
 
+		const std::string activatorString = "lBC3";
 		int applyChangeLabel = GetNextLabel();
 		int exitLabel = GetNextLabel();
 
-		ASMStart(0x8018da3c, "[CM: _BackplateColors] MenSelChr Element Override " + codeVersion + " [QuickLava]"); // Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFPCc]/g3d_resfile.o".
+		// Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFPCc]/g3d_resfile.o".
+		ASMStart(0x8018da3c, "[CM: _BackplateColors] MenSelChr Element Override " + codeVersion + " [QuickLava]",
+			"\nIntercepts calls to certain player-slot-specific Menu CLR0s, and redirects them according"
+			"\nto the appropriate Code Menu line. Intended for use with:"
+			"\n\t- MenSelchrCentry4_TopN__#\n\t- MenSelchrChuman4_TopN__#\n\t- MenSelchrCoin_TopN__#\n\t- MenSelchrCursorB_TopN__#"
+			"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"
+		);
 
 		// If the previous search for the targeted CLR0 was successful...
 		If(3, NOT_EQUAL_I_L, 0x00);
@@ -218,7 +228,7 @@ void menSelChrElemntChange()
 			// ... check if returned CLR0 has the activator string set.
 			LWZ(reg2, 3, 0x18);
 			LWZX(reg2, reg2, 3);
-			SetRegister(reg1, "lCLR");
+			SetRegister(reg1, activatorString);
 
 			// If the activator string isn't set, then we can exit.
 			CMPL(reg2, reg1, 0);
@@ -258,7 +268,6 @@ void menSelChrElemntChange()
 			// Restore r3's value before we continue.
 			// If we actually need to search for a new CLR0, we will, which will overwrite this.
 			// Otherwise, it'll be in place where it should be.
-			MR(3, reg1);
 
 			// If the retrieved line value isn't the same as the original value...
 			If(reg2, NOT_EQUAL_L, 4);
@@ -277,6 +286,10 @@ void menSelChrElemntChange()
 				// ... and run it.
 				MTCTR(reg2);
 				BCTRL();
+			}
+			Else();
+			{
+				MR(3, reg1);
 			}
 			EndIf();
 		}
@@ -297,9 +310,16 @@ void shieldColorChange()
 		int reg2 = 12;
 		int reg3 = 4;
 
+		const std::string activatorString = "lBC2";
 		int exitLabel = GetNextLabel();
 
-		ASMStart(0x8018db38, "[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]"); // Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/g3d_resfile.o".
+		// Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/g3d_resfile.o".
+		ASMStart(0x8018db38, "[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
+			"\nIntercepts calls to the player-slot-specific \"ef_common\" CLR0s in common3.pac, and redirects them according"
+			"\nto the appropriate Code Menu line. Intended for use with:"
+			"\n\t- EffCommonShield_#\n\t- EffCommonDead_#"
+			"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"
+		);
 
 		// Get data offset for the first CLR0 in the list
 		LWZ(reg2, 3, 0x24);
@@ -314,7 +334,7 @@ void shieldColorChange()
 		// Grab the first 4 bytes of the Orig Path
 		LWZX(reg2, reg2, reg1);
 		// Set reg3 to our Activation String
-		SetRegister(reg3, "lCLR");
+		SetRegister(reg3, activatorString);
 		// Compare the 4 bytes we loaded to the target string...
 		CMPL(reg2, reg3, 0);
 		// ... and exit if they're not equal.
@@ -361,7 +381,20 @@ void backplateColorChange()
 
 		int exitLabel = GetNextLabel();
 
-		ASMStart(0x800b7a70, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]"); // Hooks "setFrameMatCol/[MuObject]/mu_object.o".
+		const std::string activatorString = "lBC1";
+
+		// Hooks "setFrameMatCol/[MuObject]/mu_object.o".
+		ASMStart(0x800b7a70, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]",
+			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and redirects them according"
+			"\nto the appropriate Code Menu lines. Intended for use with:"
+			"\n\tIn sc_selcharacter.pac:"
+			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCmark4_TopN__0"
+			"\n\tIn info.pac (and its variants, eg. info_training,pac):"
+			"\n\t\t- InfArrow_TopN__0\n\t\t- InfFace_TopN__0\n\t\t- InfLoupe0_TopN__0\n\t\t- InfMark_TopN__0\n\t\t- InfPlynm_TopN__0"
+			"\n\tIn stgresult.pac:"
+			"\n\t\t- InfResultRank#_TopN__0\n\t\t- InfResultMark##_TopN"
+			"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"
+		);
 
 		// r31 is the original r3 value. Grab the address from 0x14 past that...
 		LWZ(reg1, 31, 0x14);
@@ -376,7 +409,7 @@ void backplateColorChange()
 		// Grab the first 4 bytes of the Orig Path
 		LWZX(reg2, reg2, reg1);
 		// Set reg3 to our Activation String
-		SetRegister(reg3, "lCLR");
+		SetRegister(reg3, activatorString);
 		// Compare the 4 bytes we loaded to the target string...
 		CMPL(reg2, reg3, 0);
 		// ... and exit if they're not equal.
