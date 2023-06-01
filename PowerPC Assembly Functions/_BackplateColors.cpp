@@ -95,82 +95,6 @@ void transparentCSSandResultsScreenNames()
 	}
 }
 
-// This code is usable between both updateTeamColor and updateMeleeKind for the hand, so
-// I've moved the bulk of it out into this function here to ensure things are consistent
-// between the two.
-void handColorChangeBody(int reg1, int reg2, int reg3)
-{
-	// Convert target frame to an integer, and copy it into reg1
-	SetRegister(reg3, SET_FLOAT_REG_TEMP_MEM);
-	FCTIWZ(1, 1);
-	STFD(1, reg3, 0x00);
-	LWZ(reg1, reg3, 0x04);
-	// We'll be using this to index into our Code Menu lines, so
-	// if it's greater than 0, we'll subtract 1 (Red is usually called via frame 1).
-	If(reg1, GREATER_I_L, 0x00);
-	{
-		ADDI(reg1, reg1, -0x01);
-	}
-	EndIf();
-	// Use that to calculate which code menu line we should be looking at
-	SetRegister(reg2, 0x4);
-	MULLW(reg2, reg2, reg1);
-	// Add that to first entry's location
-	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-	ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-	// Load line INDEX value
-	LWZ(reg2, reg2, 0x00);
-	// Then Look 0x08 past the line's address to get the selected index
-	LWZ(reg2, reg2, Line::VALUE);
-	// Convert the prescribed frame back into a double:
-	// Store the prescribed frame at the end of the double staging area.
-	STW(reg2, reg3, 0x04);
-	// Write the conversion double's head to the front of the area, and load it into a register.
-	SetRegister(reg2, 0x43300000);
-	STW(reg2, reg3, 0x00);
-	LFD(1, reg3, 0x00);
-	// Load the 0x4330 double to subtract with.
-	ADDIS(reg1, 0, 0x805A);
-	LFD(0, reg1, 0x36E8);
-	// Subtract to finish the conversion.
-	FSUB(1, 1, 0);
-}
-void handColorChange()
-{
-	// If Color Changer is enabled
-	if (BACKPLATE_COLOR_1_INDEX != -1)
-	{
-		// In team color case, the frame gets one added to it while it's converted to Double
-		// Frames:
-		//	- 0x00 Red2?
-		//	- 0x01 Red Main
-		//	- 0x02 Blue
-		//	- 0x03 Yellow
-		//	- 0x04 Green Main
-		//	- 0x05 Green2?
-		//
-		
-		int reg1 = 11;
-		int reg2 = 12;
-		int reg3 = 3;
-
-		// That Hand Size code in RSBE01.txt (HOOKS @ 8069c030) is breaking one of the constants used for calcing hand colors
-		// doesn't have any impact under normal circumstances I suppose, but mad annoying lol, gotta fix it for these functions
-
-		ASMStart(0x8069ca3c, "[CM: _BackplateColors] CSS Hand Color Change (meleeKind) " + codeVersion + " [QuickLava]"); // Hooks "updateMeleeKind/[muSelCharHand]/mu_selchar_hand.o".
-
-		handColorChangeBody(reg1, reg2, reg3);
-		
-		ASMEnd(0x807f004c); // Restore original instruction: lwz	r3, 0x004C (r31)
-
-		ASMStart(0x8069caf0, "[CM: _BackplateColors] CSS Hand Color Change (teamColor) " + codeVersion + " [QuickLava]"); // Hooks "updateTeamColor/[muSelCharHand]/mu_selchar_hand.o".
-
-		handColorChangeBody(reg1, reg2, reg3);
-
-		ASMEnd(0x807f004c); // Restore original instruction: lwz	r3, 0x004C (r31)
-	}
-}
-
 void randomColorChange()
 {
 	// If Color Changer is enabled
@@ -372,53 +296,57 @@ void backplateColorChange()
 	// 08 = Teal
 	// 09 = CPU Grey
 
-	// If Color Changer is enabled
 	if (BACKPLATE_COLOR_1_INDEX != -1)
 	{
 		int reg1 = 11;
 		int reg2 = 12;
-		int reg3 = 3;
 
 		int exitLabel = GetNextLabel();
 
 		const std::string activatorString = "lBC1";
 
-		// Hooks "setFrameMatCol/[MuObject]/mu_object.o".
-		ASMStart(0x800b7a70, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]",
+		CodeRaw("[CM: _BackplateColors] Hand Color Fix " + codeVersion + " [QuickLava]",
+			"Fixes a conflict with Eon's Roster-Size-Based Hand Resizing code, which could"
+			"\nin some cases cause CSS hands to be wind up the wrong color."
+			, 
+			{ 
+				0x0469CA2C, 0xC0031014, // op	lfs	f0, 0x1014 (r3) @ 8069CA2C
+				0x0469CAE0, 0xC0031014	// op	lfs	f0, 0x1014 (r3) @ 8069CAE0
+			}
+		);
+
+		// Hooks "SetFrame/[nw4r3g3d15AnmObjMatClrResFf]/g3d_anmclr.o".
+		ASMStart(0x80197fac, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]",
 			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and redirects them according"
 			"\nto the appropriate Code Menu lines. Intended for use with:"
 			"\n\tIn sc_selcharacter.pac:"
-			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCmark4_TopN__0"
-			"\n\tIn info.pac (and its variants, eg. info_training,pac):"
+			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCursorA_TopN__0\n\t\t- MenSelchrCmark4_TopN__0"
+			"\n\tIn info.pac (and its variants, eg. info_training.pac):"
 			"\n\t\t- InfArrow_TopN__0\n\t\t- InfFace_TopN__0\n\t\t- InfLoupe0_TopN__0\n\t\t- InfMark_TopN__0\n\t\t- InfPlynm_TopN__0"
 			"\n\tIn stgresult.pac:"
 			"\n\t\t- InfResultRank#_TopN__0\n\t\t- InfResultMark##_TopN"
 			"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"
 		);
 
-		// r31 is the original r3 value. Grab the address from 0x14 past that...
-		LWZ(reg1, 31, 0x14);
-		// ... then the address 0x18 past that, putting us at I think CLR0 Anm Obj.
-		LWZ(reg1, reg1, 0x18);
-		// Now grab 0x2C past that, and we've got the original CLR0 data now.
-		LWZ(reg1, reg1, 0x2C);
+		// Grab 0x2C past the pointer in r3, and we've got the original CLR0 data now.
+		LWZ(reg1, 3, 0x2C);
 
 		// Grab the offset for the "Original Path" Value
 		LWZ(reg2, reg1, 0x18);
 
 		// Grab the first 4 bytes of the Orig Path
 		LWZX(reg2, reg2, reg1);
-		// Set reg3 to our Activation String
-		SetRegister(reg3, activatorString);
+		// Set reg1 to our Activation String
+		SetRegister(reg1, activatorString);
 		// Compare the 4 bytes we loaded to the target string...
-		CMPL(reg2, reg3, 0);
+		CMPL(reg2, reg1, 0);
 		// ... and exit if they're not equal.
 		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
-		
+
 		// Convert target frame to an integer, and copy it into reg1
 		SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
-		FCTIWZ(1, 31);
-		STFD(1, reg1, 0x00);
+		FCTIWZ(3, 1);
+		STFD(3, reg1, 0x00);
 		LWZ(reg1, reg1, 0x04);
 
 		// This is only really here for the Results Screen Franchise icons.
@@ -466,13 +394,14 @@ void backplateColorChange()
 		// Set reg2 equal to 0x4330, then store it at the head of our staging area
 		ADDIS(reg2, 0, 0x4330);
 		STW(reg2, reg1, 0x00);
-		// Load that value into fr31 now
-		LFD(31, reg1, 0x00);
+		// Load that value into fr3 now
+		LFD(3, reg1, 0x00);
 		// Load the global constant 0x4330000000000000 float from 0x805A36EA
 		ADDIS(reg2, 0, 0x805A);
 		LFD(1, reg2, 0x36E8);
 		// Subtract that constant float from our constructed float...
-		FSUB(31, 31, 1);
+		FSUB(1, 3, 1);
+
 		// ... and voila! conversion done. Not entirely sure why this works lol, though my intuition is that
 		// it's setting the exponent part of the float such that the mantissa ends up essentially in plain decimal format.
 		// Exponent ends up being 2^52, and a double's mantissa is 52 bits long, so seems like that's what's up.
@@ -480,7 +409,7 @@ void backplateColorChange()
 
 		Label(exitLabel);
 
-		ASMEnd(0x807f0014); // Restore original instruction: lwz	r3, 0x0014 (r31)
+		ASMEnd(0xfc600890); // Restore original instruction: fmr	f3, f1
 	}
 
 }
