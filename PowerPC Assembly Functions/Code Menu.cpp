@@ -969,7 +969,7 @@ void CodeMenu()
 	MainLines.push_back(&P4.CalledFromLine);
 	MainLines.push_back(&SpecialModePage.CalledFromLine);
 
-	/*
+	
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
 	std::vector<std::string> colorStrings = {
@@ -987,7 +987,7 @@ void CodeMenu()
 	HUDColorLines.push_back(new Selection("Clear: ", colorStrings, 0, BACKPLATE_COLOR_T_INDEX));
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
 	MainLines.push_back(&HUDColorsPage.CalledFromLine);
-	*/
+	
 
 
 #if BUILD_TYPE == PROJECT_PLUS
@@ -1588,6 +1588,8 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(BACKPLATE_COLOR_4_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
+	//BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC
+	AddValueToByteArray(0, Header); // Just a free word of memory, used to store Team Battle Status
 
 	
 	

@@ -466,7 +466,8 @@ int main(int argc, char** argv)
 		//LXPGreenOverlayFix();
 
 		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
-		backplateColorChange(); shieldColorChange(); menSelChrElemntChange(); randomColorChange(); transparentCSSandResultsScreenNames();
+		backplateColorChange(); shieldColorChange(); menSelChrElemntChange(); randomColorChange(); transparentCSSandResultsScreenNames(); storeTeamBattleStatus();
+		infoPacCPUTeamColorFix();
 		// dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();

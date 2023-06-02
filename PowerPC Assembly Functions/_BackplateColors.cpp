@@ -95,6 +95,63 @@ void transparentCSSandResultsScreenNames()
 	}
 }
 
+void infoPacCPUTeamColorFix()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int colorIDReg = 4;
+
+	int skip = GetNextLabel();
+
+	ASMStart(0x800e2108, "[CM: _BackplateColors] Fix CPU Team Colors, Cache Team Status");
+
+	CMPLI(colorIDReg, 0x5, 0);
+	JumpToLabel(skip, bCACB_LESSER);
+	ADDI(colorIDReg, colorIDReg, -5);
+	Label(skip);
+
+	// Load GameGlobal Pointer
+	ADDIS(reg1, 0, 0x805a);
+	LWZ(reg1, reg1, 0x00e0);
+	// Load GameMOdeMelee Pointer
+	LWZ(reg1, reg1, 0x08);
+	// Grab Team Status
+	LWZ(reg1, reg1, 0x10);
+	// Store in cache location
+	ADDIS(reg2, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	STB(reg1, reg2, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+
+	ASMEnd();
+}
+
+void storeTeamBattleStatus()
+{
+	int reg1 = 12;
+
+	ASMStart(0x8068eda8, "[CM: _BackplateColors] Cache SelChar Team Battle Status in Code Menu");
+
+	// Store team battle status in our buffer word.
+	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	STB(4, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+
+	ASMEnd(0x7c7c1b78); // Restore original instruction: mr	r28, r3
+
+	// 806e0aec setSimpleSetting/[sqSingleSimple]/sq_single_simple.o
+	// 800500a0 gmInitMeleeDataDefault/[gmMeleeInitData]/gm_lib.o
+	// 806e0c30 setStageSetting/[sqSingleSimple]/sq_single_simple.o - triggers after match end in classic, r0 is 0 tho
+	// 806e10cc setStageSetting/[sqSingleSimple]/sq_single_simple.o 
+	// 806e10d8 setStageSetting/[sqSingleSimple]/sq_single_simple.o - triggers after match end, r0 is 1!
+	//// 806e0bc8
+	//ASMStart(0x806e10e0, "[CM: _BackplateColors] Cache globalModeMelee Team Battle Status in Code Menu");
+
+	//// Store team battle status in our buffer word.
+	//// Note, it's fine we overwrite the existing value here, as we always want the most up to date status.
+	//ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	//STB(0, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+
+	//ASMEnd(0x3b000001); // Restore original instruction: stb	r0, 0x0013 (r31)
+}
+
 void randomColorChange()
 {
 	// If Color Changer is enabled
@@ -118,8 +175,22 @@ void randomColorChange()
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
 		// Load line INDEX value
 		LWZ(reg2, reg2, 0x00);
-		// Load the current value at that line into the costume register.
-		LWZ(costumeIDReg, reg2, Line::VALUE);
+		// Load buffered Team Battle Status
+		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		// If team battle flag is set...
+		If(reg1, NOT_EQUAL_I_L, 0x00);
+		{
+			// ... use the default value from the target line.
+			LWZ(costumeIDReg, reg2, Line::DEFAULT);
+		}
+		// Otherwise...
+		Else();
+		{
+			// .. get the line's selected index
+			LWZ(costumeIDReg, reg2, Line::VALUE);
+		}
+		EndIf();
 
 		ASMEnd(0x3b5b0004); // Restore Original Instruction: addi	r26, r27, 4
 	}
@@ -132,7 +203,7 @@ void menSelChrElemntChange()
 	{
 		int reg1 = 11;
 		int reg2 = 12;
-		int reg3 = 4;
+		int reg3 = 10;
 
 		const std::string activatorString = "lBC3";
 		int applyChangeLabel = GetNextLabel();
@@ -161,7 +232,7 @@ void menSelChrElemntChange()
 			// Otherwise, we need to overwrite the target string's requested index.
 			// First, we need to use strlen to get the end of the string.
 			// That'll require overwriting the current r3 though, so we'll store that in reg1.
-			MR(reg1, 3);
+			MR(reg3, 3);
 
 			// Then, load the string address into r3...
 			MR(3, 31);
@@ -186,12 +257,22 @@ void menSelChrElemntChange()
 			ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
 			// Load line INDEX value
 			LWZ(reg2, reg2, 0x00);
-			// Load the current value at that line.
-			LWZ(reg2, reg2, Line::VALUE);
-
-			// Restore r3's value before we continue.
-			// If we actually need to search for a new CLR0, we will, which will overwrite this.
-			// Otherwise, it'll be in place where it should be.
+			// Load buffered Team Battle Status
+			ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+			LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+			// If team battle flag is set...
+			If(reg1, NOT_EQUAL_I_L, 0x00);
+			{
+				// ... use the default value from the target line.
+				LWZ(reg2, reg2, Line::DEFAULT);
+			}
+			// Otherwise...
+			Else();
+			{
+				// .. get the line's selected index
+				LWZ(reg2, reg2, Line::VALUE);
+			}
+			EndIf();
 
 			// If the retrieved line value isn't the same as the original value...
 			If(reg2, NOT_EQUAL_L, 4);
@@ -202,10 +283,10 @@ void menSelChrElemntChange()
 				STBX(reg2, 3, 31);
 
 				// Lastly, prepare to run _vc.
-				// Restore the params to what they were when we last ran _bv...
+				// Restore the params to what they were when we last ran _vC...
 				ADDI(3, 1, 0x08);
 				MR(4, 31);
-				// ... load the _vc's address...
+				// ... load _vc's address...
 				SetRegister(reg2, 0x8018CF30);
 				// ... and run it.
 				MTCTR(reg2);
@@ -213,7 +294,7 @@ void menSelChrElemntChange()
 			}
 			Else();
 			{
-				MR(3, reg1);
+				MR(3, reg3);
 			}
 			EndIf();
 		}
@@ -273,8 +354,22 @@ void shieldColorChange()
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
 		// Load line INDEX value
 		LWZ(reg2, reg2, 0x00);
-		// Load the current value at that line.
-		LWZ(31, reg2, Line::VALUE);
+		// Load buffered Team Battle Status
+		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		// If team battle flag is set...
+		If(reg1, NOT_EQUAL_I_L, 0x00);
+		{
+			// ... use the default value from the target line.
+			LWZ(31, reg2, Line::DEFAULT);
+		}
+		// Otherwise...
+		Else();
+		{
+			// .. get the line's selected index
+			LWZ(31, reg2, Line::VALUE);
+		}
+		EndIf();
 
 		Label(exitLabel);
 
@@ -382,8 +477,22 @@ void backplateColorChange()
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
 		// Load line INDEX value
 		LWZ(reg2, reg2, 0x00);
-		// Then Look 0x08 past the line's address to get the selected index
-		LWZ(reg2, reg2, Line::VALUE);
+		// Load buffered Team Battle Status
+		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		// If team battle flag is set...
+		If(reg1, NOT_EQUAL_I_L, 0x00);
+		{
+			// ... use the default value from the target line.
+			LWZ(reg2, reg2, Line::DEFAULT);
+	}
+		// Otherwise...
+		Else();
+		{
+			// .. get the line's selected index
+			LWZ(reg2, reg2, Line::VALUE);
+		}
+		EndIf();
 
 		// And now, to perform black magic int-to-float conversion, as pilfered from the Brawl game code lol.
 		// Set reg1 to our staging location

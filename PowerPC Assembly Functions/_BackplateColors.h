@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "_AdditionalCode.h"
 
+void infoPacCPUTeamColorFix();
+void storeTeamBattleStatus();
 void transparentCSSandResultsScreenNames();
 void handColorChange();
 void randomColorChange();
