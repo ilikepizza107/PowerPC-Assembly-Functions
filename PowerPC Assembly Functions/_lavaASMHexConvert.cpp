@@ -63,9 +63,6 @@ namespace lava::ppc
 		char crField = BIIn >> 2;
 		char crBit = BIIn & 0b1111;
 
-		bool aBit = 0;
-		bool tBit = 0;
-
 		if (crField == 0)
 		{
 			if (BOIn & 0b00100)
@@ -100,6 +97,7 @@ namespace lava::ppc
 						case 3:
 						{
 							result << "bso";
+							break;
 						}
 						default:
 						{
@@ -139,24 +137,17 @@ namespace lava::ppc
 						}
 
 					}
-					aBit = BOIn & 0b10;
-					tBit = BOIn & 0b01;
 				}
 
 				// If we've written to result / if a mnemonic was found.
 				if (result.tellp() != 0)
 				{
 					result << suffixIn;
-					if (aBit != 0)
+					// Check y-bit of BO; if set...
+					if ((BOIn & 0b1) != 0)
 					{
-						if (tBit != 0)
-						{
-							result << "+";
-						}
-						else
-						{
-							result << "-";
-						}
+						// ... append positive branch prediction mark.
+						result << "+";
 					}
 				}
 			}
