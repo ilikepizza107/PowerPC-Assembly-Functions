@@ -2547,4 +2547,94 @@ namespace lava::ppc
 
 		return result;
 	}
+
+	// MAP File Processing
+	std::map<unsigned long, mapSymbol> mapSymbolStartsToStructs{};
+	bool parseMapFile(std::istream& inputStreamIn)
+	{
+		bool result = 0;
+
+		if (inputStreamIn.good())
+		{
+			std::string currentLine("");
+
+			unsigned long symbolStartPos = ULONG_MAX;
+			unsigned long symbolLen = ULONG_MAX;
+			std::string symbolString("");
+			std::string commentChars = "/#.";
+
+			while (std::getline(inputStreamIn, currentLine))
+			{
+				if (!currentLine.empty() && commentChars.find(currentLine[0]) == std::string::npos)
+				{
+					symbolStartPos = ULONG_MAX;
+					symbolLen = ULONG_MAX;
+					symbolString = "";
+
+					std::size_t spacePos = 0;
+					std::size_t spacePos_bak = 0;
+					unsigned long parsedNum = ULONG_MAX;
+
+					for (int i = 0; symbolString.empty() && spacePos < currentLine.size() && i < 5; i++, spacePos++)
+					{
+						spacePos_bak = spacePos;
+						spacePos = currentLine.find(' ', spacePos_bak);
+
+						parsedNum = lava::stringToNum<unsigned long>(currentLine.substr(spacePos_bak, spacePos - spacePos_bak), 0, ULONG_MAX, 1);
+						currentLine.substr(spacePos_bak, spacePos - spacePos_bak);
+						if (parsedNum != ULONG_MAX)
+						{
+							switch (i)
+							{
+							case 0: { symbolStartPos = parsedNum; break; }
+							case 1: { symbolLen = parsedNum; break; }
+							default: { break; }
+							}
+						}
+						else if (i == 4)
+						{
+							symbolString = currentLine.substr(spacePos_bak, spacePos - spacePos_bak);
+						}
+					}
+					if (!symbolString.empty())
+					{
+						mapSymbolStartsToStructs[symbolStartPos] = { symbolString, symbolStartPos, symbolStartPos + symbolLen };
+					}
+				}
+			}
+
+			result = !mapSymbolStartsToStructs.empty();
+		}
+
+		return result;
+	}
+	bool parseMapFile(std::string filepathIn)
+	{
+		bool result = 0;
+
+		std::ifstream inputStream(filepathIn);
+		if (inputStream.is_open())
+		{
+			result = parseMapFile(inputStream);
+		}
+
+		return result;
+	}
+	mapSymbol* getSymbolFromAddress(unsigned long addressIn)
+	{
+		mapSymbol* result = nullptr;
+
+		if (!mapSymbolStartsToStructs.empty() && addressIn >= mapSymbolStartsToStructs.begin()->second.symbolStart && addressIn < mapSymbolStartsToStructs.rbegin()->second.symbolEnd)
+		{
+			for (auto i = mapSymbolStartsToStructs.begin(); result == nullptr && i != mapSymbolStartsToStructs.end() && addressIn >= i->second.symbolStart; i++)
+			{
+				if (addressIn >= i->second.symbolStart && addressIn < i->second.symbolEnd)
+				{
+					result = &i->second;
+				}
+			}
+		}
+
+		return result;
+	}
 }

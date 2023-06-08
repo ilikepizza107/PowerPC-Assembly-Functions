@@ -288,6 +288,7 @@ extern const std::string outputFolder;
 extern const std::string exCharInputFileName;
 extern const std::string rosterInputFileName;
 extern const std::string themeInputFileName;
+extern const std::string symbolMapInputFileName;
 extern const std::string changelogFileName;
 extern const std::string optionsFilename;
 // Code Menu Output Constants

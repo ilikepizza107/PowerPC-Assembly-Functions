@@ -271,6 +271,7 @@ const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
 const std::string rosterInputFileName = "EX_Rosters.txt";
 const std::string themeInputFileName = "EX_Themes.xml";
+const std::string symbolMapInputFileName = "symbols.map";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";
 const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";

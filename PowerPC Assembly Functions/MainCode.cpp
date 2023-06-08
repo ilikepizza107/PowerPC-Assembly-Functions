@@ -121,6 +121,19 @@ int main(int argc, char** argv)
 	{
 		lava::ppc::buildInstructionDictionary();
 		lava::gecko::buildGeckoCodeDictionary();
+		if (std::filesystem::is_regular_file(symbolMapInputFileName))
+		{
+			std::cout << "Symbol map file detected! Parsing \"" << symbolMapInputFileName << "\"... ";
+			if (lava::ppc::parseMapFile(symbolMapInputFileName))
+			{
+				std::cout << "Success!\n";
+			}
+			else
+			{
+				std::cerr << "Failure!\n";
+			}
+		}
+
 		if (OUTPUT_ASM_INSTRUCTION_DICTIONARY)
 		{
 			lava::ppc::summarizeInstructionDictionary(outputFolder + "ASMDictionary.txt");
