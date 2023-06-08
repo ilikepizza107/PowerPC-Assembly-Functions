@@ -280,14 +280,18 @@ namespace lava::ppc
 			unsigned char BI = argumentsIn[2];
 			unsigned char BH = argumentsIn[4];
 
-			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, "lr") : "";
+			std::string baseMnemonicSuffix = "lr";
+			// If link flag is set...
+			if (argumentsIn[6])
+			{
+				// ... append 'l'
+				baseMnemonicSuffix += "l";
+			}
+
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix) : "";
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
-				if (argumentsIn[6] != 0)
-				{
-					result << "l";
-				}
 			}
 			else
 			{
@@ -315,14 +319,18 @@ namespace lava::ppc
 			unsigned char BI = argumentsIn[2];
 			unsigned char BH = argumentsIn[4];
 
-			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, "ctr") : "";
+			std::string baseMnemonicSuffix = "ctr";
+			// If link flag is set...
+			if (argumentsIn[6])
+			{
+				// ... append 'l'
+				baseMnemonicSuffix += "l";
+			}
+
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix) : "";
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
-				if (argumentsIn[6] != 0)
-				{
-					result << "l";
-				}
 			}
 			else
 			{
