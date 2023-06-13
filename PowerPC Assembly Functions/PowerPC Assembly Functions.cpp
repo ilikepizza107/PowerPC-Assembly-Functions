@@ -1791,6 +1791,13 @@ void BC(int JumpDist, branchConditionAndConditionBit conditionIn)
 //distance/4, branch if true/false, bit to check
 void BC(int JumpDist, int BranchCondition, int ConditionBit)
 {
+	// If we're jumping backwards...
+	if (JumpDist < 0)
+	{
+		// ... we need to invert the y-bit in BO.
+		BranchCondition ^= 0b1;
+	}
+
 	OpHex = GetOpSegment(16, 6, 5);
 	OpHex |= GetOpSegment(BranchCondition, 5, 10);
 	OpHex |= GetOpSegment(ConditionBit, 5, 15);

@@ -228,6 +228,27 @@ namespace lava::ppc
 			unsigned char BO = argumentsIn[1];
 			unsigned char BI = argumentsIn[2];
 
+			// Get the string to be used for the offset value.
+			std::string immediateStr("");
+			// If AA is set, then it'll just be the shifted value in hex
+			if (argumentsIn[4] != 0)
+			{
+				immediateStr = "0x" + lava::numToHexStringWithPadding(argumentsIn[3] << 2, 0);
+			}
+			// Otherwise though...
+			else
+			{
+				// ... we need to convert it to signed and get our string from there.
+				immediateStr = unsignedImmArgToSignedString((argumentsIn[3] << 2), 14, 1);
+				// Additionally, check if the offset value is negative...
+				if (lava::stringToNum<signed long>(immediateStr, 1, LONG_MAX, 1) < 0)
+				{
+					// ... and if it is, we need to invert the y-bit in BO. Why? No clue. But we do.
+					// Shoutouts to Gaberboo for the initial tip on this lol.
+					BO ^= 0b1;
+				}
+			}
+
 			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI, "");
 			if (!simpleMnem.empty())
 			{
@@ -256,14 +277,7 @@ namespace lava::ppc
 				result << " " << (unsigned long)BO << ", " << (unsigned long)BI << ", ";
 			}
 			
-			if (argumentsIn[4] != 0)
-			{
-				result << " 0x" << std::hex << (argumentsIn[3] << 2);
-			}
-			else
-			{
-				result << " " << unsignedImmArgToSignedString((argumentsIn[3] << 2), 14, 1);
-			}
+			result << " " << immediateStr;
 		}
 
 		return result.str();
