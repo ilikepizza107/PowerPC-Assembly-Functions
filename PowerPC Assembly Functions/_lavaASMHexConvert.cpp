@@ -249,18 +249,23 @@ namespace lava::ppc
 				}
 			}
 
-			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI, "");
+			std::string baseMnemonicSuffix = "";
+			// If link flag is set...
+			if (argumentsIn[5] != 0)
+			{
+				// ... append 'l'
+				baseMnemonicSuffix += "l";
+			}
+			if (argumentsIn[4] != 0)
+			{
+				// ... append 'a'
+				baseMnemonicSuffix += "a";
+			}
+
+			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix);
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
-				if (argumentsIn[4] != 0)
-				{
-					result << "a";
-				}
-				if (argumentsIn[5] != 0)
-				{
-					result << "l";
-				}
 			}
 			else
 			{
