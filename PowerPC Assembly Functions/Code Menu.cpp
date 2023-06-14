@@ -1589,8 +1589,6 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(BACKPLATE_COLOR_4_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
-
-	
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
@@ -1604,6 +1602,12 @@ void CreateMenu(Page MainPage)
 	DSB[0x1D0 / 4] = DRAW_SETTINGS_BUFFER_LOC + 0x100;
 	for (auto x : DSB) {
 		AddValueToByteArray(x, Header);
+	}
+
+	// Reserve Space for Hook VTable
+	if (HOOK_VTABLE.table_size() > 0)
+	{
+		Header.resize(Header.size() + HOOK_VTABLE.table_size(), 0);
 	}
 
 	if (START_OF_CODE_MENU - START_OF_CODE_MENU_HEADER != Header.size()) {
