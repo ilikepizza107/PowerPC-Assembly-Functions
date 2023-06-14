@@ -261,6 +261,7 @@ namespace themeConstants
 	extern const std::string themeFileTag;
 	extern const std::string prefixTag;
 
+	
 	extern std::array<std::string, tpi__PATH_COUNT> filenames;
 }
 struct menuTheme
@@ -275,6 +276,9 @@ std::string getThemeFileBaseName(themeConstants::themePathIndices fileIndex);
 std::string getThemeFileDefaultPrefix(themeConstants::themePathIndices fileIndex);
 extern vector<string> THEME_LIST;
 extern std::vector<menuTheme> THEME_SPEC_LIST;
+// Notes, for each theme-able file, whether or not any specified themes actually use a non-standard prefix for it.
+// Used to determine whether or not we actually need to output the hook for a given theme-able file.
+extern std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX;
 
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().

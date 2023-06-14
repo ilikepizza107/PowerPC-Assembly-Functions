@@ -262,6 +262,7 @@ std::string getThemeFileDefaultPrefix(themeConstants::themePathIndices fileIndex
 }
 vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
+std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{};
 
 
 

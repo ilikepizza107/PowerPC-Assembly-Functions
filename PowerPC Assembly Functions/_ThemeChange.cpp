@@ -58,7 +58,7 @@ void themeChangerBody(const std::string menuDirectory, themeConstants::themePath
 void menuMainChange()
 {
 	// If Themes are enabled
-	if (THEME_SETTING_INDEX != -1)
+	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_MENUMAIN])
 	{
 		ASMStart(0x806bf030, "[CM: _ThemeChange] Theme Changer (menumain) " + codeVersion +" [QuickLava]"); // Hooks a nameless function referenced from "start/[muMenuMain]/mu_main.o".
 		themeChangerBody("menu2/", themeConstants::tpi_MENUMAIN, 31);
@@ -70,21 +70,27 @@ void selCharChange()
 	// If Themes are enabled
 	if (THEME_SETTING_INDEX != -1)
 	{
-		// Write changer for Selchar
-		ASMStart(0x806c8728, "[CM: _ThemeChange] Theme Changer (selchar) " + codeVersion + " [QuickLava]");  // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
-		themeChangerBody("/menu2/", themeConstants::tpi_SELCHAR, 5);
-		ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
-
-		// Write changer for Selchar2
-		ASMStart(0x806c8744, "[CM: _ThemeChange] Theme Changer (selchar2) " + codeVersion + " [QuickLava]");  // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
-		themeChangerBody("/menu2/", themeConstants::tpi_SELCHAR2, 5);
-		ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+		if (THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_SELCHAR])
+		{
+			// Write changer for Selchar
+			ASMStart(0x806c8728, "[CM: _ThemeChange] Theme Changer (selchar) " + codeVersion + " [QuickLava]");  // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
+			themeChangerBody("/menu2/", themeConstants::tpi_SELCHAR, 5);
+			ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+		}
+		
+		if (THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_SELCHAR2])
+		{
+			// Write changer for Selchar2
+			ASMStart(0x806c8744, "[CM: _ThemeChange] Theme Changer (selchar2) " + codeVersion + " [QuickLava]");  // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
+			themeChangerBody("/menu2/", themeConstants::tpi_SELCHAR2, 5);
+			ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+		}
 	}
 }
 void selMapChange()
 {
 	// If Themes are enabled
-	if (THEME_SETTING_INDEX != -1)
+	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_SELMAP])
 	{
 		ASMStart(0x806c8e14, "[CM: _ThemeChange] Theme Changer (selmap) " + codeVersion + " [QuickLava]"); // Hooks "start/[scSelStage]/sc_sel_stage.o".
 		themeChangerBody("/menu2/", themeConstants::tpi_SELMAP, 5);
@@ -94,7 +100,7 @@ void selMapChange()
 void selEventChange()
 {
 	// If Themes are enabled
-	if (THEME_SETTING_INDEX != -1)
+	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_SELEVENT])
 	{
 		ASMStart(0x806c4574, "[CM: _ThemeChange] Theme Changer (selevent) " + codeVersion + " [QuickLava]"); // Hooks "start/[scSelEvent]/sc_sel_event.o".
 		themeChangerBody("/menu2/", themeConstants::tpi_SELEVENT, 5);
@@ -104,7 +110,7 @@ void selEventChange()
 void titleChange()
 {
 	// If Themes are enabled
-	if (THEME_SETTING_INDEX != -1)
+	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_TITLE])
 	{
 		ASMStart(0x806ca150, "[CM: _ThemeChange] Theme Changer (title) " + codeVersion + " [QuickLava]"); // Hooks " next/[adList<Ul,42>]/sc_fig_get_demo.o".
 		themeChangerBody("menu2/", themeConstants::tpi_TITLE, 5);
