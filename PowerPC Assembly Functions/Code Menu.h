@@ -502,7 +502,7 @@ static struct
 {
 	constexpr unsigned int table_start() { return DRAW_SETTINGS_BUFFER_LOC + 0x200; };
 
-	const int THEME_CHANGE_APPLY_PREFIXES = table_start();
+	//const int THEME_CHANGE_APPLY_PREFIXES = table_start();
 
 	constexpr unsigned int table_size() { return (sizeof(*this) > 1) ? (sizeof(*this)) : 0; };
 	constexpr unsigned int table_end() { return table_start() + table_size(); };
