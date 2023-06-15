@@ -16,9 +16,7 @@ void themeChangerBody(const std::string menuDirectory, themeConstants::themePath
 		int reg1 = 11;
 		int reg2 = 12;
 
-		// String Embed Setup
-		std::string basePathString = menuDirectory + themeConstants::filenames[fileIndex];
-		basePathString.resize(lava::padLengthTo<unsigned long>(basePathString.size(), 0x4, 0), 0x00);
+		// Prefix String Embed Setup
 		std::string prefixesString("");
 		for (std::size_t i = 0; i < THEME_SPEC_LIST.size(); i++)
 		{
@@ -33,6 +31,10 @@ void themeChangerBody(const std::string menuDirectory, themeConstants::themePath
 		// ... then put its address in reg1, which we'll use in just a moment.
 		MFLR(reg1);
 
+		// This is fucked up, but we're using LR as an extra register lmfao
+		// Backup the string reg's address in LR
+		MTLR(stringReg);
+
 		// Get the selected theme from the Theme Setting Line
 		ADDIS(reg2, 0, THEME_SETTING_INDEX >> 0x10);
 		LWZ(reg2, reg2, (THEME_SETTING_INDEX & 0xFFFF) + Line::VALUE);
@@ -44,10 +46,7 @@ void themeChangerBody(const std::string menuDirectory, themeConstants::themePath
 		// Then load the relevant prefix string using the calculated offset. reg1 is now our prefix!
 		LWZX(reg1, reg1, reg2);
 
-		// Write and skip over base path string...
-		BL(1 + (basePathString.size() / 4));
-		WriteTextToFile(basePathString);
-		// ... then overwrite the string address register with our new target.
+		// Retrieve string reg value from LR
 		MFLR(stringReg);
 
 		// Now store the prefix in the correct spot, and we're done!
@@ -61,8 +60,9 @@ void menuMainChange()
 	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_MENUMAIN])
 	{
 		ASMStart(0x806bf030, "[CM: _ThemeChange] Theme Changer (menumain) " + codeVersion +" [QuickLava]"); // Hooks a nameless function referenced from "start/[muMenuMain]/mu_main.o".
+		WriteIntToFile(0x3bffb248); // Restore original instruction
 		themeChangerBody("menu2/", themeConstants::tpi_MENUMAIN, 31);
-		ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+		ASMEnd();
 	}
 }
 void selCharChange()
@@ -74,16 +74,18 @@ void selCharChange()
 		{
 			// Write changer for Selchar
 			ASMStart(0x806c8728, "[CM: _ThemeChange] Theme Changer (selchar) " + codeVersion + " [QuickLava]");  // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
+			WriteIntToFile(0x38a5f2ec); // Restore Original Instruction
 			themeChangerBody("/menu2/", themeConstants::tpi_SELCHAR, 5);
-			ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+			ASMEnd();
 		}
 		
 		if (THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_SELCHAR2])
 		{
 			// Write changer for Selchar2
 			ASMStart(0x806c8744, "[CM: _ThemeChange] Theme Changer (selchar2) " + codeVersion + " [QuickLava]");  // Hooks "process/[scEnding]/sc_ending.o", credit to SammiHusky for the hook!
+			WriteIntToFile(0x38a5f308); // Restore Original Instruction
 			themeChangerBody("/menu2/", themeConstants::tpi_SELCHAR2, 5);
-			ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+			ASMEnd();
 		}
 	}
 }
@@ -93,8 +95,9 @@ void selMapChange()
 	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_SELMAP])
 	{
 		ASMStart(0x806c8e14, "[CM: _ThemeChange] Theme Changer (selmap) " + codeVersion + " [QuickLava]"); // Hooks "start/[scSelStage]/sc_sel_stage.o".
+		WriteIntToFile(0x38a5f3f0); // Restore Original Instruction
 		themeChangerBody("/menu2/", themeConstants::tpi_SELMAP, 5);
-		ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+		ASMEnd();
 	}
 }
 void selEventChange()
@@ -103,8 +106,9 @@ void selEventChange()
 	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_SELEVENT])
 	{
 		ASMStart(0x806c4574, "[CM: _ThemeChange] Theme Changer (selevent) " + codeVersion + " [QuickLava]"); // Hooks "start/[scSelEvent]/sc_sel_event.o".
+		WriteIntToFile(0x38a5d0b8); // Restore Original Instruction
 		themeChangerBody("/menu2/", themeConstants::tpi_SELEVENT, 5);
-		ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+		ASMEnd();
 	}
 }
 void titleChange()
@@ -113,7 +117,8 @@ void titleChange()
 	if (THEME_SETTING_INDEX != -1 && THEME_FILE_GOT_UNIQUE_PREFIX[themeConstants::tpi_TITLE])
 	{
 		ASMStart(0x806ca150, "[CM: _ThemeChange] Theme Changer (title) " + codeVersion + " [QuickLava]"); // Hooks " next/[adList<Ul,42>]/sc_fig_get_demo.o".
+		WriteIntToFile(0x38a5f9a0); // Restore Original Instruction
 		themeChangerBody("menu2/", themeConstants::tpi_TITLE, 5);
-		ASMEnd(); // Don't need to restore overwritten instruction, string reg already set.
+		ASMEnd();
 	}
 }
