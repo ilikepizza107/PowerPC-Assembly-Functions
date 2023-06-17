@@ -313,42 +313,24 @@ void shieldColorChange()
 	{
 		int reg1 = 11;
 		int reg2 = 12;
-		int reg3 = 4;
+		int reg3 = 3;
 
-		const std::string activatorString = "lBC2";
-		int exitLabel = GetNextLabel();
-
-		// Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/g3d_resfile.o".
-		ASMStart(0x8018db38, "[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
-			"\nIntercepts calls to the player-slot-specific \"ef_common\" CLR0s in common3.pac, and redirects them according"
-			"\nto the appropriate Code Menu line. Intended for use with:"
-			"\n\t- EffCommonShield_#\n\t- EffCommonDead_#"
-			"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"
+		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
+		ASMStart(0x80855aac, "[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
+			"Overrides IC-Basic[21029], which is only used by Shield and Death Plume to determine their colors, at least as far as I can tell,"
+			"\nto instead report the selected value in the Code Menu line associated with the color that would've been requested."
 		);
 
-		// Get data offset for the first CLR0 in the list
-		LWZ(reg2, 3, 0x24);
-		// Get the location for that entry's actual CLR0
-		ADD(reg1, reg2, 3);
-
-
-
-		// Grab the offset for the "Original Path" Value
-		LWZ(reg2, reg1, 0x18);
-
-		// Grab the first 4 bytes of the Orig Path
-		LWZX(reg2, reg2, reg1);
-		// Set reg3 to our Activation String
-		SetRegister(reg3, activatorString);
-		// Compare the 4 bytes we loaded to the target string...
-		CMPL(reg2, reg3, 0);
-		// ... and exit if they're not equal.
-		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
-
+		// r3 is ptr from getOwner call; we're hooking the following getTeam() call
+		// It's faster actually to just manually grab the team value rather than mtctr bctrl to it and back, so we'll do that; just no it's the same thing
+		// Deref ftOwner ptr
+		LWZ(reg3, reg3, 0);
+		// Grab team value from pointer. r3 is now recorded team value.
+		LWZ(reg3, reg3, 0);
 
 		// Calculate offset into Backplate Color LOC Entries
 		SetRegister(reg2, 0x4);
-		MULLW(reg2, reg2, 31);
+		MULLW(reg2, reg2, reg3);
 		// Add that to first entry's location
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
@@ -361,20 +343,17 @@ void shieldColorChange()
 		If(reg1, NOT_EQUAL_I_L, 0x00);
 		{
 			// ... use the default value from the target line.
-			LWZ(31, reg2, Line::DEFAULT);
+			LWZ(reg3, reg2, Line::DEFAULT);
 		}
 		// Otherwise...
 		Else();
 		{
 			// .. get the line's selected index
-			LWZ(31, reg2, Line::VALUE);
+			LWZ(reg3, reg2, Line::VALUE);
 		}
 		EndIf();
 
-		Label(exitLabel);
-
-
-		ASMEnd(0x381f0001); // Restore original instruction: addi r0, r31, 1
+		ASMEnd();
 	}
 }
 
