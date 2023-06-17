@@ -63,9 +63,6 @@ namespace lava::ppc
 		char crField = BIIn >> 2;
 		char crBit = BIIn & 0b1111;
 
-		bool aBit = 0;
-		bool tBit = 0;
-
 		if (crField == 0)
 		{
 			if (BOIn & 0b00100)
@@ -100,6 +97,7 @@ namespace lava::ppc
 						case 3:
 						{
 							result << "bso";
+							break;
 						}
 						default:
 						{
@@ -139,24 +137,17 @@ namespace lava::ppc
 						}
 
 					}
-					aBit = BOIn & 0b10;
-					tBit = BOIn & 0b01;
 				}
 
 				// If we've written to result / if a mnemonic was found.
 				if (result.tellp() != 0)
 				{
 					result << suffixIn;
-					if (aBit != 0)
+					// Check y-bit of BO; if set...
+					if ((BOIn & 0b1) != 0)
 					{
-						if (tBit != 0)
-						{
-							result << "+";
-						}
-						else
-						{
-							result << "-";
-						}
+						// ... append positive branch prediction mark.
+						result << "+";
 					}
 				}
 			}
@@ -237,18 +228,44 @@ namespace lava::ppc
 			unsigned char BO = argumentsIn[1];
 			unsigned char BI = argumentsIn[2];
 
-			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI, "");
+			// Get the string to be used for the offset value.
+			std::string immediateStr("");
+			// If AA is set, then it'll just be the shifted value in hex
+			if (argumentsIn[4] != 0)
+			{
+				immediateStr = "0x" + lava::numToHexStringWithPadding(argumentsIn[3] << 2, 0);
+			}
+			// Otherwise though...
+			else
+			{
+				// ... we need to convert it to signed and get our string from there.
+				immediateStr = unsignedImmArgToSignedString((argumentsIn[3] << 2), 14, 1);
+				// Additionally, check if the offset value is negative...
+				if (lava::stringToNum<signed long>(immediateStr, 1, LONG_MAX, 1) < 0)
+				{
+					// ... and if it is, we need to invert the y-bit in BO. Why? No clue. But we do.
+					// Shoutouts to Gaberboo for the initial tip on this lol.
+					BO ^= 0b1;
+				}
+			}
+
+			std::string baseMnemonicSuffix = "";
+			// If link flag is set...
+			if (argumentsIn[5] != 0)
+			{
+				// ... append 'l'
+				baseMnemonicSuffix += "l";
+			}
+			if (argumentsIn[4] != 0)
+			{
+				// ... append 'a'
+				baseMnemonicSuffix += "a";
+			}
+
+			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix);
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
-				if (argumentsIn[4] != 0)
-				{
-					result << "a";
-				}
-				if (argumentsIn[5] != 0)
-				{
-					result << "l";
-				}
 			}
 			else
 			{
@@ -265,14 +282,7 @@ namespace lava::ppc
 				result << " " << (unsigned long)BO << ", " << (unsigned long)BI << ", ";
 			}
 			
-			if (argumentsIn[4] != 0)
-			{
-				result << " 0x" << std::hex << (argumentsIn[3] << 2);
-			}
-			else
-			{
-				result << " " << unsignedImmArgToSignedString((argumentsIn[3] << 2), 14, 1);
-			}
+			result << " " << immediateStr;
 		}
 
 		return result.str();
@@ -289,14 +299,18 @@ namespace lava::ppc
 			unsigned char BI = argumentsIn[2];
 			unsigned char BH = argumentsIn[4];
 
-			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, "lr") : "";
+			std::string baseMnemonicSuffix = "lr";
+			// If link flag is set...
+			if (argumentsIn[6])
+			{
+				// ... append 'l'
+				baseMnemonicSuffix += "l";
+			}
+
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix) : "";
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
-				if (argumentsIn[6] != 0)
-				{
-					result << "l";
-				}
 			}
 			else
 			{
@@ -324,14 +338,18 @@ namespace lava::ppc
 			unsigned char BI = argumentsIn[2];
 			unsigned char BH = argumentsIn[4];
 
-			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, "ctr") : "";
+			std::string baseMnemonicSuffix = "ctr";
+			// If link flag is set...
+			if (argumentsIn[6])
+			{
+				// ... append 'l'
+				baseMnemonicSuffix += "l";
+			}
+
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix) : "";
 			if (!simpleMnem.empty())
 			{
 				result << simpleMnem;
-				if (argumentsIn[6] != 0)
-				{
-					result << "l";
-				}
 			}
 			else
 			{
@@ -2499,7 +2517,6 @@ namespace lava::ppc
 				}
 			}
 
-			// Remember to come back and fix this, it's currently set up to force trigger reservations for testing purposes lol
 			if (targetInstruction != nullptr && targetInstruction->getArgLayoutPtr()->validateReservedArgs(hexIn))
 			{
 				result << targetInstruction->getArgLayoutPtr()->conversionFunc(targetInstruction, hexIn);
@@ -2552,6 +2569,137 @@ namespace lava::ppc
 		if (output.is_open())
 		{
 			result = summarizeInstructionDictionary(output);
+		}
+
+		return result;
+	}
+
+	// MAP File Processing
+	std::map<unsigned long, mapSymbol> mapSymbolStartsToStructs{};
+	mapSymbol::mapSymbol(std::string symbolNameIn, unsigned long physicalAddrIn, unsigned long symbolSizeIn, unsigned long virtualAddrIn, unsigned long fileOffIn, unsigned long alignValIn)
+	{
+		symbolName = symbolNameIn;
+		physicalAddr = physicalAddrIn;
+		symbolSize = symbolSizeIn;
+		virtualAddr = (virtualAddrIn != ULONG_MAX) ? virtualAddrIn : physicalAddr;
+		fileOff = fileOffIn;
+		alignVal = alignValIn;
+		physicalEnd = physicalAddr + symbolSize;
+		virtualEnd = virtualAddr + symbolSize;
+	};
+	unsigned long mapSymbol::positionWithinSymbol(unsigned long addressIn)
+	{
+		unsigned long result = ULONG_MAX;
+
+		if (addressIn >= virtualAddr && addressIn < virtualEnd)
+		{
+			result = addressIn - virtualAddr;
+		}
+
+		return result;
+	}
+
+	bool parseMapFile(std::istream& inputStreamIn)
+	{
+		bool result = 0;
+
+		if (inputStreamIn.good())
+		{
+			std::string currentLine("");
+			std::string commentChars = "/#";
+			while (std::getline(inputStreamIn, currentLine))
+			{
+				// Skip if the line is empty
+				if (currentLine.empty()) continue;
+
+				// Scrub leading and trailing whitespace chars
+				currentLine = currentLine.substr(currentLine.find_first_not_of(" \t"));
+				currentLine = currentLine.substr(0, currentLine.find_last_not_of(" \t") + 1);
+				// If the resulting line isn't either empty or commented out
+				if (!currentLine.empty() && commentChars.find(currentLine[0]) == std::string::npos)
+				{
+					// Split line into space-delimited segments
+					// Also, we allow up to seven segments because that allows for the max of four primary numerical args, and the optional alignment value,
+					// then additionally (in the event it has spaces in it) for the first string-delimited segment of what would be the symbol name to be
+					// split from the remainder of that string. This is desirable because sometimes additional information is included past the symbol name
+					// which doesn't matter for our purposes.
+					std::vector<std::string> lineSegments = lava::splitString(currentLine, " ", 7);
+
+					// Record all the numerically parse-able arguments in the line.
+					std::vector<unsigned long> parsedNumSegments{};
+					for (std::size_t i = 0; i < lineSegments.size(); i++)
+					{
+						// Try parsing the number...
+						std::size_t parsedNum = lava::stringToNum<unsigned long>(lineSegments[i], 0, ULONG_MAX, 1);
+						// ... and if it parses successfully...
+						if (parsedNum != ULONG_MAX)
+						{
+							// ... record it in the segments vector.
+							parsedNumSegments.push_back(parsedNum);
+						}
+						else
+						{
+							// Quit once we find a non-numeric argument.
+							break;
+						}
+					}
+
+					// Skip if there aren't at least 2 numeric elements, that's the minimum allowed in a map file format.
+					// Also require that the number of validly parsed numbers is less than the number of segments in the line, since
+					// we require that a name string be present at the end of the line, which shouldn't be parseable as a number.
+					if (parsedNumSegments.size() < 2 && parsedNumSegments.size() < lineSegments.size()) continue;
+
+					// Assign values based on the number of numeric elements *not including* the alignment value
+					bool hasAlignmentVal = parsedNumSegments.size() > 2 && parsedNumSegments.back() <= 0xF;
+					unsigned long effectiveColumnCount = parsedNumSegments.size() - hasAlignmentVal;
+					unsigned long physicalAddr = parsedNumSegments[0];
+					unsigned long symbolSize = parsedNumSegments[1];
+					unsigned long virtualAddr = (effectiveColumnCount > 2) ? parsedNumSegments[2] : ULONG_MAX;
+					unsigned long fileOff = (effectiveColumnCount > 3) ? parsedNumSegments[3] : ULONG_MAX;
+					unsigned long alignmentVal = (hasAlignmentVal) ? parsedNumSegments.back() : ULONG_MAX;
+					// Store the resulting values in the map.
+					mapSymbol symbObj(lineSegments[parsedNumSegments.size()], physicalAddr, symbolSize, virtualAddr, fileOff, alignmentVal);
+					mapSymbolStartsToStructs[symbObj.virtualAddr] = symbObj;
+				}
+			}
+
+			result = !mapSymbolStartsToStructs.empty();
+		}
+
+		return result;
+	}
+	bool parseMapFile(std::string filepathIn)
+	{
+		bool result = 0;
+
+		std::ifstream inputStream(filepathIn);
+		if (inputStream.is_open())
+		{
+			result = parseMapFile(inputStream);
+		}
+
+		return result;
+	}
+	mapSymbol* getSymbolFromAddress(unsigned long addressIn)
+	{
+		mapSymbol* result = nullptr;
+
+		if (!mapSymbolStartsToStructs.empty())
+		{
+			// Get the first symbol that starts after the address we're looking for.
+			auto nextHighestItr = mapSymbolStartsToStructs.lower_bound(addressIn);
+			// If there's a symbol *before* that one...
+			if (nextHighestItr != mapSymbolStartsToStructs.begin())
+			{
+				// ... move back one symbol...
+				nextHighestItr--;
+				// ... and see if our address lies within that symbol.
+				if (nextHighestItr->second.positionWithinSymbol(addressIn) != ULONG_MAX)
+				{
+					// If so, that's our result.
+					result = &nextHighestItr->second;
+				}
+			}
 		}
 
 		return result;

@@ -404,6 +404,7 @@ namespace lava
 									else if (filenameIndex != SIZE_MAX && themeFileAttrItr->name() == themeConstants::prefixTag)
 									{
 										tempTheme.prefixes[filenameIndex] = themeFileAttrItr->as_string().substr(0, themeConstants::prefixLength);
+										THEME_FILE_GOT_UNIQUE_PREFIX[filenameIndex] |= themeConstants::filenames[filenameIndex].find(tempTheme.prefixes[filenameIndex]) != 0x00;
 									}
 								}
 							}

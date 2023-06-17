@@ -262,6 +262,7 @@ std::string getThemeFileDefaultPrefix(themeConstants::themePathIndices fileIndex
 }
 vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
+std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{};
 
 
 
@@ -271,6 +272,7 @@ const std::string outputFolder = "./Code_Menu_Output/";
 const std::string exCharInputFileName = "EX_Characters.txt";
 const std::string rosterInputFileName = "EX_Rosters.txt";
 const std::string themeInputFileName = "EX_Themes.xml";
+const std::string symbolMapInputFileName = "symbols.map";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";
 const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
@@ -1605,6 +1607,12 @@ void CreateMenu(Page MainPage)
 	DSB[0x1D0 / 4] = DRAW_SETTINGS_BUFFER_LOC + 0x100;
 	for (auto x : DSB) {
 		AddValueToByteArray(x, Header);
+	}
+
+	// Reserve Space for Hook VTable
+	if (HOOK_VTABLE.table_size() > 0)
+	{
+		Header.resize(Header.size() + HOOK_VTABLE.table_size(), 0);
 	}
 
 	if (START_OF_CODE_MENU - START_OF_CODE_MENU_HEADER != Header.size()) {

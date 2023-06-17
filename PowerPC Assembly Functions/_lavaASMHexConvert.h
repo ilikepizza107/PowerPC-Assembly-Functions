@@ -14,7 +14,7 @@
 
 namespace lava::ppc
 {
-	// lavaASMHexConvert v1.0.0 - A utility for disassembling 32-bit IBM PowerPC Assembly Instruction Hex into readable PPC ASM.
+	// lavaASMHexConvert v1.0.5 - A utility for disassembling 32-bit IBM PowerPC Assembly Instruction Hex into readable PPC ASM.
 	// This library provides support for the 32-bit PPC ASM instruction set, along with most additional instructions introduced by
 	// or required by the Broadway instruction set (Paired Single instructions being the most significant addition from that set).
 	// It offers no support for 64-bit exclusive instructions whatsoever, nor for any optional instructions not used in the Broadway
@@ -247,6 +247,29 @@ namespace lava::ppc
 	std::string convertInstructionHexToString(unsigned long hexIn);
 	bool summarizeInstructionDictionary(std::ostream& output);
 	bool summarizeInstructionDictionary(std::string outputFilepath);
+
+	// MAP File Processing
+	struct mapSymbol
+	{
+		std::string symbolName = "";
+		unsigned long physicalAddr = ULONG_MAX;
+		unsigned long symbolSize = ULONG_MAX;
+		unsigned long virtualAddr = ULONG_MAX;
+		unsigned long fileOff = ULONG_MAX;
+		unsigned long alignVal = ULONG_MAX;
+		// Calc'd, not directly recorded in map files
+		unsigned long physicalEnd = ULONG_MAX;
+		unsigned long virtualEnd = ULONG_MAX;
+
+		mapSymbol() {};
+		mapSymbol(std::string symbolNameIn, unsigned long physicalAddrIn, unsigned long symbolSizeIn, unsigned long virtualAddrIn = ULONG_MAX, unsigned long fileOffIn = ULONG_MAX, unsigned long alignValIn = ULONG_MAX);
+
+		unsigned long positionWithinSymbol(unsigned long addressIn);
+	};
+	extern std::map<unsigned long, mapSymbol> mapSymbolStartsToStructs;
+	bool parseMapFile(std::istream& inputStreamIn);
+	bool parseMapFile(std::string filepathIn);
+	mapSymbol* getSymbolFromAddress(unsigned long addressIn);
 }
 
 #endif

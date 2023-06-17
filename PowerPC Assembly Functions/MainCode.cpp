@@ -119,13 +119,6 @@ int main(int argc, char** argv)
 	}
 	if (std::filesystem::is_directory(outputFolder))
 	{
-		lava::ppc::buildInstructionDictionary();
-		lava::gecko::buildGeckoCodeDictionary();
-		if (OUTPUT_ASM_INSTRUCTION_DICTIONARY)
-		{
-			lava::ppc::summarizeInstructionDictionary(outputFolder + "ASMDictionary.txt");
-		}
-
 		initMenuFileStream();
 		string OutputTextPath = asmTextOutputFilePath;
 
@@ -522,8 +515,31 @@ int main(int argc, char** argv)
 				logOutput << "Note: Copied newly built Code Menu to \"" << cmnuBuildLocationFilePath << "\".\n";
 			}
 		}
+
+		// Initialize dictionaries and variables for ASM output.
+		lava::ppc::buildInstructionDictionary();
+		lava::gecko::buildGeckoCodeDictionary();
+		if (std::filesystem::is_regular_file(symbolMapInputFileName))
+		{
+			logOutput << "Symbol map file detected! Parsing \"" << symbolMapInputFileName << "\"... ";
+			if (lava::ppc::parseMapFile(symbolMapInputFileName))
+			{
+				logOutput << "Success!\n";
+			}
+			else
+			{
+				logOutput << "Failure!\n";
+			}
+		}
+		if (OUTPUT_ASM_INSTRUCTION_DICTIONARY)
+		{
+			lava::ppc::summarizeInstructionDictionary(outputFolder + "ASMDictionary.txt");
+		}
+		// Handle ASM output.
+		logOutput << "Writing ASM file... ";
 		if (MakeASM(OutputTextPath, asmOutputFilePath))
 		{
+			logOutput << "Success!\n";
 			if (std::filesystem::is_regular_file(asmBuildLocationFilePath))
 			{
 				if (lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride))
@@ -544,6 +560,10 @@ int main(int argc, char** argv)
 				logOutput << "Attempting to use them on console can (and likely will) damage your system.\n\n";
 			}
 		}
+		else
+		{
+			logOutput.write("Failure!\n", ULONG_MAX, lava::outputSplitter::stdOutStreamEnum::sOS_CERR);
+		}
 	}
 	else
 	{
@@ -551,7 +571,7 @@ int main(int argc, char** argv)
 	}
 	if (lava::CloseOnFinishBypass == INT_MAX || lava::CloseOnFinishBypass == 0)
 	{
-		std::cout << "Press any key to exit.\n";
+		std::cout << "\nPress any key to exit.\n";
 		_getch();
 	}
 	return 0;
