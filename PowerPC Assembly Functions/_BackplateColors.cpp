@@ -97,19 +97,15 @@ void transparentCSSandResultsScreenNames()
 
 void infoPacCPUTeamColorFix()
 {
+	CodeRaw("[CM: _BackplateColors] Disable CPU Team Colors", "",
+		{
+			0x040e0a88, 0x38600000	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with li r3, 0
+		});
+
 	int reg1 = 11;
 	int reg2 = 12;
-	int colorIDReg = 4;
 
-	int skip = GetNextLabel();
-
-	ASMStart(0x800e2108, "[CM: _BackplateColors] Fix CPU Team Colors, Cache Team Status");
-
-	CMPLI(colorIDReg, 0x5, 0);
-	JumpToLabel(skip, bCACB_LESSER);
-	ADDI(colorIDReg, colorIDReg, -5);
-	Label(skip);
-
+	ASMStart(0x800e2108, "[CM: _BackplateColors] Cache In-Game Team Status");
 	// Load GameGlobal Pointer
 	ADDIS(reg1, 0, 0x805a);
 	LWZ(reg1, reg1, 0x00e0);
@@ -120,7 +116,6 @@ void infoPacCPUTeamColorFix()
 	// Store in cache location
 	ADDIS(reg2, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 	STB(reg1, reg2, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-
 	ASMEnd();
 }
 
