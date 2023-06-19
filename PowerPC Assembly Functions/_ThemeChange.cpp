@@ -28,10 +28,8 @@ void themeChangerBody(const std::string menuDirectory, themeConstants::themePath
 		// Get the selected theme from the Theme Setting Line
 		ADDIS(reg2, 0, THEME_SETTING_INDEX >> 0x10);
 		LWZ(reg2, reg2, (THEME_SETTING_INDEX & 0xFFFF) + Line::VALUE);
-		// Use reg1 to calc index into what will be our prefix list; first set it to 4...
-		SetRegister(reg1, 0x04);
-		// ... then multiply it by the desired Theme ID to index into the prefix list. reg2 is now our offset!
-		MULLW(reg2, reg2, reg1);
+		// Multiply the desired Theme ID by 4 to calculate our index into the prefix list. reg2 is now our offset!
+		MULLI(reg2, reg2, 0x04);
 
 		// Write and skip over the prefixes string...
 		BL(1 + (prefixesString.size() / 4));
