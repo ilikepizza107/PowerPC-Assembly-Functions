@@ -163,8 +163,7 @@ void randomColorChange()
 		// Where we're hooking, we guarantee that we're dealing with the Random portrait.
 		// The costumeIDReg at this moment is guaranteed to range from 0 (Red) to 4 (CPU).
 		// Calculate offset into Backplate Color LOC Entries
-		SetRegister(reg2, 0x4);
-		MULLW(reg2, reg2, costumeIDReg);
+		MULLI(reg2, costumeIDReg, 0x04);
 		// Add that to first entry's location
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
@@ -244,9 +243,8 @@ void menSelChrElemntChange()
 			// ... and subtract '0' from it so we get the index as a number. Keep this!
 			ADDI(4, 4, -1 * (unsigned char)'0');
 
-			// Calculate offset into Backplate Color LOC Entries
-			SetRegister(reg2, 0x4);
-			MULLW(reg2, reg2, 4);
+			// Multiply the index by 4 to calculate offset into Backplate Color LOC Entries.
+			MULLI(reg2, 4, 0x04);
 			// Add that to first entry's location
 			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
 			ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
@@ -322,8 +320,7 @@ void shieldColorChange()
 		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
 		ASMStart(0X80855ab0, "", "");
 		// Calculate offset into Backplate Color LOC Entries
-		SetRegister(reg2, 0x4);
-		MULLW(reg2, reg2, reg3); // reg3 is desired color frame.
+		MULLI(reg2, reg3, 0x04); // reg3 is desired color frame.
 		// Add that to first entry's location
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
@@ -445,10 +442,8 @@ void backplateColorChange()
 		EndIf();
 		// Then subtract 1, ultimately correcting everything.
 		ADDI(reg1, reg1, -0x1);
-
-		// Calculate which code menu line we should be looking at
-		SetRegister(reg2, 0x4);
-		MULLW(reg2, reg2, reg1);
+		// Now multiply by 4 to calculate the offset to the line we want.
+		MULLI(reg2, reg1, 0x04);
 		// Add that to first entry's location
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
