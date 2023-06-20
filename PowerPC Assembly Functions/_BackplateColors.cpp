@@ -352,6 +352,43 @@ void shieldColorChange()
 	}
 }
 
+void infoPacCLR0ColorChange()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int targetColorReg = 0;
+
+	int skipLabel = GetNextLabel();
+
+	CodeRaw("[CM: _BackplateColors] In-Game HUD Color Changer (Info.pac CLR0s) " + codeVersion + " [QuickLava]",
+		"Overrides the color parameter passed into the \"setStockMarkColor\" to redirect to the desired color."
+		,
+		{
+			0xC60e0a68, 0x800e0a5c,	// Force CPU Case to branch to our hook below.
+		}
+	);
+
+	// Note, we know specifically that we *aren't* in team mode in this case, so we don't have to check!
+	// Multiply target color by 4 to calc offset to relevant code menu line.
+	ASMStart(0x800e0a5c, "", "");
+
+	CMPLI(targetColorReg, 4, 0);
+	JumpToLabel(skipLabel, bCACB_GREATER);
+	MULLI(reg2, targetColorReg, 0x04);
+	// Add that to first entry's location to get offset to target line.
+	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+	ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+	// Get line address...
+	LWZ(reg2, reg2, 0x00);
+	// ... and load the line's value.
+	LWZ(reg2, reg2, Line::VALUE);
+	// Then subtract 1, since the game'll add 1 later anyway, and put it in the color register.
+	ADDI(targetColorReg, reg2, -1);
+
+	Label(skipLabel);
+	ASMEnd(0x901e0024); // Restore Original Instruction: stw	r0, 0x0024 (r30)
+}
+
 void backplateColorChange()
 {
 	// 00 = Clear
@@ -385,13 +422,11 @@ void backplateColorChange()
 		);
 
 		// Hooks "SetFrame/[nw4r3g3d15AnmObjMatClrResFf]/g3d_anmclr.o".
-		ASMStart(0x80197fac, "[CM: _BackplateColors] HUD Color Changer " + codeVersion + " [QuickLava]",
+		ASMStart(0x80197fac, "[CM: _BackplateColors] CSS + Results HUD Color Changer " + codeVersion + " [QuickLava]",
 			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and redirects them according"
 			"\nto the appropriate Code Menu lines. Intended for use with:"
 			"\n\tIn sc_selcharacter.pac:"
 			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCursorA_TopN__0\n\t\t- MenSelchrCmark4_TopN__0"
-			"\n\tIn info.pac (and its variants, eg. info_training.pac):"
-			"\n\t\t- InfArrow_TopN__0\n\t\t- InfFace_TopN__0\n\t\t- InfLoupe0_TopN__0\n\t\t- InfMark_TopN__0\n\t\t- InfPlynm_TopN__0"
 			"\n\tIn stgresult.pac:"
 			"\n\t\t- InfResultRank#_TopN__0\n\t\t- InfResultMark##_TopN"
 			"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"

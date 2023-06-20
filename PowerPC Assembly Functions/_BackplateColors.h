@@ -11,6 +11,7 @@ void handColorChange();
 void randomColorChange();
 void menSelChrElemntChange();
 void shieldColorChange();
+void infoPacCLR0ColorChange();
 void backplateColorChange();
 
 #endif
