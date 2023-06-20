@@ -310,22 +310,20 @@ void shieldColorChange()
 		int reg2 = 12;
 		int reg3 = 3;
 
-		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
-		ASMStart(0x80855aac, "[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
+		CodeRaw("[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
 			"Overrides IC-Basic[21029], which is only used by Shield and Death Plume to determine their colors, at least as far as I can tell,"
 			"\nto instead report the selected value in the Code Menu line associated with the color that would've been requested."
+			, 
+			{
+				0xC6855a9c, 0x80855ab0,	// Force CPU Case to branch to our hook below.
+			}
 		);
 
-		// r3 is ptr from getOwner call; we're hooking the following getTeam() call
-		// It's faster actually to just manually grab the team value rather than mtctr bctrl to it and back, so we'll do that; just no it's the same thing
-		// Deref ftOwner ptr
-		LWZ(reg3, reg3, 0);
-		// Grab team value from pointer. r3 is now recorded team value.
-		LWZ(reg3, reg3, 0);
-
+		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
+		ASMStart(0X80855ab0, "", "");
 		// Calculate offset into Backplate Color LOC Entries
 		SetRegister(reg2, 0x4);
-		MULLW(reg2, reg2, reg3);
+		MULLW(reg2, reg2, reg3); // reg3 is desired color frame.
 		// Add that to first entry's location
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
 		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
@@ -347,6 +345,11 @@ void shieldColorChange()
 			LWZ(reg3, reg2, Line::VALUE);
 		}
 		EndIf();
+
+		// Restore original instruction, we need to branch to 0x80855ab8
+		SetRegister(reg1, 0x80855ab8);
+		MTCTR(reg1);
+		BCTR();
 
 		ASMEnd();
 	}
@@ -376,8 +379,8 @@ void backplateColorChange()
 
 		CodeRaw("[CM: _BackplateColors] Hand Color Fix " + codeVersion + " [QuickLava]",
 			"Fixes a conflict with Eon's Roster-Size-Based Hand Resizing code, which could"
-			"\nin some cases cause CSS hands to be wind up the wrong color."
-			, 
+			"\nin some cases cause CSS hands to wind up the wrong color."
+, 
 			{ 
 				0x0469CA2C, 0xC0031014, // op	lfs	f0, 0x1014 (r3) @ 8069CA2C
 				0x0469CAE0, 0xC0031014	// op	lfs	f0, 0x1014 (r3) @ 8069CAE0
