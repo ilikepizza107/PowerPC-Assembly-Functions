@@ -529,3 +529,57 @@ void backplateColorChange()
 	}
 
 }
+
+//void selcharCLR0ColorChange()
+//{
+//	int reg1 = 11;
+//	int reg2 = 12;
+//	int r3ValueReg = 26;
+//
+//	// 80698a68 setting r26+1b0 to another value gives you control over a different coin :eyes:
+//
+//	// Note, we know specifically that the value we're modifying isn't used in team mode, so we don't have to check!
+//	// Multiply target color by 4 to calc offset to relevant code menu line.
+//	ASMStart(0x80698a68, "[CM: _BackplateColors] Selchar HUD Color Changer " + codeVersion + " [QuickLava]",
+//		"Overrides r3 + 0x1B0 (player slot, used for picking colors within this function) with a custom value to redirect to different colors!"
+//		"\nValue is overwritten in this first hook, then restored in the second hook, so it shouldn't affect anything outside of this one function."
+//		"\nNote: This value isn't used for picking colors while in team battle, so we don't have to worry about accounting for that here either."
+//	);
+//
+//	// Pull the original Slot Value from the r3 Object...
+//	LWZ(reg2, r3ValueReg, 0x1B0);
+//	// ... and store it 1 byte into the Team Battle Store Loc
+//	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+//	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 1);
+//	MULLI(reg2, reg2, 0x04);
+//	// Use that to get first entry's location to get offset to target line.
+//	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
+//	LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
+//	// ... and load the line's value.
+//	LWZ(reg2, reg2, Line::VALUE);
+//	// Install our patched value into the object. We'll be uninstalling this and putting back the original value later!
+//	STW(reg2, r3ValueReg, 0x1B0);
+//
+//	ASMEnd(0x90a10008); // Restore Original Instruction: stw	r5, 0x0008 (sp)
+//
+//	ASMStart(0x806991dc);
+//
+//	// Reload backed up r3 + 0x1B0 value...
+//	ADDIS(reg2, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+//	LBZ(reg2, reg2, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 1);
+//	// ... and store it in its rightful place.
+//	STW(reg2, r3ValueReg, 0x1B0);
+//
+//	ASMEnd(0xcb810040); // Restore Original Instruction: lfd	f28, 0x0040 (sp)
+//
+//	//817b4ccc
+//	//817b4ce4
+//	// Disable Adding 1 to the Target Frames
+//	CodeRaw("", "",
+//		{
+//			0x04698c74, 0xFFA00890, // Replace "fadds f29, f0, f1" with "fmr f29, f1"
+//			0x04698d10, 0xFF800890, // Replace "fadds f28, f0, f1" with "fmr f28, f1"
+//			0x04698ec4, 0xFFE00890, // Replace "fadds f31, f0, f1" with "fmr f31, f1"
+//			0x04698f64, 0xFFD00890, // Replace "fadds f30, f0, f1" with "fmr f30, f1"
+//		});
+//}
