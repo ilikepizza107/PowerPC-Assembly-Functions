@@ -461,7 +461,6 @@ int main(int argc, char** argv)
 		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
 		backplateColorChange(); menSelChrElemntChange(); randomColorChange();
 		infoPacCLR0ColorChange(); shieldColorChange(); transparentCSSandResultsScreenNames(); storeTeamBattleStatus();
-		infoPacCPUTeamColorFix();
 		// dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();

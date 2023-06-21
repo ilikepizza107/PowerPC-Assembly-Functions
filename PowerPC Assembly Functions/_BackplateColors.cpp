@@ -95,42 +95,30 @@ void transparentCSSandResultsScreenNames()
 	}
 }
 
-void infoPacCPUTeamColorFix()
+void storeTeamBattleStatus()
 {
-	CodeRaw("[CM: _BackplateColors] Disable CPU Team Colors", "",
-		{
-			0x040e0a88, 0x38600000	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with li r3, 0
-		});
-
 	int reg1 = 11;
 	int reg2 = 12;
 
-	ASMStart(0x800e2108, "[CM: _BackplateColors] Cache In-Game Team Status");
-	// Load GameGlobal Pointer
-	ADDIS(reg1, 0, 0x805a);
-	LWZ(reg1, reg1, 0x00e0);
-	// Load GameMOdeMelee Pointer
-	LWZ(reg1, reg1, 0x08);
-	// Grab Team Status
-	LWZ(reg1, reg1, 0x10);
-	// Store in cache location
-	ADDIS(reg2, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-	STB(reg1, reg2, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-	ASMEnd();
-}
-
-void storeTeamBattleStatus()
-{
-	int reg1 = 12;
-
-	ASMStart(0x8068eda8, "[CM: _BackplateColors] Cache SelChar Team Battle Status in Code Menu");
-
+	ASMStart(0x8068eda8, "[CM: _BackplateColors] Cache SelChar Team Battle Status");
+	// Set up store val (optimization to allow future uses of it to just lbz the val, then lwzx with it)
+	MULLI(reg2, 4, Line::DEFAULT - Line::VALUE);
+	ADDI(reg2, reg2, Line::VALUE);
 	// Store team battle status in our buffer word.
 	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-	STB(4, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-
+	STB(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 	ASMEnd(0x7c7c1b78); // Restore original instruction: mr	r28, r3
 
+	ASMStart(0x806e10dc, "[CM: _BackplateColors] Cache Classic Mode Team Battle Status");
+	// Set up store val (optimization to allow future uses of it to just lbz the val, then lwzx with it)
+	MULLI(reg2, 0, Line::DEFAULT - Line::VALUE);
+	ADDI(reg2, reg2, Line::VALUE);
+	// Store team battle status in our buffer word.
+	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	STB(0, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	ASMEnd(0x88170009); // Restore Original Instruction: lbz	r0, 0x0009 (r23)
+
+	// 806dcf00
 	// 806e0aec setSimpleSetting/[sqSingleSimple]/sq_single_simple.o
 	// 800500a0 gmInitMeleeDataDefault/[gmMeleeInitData]/gm_lib.o
 	// 806e0c30 setStageSetting/[sqSingleSimple]/sq_single_simple.o - triggers after match end in classic, r0 is 0 tho
@@ -167,22 +155,11 @@ void randomColorChange()
 		// Add that to first entry's location and Load line INDEX value
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
 		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-		// Load buffered Team Battle Status
+		// Load buffered Team Battle Status Offset
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-		// If team battle flag is set...
-		If(reg1, NOT_EQUAL_I_L, 0x00);
-		{
-			// ... use the default value from the target line.
-			LWZ(costumeIDReg, reg2, Line::DEFAULT);
-		}
-		// Otherwise...
-		Else();
-		{
-			// .. get the line's selected index
-			LWZ(costumeIDReg, reg2, Line::VALUE);
-		}
-		EndIf();
+		// Use it to load the relevant value.
+		LWZX(costumeIDReg, reg2, reg1);
 
 		ASMEnd(0x3b5b0004); // Restore Original Instruction: addi	r26, r27, 4
 	}
@@ -246,22 +223,11 @@ void menSelChrElemntChange()
 			// Add that to first entry's location and Load line INDEX value
 			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
 			LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-			// Load buffered Team Battle Status
+			// Load buffered Team Battle Status Offset
 			ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 			LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-			// If team battle flag is set...
-			If(reg1, NOT_EQUAL_I_L, 0x00);
-			{
-				// ... use the default value from the target line.
-				LWZ(reg2, reg2, Line::DEFAULT);
-			}
-			// Otherwise...
-			Else();
-			{
-				// .. get the line's selected index
-				LWZ(reg2, reg2, Line::VALUE);
-			}
-			EndIf();
+			// Use it to load the relevant value.
+			LWZX(reg2, reg2, reg1);
 
 			// If the retrieved line value isn't the same as the original value...
 			If(reg2, NOT_EQUAL_L, 4);
@@ -320,22 +286,11 @@ void shieldColorChange()
 		// Add that to first entry's location
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
 		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-		// Load buffered Team Battle Status
+		// Load buffered Team Battle Status Offset
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-		// If team battle flag is set...
-		If(reg1, NOT_EQUAL_I_L, 0x00);
-		{
-			// ... use the default value from the target line.
-			LWZ(reg3, reg2, Line::DEFAULT);
-		}
-		// Otherwise...
-		Else();
-		{
-			// .. get the line's selected index
-			LWZ(reg3, reg2, Line::VALUE);
-		}
-		EndIf();
+		// Use it to load the relevant value.
+		LWZX(reg3, reg2, reg1);
 
 		// Restore original instruction, we need to branch to 0x80855ab8
 		SetRegister(reg1, 0x80855ab8);
@@ -345,12 +300,16 @@ void shieldColorChange()
 		ASMEnd();
 	}
 }
-
 void infoPacCLR0ColorChange()
 {
 	int reg1 = 11;
 	int reg2 = 12;
 	int targetColorReg = 0;
+
+	CodeRaw("[CM: _BackplateColors] Disable CPU Team Colors", "",
+		{
+			0x040e0a88, 0x38600000	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with li r3, 0
+		});
 
 	int skipLabel = GetNextLabel();
 
@@ -474,22 +433,11 @@ void backplateColorChange()
 		// Add that to first entry's location and Load line INDEX value
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
 		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-		// Load buffered Team Battle Status
+		// Load buffered Team Battle Status Offset
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-		// If team battle flag is set...
-		If(reg1, NOT_EQUAL_I_L, 0x00);
-		{
-			// ... use the default value from the target line.
-			LWZ(reg2, reg2, Line::DEFAULT);
-	}
-		// Otherwise...
-		Else();
-		{
-			// .. get the line's selected index
-			LWZ(reg2, reg2, Line::VALUE);
-		}
-		EndIf();
+		// Use it to load the relevant value.
+		LWZX(reg2, reg2, reg1);
 
 		// And now, to perform black magic int-to-float conversion, as pilfered from the Brawl game code lol.
 		// Set reg1 to our staging location

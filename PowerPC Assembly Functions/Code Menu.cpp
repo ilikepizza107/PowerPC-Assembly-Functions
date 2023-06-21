@@ -1591,7 +1591,9 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
 	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
 	//BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC
-	AddValueToByteArray(0, Header); // Just a free word of memory, used to store Team Battle Status
+	// Used to store some temp values related to the color changer!
+	// First byte is an offset used to lbzx to either VALUE or DEFAULT quickly (init to VALUE).
+	AddValueToByteArray(Line::VALUE << 0x18, Header);
 
 	
 	
