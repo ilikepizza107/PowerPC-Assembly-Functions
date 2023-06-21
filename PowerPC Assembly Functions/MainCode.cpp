@@ -459,7 +459,8 @@ int main(int argc, char** argv)
 		//LXPGreenOverlayFix();
 
 		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
-		backplateColorChange(); menSelChrElemntChange(); randomColorChange();
+		// backplateColorChange(); menSelChrElemntChange(); 
+		selcharCLR0ColorChange(); randomColorChange();
 		infoPacCLR0ColorChange(); shieldColorChange(); transparentCSSandResultsScreenNames(); storeTeamBattleStatus();
 		// dashAttackItemGrab(); tripRateModifier();
 
