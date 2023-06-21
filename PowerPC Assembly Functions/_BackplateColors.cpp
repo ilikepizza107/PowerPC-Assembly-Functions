@@ -164,11 +164,9 @@ void randomColorChange()
 		// The costumeIDReg at this moment is guaranteed to range from 0 (Red) to 4 (CPU).
 		// Calculate offset into Backplate Color LOC Entries
 		MULLI(reg2, costumeIDReg, 0x04);
-		// Add that to first entry's location
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-		// Load line INDEX value
-		LWZ(reg2, reg2, 0x00);
+		// Add that to first entry's location and Load line INDEX value
+		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 		// Load buffered Team Battle Status
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
@@ -245,11 +243,9 @@ void menSelChrElemntChange()
 
 			// Multiply the index by 4 to calculate offset into Backplate Color LOC Entries.
 			MULLI(reg2, 4, 0x04);
-			// Add that to first entry's location
-			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-			ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-			// Load line INDEX value
-			LWZ(reg2, reg2, 0x00);
+			// Add that to first entry's location and Load line INDEX value
+			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+			LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 			// Load buffered Team Battle Status
 			ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 			LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
@@ -319,13 +315,11 @@ void shieldColorChange()
 
 		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
 		ASMStart(0X80855ab0, "", "");
-		// Calculate offset into Backplate Color LOC Entries
+		// Calculate offset into Backplate Color LOC Entries and Load the Relevant Index
 		MULLI(reg2, reg3, 0x04); // reg3 is desired color frame.
 		// Add that to first entry's location
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-		// Load line INDEX value
-		LWZ(reg2, reg2, 0x00);
+		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 		// Load buffered Team Battle Status
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
@@ -376,10 +370,8 @@ void infoPacCLR0ColorChange()
 	JumpToLabel(skipLabel, bCACB_GREATER);
 	MULLI(reg2, targetColorReg, 0x04);
 	// Add that to first entry's location to get offset to target line.
-	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-	ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-	// Get line address...
-	LWZ(reg2, reg2, 0x00);
+	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+	LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 	// ... and load the line's value.
 	LWZ(reg2, reg2, Line::VALUE);
 	// Then subtract 1, since the game'll add 1 later anyway, and put it in the color register.
@@ -479,11 +471,9 @@ void backplateColorChange()
 		ADDI(reg1, reg1, -0x1);
 		// Now multiply by 4 to calculate the offset to the line we want.
 		MULLI(reg2, reg1, 0x04);
-		// Add that to first entry's location
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 16);
-		ADDI(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0x0000FFFF);
-		// Load line INDEX value
-		LWZ(reg2, reg2, 0x00);
+		// Add that to first entry's location and Load line INDEX value
+		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 		// Load buffered Team Battle Status
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
