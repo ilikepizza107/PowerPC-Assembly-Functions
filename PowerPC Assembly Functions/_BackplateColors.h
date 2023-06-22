@@ -16,4 +16,5 @@ void backplateColorChange();
 // Come back to this later once the AsyncRSP plugin is finalized.
 // The idea is worth exploring further, it could shrink the code down a bit.
 void selcharCLR0ColorChange();
+void resultsCLR0ColorChange();
 #endif

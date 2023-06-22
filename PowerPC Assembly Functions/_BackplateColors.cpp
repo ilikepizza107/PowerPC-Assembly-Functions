@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "_CSSRosterChange.h"
 
-const std::string codeVersion = "v1.0.0";
+const std::string codeVersion = "v1.5.0";
 
 
 // Shield Color Notes:
@@ -308,7 +308,10 @@ void infoPacCLR0ColorChange()
 
 	CodeRaw("[CM: _BackplateColors] Disable CPU Team Colors", "",
 		{
-			0x040e0a88, 0x38600000	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with li r3, 0
+			0x040e0a88, 0x38600000,	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with "li r3, 0"
+			0x040e6cc0, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
+			0x040e7120, 0xc3c29164, // Overwrite op "lfs	f30, -0x6E94 (rtoc)" with "lfs	f30, -0x6E9C (rtoc)"
+			0x040ea290, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
 		});
 
 	int skipLabel = GetNextLabel();
@@ -318,6 +321,7 @@ void infoPacCLR0ColorChange()
 		,
 		{
 			0xC60e0a68, 0x800e0a5c,	// Force CPU Case to branch to our hook below.
+			0x040e2108, 0x60000000, // Disable >4 Case in SetStockMarkColor
 		}
 	);
 
@@ -468,8 +472,6 @@ void backplateColorChange()
 
 }
 
-
-
 void selCharColorOverrideBody(int colorReg)
 {
 	int reg1 = 11;
@@ -565,4 +567,62 @@ void selcharCLR0ColorChange()
 	//ASMStart(0x80698dec, codeGroupName + " (8) " + codeVersion + " [QuickLava]", "");
 	//selCharColorOverrideBody(4);
 	//ASMEnd();
+}
+
+void resultsColorFrameOverrideBody(int workingReg, int colorReg)
+{
+	ADDIS(workingReg, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	ADDI(workingReg, workingReg, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF));
+	LBZX(workingReg, workingReg, colorReg);
+	ADDI(workingReg, workingReg, -1); // Subtract 1 to correct for the addition later.
+}
+
+void resultsCLR0ColorChange()
+{
+	const std::string codeGroupName = "[CM: _BackplateColors] Results HUD Color Changer";
+
+	int reg1 = 11;
+	int reg2 = 12;
+
+	// Set up Team Store Loc as quick color ref.
+	ASMStart(0x800e6ac0, codeGroupName + " (Setup) " + codeVersion + " [QuickLava]", 
+		"Stores the colors selected in the 4 Player Color lines in the Team Color Buffer word."
+		"\nThis allows us to quickly LBZX using the current loop iteration to get the desired color."
+	);
+	// Load top half of address to speed up loading.
+	ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+	LWZ(reg2, reg1, (BACKPLATE_COLOR_1_INDEX & 0xFFFF) + Line::VALUE);
+	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF));
+	LWZ(reg2, reg1, (BACKPLATE_COLOR_2_INDEX & 0xFFFF) + Line::VALUE);
+	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 1);
+	LWZ(reg2, reg1, (BACKPLATE_COLOR_3_INDEX & 0xFFFF) + Line::VALUE);
+	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 2);
+	LWZ(reg2, reg1, (BACKPLATE_COLOR_4_INDEX & 0xFFFF) + Line::VALUE);
+	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 3);
+	ASMEnd(0x7fe3fb78); // Restore Original Instruction
+
+	ASMStart(0x800e6d58, codeGroupName + " (0) " + codeVersion + " [QuickLava]", "");
+	resultsColorFrameOverrideBody(reg1, 20);
+	STW(reg1, 1, 0x01D4); // Replace Original Instruction: stw	reg1, 0x01D4 (sp)
+	ASMEnd(); 
+
+	ASMStart(0x800e71d0, codeGroupName + " (1) " + codeVersion + "[QuickLava]", "");
+	resultsColorFrameOverrideBody(reg1, 20);
+	STW(reg1, 1, 0x01D4); // Replace Original Instruction: stw	reg1, 0x01D4 (sp)
+	ASMEnd();
+
+	ASMStart(0x800ea30c, codeGroupName + " (2) " + codeVersion + "[QuickLava]", "");
+	resultsColorFrameOverrideBody(reg1, 24);
+	MR(4, reg1); // Replace Original Instruction: mr r4, reg1
+	ASMEnd();
+
+	ASMStart(0x800ebb98, codeGroupName + " (3) " + codeVersion + "[QuickLava]", "");
+	resultsColorFrameOverrideBody(reg1, 28);
+	MR(4, reg1); // Replace Original Instruction: mr r4, reg1
+	ASMEnd();
+
+	ASMStart(0x800ebde4, codeGroupName + " (4) " + codeVersion + "[QuickLava]", "");
+	resultsColorFrameOverrideBody(4, 28);
+	ADDI(5, 0, 0); // Replace Original Instruction: li r5, 0
+	ASMEnd();
 }
