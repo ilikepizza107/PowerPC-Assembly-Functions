@@ -95,27 +95,31 @@ void transparentCSSandResultsScreenNames()
 	}
 }
 
+void storeTeamBattleStatusBody(int statusReg)
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	MULLI(reg2, statusReg, Line::DEFAULT - Line::VALUE);
+	ADDI(reg2, reg2, Line::VALUE);
+	// Store team battle status in our buffer word.
+	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	STB(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+}
 void storeTeamBattleStatus()
 {
 	int reg1 = 11;
 	int reg2 = 12;
 
+	ASMStart(0x806945e8, "[CM: _BackplateColors] Cache SelChar Team Battle Status on Init");
+	storeTeamBattleStatusBody(3);
+	ASMEnd(0x7c651b78); // Restore original instruction: mr	r5, r3
+
 	ASMStart(0x8068eda8, "[CM: _BackplateColors] Cache SelChar Team Battle Status");
-	// Set up store val (optimization to allow future uses of it to just lbz the val, then lwzx with it)
-	MULLI(reg2, 4, Line::DEFAULT - Line::VALUE);
-	ADDI(reg2, reg2, Line::VALUE);
-	// Store team battle status in our buffer word.
-	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-	STB(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	storeTeamBattleStatusBody(4);
 	ASMEnd(0x7c7c1b78); // Restore original instruction: mr	r28, r3
 
 	ASMStart(0x806e10dc, "[CM: _BackplateColors] Cache Classic Mode Team Battle Status");
-	// Set up store val (optimization to allow future uses of it to just lbz the val, then lwzx with it)
-	MULLI(reg2, 0, Line::DEFAULT - Line::VALUE);
-	ADDI(reg2, reg2, Line::VALUE);
-	// Store team battle status in our buffer word.
-	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-	STB(0, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	storeTeamBattleStatusBody(0);
 	ASMEnd(0x88170009); // Restore Original Instruction: lbz	r0, 0x0009 (r23)
 
 	// 806dcf00
@@ -601,28 +605,26 @@ void resultsCLR0ColorChange()
 	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 3);
 	ASMEnd(0x7fe3fb78); // Restore Original Instruction
 
-	ASMStart(0x800e6d58, codeGroupName + " (0) " + codeVersion + " [QuickLava]", "");
+	// Do Initial Backplate Color Override
+	ASMStart(0x800e6d58, codeGroupName + " (Backplate Fix) " + codeVersion + " [QuickLava]",
+		"The hook does the initial color override, and the C6 code prevents the color changing after that.");
 	resultsColorFrameOverrideBody(reg1, 20);
 	STW(reg1, 1, 0x01D4); // Replace Original Instruction: stw	reg1, 0x01D4 (sp)
 	ASMEnd(); 
+	CodeRaw("", "", 
+		{
+			0xC60e71d0, 0x800e7228, // Branch Past Second Backplate Color Set
+		});
 
-	ASMStart(0x800e71d0, codeGroupName + " (1) " + codeVersion + "[QuickLava]", "");
-	resultsColorFrameOverrideBody(reg1, 20);
-	STW(reg1, 1, 0x01D4); // Replace Original Instruction: stw	reg1, 0x01D4 (sp)
-	ASMEnd();
-
-	ASMStart(0x800ea30c, codeGroupName + " (2) " + codeVersion + "[QuickLava]", "");
+	// Do Initial Mark Color Override
+	ASMStart(0x800ea30c, codeGroupName + " (Mark Fix) " + codeVersion + "[QuickLava]", 
+		"The Hook does the initial color override, and the C6 codes prevent the color changing after that.");
 	resultsColorFrameOverrideBody(reg1, 24);
 	MR(4, reg1); // Replace Original Instruction: mr r4, reg1
 	ASMEnd();
-
-	ASMStart(0x800ebb98, codeGroupName + " (3) " + codeVersion + "[QuickLava]", "");
-	resultsColorFrameOverrideBody(reg1, 28);
-	MR(4, reg1); // Replace Original Instruction: mr r4, reg1
-	ASMEnd();
-
-	ASMStart(0x800ebde4, codeGroupName + " (4) " + codeVersion + "[QuickLava]", "");
-	resultsColorFrameOverrideBody(4, 28);
-	ADDI(5, 0, 0); // Replace Original Instruction: li r5, 0
-	ASMEnd();
+	CodeRaw("", "",
+		{
+			0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
+			0xC60ebde4, 0x800ebe00, // Branch Past Third Mark Color Set
+		});
 }
