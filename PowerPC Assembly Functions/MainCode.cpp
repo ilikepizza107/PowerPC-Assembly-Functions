@@ -459,11 +459,11 @@ int main(int argc, char** argv)
 		//LXPGreenOverlayFix();
 
 		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
-		//backplateColorChange(); menSelChrElemntChange(); 
+		backplateColorChange(); menSelChrElemntChange(); 
 		// 800ea3a0 is for backplate green color grab
 		// 800ea3c8 is for backplate color setting
-		selcharCLR0ColorChange(); resultsCLR0ColorChange();
-		randomColorChange(); infoPacCLR0ColorChange(); shieldColorChange(); transparentCSSandResultsScreenNames(); storeTeamBattleStatus();
+		// selcharCLR0ColorChange(); resultsCLR0ColorChange(); infoPacCLR0ColorChange();
+		randomColorChange(); shieldColorChange(); transparentCSSandResultsScreenNames(); storeTeamBattleStatus();
 		// dashAttackItemGrab(); tripRateModifier();
 
 		//musicPercentCode();

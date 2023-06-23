@@ -295,12 +295,20 @@ void backplateColorChange()
 			}
 		);
 
+		CodeRaw("[CM: _BackplateColors] Disable Franchise Icon Color 10-Frame Offset in Results Screen", "",
+			{
+				0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
+				0xC60ebde4, 0x800ebe00, // Branch Past Third Mark Color Set
+			});
+
 		// Hooks "SetFrame/[nw4r3g3d15AnmObjMatClrResFf]/g3d_anmclr.o".
 		ASMStart(0x80197fac, "[CM: _BackplateColors] CSS + Results HUD Color Changer " + codeVersion + " [QuickLava]",
 			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and redirects them according"
 			"\nto the appropriate Code Menu lines. Intended for use with:"
 			"\n\tIn sc_selcharacter.pac:"
 			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCursorA_TopN__0\n\t\t- MenSelchrCmark4_TopN__0"
+			"\n\tIn info.pac (and its variants, eg. info_training.pac):"
+			"\n\t\t- InfArrow_TopN__0\n\t\t- InfFace_TopN__0\n\t\t- InfLoupe0_TopN__0\n\t\t- InfMark_TopN__0\n\t\t- InfPlynm_TopN__0"
 			"\n\tIn stgresult.pac:"
 			"\n\t\t- InfResultRank#_TopN__0\n\t\t- InfResultMark##_TopN"
 			"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"
@@ -327,35 +335,17 @@ void backplateColorChange()
 		STFD(3, reg1, 0x00);
 		LWZ(reg1, reg1, 0x04);
 
-		// This is only really here for the Results Screen Franchise icons.
-		// Those ask for normal frame + 10 as you click through the stats.
-		// This prevents that from happening.
-		If(reg1, GREATER_OR_EQUAL_I_L, 10);
-		{
-			ADDI(reg1, reg1, -10);
-		}
-		EndIf();
+		// If the target frame corresponds to one of the code menu lines, we'll skip execution.
+		CMPLI(reg1, 1, 0);
+		JumpToLabel(exitLabel, bCACB_LESSER);
+		CMPLI(reg1, 5, 0);
+		JumpToLabel(exitLabel, bCACB_GREATER);
 
-		//Shuffle around the requested frames to line up with the Code Menu Lines
-		// If we ask for frame 0, point to 1 above Transparent Line
-		If(reg1, EQUAL_I, 0x00);
-		{
-			SetRegister(reg1, 0x06);
-		}
-		EndIf();
-		// If we ask for frame 9, point to 1 above CPU Line
-		If(reg1, EQUAL_I, 0x9);
-		{
-			SetRegister(reg1, 0x05);
-		}
-		EndIf();
-		// Then subtract 1, ultimately correcting everything.
-		ADDI(reg1, reg1, -0x1);
-		// Now multiply by 4 to calculate the offset to the line we want.
+		// Now multiply the target frame by 4 to calculate the offset to the line we want.
 		MULLI(reg2, reg1, 0x04);
 		// Add that to first entry's location and Load line INDEX value
 		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+		LWZ(reg2, reg2, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // - 0x4 because our target frame is 1 higher than the corresponding line.
 		// Load buffered Team Battle Status Offset
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
