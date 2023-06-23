@@ -98,6 +98,11 @@ void transparentCSSandResultsScreenNames()
 		resultsScreenNameFix(reg1, reg2);
 		ASMEnd();
 
+		CodeRaw("", "", 
+			{
+				0x040ea724, 0x60000000, // Disable Team Battle Player Case
+			});
+
 		ASMStart(0x8069b268, "[CM: _BackplateColors] CSS Player Names are Transparent " + codeVersion + " [QuickLava]"); // Hooks "dispName/[muSelCharPlayerArea]/mu_selchar_player_area_obj".
 		overrideSetFontColorRGBA(0xFF, 0xFF, 0xFF, 0xB0);
 		ASMEnd();
