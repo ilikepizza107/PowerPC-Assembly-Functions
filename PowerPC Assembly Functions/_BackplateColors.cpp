@@ -320,7 +320,7 @@ void backplateColorChange()
 			});
 
 		// Hooks "SetFrame/[nw4r3g3d15AnmObjMatClrResFf]/g3d_anmclr.o".
-		ASMStart(0x80197fac, "[CM: _BackplateColors] CSS + Results HUD Color Changer " + codeVersion + " [QuickLava]",
+		ASMStart(0x80197fac, "[CM: _BackplateColors] CSS, In-game, and Results HUD Color Changer " + codeVersion + " [QuickLava]",
 			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and redirects them according"
 			"\nto the appropriate Code Menu lines. Intended for use with:"
 			"\n\tIn sc_selcharacter.pac:"
