@@ -807,8 +807,8 @@ public:
 class Integer : public Line
 {
 public:
-	Integer(string Text, int Min, int Max, int Default, int Speed, int &Index)
-	: Line(Text + ":  %d", NUMBER_LINE_TEXT_START, INTEGER_LINE, 0, NORMAL_LINE_COLOR_OFFSET, &Index)
+	Integer(string Text, int Min, int Max, int Default, int Speed, int &Index, std::string format = "%d")
+	: Line(Text + ":  " + format, NUMBER_LINE_TEXT_START, INTEGER_LINE, 0, NORMAL_LINE_COLOR_OFFSET, &Index)
 	{
 		this->Min = Min;
 		this->Max = Max;
