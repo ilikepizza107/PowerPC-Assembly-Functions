@@ -54,8 +54,8 @@ const std::string codeVersion = "v2.0.0";
 void playerSlotColorChangers()
 {
 	storeTeamBattleStatus();
-	menSelChrElemntChange();
 	backplateColorChange();
+	menSelChrElemntChange();
 	transparentCSSandResultsScreenNames();
 	randomColorChange();
 	shieldColorChange();
