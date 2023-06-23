@@ -4,17 +4,23 @@
 #include "stdafx.h"
 #include "_AdditionalCode.h"
 
-void storeTeamBattleStatus();
+void playerSlotColorChangers();
+
 void transparentCSSandResultsScreenNames();
-void handColorChange();
+
+void storeTeamBattleStatus();
+
 void randomColorChange();
 void menSelChrElemntChange();
-void shieldColorChange();
-void infoPacCLR0ColorChange();
 void backplateColorChange();
 
-// Come back to this later once the AsyncRSP plugin is finalized.
-// The idea is worth exploring further, it could shrink the code down a bit.
+void shieldColorChange();
+
+// These were developed as part of the research for this project, but ultimately not used.
+// They do provide potentially useful isolated functionality though, and so are being left here.
+// The SelChar one isn't finished, it only acts when you change into and out of Team Mode, and doesn't
+//	correctly affect all menu elements (and values are incorrect in certain modes, eg. hands in Classic Mode).
 void selcharCLR0ColorChange();
+void infoPacCLR0ColorChange();
 void resultsCLR0ColorChange();
 #endif
