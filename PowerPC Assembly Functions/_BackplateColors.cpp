@@ -168,7 +168,6 @@ void randomColorChange()
 		ASMEnd(0x3b5b0004); // Restore Original Instruction: addi	r26, r27, 4
 	}
 }
-
 void menSelChrElemntChange()
 {
 	// If Color Changer is enabled
@@ -264,90 +263,6 @@ void menSelChrElemntChange()
 		ASMEnd(0x80010024); // Restore Original Instruction: lwz	r0, 0x0024 (sp)
 	}
 }
-
-void shieldColorChange()
-{
-	// If Color Changer is enabled
-	if (BACKPLATE_COLOR_1_INDEX != -1)
-	{
-		int reg1 = 11;
-		int reg2 = 12;
-		int reg3 = 3;
-
-		CodeRaw("[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
-			"Overrides IC-Basic[21029], which is only used by Shield and Death Plume to determine their colors, at least as far as I can tell,"
-			"\nto instead report the selected value in the Code Menu line associated with the color that would've been requested."
-			, 
-			{
-				0xC6855a9c, 0x80855ab0,	// Force CPU Case to branch to our hook below.
-			}
-		);
-
-		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
-		ASMStart(0X80855ab0, "", "");
-		// Calculate offset into Backplate Color LOC Entries and Load the Relevant Index
-		MULLI(reg2, reg3, 0x04); // reg3 is desired color frame.
-		// Add that to first entry's location
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-		// Load buffered Team Battle Status Offset
-		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-		// Use it to load the relevant value.
-		LWZX(reg3, reg2, reg1);
-
-		// Restore original instruction, we need to branch to 0x80855ab8
-		SetRegister(reg1, 0x80855ab8);
-		MTCTR(reg1);
-		BCTR();
-
-		ASMEnd();
-	}
-}
-void infoPacCLR0ColorChange()
-{
-	int reg1 = 11;
-	int reg2 = 12;
-	int targetColorReg = 0;
-
-	CodeRaw("[CM: _BackplateColors] Disable CPU Team Colors", "",
-		{
-			0x040e0a88, 0x38600000,	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with "li r3, 0"
-			0x040e6cc0, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
-			0x040e7120, 0xc3c29164, // Overwrite op "lfs	f30, -0x6E94 (rtoc)" with "lfs	f30, -0x6E9C (rtoc)"
-			0x040ea290, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
-		});
-
-	int skipLabel = GetNextLabel();
-
-	CodeRaw("[CM: _BackplateColors] In-Game HUD Color Changer (Info.pac CLR0s) " + codeVersion + " [QuickLava]",
-		"Overrides the color parameter passed into the \"setStockMarkColor\" to redirect to the desired color."
-		,
-		{
-			0xC60e0a68, 0x800e0a5c,	// Force CPU Case to branch to our hook below.
-			0x040e2108, 0x60000000, // Disable >4 Case in SetStockMarkColor
-		}
-	);
-
-	// Note, we know specifically that we *aren't* in team mode in this case, so we don't have to check!
-	// Multiply target color by 4 to calc offset to relevant code menu line.
-	ASMStart(0x800e0a5c, "", "");
-
-	CMPLI(targetColorReg, 4, 0);
-	JumpToLabel(skipLabel, bCACB_GREATER);
-	MULLI(reg2, targetColorReg, 0x04);
-	// Add that to first entry's location to get offset to target line.
-	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-	LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-	// ... and load the line's value.
-	LWZ(reg2, reg2, Line::VALUE);
-	// Then subtract 1, since the game'll add 1 later anyway, and put it in the color register.
-	ADDI(targetColorReg, reg2, -1);
-
-	Label(skipLabel);
-	ASMEnd(0x901e0024); // Restore Original Instruction: stw	r0, 0x0024 (r30)
-}
-
 void backplateColorChange()
 {
 	// 00 = Clear
@@ -483,7 +398,6 @@ void selCharColorOverrideBody(int colorReg)
 	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 	LBZ(colorReg, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 1);
 }
-
 void selCharColorFrameOverrideBody(int colorReg)
 {
 	int reg1 = 11;
@@ -493,7 +407,6 @@ void selCharColorFrameOverrideBody(int colorReg)
 	// This is the one for the setFrameMatCol calls, so we need to subtract 1 from the target value.
 	ADDI(colorReg, reg1, -1);
 }
-
 void selcharCLR0ColorChange()
 {
 	const std::string codeGroupName = "[CM: _BackplateColors] Selchar HUD Color Changer";
@@ -571,6 +484,89 @@ void selcharCLR0ColorChange()
 	//ASMStart(0x80698dec, codeGroupName + " (8) " + codeVersion + " [QuickLava]", "");
 	//selCharColorOverrideBody(4);
 	//ASMEnd();
+}
+
+void shieldColorChange()
+{
+	// If Color Changer is enabled
+	if (BACKPLATE_COLOR_1_INDEX != -1)
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+		int reg3 = 3;
+
+		CodeRaw("[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
+			"Overrides IC-Basic[21029], which is only used by Shield and Death Plume to determine their colors, at least as far as I can tell,"
+			"\nto instead report the selected value in the Code Menu line associated with the color that would've been requested."
+			,
+			{
+				0xC6855a9c, 0x80855ab0,	// Force CPU Case to branch to our hook below.
+			}
+		);
+
+		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
+		ASMStart(0X80855ab0, "", "");
+		// Calculate offset into Backplate Color LOC Entries and Load the Relevant Index
+		MULLI(reg2, reg3, 0x04); // reg3 is desired color frame.
+		// Add that to first entry's location
+		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+		// Load buffered Team Battle Status Offset
+		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		// Use it to load the relevant value.
+		LWZX(reg3, reg2, reg1);
+
+		// Restore original instruction, we need to branch to 0x80855ab8
+		SetRegister(reg1, 0x80855ab8);
+		MTCTR(reg1);
+		BCTR();
+
+		ASMEnd();
+	}
+}
+void infoPacCLR0ColorChange()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int targetColorReg = 0;
+
+	CodeRaw("[CM: _BackplateColors] Disable CPU Team Colors", "",
+		{
+			0x040e0a88, 0x38600000,	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with "li r3, 0"
+			0x040e6cc0, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
+			0x040e7120, 0xc3c29164, // Overwrite op "lfs	f30, -0x6E94 (rtoc)" with "lfs	f30, -0x6E9C (rtoc)"
+			0x040ea290, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
+		});
+
+	int skipLabel = GetNextLabel();
+
+	CodeRaw("[CM: _BackplateColors] In-Game HUD Color Changer (Info.pac CLR0s) " + codeVersion + " [QuickLava]",
+		"Overrides the color parameter passed into the \"setStockMarkColor\" to redirect to the desired color."
+		,
+		{
+			0xC60e0a68, 0x800e0a5c,	// Force CPU Case to branch to our hook below.
+			0x040e2108, 0x60000000, // Disable >4 Case in SetStockMarkColor
+		}
+	);
+
+	// Note, we know specifically that we *aren't* in team mode in this case, so we don't have to check!
+	// Multiply target color by 4 to calc offset to relevant code menu line.
+	ASMStart(0x800e0a5c, "", "");
+
+	CMPLI(targetColorReg, 4, 0);
+	JumpToLabel(skipLabel, bCACB_GREATER);
+	MULLI(reg2, targetColorReg, 0x04);
+	// Add that to first entry's location to get offset to target line.
+	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+	LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+	// ... and load the line's value.
+	LWZ(reg2, reg2, Line::VALUE);
+	// Then subtract 1, since the game'll add 1 later anyway, and put it in the color register.
+	ADDI(targetColorReg, reg2, -1);
+
+	Label(skipLabel);
+	ASMEnd(0x901e0024); // Restore Original Instruction: stw	r0, 0x0024 (r30)
 }
 
 void resultsColorFrameOverrideBody(int workingReg, int colorReg)
