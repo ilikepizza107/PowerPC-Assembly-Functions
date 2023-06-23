@@ -582,9 +582,7 @@ void resultsColorFrameOverrideBody(int workingReg, int colorReg)
 	LWZ(workingReg, workingReg, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 	// Load the line's value into reg1.
 	LWZ(workingReg, workingReg, Line::VALUE);
-	ADDI(workingReg, workingReg, -1); // Subtract 1 to correct for the addition later.
 }
-
 void resultsCLR0ColorChange()
 {
 	const std::string codeGroupName = "[CM: _BackplateColors] Results HUD Color Changer";
@@ -601,6 +599,7 @@ void resultsCLR0ColorChange()
 	CodeRaw("", "", 
 		{
 			0xC60e71d0, 0x800e7228, // Branch Past Second Backplate Color Set
+			0x040e6d64, 0xFC200090, // Replaces "fadds	f1,f29,f0" with "fmr f1, f0"
 		});
 
 	// Do Initial Mark Color Override
@@ -612,5 +611,6 @@ void resultsCLR0ColorChange()
 		{
 			0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
 			0xC60ebde4, 0x800ebe00, // Branch Past Third Mark Color Set
+			0x040e8eb8, 0x60000000, // Replaces "fadds	f1,f0,f1" with "nop"
 		});
 }
