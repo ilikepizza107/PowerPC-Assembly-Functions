@@ -974,19 +974,13 @@ void CodeMenu()
 	
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
-	std::vector<std::string> colorStrings = {
-		"Color 0",
-		"Color 1", "Color 2", "Color 3",
-		"Color 4", "Color 5", "Color 6",
-		"Color 7", "Color 8", "Color 9",
-	};
 	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	HUDColorLines.push_back(new Selection("Red: ", colorStrings, 1, BACKPLATE_COLOR_1_INDEX));
-	HUDColorLines.push_back(new Selection("Blue: ", colorStrings, 2, BACKPLATE_COLOR_2_INDEX));
-	HUDColorLines.push_back(new Selection("Yellow: ", colorStrings, 3, BACKPLATE_COLOR_3_INDEX));
-	HUDColorLines.push_back(new Selection("Green: ", colorStrings, 4, BACKPLATE_COLOR_4_INDEX));
-	HUDColorLines.push_back(new Selection("Gray: ", colorStrings, 9, BACKPLATE_COLOR_C_INDEX));
-	HUDColorLines.push_back(new Selection("Clear: ", colorStrings, 0, BACKPLATE_COLOR_T_INDEX));
+	HUDColorLines.push_back(new Integer("Red",		0, 9, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Blue",		0, 9, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Yellow",	0, 9, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Green",	0, 9, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d"));
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
 	MainLines.push_back(&HUDColorsPage.CalledFromLine);
 	
