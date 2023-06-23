@@ -280,6 +280,7 @@ void backplateColorChange()
 	{
 		int reg1 = 11;
 		int reg2 = 12;
+		int reg3 = 0; // Was used previously to store LR, gets overwritten later anyway
 
 		int exitLabel = GetNextLabel();
 
@@ -333,24 +334,22 @@ void backplateColorChange()
 		SetRegister(reg1, SET_FLOAT_REG_TEMP_MEM);
 		FCTIWZ(3, 1);
 		STFD(3, reg1, 0x00);
-		LWZ(reg1, reg1, 0x04);
+		LWZ(reg3, reg1, 0x04);
 
 		// If the target frame corresponds to one of the code menu lines, we'll skip execution.
-		CMPLI(reg1, 1, 0);
+		CMPLI(reg3, 1, 0);
 		JumpToLabel(exitLabel, bCACB_LESSER);
-		CMPLI(reg1, 5, 0);
+		CMPLI(reg3, 5, 0);
 		JumpToLabel(exitLabel, bCACB_GREATER);
 
-		// Now multiply the target frame by 4 to calculate the offset to the line we want.
-		MULLI(reg2, reg1, 0x04);
-		// Add that to first entry's location and Load line INDEX value
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-		LWZ(reg2, reg2, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // - 0x4 because our target frame is 1 higher than the corresponding line.
 		// Load buffered Team Battle Status Offset
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		// Now multiply the target frame by 4 to calculate the offset to the line we want, and insert it into reg1.
+		RLWIMI(reg1, reg3, 2, 0x10, 0x1D);
+		LWZ(reg1, reg1, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
 		// Use it to load the relevant value.
-		LWZX(reg2, reg2, reg1);
+		LWZX(reg2, reg1, reg2);
 
 		// And now, to perform black magic int-to-float conversion, as pilfered from the Brawl game code lol.
 		// Set reg1 to our staging location
@@ -496,16 +495,15 @@ void shieldColorChange()
 
 		// Hooks "getVariableIntCore/[ftValueAccesser]/ft_value_accesser.o", more specifically intercepting calls to IC-Basic[21029] (used by Shield and Death Plume).
 		ASMStart(0X80855ab0, "", "");
-		// Calculate offset into Backplate Color LOC Entries and Load the Relevant Index
-		MULLI(reg2, reg3, 0x04); // reg3 is desired color frame.
-		// Add that to first entry's location
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+
 		// Load buffered Team Battle Status Offset
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		// Now multiply the target color by 4 to calculate the offset to the line we want, and insert it into reg1.
+		RLWIMI(reg1, reg3, 2, 0x10, 0x1D);
+		LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 		// Use it to load the relevant value.
-		LWZX(reg3, reg2, reg1);
+		LWZX(reg3, reg1, reg2);
 
 		// Restore original instruction, we need to branch to 0x80855ab8
 		SetRegister(reg1, 0x80855ab8);
