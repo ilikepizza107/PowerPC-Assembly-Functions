@@ -2502,6 +2502,18 @@ void ORIS(int DestReg, int SourceReg, int Immediate)
 	WriteIntToFile(OpHex);
 }
 
+void RLWIMI(int DestReg, int SourceReg, int ShiftNum, int MaskStart, int MaskEnd, bool SetConditionReg)
+{
+	OpHex = GetOpSegment(20, 6, 5);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
+	OpHex |= GetOpSegment(DestReg, 5, 15);
+	OpHex |= GetOpSegment(ShiftNum, 5, 20);
+	OpHex |= GetOpSegment(MaskStart, 5, 25);
+	OpHex |= GetOpSegment(MaskEnd, 5, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
 void RLWINM(int DestReg, int SourceReg, int ShiftNum, int MaskStart, int MaskEnd, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(21, 6, 5);

@@ -572,6 +572,7 @@ void OR(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void ORC(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void ORI(int DestReg, int SourceReg, int Immediate);
 void ORIS(int DestReg, int SourceReg, int Immediate);
+void RLWIMI(int DestReg, int SourceReg, int ShiftNum, int MaskStart, int MaskEnd, bool SetConditionReg = 0);
 void RLWINM(int DestReg, int SourceReg, int ShiftNum, int MaskStart, int MaskEnd, bool SetConditionReg = 0);
 void RLWNM(int DestReg, int SourceReg, int ShiftReg, int MaskStart, int MaskEnd, bool SetConditionReg = 0);
 void SRAWI(int DestReg, int SourceReg, int ShiftNum, bool SetConditionReg = 0);
