@@ -575,9 +575,13 @@ void selcharCLR0ColorChange()
 
 void resultsColorFrameOverrideBody(int workingReg, int colorReg)
 {
-	ADDIS(workingReg, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-	ADDI(workingReg, workingReg, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF));
-	LBZX(workingReg, workingReg, colorReg);
+	// Multiply the slot index by 4 to get offset into LOC entries for relevant line...
+	MULLI(workingReg, colorReg, 0x04);
+	// ... and use that ot load the relevant line's INDEX value.
+	ADDIS(workingReg, 0, BACKPLATE_COLOR_1_LOC >> 0x10);
+	LWZ(workingReg, workingReg, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+	// Load the line's value into reg1.
+	LWZ(workingReg, workingReg, Line::VALUE);
 	ADDI(workingReg, workingReg, -1); // Subtract 1 to correct for the addition later.
 }
 
@@ -587,23 +591,6 @@ void resultsCLR0ColorChange()
 
 	int reg1 = 11;
 	int reg2 = 12;
-
-	// Set up Team Store Loc as quick color ref.
-	ASMStart(0x800e6ac0, codeGroupName + " (Setup) " + codeVersion + " [QuickLava]", 
-		"Stores the colors selected in the 4 Player Color lines in the Team Color Buffer word."
-		"\nThis allows us to quickly LBZX using the current loop iteration to get the desired color."
-	);
-	// Load top half of address to speed up loading.
-	ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
-	LWZ(reg2, reg1, (BACKPLATE_COLOR_1_INDEX & 0xFFFF) + Line::VALUE);
-	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF));
-	LWZ(reg2, reg1, (BACKPLATE_COLOR_2_INDEX & 0xFFFF) + Line::VALUE);
-	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 1);
-	LWZ(reg2, reg1, (BACKPLATE_COLOR_3_INDEX & 0xFFFF) + Line::VALUE);
-	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 2);
-	LWZ(reg2, reg1, (BACKPLATE_COLOR_4_INDEX & 0xFFFF) + Line::VALUE);
-	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 3);
-	ASMEnd(0x7fe3fb78); // Restore Original Instruction
 
 	// Do Initial Backplate Color Override
 	ASMStart(0x800e6d58, codeGroupName + " (Backplate Fix) " + codeVersion + " [QuickLava]",
@@ -617,11 +604,10 @@ void resultsCLR0ColorChange()
 		});
 
 	// Do Initial Mark Color Override
-	ASMStart(0x800ea30c, codeGroupName + " (Mark Fix) " + codeVersion + "[QuickLava]", 
+	ASMStart(0x800e8ea0, codeGroupName + " (Mark Fix) " + codeVersion + " [QuickLava]",
 		"The Hook does the initial color override, and the C6 codes prevent the color changing after that.");
-	resultsColorFrameOverrideBody(reg1, 24);
-	MR(4, reg1); // Replace Original Instruction: mr r4, reg1
-	ASMEnd();
+	resultsColorFrameOverrideBody(4, 4);
+	ASMEnd(0x9081000c); // Restore Original Instruction: stw	r4, 0x000C (sp)
 	CodeRaw("", "",
 		{
 			0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
