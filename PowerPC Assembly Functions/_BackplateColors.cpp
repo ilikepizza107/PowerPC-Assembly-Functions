@@ -86,12 +86,18 @@ void incrementOnButtonPress()
 		CMPI(26, 0x1D, 0);
 		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
+		// Disable input if we're in team mode.
+		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+		LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		CMPI(reg2, Line::DEFAULT, 0);
+		JumpToLabel(exitLabel, bCACB_EQUAL);
+
 		RLWINM(reg2, padReg, 0, bitIndexFromButtonHex(BUTTON_L), bitIndexFromButtonHex(BUTTON_L), 1);
-		ADDI(reg2, 0, 1);
+		ADDI(reg2, 0, -1);
 		JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
 
 		RLWINM(reg2, padReg, 0, bitIndexFromButtonHex(BUTTON_R), bitIndexFromButtonHex(BUTTON_R), 1);
-		ADDI(reg2, 0, -1);
+		ADDI(reg2, 0, 1);
 		JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
 
 		JumpToLabel(exitLabel);
@@ -99,7 +105,7 @@ void incrementOnButtonPress()
 		Label(applyChangesLabel);
 
 		// Multiply slot value by 4, move it into reg1
-		MULLI(reg1, 29, 0x04);
+		RLWIMI(reg1, 29, 2, 0x10, 0x1D);
 		// And use that to grab the relevant line's INDEX Value
 		ORIS(reg1, reg1, BACKPLATE_COLOR_1_LOC >> 0x10);
 		LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
