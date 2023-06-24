@@ -53,12 +53,106 @@ const std::string codeVersion = "v2.0.0";
 
 void playerSlotColorChangers()
 {
+	incrementOnButtonPress();
 	storeTeamBattleStatus();
 	backplateColorChange();
 	menSelChrElemntChange();
 	transparentCSSandResultsScreenNames();
 	randomColorChange();
 	shieldColorChange();
+}
+
+void incrementOnButtonPress()
+{
+	// If Color Changer is enabled
+	if (BACKPLATE_COLOR_1_INDEX != -1)
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+		int padReg = 0; // Note, we can use this reg after using the pad data from it
+		int padPtrReg = 25;
+
+		int applyChangesLabel = GetNextLabel();
+		int exitLabel = GetNextLabel();
+
+		ASMStart(0x8068b168, "Increment and Decrement Slot Color with L/R on Player Kind Button");
+
+		// r25 is Pointer to Pad Status, r29 is playerSlotNum, [r4+0x44]+0x1b4 is curr playerState
+		// 0x0C = Just Pressed
+		// L + X Check
+		// In setPlayerKind for Task, r4 is slot, r5 is kind (0 == none, 1 == player, 2 == cpu)
+
+		// If we're hovering over the player status button.
+		CMPI(26, 0x1D, 0);
+		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
+		RLWINM(reg2, padReg, 0, bitIndexFromButtonHex(BUTTON_L), bitIndexFromButtonHex(BUTTON_L), 1);
+		ADDI(reg2, 0, 1);
+		JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
+
+		RLWINM(reg2, padReg, 0, bitIndexFromButtonHex(BUTTON_R), bitIndexFromButtonHex(BUTTON_R), 1);
+		ADDI(reg2, 0, -1);
+		JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
+
+		JumpToLabel(exitLabel);
+
+		Label(applyChangesLabel);
+
+		// Multiply slot value by 4, move it into reg1
+		MULLI(reg1, 29, 0x04);
+		// And use that to grab the relevant line's INDEX Value
+		ORIS(reg1, reg1, BACKPLATE_COLOR_1_LOC >> 0x10);
+		LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+		
+		// Load the line's current option into padReg...
+		LWZ(padReg, reg1, Line::VALUE);
+		// ... and add our modification value to it.
+		ADD(padReg, padReg, reg2);
+
+		// If modified value is greater than the max...
+		LWZ(reg2, reg1, Line::MAX);
+		CMP(padReg, reg2, 0);
+		// ... roll its value around to the min.
+		BC(2, bCACB_LESSER_OR_EQ);
+		LWZ(padReg, reg1, Line::MIN);
+
+		// If modified value is less than the min...
+		LWZ(reg2, reg1, Line::MIN);
+		CMP(padReg, reg2, 0);
+		// ... roll its value around to the max.
+		BC(2, bCACB_GREATER_OR_EQ);
+		LWZ(padReg, reg1, Line::MAX);
+
+		STW(padReg, reg1, Line::VALUE);
+
+		// Use value in r4 to grab current player status
+		LWZ(reg1, 4, 0x44);
+		LWZ(reg2, reg1, 0x1B4);
+		// Subtract 1 from it.
+		ADDI(reg2, reg2, -1);
+		// Put it back.
+		STW(reg2, reg1, 0x1B4);
+
+		// Set padReg to A button press to piggyback off the setPlayerKind call to update our colors.
+		ADDI(padReg, 0, BUTTON_A);
+
+		Label(exitLabel);
+
+		ASMEnd(0x540005ef); // Restore Original Instruction: rlwinm.	r0, r0, 0, 23, 23 (00000100)
+
+
+		ASMStart(0x8068b5d4, "Updating Player Kind (Player->CPU->None) Updates Hand Color");
+
+		// Pull Hand Ptr back from r31...
+		MR(3, 31);
+		// ... and call "updateColorNo/[muSelCharHand]/mu_selchar_hand.o"!
+		SetRegister(reg2, 0x8069c698);
+		MTCTR(reg2);
+		BCTRL();
+
+		ASMEnd(0x807e01a8); // Restore Original Instruction: lwz	r3, 0x01A8 (r30)
+
+	}
 }
 
 void overrideSetFontColorRGBA(int red, int green, int blue, int alpha)

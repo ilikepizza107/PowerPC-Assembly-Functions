@@ -231,6 +231,22 @@ const int MENU_SELECTED_TAG_OFFSET = 0x164;
 #define BUTTON_Y 0x800
 #define BUTTON_START 0x1000
 #define BUTTON_DPAD 0xF
+constexpr unsigned long bitIndexFromButtonHex(unsigned long buttonHex, bool doIndexFromRight = 0)
+{
+	// If what was passed in was a proper button hex value (power of 2)
+	if ((buttonHex & (buttonHex - 1)) == 0)
+	{
+		if (doIndexFromRight)
+		{
+			return int(log2(buttonHex));
+		}
+		else
+		{
+			return 31 - (int(log2(buttonHex)));
+		}
+	}
+	return ULONG_MAX;
+}
 ///button values end
 #define BUTTON_PORT_OFFSET 0x40
 #define WIIMOTE 0

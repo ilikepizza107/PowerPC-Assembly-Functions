@@ -6,6 +6,8 @@
 
 void playerSlotColorChangers();
 
+void incrementOnButtonPress();
+
 void transparentCSSandResultsScreenNames();
 
 void storeTeamBattleStatus();
