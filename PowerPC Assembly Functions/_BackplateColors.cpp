@@ -265,16 +265,15 @@ void randomColorChange()
 
 		// Where we're hooking, we guarantee that we're dealing with the Random portrait.
 		// The costumeIDReg at this moment is guaranteed to range from 0 (Red) to 4 (CPU).
-		// Calculate offset into Backplate Color LOC Entries
-		MULLI(reg2, costumeIDReg, 0x04);
-		// Add that to first entry's location and Load line INDEX value
-		ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-		LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+
 		// Load buffered Team Battle Status Offset
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-		LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		// Now multiply the target color by 4 to calculate the offset to the line we want, and insert it into reg1.
+		RLWIMI(reg1, costumeIDReg, 2, 0x10, 0x1D);
+		LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 		// Use it to load the relevant value.
-		LWZX(costumeIDReg, reg2, reg1);
+		LWZX(costumeIDReg, reg1, reg2);
 
 		ASMEnd(0x3b5b0004); // Restore Original Instruction: addi	r26, r27, 4
 	}
