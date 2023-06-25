@@ -1,7 +1,9 @@
 #include "stdafx.h"
 #include "_BackplateColors.h"
 
+const std::string codePrefix = "[CM: _BackplateColors] ";
 const std::string codeVersion = "v2.0.0";
+const std::string codeSuffix = " " + codeVersion + " [QuickLava]";
 
 
 // Shield Color Notes:
@@ -76,7 +78,7 @@ void incrementOnButtonPress()
 		int applyChangesLabel = GetNextLabel();
 		int exitLabel = GetNextLabel();
 
-		ASMStart(0x8068b168, "Increment and Decrement Slot Color with L/R on Player Kind Button");
+		ASMStart(0x8068b168, codePrefix + "Increment and Decrement Slot Color with L/R on Player Kind Button" + codeSuffix);
 
 		// If we're hovering over the player status button.
 		CMPI(26, 0x1D, 0);
@@ -139,7 +141,7 @@ void incrementOnButtonPress()
 		ASMEnd(0x540005ef); // Restore Original Instruction: rlwinm.	r0, r0, 0, 23, 23 (00000100)
 
 
-		ASMStart(0x8068b5d4, "Updating Player Kind (Player->CPU->None) Updates Hand Color");
+		ASMStart(0x8068b5d4, codePrefix + "Updating Player Kind (Player->CPU->None) Updates Hand Color" + codeSuffix);
 
 		// Pull Hand Ptr back from r31...
 		MR(3, 31);
@@ -182,7 +184,7 @@ void transparentCSSandResultsScreenNames()
 		int reg1 = 11;
 		int reg2 = 12;
 
-		ASMStart(0x800ea73c, "[CM: _BackplateColors] Results Screen Player Names are Transparent " + codeVersion + " [QuickLava]"); // Hooks "initMdlData/[ifVsResultTask]/if_vsresult.o".
+		ASMStart(0x800ea73c, codePrefix + "Results Screen Player Names are Transparent " + codeSuffix); // Hooks "initMdlData/[ifVsResultTask]/if_vsresult.o".
 		resultsScreenNameFix(reg1, reg2);
 		ASMEnd();
 
@@ -195,7 +197,7 @@ void transparentCSSandResultsScreenNames()
 				0x040ea724, 0x60000000, // Disable Team Battle Player Case
 			});
 
-		ASMStart(0x8069b268, "[CM: _BackplateColors] CSS Player Names are Transparent " + codeVersion + " [QuickLava]"); // Hooks "dispName/[muSelCharPlayerArea]/mu_selchar_player_area_obj".
+		ASMStart(0x8069b268, codePrefix + "CSS Player Names are Transparent " + codeSuffix); // Hooks "dispName/[muSelCharPlayerArea]/mu_selchar_player_area_obj".
 		overrideSetFontColorRGBA(0xFF, 0xFF, 0xFF, 0xB0);
 		ASMEnd();
 	}
@@ -217,17 +219,17 @@ void storeTeamBattleStatus()
 	int reg2 = 12;
 
 	// Hooks "initDispSelect/[muSelCharPlayerArea]/mu_selchar_player_ar"
-	ASMStart(0x806945e8, "[CM: _BackplateColors] Cache SelChar Team Battle Status on Init");
+	ASMStart(0x806945e8, codePrefix + "Cache SelChar Team Battle Status on Init" + codeSuffix);
 	storeTeamBattleStatusBody(3);
 	ASMEnd(0x7c651b78); // Restore original instruction: mr	r5, r3
 
 	// Hooks "setMeleeKind/[muSelCharTask]/mu_selchar_obj.o"
-	ASMStart(0x8068eda8, "[CM: _BackplateColors] Cache SelChar Team Battle Status");
+	ASMStart(0x8068eda8, codePrefix + "Cache SelChar Team Battle Status" + codeSuffix);
 	storeTeamBattleStatusBody(4);
 	ASMEnd(0x7c7c1b78); // Restore original instruction: mr	r28, r3
 
 	// Hooks "setStageSetting/[sqSingleSimple]/sq_single_simple.o"
-	ASMStart(0x806e10dc, "[CM: _BackplateColors] Cache Classic Mode Team Battle Status");
+	ASMStart(0x806e10dc, codePrefix + "Cache Classic Mode Team Battle Status" + codeSuffix);
 	storeTeamBattleStatusBody(0);
 	ASMEnd(0x88170009); // Restore Original Instruction: lbz	r0, 0x0009 (r23)
 
@@ -259,7 +261,7 @@ void randomColorChange()
 		int	fighterKindReg = 31;
 		int	costumeIDReg = 24;
 
-		ASMStart(0x80697554, "[CM: _BackplateColors] MenSelChr Random Color Override " + codeVersion + " [QuickLava]"); // Hooks "setCharPic/[muSelCharPlayerArea]/mu_selchar_player_area_o".
+		ASMStart(0x80697554, codePrefix + "MenSelChr Random Color Override " + codeSuffix); // Hooks "setCharPic/[muSelCharPlayerArea]/mu_selchar_player_area_o".
 
 		// Where we're hooking, we guarantee that we're dealing with the Random portrait.
 		// The costumeIDReg at this moment is guaranteed to range from 0 (Red) to 4 (CPU).
@@ -291,7 +293,7 @@ void menSelChrElemntChange()
 		int exitLabel = GetNextLabel();
 
 		// Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFPCc]/g3d_resfile.o".
-		ASMStart(0x8018da3c, "[CM: _BackplateColors] MenSelChr Element Override " + codeVersion + " [QuickLava]",
+		ASMStart(0x8018da3c, codePrefix + "MenSelChr Element Override " + codeSuffix,
 			"\nIntercepts calls to certain player-slot-specific Menu CLR0s, and redirects them according"
 			"\nto the appropriate Code Menu line. Intended for use with:"
 			"\n\t- MenSelchrCentry4_TopN__#\n\t- MenSelchrChuman4_TopN__#\n\t- MenSelchrCoin_TopN__#\n\t- MenSelchrCursorB_TopN__#"
@@ -395,7 +397,7 @@ void backplateColorChange()
 
 		const std::string activatorString = "lBC1";
 
-		CodeRaw("[CM: _BackplateColors] Hand Color Fix " + codeVersion + " [QuickLava]",
+		CodeRaw(codePrefix + "Hand Color Fix " + codeSuffix,
 			"Fixes a conflict with Eon's Roster-Size-Based Hand Resizing code, which could"
 			"\nin some cases cause CSS hands to wind up the wrong color."
 , 
@@ -405,16 +407,16 @@ void backplateColorChange()
 			}
 		);
 
-		CodeRaw("[CM: _BackplateColors] Disable Franchise Icon Color 10-Frame Offset in Results Screen", "",
+		CodeRaw(codePrefix + "Disable Franchise Icon Color 10-Frame Offset in Results Screen" + codeSuffix, "",
 			{
 				0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
 				0xC60ebde4, 0x800ebe00, // Branch Past Third Mark Color Set
 			});
 
 		// Hooks "SetFrame/[nw4r3g3d15AnmObjMatClrResFf]/g3d_anmclr.o".
-		ASMStart(0x80197fac, "[CM: _BackplateColors] CSS, In-game, and Results HUD Color Changer " + codeVersion + " [QuickLava]",
-			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and redirects them according"
-			"\nto the appropriate Code Menu lines. Intended for use with:"
+		ASMStart(0x80197fac, codePrefix + "CSS, In-game, and Results HUD Color Changer " + codeSuffix,
+			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and"
+			"\nredirects them according to the appropriate Code Menu lines. Intended for use with:"
 			"\n\tIn sc_selcharacter.pac:"
 			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCursorA_TopN__0\n\t\t- MenSelchrCmark4_TopN__0"
 			"\n\tIn info.pac (and its variants, eg. info_training.pac):"
@@ -498,9 +500,10 @@ void shieldColorChange()
 		int reg2 = 12;
 		int reg3 = 3;
 
-		CodeRaw("[CM: _BackplateColors] Shield Color + Death Plume Override " + codeVersion + " [QuickLava]",
-			"Overrides IC-Basic[21029], which is only used by Shield and Death Plume to determine their colors, at least as far as I can tell,"
-			"\nto instead report the selected value in the Code Menu line associated with the color that would've been requested."
+		CodeRaw(codePrefix + "Shield Color + Death Plume Override " + codeSuffix,
+			"Overrides IC-Basic[21029], which is only used by Shield and Death Plume to"
+			"\ndetermine their colors, at least as far as I can tell, to instead report the selected"
+			"\nvalue in the Code Menu line associated with the color that would've been requested."
 			,
 			{
 				0xC6855a9c, 0x80855ab0,	// Force CPU Case to branch to our hook below.
@@ -547,14 +550,14 @@ void selCharColorFrameOverrideBody(int colorReg)
 }
 void selcharCLR0ColorChange()
 {
-	const std::string codeGroupName = "[CM: _BackplateColors] Selchar HUD Color Changer";
+	const std::string codeGroupName = codePrefix + "Selchar HUD Color Changer";
 
 	int reg1 = 11;
 	int reg2 = 12;
 	int r3ValueReg = 26;
 
 	// This code (and the following, unless otherwise noted) hook "updateMeleeKind/[muSelCharPlayerArea]/mu_selchar_player_a"
-	ASMStart(0x80698a68, codeGroupName + " (Setup) "  + codeVersion + " [QuickLava]",
+	ASMStart(0x80698a68, codeGroupName + " (Setup) "  + codeSuffix,
 		"Pulls r3 + 0x1B0 (player slot, used for picking colors within this function), determines the"
 		"\ncode menu line for that color, and caches it for use in overriding color calls in this function!"
 	);
@@ -572,51 +575,51 @@ void selcharCLR0ColorChange()
 	STB(reg2, reg1, (BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF) + 1);
 	ASMEnd(0x90a10008); // Restore Original Instruction: stw	r5, 0x0008 (sp)
 
-	ASMStart(0x80698ea8, codeGroupName + " (0) " + codeVersion + " [QuickLava]", "");
+	ASMStart(0x80698ea8, codeGroupName + " (0) " + codeSuffix, "");
 	selCharColorFrameOverrideBody(0);
 	ASMEnd();
 
-	ASMStart(0x80698f48, codeGroupName + " (1) " + codeVersion + " [QuickLava]", "");
+	ASMStart(0x80698f48, codeGroupName + " (1) " + codeSuffix, "");
 	selCharColorFrameOverrideBody(0);
 	ASMEnd();
 
-	ASMStart(0x80698f48, codeGroupName + " (2) " + codeVersion + " [QuickLava]", "");
+	ASMStart(0x80698f48, codeGroupName + " (2) " + codeSuffix, "");
 	selCharColorFrameOverrideBody(0);
 	ASMEnd();
 
-	ASMStart(0x80699010, codeGroupName + " (3) " + codeVersion + " [QuickLava]", "");
+	ASMStart(0x80699010, codeGroupName + " (3) " + codeSuffix, "");
 	selCharColorOverrideBody(29);
 	ASMEnd();
 
-	ASMStart(0x80699050, codeGroupName + " (4) " + codeVersion + " [QuickLava]", "");
+	ASMStart(0x80699050, codeGroupName + " (4) " + codeSuffix, "");
 	selCharColorOverrideBody(4);
 	ASMEnd();
 
 	// Not called but present, probs not needed, can comment these out.
 	//
-	//ASMStart(0x80698c58, codeGroupName + " (5) " + codeVersion + " [QuickLava]", "");
+	//ASMStart(0x80698c58, codeGroupName + " (5) " + codeSuffix, "");
 	//selCharColorFrameOverrideBody(0);
 	//ASMEnd();
 	//
-	//ASMStart(0x80698cf4, codeGroupName + " (6) " + codeVersion + " [QuickLava]", "");
+	//ASMStart(0x80698cf4, codeGroupName + " (6) " + codeSuffix, "");
 	//selCharColorFrameOverrideBody(0);
 	//ASMEnd();
 	//
-	//ASMStart(0x80698db0, codeGroupName + " (7) " + codeVersion + " [QuickLava]", "");
+	//ASMStart(0x80698db0, codeGroupName + " (7) " + codeSuffix, "");
 	//selCharColorOverrideBody(31);
 	//ASMEnd();
 	//
-	//ASMStart(0x80698dec, codeGroupName + " (8) " + codeVersion + " [QuickLava]", "");
+	//ASMStart(0x80698dec, codeGroupName + " (8) " + codeSuffix, "");
 	//selCharColorOverrideBody(4);
 	//ASMEnd();
 
 	// Hooks "updateMeleeKind/[muSelCharHand]/mu_selchar_hand.o"
-	ASMStart(0x8069ca18, "[CM: _BackplateColors] Override UpdateMeleeKind for Hand in Non-Team Case " + codeVersion + " [QuickLava]", "");
+	ASMStart(0x8069ca18, codePrefix + "Override UpdateMeleeKind for Hand in Non-Team Case " + codeSuffix, "");
 	selCharColorFrameOverrideBody(5);
 	ASMEnd();
 
 	// Hooks "getColorNo/[muSelCharPlayerArea]/mu_selchar_player_area_o"
-	ASMStart(0x80696f58, "[CM: _BackplateColors] Override getColorNo in Non-Team Case " + codeVersion + " [QuickLava]", "");
+	ASMStart(0x80696f58, codePrefix + "Override getColorNo in Non-Team Case " + codeSuffix, "");
 	// Multiply target color by 4, as part of getting address for relevant line.
 	MULLI(reg1, 3, 0x4);
 	ORIS(reg1, 0, BACKPLATE_COLOR_1_LOC >> 0x10);
@@ -631,7 +634,7 @@ void infoPacCLR0ColorChange()
 	int reg2 = 12;
 	int targetColorReg = 0;
 
-	CodeRaw("[CM: _BackplateColors] Disable CPU Team Colors", "",
+	CodeRaw(codePrefix + "Disable CPU Team Colors", "",
 		{
 			0x040e0a88, 0x38600000,	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with "li r3, 0"
 			0x040e6cc0, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
@@ -641,7 +644,7 @@ void infoPacCLR0ColorChange()
 
 	int skipLabel = GetNextLabel();
 
-	CodeRaw("[CM: _BackplateColors] In-Game HUD Color Changer (Info.pac CLR0s) " + codeVersion + " [QuickLava]",
+	CodeRaw(codePrefix + "In-Game HUD Color Changer (Info.pac CLR0s) " + codeSuffix,
 		"Overrides the color parameter passed into the \"setStockMarkColor\" to redirect to the desired color."
 		,
 		{
@@ -681,13 +684,13 @@ void resultsColorFrameOverrideBody(int workingReg, int colorReg)
 }
 void resultsCLR0ColorChange()
 {
-	const std::string codeGroupName = "[CM: _BackplateColors] Results HUD Color Changer";
+	const std::string codeGroupName = codePrefix + "Results HUD Color Changer";
 
 	int reg1 = 11;
 	int reg2 = 12;
 
 	// Do Initial Backplate Color Override, Hooks "processAnim/[ifVsResultTask]/if_vsresult.o"
-	ASMStart(0x800e6d58, codeGroupName + " (Backplate Fix) " + codeVersion + " [QuickLava]",
+	ASMStart(0x800e6d58, codeGroupName + " (Backplate Fix) " + codeSuffix,
 		"The hook does the initial color override, and the C6 code prevents the color changing after that.");
 	resultsColorFrameOverrideBody(reg1, 20);
 	STW(reg1, 1, 0x01D4); // Replace Original Instruction: stw	reg1, 0x01D4 (sp)
@@ -699,7 +702,7 @@ void resultsCLR0ColorChange()
 		});
 
 	// Do Initial Mark Color Override, Hooks "getMarkColAnimFrame/[ifVsResultTask]/if_vsresult.o"
-	ASMStart(0x800e8ea0, codeGroupName + " (Mark Fix) " + codeVersion + " [QuickLava]",
+	ASMStart(0x800e8ea0, codeGroupName + " (Mark Fix) " + codeSuffix,
 		"The Hook does the initial color override, and the C6 codes prevent the color changing after that.");
 	resultsColorFrameOverrideBody(4, 4);
 	ASMEnd(0x9081000c); // Restore Original Instruction: stw	r4, 0x000C (sp)
