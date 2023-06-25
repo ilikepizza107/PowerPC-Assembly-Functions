@@ -69,6 +69,7 @@ void incrementOnButtonPress()
 	{
 		int reg1 = 11;
 		int reg2 = 12;
+		int reg3 = 30; // Safe to use, overwritten by the instruction following our hook.
 		int padReg = 0; // Note, we can use this reg after using the pad data from it
 		int padPtrReg = 25;
 
@@ -77,37 +78,29 @@ void incrementOnButtonPress()
 
 		ASMStart(0x8068b168, "Increment and Decrement Slot Color with L/R on Player Kind Button");
 
-		// r25 is Pointer to Pad Status, r29 is playerSlotNum, [r4+0x44]+0x1b4 is curr playerState
-		// 0x0C = Just Pressed
-		// L + X Check
-		// In setPlayerKind for Task, r4 is slot, r5 is kind (0 == none, 1 == player, 2 == cpu)
-
 		// If we're hovering over the player status button.
 		CMPI(26, 0x1D, 0);
 		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
-		// Disable input if we're in team mode.
+		// Disable input if we're in team mode (also set up reg1 with top half of Code Menu Addr).
 		ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 		LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 		CMPI(reg2, Line::DEFAULT, 0);
 		JumpToLabel(exitLabel, bCACB_EQUAL);
 
-		RLWINM(reg2, padReg, 0, bitIndexFromButtonHex(BUTTON_L), bitIndexFromButtonHex(BUTTON_L), 1);
-		ADDI(reg2, 0, -1);
-		JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
-
-		RLWINM(reg2, padReg, 0, bitIndexFromButtonHex(BUTTON_R), bitIndexFromButtonHex(BUTTON_R), 1);
-		ADDI(reg2, 0, 1);
-		JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
-
-		JumpToLabel(exitLabel);
-
-		Label(applyChangesLabel);
+		// Setup incr/decrement value
+		// Shift down BUTTON_R bit to use it as a bool, reg2 is 1 if set, 0 if not
+		RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_R) + 1, 31, 31);
+		// Shift down BUTTON_L bit to use it as a bool, reg3 is 1 if set, 0 if not
+		RLWINM(reg3, padReg, bitIndexFromButtonHex(BUTTON_L) + 1, 31, 31);
+		// Subtract reg3 from reg2! So if L was pressed, and R was not, reg2 = -1. L not pressed, R pressed, reg2 = 1.
+		// Additionally, set the condition bit, and if the result of this subtraction was 0 (ie. either both pressed or neither pressed) we skip.
+		SUBF(reg2, reg2, reg3, 1);
+		JumpToLabel(exitLabel, bCACB_EQUAL);
 
 		// Multiply slot value by 4, move it into reg1
 		RLWIMI(reg1, 29, 2, 0x10, 0x1D);
 		// And use that to grab the relevant line's INDEX Value
-		ORIS(reg1, reg1, BACKPLATE_COLOR_1_LOC >> 0x10);
 		LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 		
 		// Load the line's current option into padReg...
@@ -116,19 +109,18 @@ void incrementOnButtonPress()
 		ADD(padReg, padReg, reg2);
 
 		// If modified value is greater than the max...
-		LWZ(reg2, reg1, Line::MAX);
-		CMP(padReg, reg2, 0);
+		CMPI(padReg, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 0);
 		// ... roll its value around to the min.
 		BC(2, bCACB_LESSER_OR_EQ);
-		LWZ(padReg, reg1, Line::MIN);
+		ADDI(padReg, 0, 0);
 
 		// If modified value is less than the min...
-		LWZ(reg2, reg1, Line::MIN);
-		CMP(padReg, reg2, 0);
+		CMPI(padReg, 0, 0);
 		// ... roll its value around to the max.
 		BC(2, bCACB_GREATER_OR_EQ);
-		LWZ(padReg, reg1, Line::MAX);
+		ADDI(padReg, 0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1);
 
+		// Store our modified value back in place.
 		STW(padReg, reg1, Line::VALUE);
 
 		// Use value in r4 to grab current player status

@@ -264,6 +264,7 @@ vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
 std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{};
 
+unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
 
 
 
@@ -975,10 +976,10 @@ void CodeMenu()
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
 	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	HUDColorLines.push_back(new Integer("Red",		0, 9, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Blue",		0, 9, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Yellow",	0, 9, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Green",	0, 9, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Red",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Blue",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Yellow",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Green",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d"));
 	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d"));
 	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d"));
 	Page HUDColorsPage("HUD Colors", HUDColorLines);

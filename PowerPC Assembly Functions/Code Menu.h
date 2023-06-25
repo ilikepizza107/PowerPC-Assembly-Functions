@@ -280,6 +280,11 @@ extern std::vector<menuTheme> THEME_SPEC_LIST;
 // Used to determine whether or not we actually need to output the hook for a given theme-able file.
 extern std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX;
 
+// Denotes the total number colors available to the HUD Color Switcher.
+// Used to ensure that if we add a mechanism for adding additional colors, they'll be accounted for, both
+// in the actual generated ASM in _BackplateColors, and by the actual code menu lines themselves.
+extern unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT;
+
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
