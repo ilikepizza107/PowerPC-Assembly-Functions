@@ -78,7 +78,7 @@ void incrementOnButtonPress()
 		int applyChangesLabel = GetNextLabel();
 		int exitLabel = GetNextLabel();
 
-		ASMStart(0x8068b168, codePrefix + "Increment and Decrement Slot Color with L/R on Player Kind Button" + codeSuffix);
+		ASMStart(0x8068b168, codePrefix + "Incr and Decr Slot Color with L/R, Reset with Z on Player Kind Button" + codeSuffix);
 
 		// If we're hovering over the player status button.
 		CMPI(26, 0x1D, 0);
@@ -90,6 +90,17 @@ void incrementOnButtonPress()
 		CMPI(reg2, Line::DEFAULT, 0);
 		JumpToLabel(exitLabel, bCACB_EQUAL);
 
+		// Multiply slot value by 4, move it into reg1
+		RLWIMI(reg1, 29, 2, 0x10, 0x1D);
+		// And use that to grab the relevant line's INDEX Value
+		LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+
+		// If Z Button is pressed...
+		RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_Z) + 1, 31, 31, 1);
+		// ... reset the slot's color value.
+		LWZ(reg3, reg1, Line::DEFAULT);
+		JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
+
 		// Setup incr/decrement value
 		// Shift down BUTTON_R bit to use it as a bool, reg2 is 1 if set, 0 if not
 		RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_R) + 1, 31, 31);
@@ -100,30 +111,26 @@ void incrementOnButtonPress()
 		SUBF(reg2, reg2, reg3, 1);
 		JumpToLabel(exitLabel, bCACB_EQUAL);
 
-		// Multiply slot value by 4, move it into reg1
-		RLWIMI(reg1, 29, 2, 0x10, 0x1D);
-		// And use that to grab the relevant line's INDEX Value
-		LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-		
-		// Load the line's current option into padReg...
-		LWZ(padReg, reg1, Line::VALUE);
+		// Load the line's current option into reg3...
+		LWZ(reg3, reg1, Line::VALUE);
 		// ... and add our modification value to it.
-		ADD(padReg, padReg, reg2);
+		ADD(reg3, reg3, reg2);
 
 		// If modified value is greater than the max...
-		CMPI(padReg, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 0);
+		CMPI(reg3, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 0);
 		// ... roll its value around to the min.
 		BC(2, bCACB_LESSER_OR_EQ);
-		ADDI(padReg, 0, 0);
+		ADDI(reg3, 0, 0);
 
 		// If modified value is less than the min...
-		CMPI(padReg, 0, 0);
+		CMPI(reg3, 0, 0);
 		// ... roll its value around to the max.
 		BC(2, bCACB_GREATER_OR_EQ);
-		ADDI(padReg, 0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1);
+		ADDI(reg3, 0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1);
 
 		// Store our modified value back in place.
-		STW(padReg, reg1, Line::VALUE);
+		Label(applyChangesLabel);
+		STW(reg3, reg1, Line::VALUE);
 
 		// Use value in r4 to grab current player status
 		LWZ(reg1, 4, 0x44);
@@ -151,7 +158,6 @@ void incrementOnButtonPress()
 		BCTRL();
 
 		ASMEnd(0x807e01a8); // Restore Original Instruction: lwz	r3, 0x01A8 (r30)
-
 	}
 }
 
