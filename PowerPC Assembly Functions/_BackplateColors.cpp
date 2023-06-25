@@ -285,10 +285,8 @@ void menSelChrElemntChange()
 	{
 		int reg1 = 11;
 		int reg2 = 12;
-		int reg3 = 10;
 
 		const std::string activatorString = "lBC3";
-		int applyChangeLabel = GetNextLabel();
 		int exitLabel = GetNextLabel();
 
 		// Hooks "GetResAnmClr/[nw4r3g3d7ResFileCFPCc]/g3d_resfile.o".
@@ -311,14 +309,9 @@ void menSelChrElemntChange()
 			CMPL(reg2, reg1, 0);
 			JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
-			// Otherwise, we need to overwrite the target string's requested index.
-			// First, we need to use strlen to get the end of the string.
-			// That'll require overwriting the current r3 though, so we'll store that in reg1.
-			MR(reg3, 3);
-
 			// Then, load the string address into r3...
 			MR(3, 31);
-			// ... then load the strlen's address...
+			// ... then load strlen's address...
 			SetRegister(reg2, 0x803F0640);
 			// ... and run it.
 			MTCTR(reg2);
@@ -326,45 +319,34 @@ void menSelChrElemntChange()
 
 			// Now that r3 is the length of the string, we can Subtract one to get the index we'll actually be overwriting.
 			ADDI(3, 3, -1);
-			// Load the current index byte into r3...
+			// Load the current index byte into r3.
 			LBZX(4, 3, 31);
-			// ... and subtract '0' from it so we get the index as a number. Keep this!
-			ADDI(4, 4, -1 * (unsigned char)'0');
 
-			// Multiply the index by 4 to calculate offset into Backplate Color LOC Entries.
-			MULLI(reg2, 4, 0x04);
-			// Add that to first entry's location and Load line INDEX value
-			ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-			LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
 			// Load buffered Team Battle Status Offset
 			ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-			LBZ(reg1, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-			// Use it to load the relevant value.
-			LWZX(reg2, reg2, reg1);
+			LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+			// Now, simultaneously chop off the 5th and 6th bits of the ASCII byte value to subtract 0x30,
+			// and multiply the target color by 4 by shifting left by 2, to calculate the offset to the line we want, and insert it into reg1.
+			RLWIMI(reg1, 4, 2, 0x1A, 0x1D);
+			// Use that to load our target line's index value...
+			LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+			// ... then use that to load the relevant value.
+			LWZX(reg2, reg1, reg2);
 
-			// If the retrieved line value isn't the same as the original value...
-			If(reg2, NOT_EQUAL_L, 4);
-			{
-				// ... add '0' to it to get the ASCII hex for the index...
-				ADDI(reg2, reg2, '0');
-				// ... and store it at the destination location in the string, as calculated before.
-				STBX(reg2, 3, 31);
+			// Now add '0' back to the value to get the ASCII hex for the index...
+			ADDI(reg2, reg2, '0');
+			// ... and store it at the destination location in the string, as calculated before.
+			STBX(reg2, 3, 31);
 
-				// Lastly, prepare to run _vc.
-				// Restore the params to what they were when we last ran _vC...
-				ADDI(3, 1, 0x08);
-				MR(4, 31);
-				// ... load _vc's address...
-				SetRegister(reg2, 0x8018CF30);
-				// ... and run it.
-				MTCTR(reg2);
-				BCTRL();
-			}
-			Else();
-			{
-				MR(3, reg3);
-			}
-			EndIf();
+			// Lastly, prepare to run _vc.
+			// Restore the params to what they were when we last ran _vC...
+			ADDI(3, 1, 0x08);
+			MR(4, 31);
+			// ... load _vc's address...
+			SetRegister(reg2, 0x8018CF30);
+			// ... and run it.
+			MTCTR(reg2);
+			BCTRL();
 		}
 		EndIf();
 
