@@ -460,7 +460,7 @@ int main(int argc, char** argv)
 
 		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
 
-		playerSlotColorChangers();
+		playerSlotColorChangers(playerSlotColorLevel::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT);
 
 		// dashAttackItemGrab(); tripRateModifier();
 

@@ -5,7 +5,6 @@ const std::string codePrefix = "[CM: _BackplateColors] ";
 const std::string codeVersion = "v2.0.0";
 const std::string codeSuffix = " " + codeVersion + " [QuickLava]";
 
-
 // Shield Color Notes:
 // Goes through function: "GetResAnmClr/[nw4r3g3d7ResFileCFUl]/(g3d_resfile.o)" 0x8018dae8
 //		Call Stack:
@@ -53,15 +52,51 @@ const std::string codeSuffix = " " + codeVersion + " [QuickLava]";
 // Works a lot like the setFrameCol func, just need to intercept the frame being prescribed and overwrite it
 //
 
-void playerSlotColorChangers()
+void playerSlotColorChangers(playerSlotColorLevel codeLevel)
 {
-	incrementOnButtonPress();
+	// If Color Changer is enabled, and the code isn't disabled by the codeLevel arg, write code.
+	if (BACKPLATE_COLOR_1_INDEX != -1 && codeLevel <= playerSlotColorLevel::pSCL_NONE) return;
+
+	// These are always needed, do these first.
 	storeTeamBattleStatus();
-	backplateColorChange();
-	menSelChrElemntChange();
-	transparentCSSandResultsScreenNames();
-	randomColorChange();
 	shieldColorChange();
+
+	// If you've got more than 10 colors defined...
+	if (BACKPLATE_COLOR_TOTAL_COLOR_COUNT > 10)
+	{
+		// ... we need to disable CPU Team Colors.
+		// Necessary because the game stores CPU Team Colors 10 frames above the originals, so you'd be overwriting those colors.
+		disableCPUTeamColors();
+	}
+
+	// Then address the specific needs of the other cases.
+	switch (codeLevel)
+	{
+		// This case only additionally needs the infoPac code, include that and break.
+	case playerSlotColorLevel::pSCL_SHIELDS_PLUMES_AND_IN_GAME_HUD:
+	{
+		infoPacCLR0ColorChange();
+		break;
+	}
+	// This case needs the increment input code, in addition to the stuff in the following case.
+	case playerSlotColorLevel::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT:
+	{
+		incrementOnButtonPress();
+	}
+	// And this case includes the code to drive the changer on the CSS + Results Screen.
+	case playerSlotColorLevel::pSCL_MENUS_AND_IN_GAME_WITHOUT_CSS_INPUT:
+	{
+		backplateColorChange();
+		menSelChrElemntChange();
+		transparentCSSandResultsScreenNames();
+		randomColorChange();
+		break;
+	}
+	default:
+	{
+		break;
+	}
+	}
 }
 
 void incrementOnButtonPress()
@@ -254,6 +289,17 @@ void storeTeamBattleStatus()
 	//STB(0, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 
 	//ASMEnd(0x3b000001); // Restore original instruction: stb	r0, 0x0013 (r31)
+}
+
+void disableCPUTeamColors()
+{
+	CodeRaw(codePrefix + "Disable CPU Team Colors" + codeSuffix, "",
+		{
+			0x040e0a88, 0x38600000,	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with "li r3, 0"
+			0x040e6cc0, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
+			0x040e7120, 0xc3c29164, // Overwrite op "lfs	f30, -0x6E94 (rtoc)" with "lfs	f30, -0x6E9C (rtoc)"
+			0x040ea290, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
+		});
 }
 
 void randomColorChange()
@@ -518,6 +564,53 @@ void shieldColorChange()
 	}
 }
 
+void infoPacCLR0ColorChange()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int targetColorReg = 0;
+
+	int skipLabel = GetNextLabel();
+
+	// If CPU Team Colors don't need to be disabled
+	if (BACKPLATE_COLOR_TOTAL_COLOR_COUNT <= 10)
+	{
+		ASMStart(0x800e0a94, codePrefix + "CPU Team Color Fix (Info.pac CLR0s) " + codeSuffix);
+		MULLI(reg1, 3, 4);
+		ADD(0, 0, reg1);
+		ASMEnd(0x901e0024); // Restore Original Instruction: stw	r0, 0x0024 (r30)
+	}
+
+	CodeRaw(codePrefix + "In-Game HUD Color Changer (Info.pac CLR0s) " + codeSuffix,
+		"Overrides the color parameter passed into the \"setStockMarkColor\" to redirect to the desired color."
+		,
+		{
+			0xC60e0a68, 0x800e0a5c,	// Force CPU Case to branch to our hook below.
+			0x040e2108, 0x60000000, // Disable >4 Case in SetStockMarkColor
+		}
+	);
+
+	// Hooks "appear/[IfPlayer]/if_player.o"
+	// Note, we know specifically that we *aren't* in team mode in this case, so we don't have to check!
+	// Multiply target color by 4 to calc offset to relevant code menu line.
+	ASMStart(0x800e0a5c, "", "");
+
+	CMPLI(targetColorReg, 4, 0);
+	JumpToLabel(skipLabel, bCACB_GREATER);
+	MULLI(reg2, targetColorReg, 0x04);
+	// Add that to first entry's location to get offset to target line.
+	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
+	LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+	// ... and load the line's value.
+	LWZ(reg2, reg2, Line::VALUE);
+	// Then subtract 1, since the game'll add 1 later anyway, and put it in the color register.
+	ADDI(targetColorReg, reg2, -1);
+
+	Label(skipLabel);
+	ASMEnd(0x901e0024); // Restore Original Instruction: stw	r0, 0x0024 (r30)
+}
+
+
 // Unused Code
 void selCharColorOverrideBody(int colorReg)
 {
@@ -614,50 +707,6 @@ void selcharCLR0ColorChange()
 	LWZ(3, reg1, Line::VALUE);
 	ADDI(3, 3, 1);
 	ASMEnd();
-}
-void infoPacCLR0ColorChange()
-{
-	int reg1 = 11;
-	int reg2 = 12;
-	int targetColorReg = 0;
-
-	CodeRaw(codePrefix + "Disable CPU Team Colors", "",
-		{
-			0x040e0a88, 0x38600000,	// Overwrite op "rlwinm	r3, r0, 1, 31, 31 (80000000)" with "li r3, 0"
-			0x040e6cc0, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
-			0x040e7120, 0xc3c29164, // Overwrite op "lfs	f30, -0x6E94 (rtoc)" with "lfs	f30, -0x6E9C (rtoc)"
-			0x040ea290, 0xc3829164, // Overwrite op "lfs	f28, -0x6E94 (rtoc)" with "lfs	f28, -0x6E9C (rtoc)"
-		});
-
-	int skipLabel = GetNextLabel();
-
-	CodeRaw(codePrefix + "In-Game HUD Color Changer (Info.pac CLR0s) " + codeSuffix,
-		"Overrides the color parameter passed into the \"setStockMarkColor\" to redirect to the desired color."
-		,
-		{
-			0xC60e0a68, 0x800e0a5c,	// Force CPU Case to branch to our hook below.
-			0x040e2108, 0x60000000, // Disable >4 Case in SetStockMarkColor
-		}
-	);
-
-	// Hooks "appear/[IfPlayer]/if_player.o"
-	// Note, we know specifically that we *aren't* in team mode in this case, so we don't have to check!
-	// Multiply target color by 4 to calc offset to relevant code menu line.
-	ASMStart(0x800e0a5c, "", "");
-
-	CMPLI(targetColorReg, 4, 0);
-	JumpToLabel(skipLabel, bCACB_GREATER);
-	MULLI(reg2, targetColorReg, 0x04);
-	// Add that to first entry's location to get offset to target line.
-	ORIS(reg2, reg2, BACKPLATE_COLOR_1_LOC >> 0x10);
-	LWZ(reg2, reg2, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-	// ... and load the line's value.
-	LWZ(reg2, reg2, Line::VALUE);
-	// Then subtract 1, since the game'll add 1 later anyway, and put it in the color register.
-	ADDI(targetColorReg, reg2, -1);
-
-	Label(skipLabel);
-	ASMEnd(0x901e0024); // Restore Original Instruction: stw	r0, 0x0024 (r30)
 }
 void resultsColorFrameOverrideBody(int workingReg, int colorReg)
 {
