@@ -181,18 +181,6 @@ void incrementOnButtonPress()
 		Label(exitLabel);
 
 		ASMEnd(0x540005ef); // Restore Original Instruction: rlwinm.	r0, r0, 0, 23, 23 (00000100)
-
-
-		ASMStart(0x8068b5d4, codePrefix + "Updating Player Kind (Player->CPU->None) Updates Hand Color" + codeSuffix);
-
-		// Pull Hand Ptr back from r31...
-		MR(3, 31);
-		// ... and call "updateColorNo/[muSelCharHand]/mu_selchar_hand.o"!
-		SetRegister(reg2, 0x8069c698);
-		MTCTR(reg2);
-		BCTRL();
-
-		ASMEnd(0x807e01a8); // Restore Original Instruction: lwz	r3, 0x01A8 (r30)
 	}
 }
 
@@ -439,6 +427,15 @@ void backplateColorChange()
 				0x0469CAE0, 0xC0031014	// op	lfs	f0, 0x1014 (r3) @ 8069CAE0
 			}
 		);
+
+		ASMStart(0x8068b5d4, codePrefix + "Updating Player Kind (Player->CPU->None) Updates Hand Color" + codeSuffix);
+		// Pull Hand Ptr back from r31...
+		MR(3, 31);
+		// ... and call "updateColorNo/[muSelCharHand]/mu_selchar_hand.o"!
+		SetRegister(reg2, 0x8069c698);
+		MTCTR(reg2);
+		BCTRL();
+		ASMEnd(0x807e01a8); // Restore Original Instruction: lwz	r3, 0x01A8 (r30)
 
 		CodeRaw(codePrefix + "Disable Franchise Icon Color 10-Frame Offset in Results Screen" + codeSuffix, "",
 			{
