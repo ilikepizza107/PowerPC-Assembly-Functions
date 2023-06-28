@@ -60,6 +60,7 @@ extern long characterListVersion;
 // ASM Output Formatting Settings
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
 #define OUTPUT_ASM_INSTRUCTION_DICTIONARY false
+#define ALLOW_IMPLICIT_MULLI_OPTIMIZATIONS false // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
@@ -231,10 +232,14 @@ const int MENU_SELECTED_TAG_OFFSET = 0x164;
 #define BUTTON_Y 0x800
 #define BUTTON_START 0x1000
 #define BUTTON_DPAD 0xF
+constexpr bool isPowerOf2(unsigned long numberIn)
+{
+	return (numberIn & (numberIn - 1)) == 0;
+}
 constexpr unsigned long bitIndexFromButtonHex(unsigned long buttonHex, bool doIndexFromRight = 0)
 {
 	// If what was passed in was a proper button hex value (power of 2)
-	if ((buttonHex & (buttonHex - 1)) == 0)
+	if (isPowerOf2(buttonHex))
 	{
 		if (doIndexFromRight)
 		{

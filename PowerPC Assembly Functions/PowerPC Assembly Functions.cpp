@@ -2418,11 +2418,19 @@ void MTXER(int TargetReg) {
 
 void MULLI(int DestReg, int SourceReg, int Immediate)
 {
-	OpHex = GetOpSegment(7, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
-	OpHex |= GetOpSegment(SourceReg, 5, 15);
-	OpHex |= GetOpSegment(Immediate, 16, 31);
-	WriteIntToFile(OpHex);
+	if (ALLOW_IMPLICIT_MULLI_OPTIMIZATIONS && isPowerOf2((unsigned long)Immediate))
+	{
+		unsigned long shiftCount = bitIndexFromButtonHex(Immediate, 1);
+		RLWINM(DestReg, SourceReg, shiftCount, 0x00, 0x1F - shiftCount );
+	}
+	else
+	{
+		OpHex = GetOpSegment(7, 6, 5);
+		OpHex |= GetOpSegment(DestReg, 5, 10);
+		OpHex |= GetOpSegment(SourceReg, 5, 15);
+		OpHex |= GetOpSegment(Immediate, 16, 31);
+		WriteIntToFile(OpHex);
+	}
 }
 
 void MULLW(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg)
