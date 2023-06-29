@@ -20,7 +20,8 @@ void themeChangerBody(const std::string menuDirectory, themeConstants::themePath
 		std::string prefixesString("");
 		for (std::size_t i = 0; i < THEME_SPEC_LIST.size(); i++)
 		{
-			prefixesString += "/";
+			// Use the end of the menuDirectory string to pad the prefix to 4 bytes, if it's shorter than that.
+			prefixesString += menuDirectory.substr(menuDirectory.size() - (4 - themeConstants::prefixLength));
 			prefixesString += THEME_SPEC_LIST[i].prefixes[fileIndex];
 		}
 
@@ -39,8 +40,8 @@ void themeChangerBody(const std::string menuDirectory, themeConstants::themePath
 		// ... load the relevant prefix string using the calculated offset. reg1 is now our prefix!
 		LWZX(reg1, reg1, reg2);
 
-		// Finally store the prefix in the correct spot, and we're done!
-		STW(reg1, stringReg, menuDirectory.size() - 1);
+		// Finally store the prefix in the correct spot (accounting for any padding from the menuDirectory string), and we're done!
+		STW(reg1, stringReg, menuDirectory.size() - (4 - themeConstants::prefixLength));
 	}
 }
 
