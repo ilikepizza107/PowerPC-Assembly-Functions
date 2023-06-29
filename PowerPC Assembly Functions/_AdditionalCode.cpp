@@ -372,10 +372,12 @@ namespace lava
 
 		// EX Characters
 		const std::string characterDeclsTag = "characterDeclarations";
+		const std::string characterTag = "character";
 		const std::string slotIDTag = "slotID";
 
 		// EX Rosters
 		const std::string roseterDeclsTag = "rosterDeclarations";
+		const std::string roseterTag = "roster";
 
 		// Themes
 		const std::string themeDeclsTag = "themeDeclarations";
@@ -391,9 +393,51 @@ namespace lava
 	{
 		return declNodeItr->attribute(configXMLConstants::disabledTag.c_str()).as_bool() == 1;
 	}
+	std::vector<std::pair<std::string, u16>> collectEXCharactersFromXML(const pugi::xml_node_iterator& characterDeclNodeItr)
+	{
+		std::vector<std::pair<std::string, u16>> result{};
+
+		for (pugi::xml_node_iterator rosterItr = characterDeclNodeItr->begin(); rosterItr != characterDeclNodeItr->end(); rosterItr++)
+		{
+			if (rosterItr->name() == configXMLConstants::characterTag)
+			{
+				std::pair<std::string, u16> tempPair("", USHRT_MAX);
+				tempPair.first = rosterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				tempPair.second = rosterItr->attribute(configXMLConstants::slotIDTag.c_str()).as_int(USHRT_MAX);
+
+				if (!tempPair.first.empty() && (tempPair.second != USHRT_MAX))
+				{
+					result.push_back(tempPair);
+				}
+			}
+		}
+
+		return result;
+	}
+	std::vector<std::pair<std::string, std::string>> collectEXRostersFromXML(const pugi::xml_node_iterator& rosterDeclNodeItr)
+	{
+		std::vector<std::pair<std::string, std::string>> result{};
+
+		for (pugi::xml_node_iterator rosterItr = rosterDeclNodeItr->begin(); rosterItr != rosterDeclNodeItr->end(); rosterItr++)
+		{
+			if (rosterItr->name() == configXMLConstants::roseterTag)
+			{
+				std::pair<std::string, std::string> tempPair("", "");
+				tempPair.first = rosterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				tempPair.second = rosterItr->attribute(configXMLConstants::filenameTag.c_str()).as_string("");
+
+				if (!tempPair.first.empty() && !tempPair.second.empty())
+				{
+					result.push_back(tempPair);
+				}
+			}
+		}
+
+		return result;
+	}
 	std::vector<menuTheme> collectThemesFromXML(const pugi::xml_node_iterator& themeDeclNodeItr)
 	{
-		std::vector<menuTheme> result;
+		std::vector<menuTheme> result{};
 
 		for (pugi::xml_node_iterator themeItr = themeDeclNodeItr->begin(); themeItr != themeDeclNodeItr->end(); themeItr++)
 		{
@@ -462,14 +506,112 @@ namespace lava
 						if (COLLECT_EXTERNAL_EX_CHARACTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::characterDeclsTag)
 						{
 							// ... pull them from the XML and apply the changes to the menu lists.
+							logOutput << "Adding Characters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+							std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
+							if (nameIDPairs.size())
+							{
+								// Builds a map from the predefined character and character ID lists.
+								// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
+								std::map<std::string, u16> zippedIDMap;
+								zipVectorsToMap(CHARACTER_LIST, CHARACTER_ID_LIST, zippedIDMap);
+
+								for (int i = 0; i < nameIDPairs.size(); i++)
+								{
+									std::pair<std::string, u16>* currPair = &nameIDPairs[i];
+									if (currPair->second != SHRT_MAX)
+									{
+										auto itr = zippedIDMap.insert(*currPair);
+										// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
+										if (itr.second)
+										{
+											logOutput << "[ADDED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+										}
+										// Otherwise, announce what was changed.
+										else if (itr.first != zippedIDMap.end())
+										{
+											itr.first->second = currPair->second;
+											logOutput << "[CHANGED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+										}
+									}
+									else
+									{
+										logOutput.write("[ERROR] Invalid Slot ID specified! The character \"" + currPair->first + "\" will not be added to the Code Menu!\n",
+											ULONG_MAX, lava::outputSplitter::sOS_CERR);
+									}
+								}
+
+								// Write the newly edited list back into the list vectors
+								CHARACTER_LIST.clear();
+								CHARACTER_ID_LIST.clear();
+								unzipMapToVectors(zippedIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
+							}
+							else
+							{
+								logOutput << "[WARNING] EX Character Declaration block parsed, but no valid entries were found!\n";
+							}
+							//Print the results.
+							logOutput << "\nFinal Character List:\n";
+							for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
+							{
+								logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
+							}
+
+							logOutput << "\n";
 						}
 						// If we're set to collect EX Rosters...
 						else if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::roseterDeclsTag)
 						{
+							logOutput << "Adding Rosters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+							std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(declNodeItr);
+							// If we actually retrieved any valid rosters from the file, process them!
+							if (!tempRosterList.empty())
+							{
+								// For each newly collected roster...
+								for (int i = 0; i < tempRosterList.size(); i++)
+								{
+									std::pair<std::string, std::string>* currPair = &tempRosterList[i];
+
+									// ... check to see if a roster of the same name already exists in our lists.
+									auto itr = std::find(ROSTER_LIST.begin(), ROSTER_LIST.end(), currPair->first);
+
+									// If one by that name doesn't already exist...
+									if (itr == ROSTER_LIST.end())
+									{
+										// Add it to our list...
+										ROSTER_LIST.push_back(currPair->first);
+										ROSTER_FILENAME_LIST.push_back(currPair->second);
+										// ... and announce that a roster has been successfully collected.
+										logOutput << "[ADDED]";
+									}
+									// Otherwise, if one by that name *does* already exist...
+									else
+									{
+										// ... overwrite the roster currently associated with that name...
+										ROSTER_FILENAME_LIST[itr - ROSTER_LIST.begin()] = currPair->second;
+										// ... and announce that the roster has been changed.
+										logOutput << "[CHANGED]";
+									}
+									logOutput << "\"" << currPair->first << "\" (Filename: " << currPair->second << ")\n";
+								}
+							}
+							// Otherwise, note that nothing was found.
+							else
+							{
+								logOutput << "[WARNING] Roster Declaration block parsed, but no valid entries were found!\n";
+							}
+
+							//Do final roster list summary.
+							logOutput << "\nFinal Roster List:\n";
+							for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
+							{
+								logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
+							}
+							logOutput << "\n";
 						}
 						// If we're set to collect Themes...
 						else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::themeDeclsTag)
 						{
+							logOutput << "Adding Themes to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
 							std::vector<menuTheme> tempThemeList = collectThemesFromXML(declNodeItr);
 							// If we actually retrieved any valid themes from the file, process them!
 							if (!tempThemeList.empty())
@@ -500,11 +642,7 @@ namespace lava
 										logOutput << "[CHANGED]";
 									}
 									// Describe the processed theme.
-									logOutput << " \"" << currTheme->name << "\", Replacement Prefixes Are:\n";
-									for (std::size_t u = 0; u < currTheme->prefixes.size(); u++)
-									{
-										logOutput << "\t\"" << themeConstants::filenames[u] << "\": \"" << currTheme->prefixes[u] << "\"\n";
-									}
+									logOutput << " \"" << currTheme->name << "\"\n";
 								}
 							}
 							// Otherwise, note that nothing was found.

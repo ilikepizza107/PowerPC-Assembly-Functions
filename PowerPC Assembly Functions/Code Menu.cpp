@@ -265,9 +265,7 @@ unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
 
 
 const std::string outputFolder = "./Code_Menu_Output/";
-const std::string exCharInputFileName = "EX_Characters.txt";
-const std::string rosterInputFileName = "EX_Rosters.txt";
-const std::string themeInputFileName = "EX_Themes.xml";
+const std::string menuConfigXMLFileName = "EX_Config.xml";
 const std::string symbolMapInputFileName = "symbols.map";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";

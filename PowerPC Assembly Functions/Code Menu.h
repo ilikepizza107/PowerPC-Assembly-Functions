@@ -197,7 +197,7 @@ bool zipVectorsToMap(const std::vector<T1>& vec1, const std::vector<T2>& vec2, s
 		result = 1;
 		for (std::size_t i = 0; i < vec1.size(); i++)
 		{
-			auto res = result.emplace(vec1[i], vec2[i]);
+			auto res = destinationMap.emplace(vec1[i], vec2[i]);
 			if (res.second == 1)
 			{
 				res.first->second = vec2[i];
@@ -210,18 +210,14 @@ bool zipVectorsToMap(const std::vector<T1>& vec1, const std::vector<T2>& vec2, s
 template <typename T1, typename T2>
 void unzipMapToVectors(const std::map<T1, T2>& sourceMap, std::vector<T1>& vec1, std::vector<T2>& vec2)
 {
-	if (vec1.size() < sourceMap.size())
-	{
-		vec1.reserve(sourceMap.size());
-	}
-	if (vec2.size() < sourceMap.size())
-	{
-		vec2.reserve(sourceMap.size());
-	}
+	vec1.resize(sourceMap.size());
+	vec2.resize(sourceMap.size());
+	std::size_t index = 0;
 	for (auto itr = sourceMap.begin(); itr != sourceMap.end(); itr++)
 	{
-		vec1.push_back(itr->first);
-		vec2.push_back(itr->second);
+		vec1[index] = itr->first;
+		vec2[index] = itr->second;
+		index++;
 	}
 }
 
@@ -289,9 +285,7 @@ void initMenuFileStream();
 
 // Logging and Input Constants
 extern const std::string outputFolder;
-extern const std::string exCharInputFileName;
-extern const std::string rosterInputFileName;
-extern const std::string themeInputFileName;
+extern const std::string menuConfigXMLFileName;
 extern const std::string symbolMapInputFileName;
 extern const std::string changelogFileName;
 extern const std::string optionsFilename;
