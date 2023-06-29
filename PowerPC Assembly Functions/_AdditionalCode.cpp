@@ -242,21 +242,48 @@ namespace lava
 		WriteByteVec((const unsigned char*)Bytes.data(), Address, addressReg, manipReg, std::min<std::size_t>(Bytes.size(), numToWrite), appendNullTerminator);
 	}
 
-	std::vector<std::pair<std::string, u16>> collectNameSlotIDPairs(std::string exCharInputFilePath, bool& fileOpened)
+
+	// Menu Config Parsing and Constants
+	namespace configXMLConstants
+	{
+		// General
+		const std::string menuConfigTag = "codeMenuConfig";
+		const std::string disabledTag = "disabled";
+		const std::string nameTag = "name";
+		const std::string filenameTag = "filename";
+
+		// EX Characters
+		const std::string characterDeclsTag = "characterDeclarations";
+		const std::string characterTag = "character";
+		const std::string slotIDTag = "slotID";
+
+		// EX Rosters
+		const std::string roseterDeclsTag = "rosterDeclarations";
+		const std::string roseterTag = "roster";
+
+		// Themes
+		const std::string themeDeclsTag = "themeDeclarations";
+		const std::string themeTag = "menuTheme";
+		const std::string themeFileTag = "themeFile";
+		const std::string prefixTag = "replacementPrefix";
+
+		// Colors
+		const std::string slotColorDeclsTag = "slotColorDeclarations";
+		const std::string slotColorTag = "slotColor";
+	}
+	bool declNodeIsDisabled(const pugi::xml_node_iterator& declNodeItr)
+	{
+		return declNodeItr->attribute(configXMLConstants::disabledTag.c_str()).as_bool() == 1;
+	}
+	std::vector<std::pair<std::string, u16>> collectEXCharactersFromPlaintext(std::istream& streamIn)
 	{
 		std::vector<std::pair<std::string, u16>> result{};
-		fileOpened = 0;
 
-		// Read from character file
-		std::ifstream exCharInputStream;
-		exCharInputStream.open(exCharInputFilePath);
-
-		if (exCharInputStream.is_open())
+		if (streamIn.good())
 		{
-			fileOpened = 1;
 			std::string currentLine = "";
 			std::string manipStr = "";
-			while (std::getline(exCharInputStream, currentLine))
+			while (std::getline(streamIn, currentLine))
 			{
 				// Disregard the current line if it's empty, or is marked as a comment
 				if (!currentLine.empty() && currentLine[0] != '#' && currentLine[0] != '/')
@@ -302,21 +329,46 @@ namespace lava
 
 		return result;
 	}
-	std::vector<std::pair<std::string, std::string>> collectedRosterNamePathPairs(std::string exRosterInputFilePath, bool& fileOpened)
+	std::vector<std::pair<std::string, u16>> collectEXCharactersFromXML(const pugi::xml_node_iterator& characterDeclNodeItr)
+	{
+		std::vector<std::pair<std::string, u16>> result{};
+
+		// Collect proper node entries.
+		for (pugi::xml_node_iterator rosterItr = characterDeclNodeItr->begin(); rosterItr != characterDeclNodeItr->end(); rosterItr++)
+		{
+			if (rosterItr->name() == configXMLConstants::characterTag)
+			{
+				std::pair<std::string, u16> tempPair("", USHRT_MAX);
+				tempPair.first = rosterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				tempPair.second = rosterItr->attribute(configXMLConstants::slotIDTag.c_str()).as_int(USHRT_MAX);
+
+				if (!tempPair.first.empty() && (tempPair.second != USHRT_MAX))
+				{
+					result.push_back(tempPair);
+				}
+			}
+		}
+
+		// Collect any plaintext entries from the declaration node.
+		std::stringstream nodePlainTextStream(characterDeclNodeItr->text().as_string(""));
+		std::vector<std::pair<std::string, u16>> plainTextEntries = collectEXCharactersFromPlaintext(nodePlainTextStream);
+		result.reserve(result.size() + plainTextEntries.size());
+		for (std::size_t i = 0; i < plainTextEntries.size(); i++)
+		{
+			result.push_back(plainTextEntries[i]);
+		}
+
+		return result;
+	}
+	std::vector<std::pair<std::string, std::string>> collectEXRostersFromPlaintext(std::istream& streamIn)
 	{
 		std::vector<std::pair<std::string, std::string>> result{};
-		fileOpened = 0;
 
-		// Read from character file
-		std::ifstream exCharInputStream;
-		exCharInputStream.open(exRosterInputFilePath);
-
-		if (exCharInputStream.is_open())
+		if (streamIn.good())
 		{
-			fileOpened = 1;
 			std::string currentLine = "";
 			std::string manipStr = "";
-			while (std::getline(exCharInputStream, currentLine))
+			while (std::getline(streamIn, currentLine))
 			{
 				// Disregard the current line if it's empty, or is marked as a comment
 				if (!currentLine.empty() && currentLine[0] != '#' && currentLine[0] != '/')
@@ -360,64 +412,11 @@ namespace lava
 
 		return result;
 	}
-
-	// Menu Config Parsing and Constants
-	namespace configXMLConstants
-	{
-		// General
-		const std::string menuConfigTag = "codeMenuConfig";
-		const std::string disabledTag = "disabled";
-		const std::string nameTag = "name";
-		const std::string filenameTag = "filename";
-
-		// EX Characters
-		const std::string characterDeclsTag = "characterDeclarations";
-		const std::string characterTag = "character";
-		const std::string slotIDTag = "slotID";
-
-		// EX Rosters
-		const std::string roseterDeclsTag = "rosterDeclarations";
-		const std::string roseterTag = "roster";
-
-		// Themes
-		const std::string themeDeclsTag = "themeDeclarations";
-		const std::string themeTag = "menuTheme";
-		const std::string themeFileTag = "themeFile";
-		const std::string prefixTag = "replacementPrefix";
-
-		// Colors
-		const std::string slotColorDeclsTag = "slotColorDeclarations";
-		const std::string slotColorTag = "slotColor";
-	}
-	bool declNodeIsDisabled(const pugi::xml_node_iterator& declNodeItr)
-	{
-		return declNodeItr->attribute(configXMLConstants::disabledTag.c_str()).as_bool() == 1;
-	}
-	std::vector<std::pair<std::string, u16>> collectEXCharactersFromXML(const pugi::xml_node_iterator& characterDeclNodeItr)
-	{
-		std::vector<std::pair<std::string, u16>> result{};
-
-		for (pugi::xml_node_iterator rosterItr = characterDeclNodeItr->begin(); rosterItr != characterDeclNodeItr->end(); rosterItr++)
-		{
-			if (rosterItr->name() == configXMLConstants::characterTag)
-			{
-				std::pair<std::string, u16> tempPair("", USHRT_MAX);
-				tempPair.first = rosterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
-				tempPair.second = rosterItr->attribute(configXMLConstants::slotIDTag.c_str()).as_int(USHRT_MAX);
-
-				if (!tempPair.first.empty() && (tempPair.second != USHRT_MAX))
-				{
-					result.push_back(tempPair);
-				}
-			}
-		}
-
-		return result;
-	}
 	std::vector<std::pair<std::string, std::string>> collectEXRostersFromXML(const pugi::xml_node_iterator& rosterDeclNodeItr)
 	{
 		std::vector<std::pair<std::string, std::string>> result{};
 
+		// Collect proper node entries.
 		for (pugi::xml_node_iterator rosterItr = rosterDeclNodeItr->begin(); rosterItr != rosterDeclNodeItr->end(); rosterItr++)
 		{
 			if (rosterItr->name() == configXMLConstants::roseterTag)
@@ -431,6 +430,15 @@ namespace lava
 					result.push_back(tempPair);
 				}
 			}
+		}
+
+		// Collect any plaintext entries from the declaration node.
+		std::stringstream nodePlainTextStream(rosterDeclNodeItr->text().as_string(""));
+		std::vector<std::pair<std::string, std::string>> plainTextEntries = collectEXRostersFromPlaintext(nodePlainTextStream);
+		result.reserve(result.size() + plainTextEntries.size());
+		for (std::size_t i = 0; i < plainTextEntries.size(); i++)
+		{
+			result.push_back(plainTextEntries[i]);
 		}
 
 		return result;
