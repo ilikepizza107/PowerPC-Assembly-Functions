@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "Code Menu.h"
 #include "_lavaBytes.h"
+#include "_lavaOutputSplitter.h"
 #include <conio.h>
 #include <filesystem>
 
@@ -46,6 +47,8 @@ namespace lava
 
 	// EX Theme Functions
 	std::vector<menuTheme> collectThemesFromXML(std::string exThemeInputFilePath, bool& fileOpened);
+
+	bool parseAndApplyConfigXML(std::string configFilePath, lava::outputSplitter& logOutput);
 }
 
 #endif

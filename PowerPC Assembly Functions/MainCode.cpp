@@ -16,7 +16,6 @@
 #include "AIDisplay.h"
 #include "C++Injection.h"
 #include "_AdditionalCode.h"
-#include "_lavaOutputSplitter.h"
 #include "_CSSRosterChange.h"
 #include "_ThemeChange.h"
 #include "_DashAttackItemGrab.h"
@@ -200,96 +199,7 @@ int main(int argc, char** argv)
 
 		logOutput << "\n";
 
-		if (COLLECT_EXTERNAL_THEMES == true)
-		{
-			logOutput << "Adding Themes to Code Menu from \"" << themeInputFileName << "\"...\n";
-
-			bool themeInputOpenedSuccesfully = 0;
-			std::vector<menuTheme> tempThemeList = lava::collectThemesFromXML(themeInputFileName, themeInputOpenedSuccesfully);
-
-			if (themeInputOpenedSuccesfully)
-			{
-				// If we actually retrieved any valid themes from the file, process them!
-				if (!tempThemeList.empty())
-				{
-					// Create a map for quickly finding whether existing theme names are taken, and track their respective positions.
-					std::map<std::string, std::size_t> themeNameToIndexMap{};
-					// And a vector for storing the themes we've collected in order.
-					std::vector<std::pair<std::string, menuTheme>> zippedThemeVec{};
-
-					// Add all of our predefined themes to these containers before we process the newly collected ones. 
-					for (std::size_t i = 0; i < THEME_LIST.size(); i++)
-					{
-						zippedThemeVec.push_back(std::make_pair(THEME_LIST[i], THEME_SPEC_LIST[i]));
-						themeNameToIndexMap.insert(std::make_pair(THEME_LIST[i], i));
-					}
-
-					// For each newly collected theme...
-					for (int i = 0; i < tempThemeList.size(); i++)
-					{
-						menuTheme* currTheme = &tempThemeList[i];
-
-						// ... check to see if a theme of the same name already exists in our map.
-						auto itr = themeNameToIndexMap.find(currTheme->name);
-
-						// If one by that name doesn't already exist...
-						if (itr == themeNameToIndexMap.end())
-						{
-							// ... add it to the map and vector so we can keep track of them going forward...
-							themeNameToIndexMap.insert(std::make_pair(currTheme->name, i));
-							zippedThemeVec.push_back(std::make_pair(currTheme->name, *currTheme));
-							// ... and announce that a theme has been successfully collected.
-							logOutput << "[ADDED]";
-						}
-						// Otherwise, if a theme by that name *does* already exist...
-						else
-						{
-							// ... overwrite the theme currently associated with that name...
-							zippedThemeVec[itr->second].second = *currTheme;
-							// ... and announce that a theme has been changed.
-							logOutput << "[CHANGED]";
-						}
-						// Describe the processed theme.
-						logOutput << " \"" << currTheme->name << "\", Replacement Prefixes Are:\n";
-						for (std::size_t u = 0; u < currTheme->prefixes.size(); u++)
-						{
-							logOutput << "\t\"" << themeConstants::filenames[u] << "\": \"" << currTheme->prefixes[u] << "\"\n";
-						}
-					}
-
-					// Once we're done, clear out the old theme lists...
-					THEME_LIST.clear();
-					THEME_SPEC_LIST.clear();
-					// ... and add re-populate them with the data we just processed.
-					for (std::size_t i = 0; i < zippedThemeVec.size(); i++)
-					{
-						THEME_LIST.push_back(zippedThemeVec[i].first);
-						THEME_SPEC_LIST.push_back(zippedThemeVec[i].second);
-					}
-				}
-				else
-				{
-					logOutput << "[WARNING] \"" << themeInputFileName << "\" was opened successfully, but no valid theme entries could be found.\n";
-				}
-			}
-			else
-			{
-				logOutput.write("[ERROR] Couldn't open \"" + themeInputFileName + "\"! Ensure that the file is present in this folder and try again!\n",
-					ULONG_MAX, lava::outputSplitter::sOS_CERR);
-			}
-			//Print the results.
-			logOutput << "\nFinal Theme List:\n";
-			for (std::size_t i = 0; i < THEME_LIST.size(); i++)
-			{
-				logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
-				for (std::size_t u = 0; u < THEME_SPEC_LIST[i].prefixes.size(); u++)
-				{
-					logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
-				}
-			}
-
-			logOutput << "\n";
-		}
+		lava::parseAndApplyConfigXML("./EX_Config.xml", logOutput);
 		if (COLLECT_EXTERNAL_ROSTERS == true)
 		{
 			logOutput << "Adding Rosters to Code Menu from \"" << rosterInputFileName << "\"...\n";

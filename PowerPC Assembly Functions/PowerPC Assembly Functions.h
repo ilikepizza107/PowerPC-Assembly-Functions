@@ -51,6 +51,7 @@ extern long characterListVersion;
 #define COLLECT_EXTERNAL_EX_CHARACTERS (true && PROJECT_PLUS_EX_BUILD)
 #define COLLECT_EXTERNAL_ROSTERS (true && PROJECT_PLUS_EX_BUILD)
 #define COLLECT_EXTERNAL_THEMES (true) // Note, this isn't locked to P+Ex builds, actually. Should work on any build with a Code Menu!
+#define COLLECT_EXTERNAL_SLOT_COLORS (true) // Note, this isn't locked to P+Ex builds, actually. Should work on any build with a Code Menu!
 
 // Note: Console builds can't use Netplay anyway, so setting DOLPHIN_BUILD to false will force this off as well.
 // This is important, as some Netplay codes save data directly to NAND, which is safe on Dolphin but not on console.

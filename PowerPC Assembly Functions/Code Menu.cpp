@@ -217,11 +217,6 @@ void buildRosterLists()
 
 namespace themeConstants
 {
-	const std::string nameTag = "name";
-	const std::string themeTag = "menuTheme";
-	const std::string themeFileTag = "themeFile";
-	const std::string prefixTag = "replacementPrefix";
-
 	std::array<std::string, tpi__PATH_COUNT> filenames{};
 }
 void initializeThemeConstants()

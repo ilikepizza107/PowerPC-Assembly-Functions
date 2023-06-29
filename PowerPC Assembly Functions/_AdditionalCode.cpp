@@ -360,56 +360,176 @@ namespace lava
 
 		return result;
 	}
-	std::vector<menuTheme> collectThemesFromXML(std::string exThemeInputFilePath, bool& fileOpened)
+
+	// Menu Config Parsing and Constants
+	namespace configXMLConstants
 	{
-		fileOpened = 0;
+		// General
+		const std::string menuConfigTag = "codeMenuConfig";
+		const std::string disabledTag = "disabled";
+		const std::string nameTag = "name";
+		const std::string filenameTag = "filename";
 
-		std::vector<menuTheme> result{};
+		// EX Characters
+		const std::string characterDeclsTag = "characterDeclarations";
+		const std::string slotIDTag = "slotID";
 
-		pugi::xml_document themeDoc;
-		if (std::filesystem::is_regular_file(exThemeInputFilePath))
+		// EX Rosters
+		const std::string roseterDeclsTag = "rosterDeclarations";
+
+		// Themes
+		const std::string themeDeclsTag = "themeDeclarations";
+		const std::string themeTag = "menuTheme";
+		const std::string themeFileTag = "themeFile";
+		const std::string prefixTag = "replacementPrefix";
+
+		// Colors
+		const std::string slotColorDeclsTag = "slotColorDeclarations";
+		const std::string slotColorTag = "slotColor";
+	}
+	bool declNodeIsDisabled(const pugi::xml_node_iterator& declNodeItr)
+	{
+		return declNodeItr->attribute(configXMLConstants::disabledTag.c_str()).as_bool() == 1;
+	}
+	std::vector<menuTheme> collectThemesFromXML(const pugi::xml_node_iterator& themeDeclNodeItr)
+	{
+		std::vector<menuTheme> result;
+
+		for (pugi::xml_node_iterator themeItr = themeDeclNodeItr->begin(); themeItr != themeDeclNodeItr->end(); themeItr++)
 		{
-			pugi::xml_parse_result res = themeDoc.load_file(exThemeInputFilePath.c_str());
-			if (res.status == pugi::xml_parse_status::status_ok || res.status == pugi::xml_parse_status::status_no_document_element)
+			if (themeItr->name() == configXMLConstants::themeTag)
 			{
-				fileOpened = 1;
-				for (pugi::xml_node_iterator themeItr = themeDoc.begin(); themeItr != themeDoc.end(); themeItr++)
+				menuTheme tempTheme;
+				tempTheme.name = themeItr->attribute(configXMLConstants::nameTag.c_str()).as_string(tempTheme.name);
+				// If the entry has no name, skip to next node.
+				if (tempTheme.name.empty()) continue;
+
+				for (pugi::xml_node_iterator themeFileItr = themeItr->begin(); themeFileItr != themeItr->end(); themeFileItr++)
 				{
-					if (themeItr->name() == themeConstants::themeTag)
+					if (themeFileItr->name() == configXMLConstants::themeFileTag)
 					{
-						menuTheme tempTheme;
-						for (pugi::xml_attribute_iterator themeAttrItr = themeItr->attributes_begin(); themeAttrItr != themeItr->attributes_end(); themeAttrItr++)
+						std::size_t filenameIndex = SIZE_MAX;
+
+						for (pugi::xml_attribute_iterator themeFileAttrItr = themeFileItr->attributes_begin(); themeFileAttrItr != themeFileItr->attributes_end(); themeFileAttrItr++)
 						{
-							if (themeAttrItr->name() == themeConstants::nameTag)
+							if (themeFileAttrItr->name() == configXMLConstants::nameTag)
 							{
-								tempTheme.name = themeAttrItr->as_string();
+								auto filenameItr = std::find(themeConstants::filenames.begin(), themeConstants::filenames.end(), themeFileAttrItr->as_string());
+								if (filenameItr != themeConstants::filenames.end())
+								{
+									filenameIndex = filenameItr - themeConstants::filenames.begin();
+								}
+							}
+							else if (filenameIndex != SIZE_MAX && themeFileAttrItr->name() == configXMLConstants::prefixTag)
+							{
+								tempTheme.prefixes[filenameIndex] = themeFileAttrItr->as_string().substr(0, themeConstants::prefixLength);
+								THEME_FILE_GOT_UNIQUE_PREFIX[filenameIndex] |= themeConstants::filenames[filenameIndex].find(tempTheme.prefixes[filenameIndex]) != 0x00;
 							}
 						}
-						for (pugi::xml_node_iterator themeFileItr = themeItr->begin(); themeFileItr != themeItr->end(); themeFileItr++)
-						{
-							if (themeFileItr->name() == themeConstants::themeFileTag)
-							{
-								std::size_t filenameIndex = SIZE_MAX;
+					}
+				}
+				result.push_back(tempTheme);
+			}
+		}
 
-								for (pugi::xml_attribute_iterator themeFileAttrItr = themeFileItr->attributes_begin(); themeFileAttrItr != themeFileItr->attributes_end(); themeFileAttrItr++)
+		return result;
+	}
+	bool parseAndApplyConfigXML(std::string configFilePath, lava::outputSplitter& logOutput)
+	{
+		bool result = 0;
+
+		pugi::xml_document configDoc;
+		if (std::filesystem::is_regular_file(configFilePath))
+		{
+			pugi::xml_parse_result res = configDoc.load_file(configFilePath.c_str());
+			if (res.status == pugi::xml_parse_status::status_ok || res.status == pugi::xml_parse_status::status_no_document_element)
+			{
+				pugi::xml_node_iterator configRoot = configDoc.end();
+				for (pugi::xml_node_iterator topLevelNodeItr = configDoc.begin(); configRoot == configDoc.end() && topLevelNodeItr != configDoc.end(); topLevelNodeItr++)
+				{
+					if (topLevelNodeItr->name() == configXMLConstants::menuConfigTag)
+					{
+						configRoot = topLevelNodeItr;
+					}
+				}
+
+				if (configRoot != configDoc.end())
+				{
+					result = 1;
+					for (pugi::xml_node_iterator declNodeItr = configRoot->begin(); declNodeItr != configRoot->end(); declNodeItr++)
+					{
+						// If we're set to collect EX Characters...
+						if (COLLECT_EXTERNAL_EX_CHARACTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::characterDeclsTag)
+						{
+							// ... pull them from the XML and apply the changes to the menu lists.
+						}
+						// If we're set to collect EX Rosters...
+						else if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::roseterDeclsTag)
+						{
+						}
+						// If we're set to collect Themes...
+						else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::themeDeclsTag)
+						{
+							std::vector<menuTheme> tempThemeList = collectThemesFromXML(declNodeItr);
+							// If we actually retrieved any valid themes from the file, process them!
+							if (!tempThemeList.empty())
+							{
+								// For each newly collected theme...
+								for (int i = 0; i < tempThemeList.size(); i++)
 								{
-									if (themeFileAttrItr->name() == themeConstants::nameTag)
+									menuTheme* currTheme = &tempThemeList[i];
+
+									// ... check to see if a theme of the same name already exists in our map.
+									auto itr = std::find(THEME_LIST.begin(), THEME_LIST.end(), currTheme->name);
+
+									// If one by that name doesn't already exist...
+									if (itr == THEME_LIST.end())
 									{
-										auto filenameItr = std::find(themeConstants::filenames.begin(), themeConstants::filenames.end(), themeFileAttrItr->as_string());
-										if (filenameItr != themeConstants::filenames.end())
-										{
-											filenameIndex = filenameItr - themeConstants::filenames.begin();
-										}
+										// Add it to our list...
+										THEME_LIST.push_back(currTheme->name);
+										THEME_SPEC_LIST.push_back(*currTheme);
+										// ... and announce that a theme has been successfully collected.
+										logOutput << "[ADDED]";
 									}
-									else if (filenameIndex != SIZE_MAX && themeFileAttrItr->name() == themeConstants::prefixTag)
+									// Otherwise, if a theme by that name *does* already exist...
+									else
 									{
-										tempTheme.prefixes[filenameIndex] = themeFileAttrItr->as_string().substr(0, themeConstants::prefixLength);
-										THEME_FILE_GOT_UNIQUE_PREFIX[filenameIndex] |= themeConstants::filenames[filenameIndex].find(tempTheme.prefixes[filenameIndex]) != 0x00;
+										// ... overwrite the theme currently associated with that name...
+										THEME_SPEC_LIST[itr - THEME_LIST.begin()] = *currTheme;
+										// ... and announce that a theme has been changed.
+										logOutput << "[CHANGED]";
+									}
+									// Describe the processed theme.
+									logOutput << " \"" << currTheme->name << "\", Replacement Prefixes Are:\n";
+									for (std::size_t u = 0; u < currTheme->prefixes.size(); u++)
+									{
+										logOutput << "\t\"" << themeConstants::filenames[u] << "\": \"" << currTheme->prefixes[u] << "\"\n";
 									}
 								}
 							}
+							// Otherwise, note that nothing was found.
+							else
+							{
+								logOutput << "[WARNING] Theme Declaration block parsed, but no valid entries were found!\n";
+							}
+
+							// Do final theme list summary.
+							logOutput << "\nFinal Theme List:\n";
+							for (std::size_t i = 0; i < THEME_LIST.size(); i++)
+							{
+								logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
+								for (std::size_t u = 0; u < THEME_SPEC_LIST[i].prefixes.size(); u++)
+								{
+									logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
+								}
+							}
+							logOutput << "\n";
 						}
-						result.push_back(tempTheme);
+						// If we're set to collect Slot Colors...
+						else if (COLLECT_EXTERNAL_SLOT_COLORS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::slotColorDeclsTag)
+						{
+							
+						}
 					}
 				}
 			}

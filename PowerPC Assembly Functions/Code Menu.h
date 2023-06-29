@@ -256,11 +256,6 @@ namespace themeConstants
 	};
 
 	constexpr unsigned long prefixLength = 0x03;
-	extern const std::string nameTag;
-	extern const std::string themeTag;
-	extern const std::string themeFileTag;
-	extern const std::string prefixTag;
-
 	
 	extern std::array<std::string, tpi__PATH_COUNT> filenames;
 }
