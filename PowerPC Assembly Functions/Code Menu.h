@@ -303,6 +303,7 @@ extern const std::string asmBuildLocationDirectory;
 extern const std::string cmnuBuildLocationDirectory;
 extern const std::string asmBuildLocationFilePath;
 extern const std::string cmnuBuildLocationFilePath;
+std::string getCMNUAbsolutePath();
 // AutoGCTRM Constants
 extern const std::string buildFolder;
 extern const std::string GCTRMExePath;
@@ -325,9 +326,7 @@ namespace xmlTagConstants
 	extern const std::string valueMaxTag;
 	extern const std::string valueDefaultTag;
 	extern const std::string editableTag;
-	extern const std::string buildBaseFolderTag;
 	extern const std::string cmnuPathTag;
-	extern const std::string characterListVerTag;
 	extern const std::string pageTag;
 	extern const std::string selectionTag;
 	extern const std::string selectionDefaultTag;

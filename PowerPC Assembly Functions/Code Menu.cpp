@@ -345,6 +345,10 @@ const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
 const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
 const std::string asmBuildLocationFilePath = buildFolder + asmBuildLocationDirectory + asmFileName;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
+std::string getCMNUAbsolutePath()
+{
+	return MAIN_FOLDER + "/" + cmnuBuildLocationDirectory + cmnuFileName;
+}
 
 void initMenuFileStream()
 {
@@ -362,9 +366,7 @@ namespace xmlTagConstants
 	const std::string valueMaxTag = "maxValue";
 	const std::string valueDefaultTag = "defaultValue";
 	const std::string editableTag = "editable";
-	const std::string buildBaseFolderTag = "buildBaseFolder";
 	const std::string cmnuPathTag = "cmnuPath";
-	const std::string characterListVerTag = "characterListVersion";
 	const std::string pageTag = "codeMenuPage";
 	const std::string selectionTag = "codeMenuSelection";
 	const std::string selectionDefaultTag = "defaultOption";
@@ -444,22 +446,8 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 	commentNode.set_value("Important Note: Only change values noted as editable! Changing anything else will not work!");
 
 	pugi::xml_node menuBaseNode = MenuOptionsTree.append_child(xmlTagConstants::codeMenuTag.c_str());
-	pugi::xml_attribute menuNameAttr = menuBaseNode.append_attribute(xmlTagConstants::nameTag.c_str());
-	menuNameAttr.set_value(cmnuFileName.c_str());
-
-	pugi::xml_node buildBaseFolderNode = menuBaseNode.append_child(xmlTagConstants::buildBaseFolderTag.c_str());
-	buildBaseFolderNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(MAIN_FOLDER.c_str());
-	buildBaseFolderNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
-
-	commentNode = menuBaseNode.append_child(pugi::node_comment);
-	commentNode.set_value("0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+, 4: P+EX 1.0, 5: P+EX 1.2");
-	pugi::xml_node characterListVersionNode = menuBaseNode.append_child(xmlTagConstants::characterListVerTag.c_str());
-	characterListVersionNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(characterListVersion).c_str());
-	characterListVersionNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
-
-	pugi::xml_node cmnuPathNode = menuBaseNode.append_child(xmlTagConstants::cmnuPathTag.c_str());
-	cmnuPathNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value((cmnuBuildLocationDirectory + cmnuFileName).c_str());
-	//cmnuPathNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+	pugi::xml_attribute menuPathAttr = menuBaseNode.append_attribute(xmlTagConstants::cmnuPathTag.c_str());
+	menuPathAttr.set_value(getCMNUAbsolutePath().c_str());
 
 	std::vector<Page*> Pages{ &mainPageIn };
 	recursivelyFindPages(mainPageIn, Pages);
