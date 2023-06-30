@@ -6,14 +6,18 @@
 #if BUILD_TYPE == PROJECT_PLUS // If the program is configured by default for P+ builds...
 	#if PROJECT_PLUS_EX_BUILD // ... and this is a P+EX build... 
 		unsigned long characterListVersion = characterListVersions::clv_PPEX_WALUIGI; // ... we'll default to the current version's character list,
-		string MAIN_FOLDER = "P+EX/./."; // and use the "P+EX" base directory.
+		string MAIN_FOLDER = "P+EX/./."; // use the "P+EX" base directory,
+		std::string MENU_NAME = "Project+ EX Code Menu"; // and use the P+EX menu name.
+
 	#else // Otherwise...
 		unsigned long characterListVersion = characterListVersions::clv_PPLUS; // ... we'll use the regular P+ Character List,
-		string MAIN_FOLDER = "Project+"; // and use the "Project+" directory.
+		string MAIN_FOLDER = "Project+"; // use the "Project+" directory,
+		std::string MENU_NAME = "Project+ Code Menu"; // and use the P+ menu name.
 	#endif
 #else // If it's not for P+ builds...
 	unsigned long characterListVersion = characterListVersions::clv_PROJECTM; // ... then we'll default to the Project M character list,
-	string MAIN_FOLDER = "LegacyTE"; // and use the LegacyTE directory (this can be changed, this is just what it was originally).)
+	string MAIN_FOLDER = "LegacyTE"; // use the LegacyTE directory (this can be changed, this is just what it was originally),
+	std::string MENU_NAME = "Legacy TE 2.5 Code Menu"; // and use the LTE menu name.
 #endif
 
 const std::array<std::string, characterListVersions::__clv_Count> characterListVersionNames = 
@@ -39,6 +43,8 @@ bool setMAIN_FOLDER(std::string mainFolderIn)
 
 	return result;
 }
+
+bool USE_MENU_NAME_NETPLAY_SUFFIX = 1;
 
 fstream WPtr;
 std::vector<ledger::codeLedgerEntry> codeLedger = {};

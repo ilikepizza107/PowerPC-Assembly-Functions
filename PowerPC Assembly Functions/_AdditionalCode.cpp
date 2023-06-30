@@ -250,11 +250,14 @@ namespace lava
 		const std::string menuConfigTag = "codeMenuConfig";
 		const std::string disabledTag = "disabled";
 		const std::string nameTag = "name";
+		const std::string textTag = "text";
 		const std::string filenameTag = "filename";
 
 		// Menu Properties
 		const std::string menuPropsTag = "menuProperties";
 		const std::string baseFolderTag = "buildBaseFolder";
+		const std::string menuTitleTag = "menuTitle";
+		const std::string disableNetplaySuffixTag = "disableNetplaySuffix";
 
 		// EX Characters
 		const std::string characterDeclsTag = "characterDeclarations";
@@ -541,7 +544,32 @@ namespace lava
 								{
 									logOutput << "[WARNING] Invalid Folder specified, using default value (\"" << MAIN_FOLDER << "\")!\n";
 								}
-								logOutput << "\n";
+							}
+
+							// Check if a menu title declaration node exists in the properties block.
+							foundNode = declNodeItr->child(configXMLConstants::menuTitleTag.c_str());
+							if (foundNode)
+							{
+								// If one was actually found...
+								logOutput << "Menu Title argument detected, applying settings...\n";
+								bufferStr = foundNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
+								// ... use the value to overwrite MENU_NAME if it isn't empty.
+								if (!bufferStr.empty())
+								{
+									MENU_NAME = bufferStr;
+									logOutput << "[SUCCESS] Menu title is now \"" << MENU_NAME << "\"!\n";
+								}
+								else
+								{
+									logOutput << "[WARNING] Specified title was empty, using default title (\"" << MENU_NAME << "\")!\n";
+								}
+
+								// Apply netplay suffix disable setting!
+								USE_MENU_NAME_NETPLAY_SUFFIX = !foundNode.attribute(configXMLConstants::disableNetplaySuffixTag.c_str()).as_bool(0);
+								if (!USE_MENU_NAME_NETPLAY_SUFFIX)
+								{
+									logOutput << "[NOTE] Menu title netplay suffix disabled!\n";
+								}
 							}
 						}
 

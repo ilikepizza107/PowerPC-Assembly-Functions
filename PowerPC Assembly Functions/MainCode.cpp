@@ -196,8 +196,6 @@ int main(int argc, char** argv)
 			logOutput << "Note: Eon's Debug Flag is ON!\n";
 		}
 
-		logOutput << "\n";
-
 		// Parse and apply any changes from the Menu Config File
 		lava::parseAndApplyConfigXML(menuConfigXMLFileName, logOutput);
 
@@ -305,7 +303,7 @@ int main(int argc, char** argv)
 			lava::ppc::summarizeInstructionDictionary(outputFolder + "ASMDictionary.txt");
 		}
 		// Handle ASM output.
-		logOutput << "Writing ASM file... ";
+		logOutput << "\nWriting ASM file... ";
 		if (MakeASM(OutputTextPath, asmOutputFilePath))
 		{
 			logOutput << "Success!\n";
