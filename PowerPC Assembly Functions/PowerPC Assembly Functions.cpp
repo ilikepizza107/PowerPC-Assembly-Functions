@@ -44,7 +44,7 @@ bool setMAIN_FOLDER(std::string mainFolderIn)
 	return result;
 }
 
-bool USE_MENU_NAME_NETPLAY_SUFFIX = 1;
+bool CUSTOM_NAME_SUPPLIED = 0;
 
 fstream WPtr;
 std::vector<ledger::codeLedgerEntry> codeLedger = {};

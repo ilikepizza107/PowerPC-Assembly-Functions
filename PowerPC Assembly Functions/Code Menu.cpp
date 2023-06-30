@@ -282,8 +282,9 @@ unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
 std::vector<std::string> incomingMenuComments{};
 bool deleteControlsComments = false;
 
-const std::string outputFolder = "./Code_Menu_Output/";
 const std::string menuConfigXMLFileName = "EX_Config.xml";
+const std::string netMenuConfigXMLFileName = "Net-" + menuConfigXMLFileName;
+const std::string outputFolder = "./Code_Menu_Output/";
 const std::string symbolMapInputFileName = "symbols.map";
 const std::string buildFolder = ".././";
 const std::string GCTRMExePath = buildFolder + "GCTRealMate.exe";
@@ -863,7 +864,8 @@ void CodeMenu()
 
 	//main page
 	vector<Line*> MainLines;
-	MainLines.push_back(new Comment(MENU_NAME + ((BUILD_NETPLAY_FILES) ? " (Netplay)" : ""), & MENU_TITLE_CHECK_LOCATION));
+	// Writes the Menu's Title, appending the netplay suffix only if the config file.
+	MainLines.push_back(new Comment(MENU_NAME + ((!CUSTOM_NAME_SUPPLIED && BUILD_NETPLAY_FILES) ? " (Netplay)" : ""), &MENU_TITLE_CHECK_LOCATION));
 	if (!deleteControlsComments)
 	{
 		MainLines.push_back(new Comment("Green = Comments | Blue = Changed"));

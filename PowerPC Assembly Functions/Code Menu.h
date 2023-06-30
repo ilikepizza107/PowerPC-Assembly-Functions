@@ -289,6 +289,7 @@ extern bool deleteControlsComments;
 // Logging and Input Constants
 extern const std::string outputFolder;
 extern const std::string menuConfigXMLFileName;
+extern const std::string netMenuConfigXMLFileName;
 extern const std::string symbolMapInputFileName;
 extern const std::string changelogFileName;
 extern const std::string optionsFilename;

@@ -259,7 +259,6 @@ namespace lava
 		const std::string menuPropsTag = "menuProperties";
 		const std::string baseFolderTag = "buildBaseFolder";
 		const std::string menuTitleTag = "menuTitle";
-		const std::string disableNetplaySuffixTag = "disableNetplaySuffix";
 		const std::string menuCommentsTag = "menuComments";
 		const std::string commentTag = "comment";
 		const std::string deleteOrigCommentsTag = "deleteControlsComments";
@@ -654,7 +653,7 @@ namespace lava
 			if (declNodeItr->name() == configXMLConstants::menuPropsTag)
 			{
 				// ... apply the contained values.
-				logOutput << "\nApplying Menu Properties from \"" << menuConfigXMLFileName << "\"...\n";
+				logOutput << "\nApplying Menu Properties from \"" << configFilePath << "\"...\n";
 
 				// Used for pulling values from potential nodes!
 				pugi::xml_node foundNode{};
@@ -689,18 +688,12 @@ namespace lava
 					if (!bufferStr.empty())
 					{
 						MENU_NAME = bufferStr;
+						CUSTOM_NAME_SUPPLIED = 1;
 						logOutput << "[SUCCESS] Menu title is now \"" << MENU_NAME << "\"!\n";
 					}
 					else
 					{
 						logOutput << "[WARNING] Specified title was empty, using default title (\"" << MENU_NAME << "\")!\n";
-					}
-
-					// Apply netplay suffix disable setting!
-					USE_MENU_NAME_NETPLAY_SUFFIX = !foundNode.attribute(configXMLConstants::disableNetplaySuffixTag.c_str()).as_bool(0);
-					if (!USE_MENU_NAME_NETPLAY_SUFFIX)
-					{
-						logOutput << "[NOTE] Menu title netplay suffix disabled!\n";
 					}
 				}
 
@@ -734,7 +727,7 @@ namespace lava
 			if (COLLECT_EXTERNAL_EX_CHARACTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::characterDeclsTag)
 			{
 				// ... pull them from the XML and apply the changes to the menu lists.
-				logOutput << "\nAdding Characters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+				logOutput << "\nAdding Characters to Code Menu from \"" << configFilePath << "\"...\n";
 
 				// Check if a character list version argument was given...
 				unsigned long requestedCharListVersion = declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_uint(ULONG_MAX);
@@ -767,7 +760,7 @@ namespace lava
 			// If we're set to collect EX Rosters...
 			else if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::roseterDeclsTag)
 			{
-				logOutput << "\nAdding Rosters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+				logOutput << "\nAdding Rosters to Code Menu from \"" << configFilePath << "\"...\n";
 
 				// Collect roster entries from the XML, then add them to the menu.
 				std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(declNodeItr);
@@ -783,7 +776,7 @@ namespace lava
 			// If we're set to collect Themes...
 			else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::themeDeclsTag)
 			{
-				logOutput << "\nAdding Themes to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+				logOutput << "\nAdding Themes to Code Menu from \"" << configFilePath << "\"...\n";
 				
 				// Collect theme entries from the XML, then add them to the menu.
 				std::vector<menuTheme> tempThemeList = collectThemesFromXML(declNodeItr);

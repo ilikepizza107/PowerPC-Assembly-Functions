@@ -76,7 +76,7 @@ const vector<float> DEFAULT_CAMERA_MATRIX = { 1,0,0,0, 0,1,0,0, 0,0,1,-64 };
 extern string MAIN_FOLDER;
 bool setMAIN_FOLDER(std::string mainFolderIn);
 
-extern bool USE_MENU_NAME_NETPLAY_SUFFIX;
+extern bool CUSTOM_NAME_SUPPLIED;
 extern std::string MENU_NAME;
 
 ///addresses start

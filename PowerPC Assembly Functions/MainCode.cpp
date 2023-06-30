@@ -174,7 +174,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			logOutput << " (Console)";
+			logOutput << " (Offline)";
 		}
 		logOutput << "\n";
 		if (DOLPHIN_BUILD == true)
@@ -196,10 +196,23 @@ int main(int argc, char** argv)
 			logOutput << "Note: Eon's Debug Flag is ON!\n";
 		}
 
-		// Parse and apply any changes from the Menu Config File
-		lava::parseAndApplyConfigXML(menuConfigXMLFileName, logOutput);
+		// If we're building in netplay mode, we'll try to parse using the netplay-specific config file.
+		bool parsedConfigXML = (BUILD_NETPLAY_FILES && lava::parseAndApplyConfigXML(netMenuConfigXMLFileName, logOutput));
+		// If we don't parse the netplay config (either because we're building the offline menu or cuz it didn't exist)...
+		if (!parsedConfigXML)
+		{
+			// try to parse the offline config file.
+			parsedConfigXML = lava::parseAndApplyConfigXML(menuConfigXMLFileName, logOutput);
+		}
+		// And if we couldn't parse that either...
+		if (!parsedConfigXML)
+		{
+			logOutput.write("[WARNING] Failed to parse config XML! Proceeding with default settings.\n", ULONG_MAX, lava::outputSplitter::sOS_CERR);
+		}
 
 		CodeStart(OutputTextPath);
+		logOutput << "\n";
+
 		//place all ASM code here
 
 		//ReplayFix();
