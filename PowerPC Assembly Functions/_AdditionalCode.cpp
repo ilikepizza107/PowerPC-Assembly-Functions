@@ -243,7 +243,9 @@ namespace lava
 	}
 
 
-	// Menu Config Parsing and Constants
+	// ==================== Menu Config Parsing and Constants ====================
+
+	// Config XML Parsing Constants
 	namespace configXMLConstants
 	{
 		// General
@@ -282,10 +284,8 @@ namespace lava
 		const std::string slotColorDeclsTag = "slotColorDeclarations";
 		const std::string slotColorTag = "slotColor";
 	}
-	bool declNodeIsDisabled(const pugi::xml_node_iterator& declNodeItr)
-	{
-		return declNodeItr->attribute(configXMLConstants::disabledTag.c_str()).as_bool() == 1;
-	}
+
+	// EX Character Handling
 	std::vector<std::pair<std::string, u16>> collectEXCharactersFromPlaintext(std::istream& streamIn)
 	{
 		std::vector<std::pair<std::string, u16>> result{};
@@ -371,6 +371,53 @@ namespace lava
 
 		return result;
 	}
+	void addCollectedEXCharactersToMenuLists(const std::vector<std::pair<std::string, u16>>& nameIDPairs, lava::outputSplitter& logOutput)
+	{
+		// If there are entries to include:
+		if (nameIDPairs.size())
+		{
+			// Builds a map from the predefined character and character ID lists.
+			// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
+			std::map<std::string, u16> zippedIDMap;
+			zipVectorsToMap(CHARACTER_LIST, CHARACTER_ID_LIST, zippedIDMap);
+
+			for (int i = 0; i < nameIDPairs.size(); i++)
+			{
+				const std::pair<std::string, u16>* currPair = &nameIDPairs[i];
+				if (currPair->second != SHRT_MAX)
+				{
+					auto itr = zippedIDMap.insert(*currPair);
+					// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
+					if (itr.second)
+					{
+						logOutput << "[ADDED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+					}
+					// Otherwise, announce what was changed.
+					else if (itr.first != zippedIDMap.end())
+					{
+						itr.first->second = currPair->second;
+						logOutput << "[CHANGED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
+					}
+				}
+				else
+				{
+					logOutput.write("[ERROR] Invalid Slot ID specified! The character \"" + currPair->first + "\" will not be added to the Code Menu!\n",
+						ULONG_MAX, lava::outputSplitter::sOS_CERR);
+				}
+			}
+
+			// Write the newly edited list back into the list vectors
+			CHARACTER_LIST.clear();
+			CHARACTER_ID_LIST.clear();
+			unzipMapToVectors(zippedIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
+		}
+		else
+		{
+			logOutput << "[WARNING] EX Character Declaration block parsed, but no valid entries were found!\n";
+		}
+	}
+
+	// EX Roster Handling
 	std::vector<std::pair<std::string, std::string>> collectEXRostersFromPlaintext(std::istream& streamIn)
 	{
 		std::vector<std::pair<std::string, std::string>> result{};
@@ -454,6 +501,47 @@ namespace lava
 
 		return result;
 	}
+	void addCollectedEXRostersToMenuLists(const std::vector<std::pair<std::string, std::string>>& tempRosterList, lava::outputSplitter& logOutput)
+	{
+		// If we actually retrieved any valid rosters from the file, process them!
+		if (!tempRosterList.empty())
+		{
+			// For each newly collected roster...
+			for (int i = 0; i < tempRosterList.size(); i++)
+			{
+				const std::pair<std::string, std::string>* currPair = &tempRosterList[i];
+
+				// ... check to see if a roster of the same name already exists in our lists.
+				auto itr = std::find(ROSTER_LIST.begin(), ROSTER_LIST.end(), currPair->first);
+
+				// If one by that name doesn't already exist...
+				if (itr == ROSTER_LIST.end())
+				{
+					// Add it to our list...
+					ROSTER_LIST.push_back(currPair->first);
+					ROSTER_FILENAME_LIST.push_back(currPair->second);
+					// ... and announce that a roster has been successfully collected.
+					logOutput << "[ADDED]";
+				}
+				// Otherwise, if one by that name *does* already exist...
+				else
+				{
+					// ... overwrite the roster currently associated with that name...
+					ROSTER_FILENAME_LIST[itr - ROSTER_LIST.begin()] = currPair->second;
+					// ... and announce that the roster has been changed.
+					logOutput << "[CHANGED]";
+				}
+				logOutput << "\"" << currPair->first << "\" (Filename: " << currPair->second << ")\n";
+			}
+		}
+		// Otherwise, note that nothing was found.
+		else
+		{
+			logOutput << "[WARNING] Roster Declaration block parsed, but no valid entries were found!\n";
+		}
+	}
+
+	// Theme Handling
 	std::vector<menuTheme> collectThemesFromXML(const pugi::xml_node_iterator& themeDeclNodeItr)
 	{
 		std::vector<menuTheme> result{};
@@ -497,296 +585,228 @@ namespace lava
 
 		return result;
 	}
+	void addCollectedThemesToMenuLists(const std::vector<menuTheme>& tempThemeList, lava::outputSplitter& logOutput)
+	{
+		// If we actually retrieved any valid themes from the file, process them!
+		if (!tempThemeList.empty())
+		{
+			// For each newly collected theme...
+			for (int i = 0; i < tempThemeList.size(); i++)
+			{
+				const menuTheme* currTheme = &tempThemeList[i];
+
+				// ... check to see if a theme of the same name already exists in our map.
+				auto itr = std::find(THEME_LIST.begin(), THEME_LIST.end(), currTheme->name);
+
+				// If one by that name doesn't already exist...
+				if (itr == THEME_LIST.end())
+				{
+					// Add it to our list...
+					THEME_LIST.push_back(currTheme->name);
+					THEME_SPEC_LIST.push_back(*currTheme);
+					// ... and announce that a theme has been successfully collected.
+					logOutput << "[ADDED]";
+				}
+				// Otherwise, if a theme by that name *does* already exist...
+				else
+				{
+					// ... overwrite the theme currently associated with that name...
+					THEME_SPEC_LIST[itr - THEME_LIST.begin()] = *currTheme;
+					// ... and announce that a theme has been changed.
+					logOutput << "[CHANGED]";
+				}
+				// Describe the processed theme.
+				logOutput << " \"" << currTheme->name << "\"\n";
+			}
+		}
+		// Otherwise, note that nothing was found.
+		else
+		{
+			logOutput << "[WARNING] Theme Declaration block parsed, but no valid entries were found!\n";
+		}
+	}
+
+	// Core Functions
+	bool declNodeIsDisabled(const pugi::xml_node_iterator& declNodeItr)
+	{
+		return declNodeItr->attribute(configXMLConstants::disabledTag.c_str()).as_bool() == 1;
+	}
 	bool parseAndApplyConfigXML(std::string configFilePath, lava::outputSplitter& logOutput)
 	{
-		bool result = 0;
+		// If the config file doesn't exist, we can exit.
+		if (!std::filesystem::is_regular_file(configFilePath)) return 0;
 
+		// Otherwise, create our configDoc object and attempt to populate it from the file...
 		pugi::xml_document configDoc;
-		if (std::filesystem::is_regular_file(configFilePath))
+		pugi::xml_parse_result res = configDoc.load_file(configFilePath.c_str());
+		// ... and return 0 if the document doesn't successfully parse.
+		if (res.status != pugi::xml_parse_status::status_ok) return 0;
+
+		// Attempt to grab the config root node from the document...
+		pugi::xml_node configRoot = configDoc.child(configXMLConstants::menuConfigTag.c_str());
+		// ... and return 0 if we fail to find one.
+		if (!configRoot) return 0;
+
+		// If we've successfully reached our config root node, we can begin iterating through its child nodes!
+		for (pugi::xml_node_iterator declNodeItr = configRoot.begin(); declNodeItr != configRoot.end(); declNodeItr++)
 		{
-			pugi::xml_parse_result res = configDoc.load_file(configFilePath.c_str());
-			if (res.status == pugi::xml_parse_status::status_ok || res.status == pugi::xml_parse_status::status_no_document_element)
+			// If a menu properties block exists...
+			if (declNodeItr->name() == configXMLConstants::menuPropsTag)
 			{
-				pugi::xml_node_iterator configRoot = configDoc.end();
-				for (pugi::xml_node_iterator topLevelNodeItr = configDoc.begin(); configRoot == configDoc.end() && topLevelNodeItr != configDoc.end(); topLevelNodeItr++)
+				// ... apply the contained values.
+				logOutput << "\nApplying Menu Properties from \"" << menuConfigXMLFileName << "\"...\n";
+
+				// Used for pulling values from potential nodes!
+				pugi::xml_node foundNode{};
+				std::string bufferStr("");
+
+				// Check if a base folder declaration node exists in the properties block.
+				foundNode = declNodeItr->child(configXMLConstants::baseFolderTag.c_str());
+				if (foundNode)
 				{
-					if (topLevelNodeItr->name() == configXMLConstants::menuConfigTag)
+					// If one was actually found...
+					logOutput << "Build Base Folder argument detected, applying settings...\n";
+					bufferStr = foundNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+					// ... attempt to use the retrieved value to set MAIN_FOLDER.
+					if (setMAIN_FOLDER(bufferStr))
 					{
-						configRoot = topLevelNodeItr;
+						logOutput << "[SUCCESS] Build Base Folder is now \"" << MAIN_FOLDER << "\"!\n";
+					}
+					else
+					{
+						logOutput << "[WARNING] Invalid Folder specified, using default value (\"" << MAIN_FOLDER << "\")!\n";
 					}
 				}
 
-				if (configRoot != configDoc.end())
+				// Check if a menu title declaration node exists in the properties block.
+				foundNode = declNodeItr->child(configXMLConstants::menuTitleTag.c_str());
+				if (foundNode)
 				{
-					result = 1;
-					for (pugi::xml_node_iterator declNodeItr = configRoot->begin(); declNodeItr != configRoot->end(); declNodeItr++)
+					// If one was actually found...
+					logOutput << "Menu Title argument detected, applying settings...\n";
+					bufferStr = foundNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
+					// ... use the value to overwrite MENU_NAME if it isn't empty.
+					if (!bufferStr.empty())
 					{
-						// If a menu properties block exists...
-						if (declNodeItr->name() == configXMLConstants::menuPropsTag)
+						MENU_NAME = bufferStr;
+						logOutput << "[SUCCESS] Menu title is now \"" << MENU_NAME << "\"!\n";
+					}
+					else
+					{
+						logOutput << "[WARNING] Specified title was empty, using default title (\"" << MENU_NAME << "\")!\n";
+					}
+
+					// Apply netplay suffix disable setting!
+					USE_MENU_NAME_NETPLAY_SUFFIX = !foundNode.attribute(configXMLConstants::disableNetplaySuffixTag.c_str()).as_bool(0);
+					if (!USE_MENU_NAME_NETPLAY_SUFFIX)
+					{
+						logOutput << "[NOTE] Menu title netplay suffix disabled!\n";
+					}
+				}
+
+				// Check if a menu comments declaration block exists in the properties block.
+				foundNode = declNodeItr->child(configXMLConstants::menuCommentsTag.c_str());
+				if (foundNode)
+				{
+					// If one was actually found...
+					logOutput << "Menu header comments block detected, collecting comment strings...\n";
+					for (pugi::xml_node_iterator commentItr = foundNode.begin(); commentItr != foundNode.end(); commentItr++)
+					{
+						if (commentItr->name() == configXMLConstants::commentTag)
 						{
-							// ... apply the contained values.
-							logOutput << "\nApplying Menu Properties from \"" << menuConfigXMLFileName << "\"...\n";
-
-							// Used for pulling values from potential nodes! .
-							pugi::xml_node foundNode{};
-							std::string bufferStr("");
-
-							// Check if a base folder declaration node exists in the properties block.
-							foundNode = declNodeItr->child(configXMLConstants::baseFolderTag.c_str());
-							if (foundNode)
+							pugi::xml_attribute tempAttr = commentItr->attribute(configXMLConstants::textTag.c_str());
+							if (tempAttr)
 							{
-								// If one was actually found...
-								logOutput << "Build Base Folder argument detected, applying settings...\n";
-								bufferStr = foundNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
-								// ... attempt to use the retrieved value to set MAIN_FOLDER.
-								if (setMAIN_FOLDER(bufferStr))
-								{
-									logOutput << "[SUCCESS] Build Base Folder is now \"" << MAIN_FOLDER << "\"!\n";
-								}
-								else
-								{
-									logOutput << "[WARNING] Invalid Folder specified, using default value (\"" << MAIN_FOLDER << "\")!\n";
-								}
-							}
-
-							// Check if a menu title declaration node exists in the properties block.
-							foundNode = declNodeItr->child(configXMLConstants::menuTitleTag.c_str());
-							if (foundNode)
-							{
-								// If one was actually found...
-								logOutput << "Menu Title argument detected, applying settings...\n";
-								bufferStr = foundNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
-								// ... use the value to overwrite MENU_NAME if it isn't empty.
-								if (!bufferStr.empty())
-								{
-									MENU_NAME = bufferStr;
-									logOutput << "[SUCCESS] Menu title is now \"" << MENU_NAME << "\"!\n";
-								}
-								else
-								{
-									logOutput << "[WARNING] Specified title was empty, using default title (\"" << MENU_NAME << "\")!\n";
-								}
-
-								// Apply netplay suffix disable setting!
-								USE_MENU_NAME_NETPLAY_SUFFIX = !foundNode.attribute(configXMLConstants::disableNetplaySuffixTag.c_str()).as_bool(0);
-								if (!USE_MENU_NAME_NETPLAY_SUFFIX)
-								{
-									logOutput << "[NOTE] Menu title netplay suffix disabled!\n";
-								}
-							}
-
-							// Check if a menu comments declaration block exists in the properties block.
-							foundNode = declNodeItr->child(configXMLConstants::menuCommentsTag.c_str());
-							if (foundNode)
-							{
-								// If one was actually found...
-								logOutput << "Menu header comments block detected, collecting comment strings...\n";
-								for (pugi::xml_node_iterator commentItr = foundNode.begin(); commentItr != foundNode.end(); commentItr++)
-								{
-									if (commentItr->name() == configXMLConstants::commentTag)
-									{
-										pugi::xml_attribute tempAttr = commentItr->attribute(configXMLConstants::textTag.c_str());
-										if (tempAttr)
-										{
-											incomingMenuComments.push_back(tempAttr.as_string());
-											logOutput << "[ADDED] \"" << tempAttr.as_string() << "\"\n";
-										}
-									}
-								}
-								deleteControlsComments = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
-								if (deleteControlsComments)
-								{
-									logOutput << "[NOTE] Menu Controls comment block will be omitted!\n";
-								}
+								incomingMenuComments.push_back(tempAttr.as_string());
+								logOutput << "[ADDED] \"" << tempAttr.as_string() << "\"\n";
 							}
 						}
-
-						// If we're set to collect EX Characters...
-						if (COLLECT_EXTERNAL_EX_CHARACTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::characterDeclsTag)
-						{
-							// ... pull them from the XML and apply the changes to the menu lists.
-							logOutput << "\nAdding Characters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
-
-							// Check if a character list version argument was given...
-							unsigned long requestedCharListVersion = declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_uint(ULONG_MAX);
-							if (requestedCharListVersion != ULONG_MAX)
-							{
-								logOutput << "Base Character List argument detected, applying settings...\n";
-
-								// ... and attempt to apply it if so.
-								if (applyCharacterListVersion(requestedCharListVersion))
-								{
-									logOutput << "[SUCCESS] Base Character list changed to \"" << characterListVersionNames[characterListVersion] << "\"!\n";
-								}
-								else
-								{
-									logOutput << "[WARNING] Invalid list requested! Using \"" << characterListVersionNames[characterListVersion] << "\" list instead!\n";
-								}
-								logOutput << "\n";
-							}
-
-							std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
-							if (nameIDPairs.size())
-							{
-								// Builds a map from the predefined character and character ID lists.
-								// Doing it this way ensures that paired values stay together, and handles sorting automatically when we insert new entries.
-								std::map<std::string, u16> zippedIDMap;
-								zipVectorsToMap(CHARACTER_LIST, CHARACTER_ID_LIST, zippedIDMap);
-
-								for (int i = 0; i < nameIDPairs.size(); i++)
-								{
-									std::pair<std::string, u16>* currPair = &nameIDPairs[i];
-									if (currPair->second != SHRT_MAX)
-									{
-										auto itr = zippedIDMap.insert(*currPair);
-										// If the entry was newly added to the list (ie. not overwriting existing data), announce it.
-										if (itr.second)
-										{
-											logOutput << "[ADDED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-										}
-										// Otherwise, announce what was changed.
-										else if (itr.first != zippedIDMap.end())
-										{
-											itr.first->second = currPair->second;
-											logOutput << "[CHANGED] \"" << itr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(itr.first->second, 2) << ")\n";
-										}
-									}
-									else
-									{
-										logOutput.write("[ERROR] Invalid Slot ID specified! The character \"" + currPair->first + "\" will not be added to the Code Menu!\n",
-											ULONG_MAX, lava::outputSplitter::sOS_CERR);
-									}
-								}
-
-								// Write the newly edited list back into the list vectors
-								CHARACTER_LIST.clear();
-								CHARACTER_ID_LIST.clear();
-								unzipMapToVectors(zippedIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
-							}
-							else
-							{
-								logOutput << "[WARNING] EX Character Declaration block parsed, but no valid entries were found!\n";
-							}
-							//Print the results.
-							logOutput << "\nFinal Character List:\n";
-							for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
-							{
-								logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
-							}
-						}
-						// If we're set to collect EX Rosters...
-						else if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::roseterDeclsTag)
-						{
-							logOutput << "\nAdding Rosters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
-							std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(declNodeItr);
-							// If we actually retrieved any valid rosters from the file, process them!
-							if (!tempRosterList.empty())
-							{
-								// For each newly collected roster...
-								for (int i = 0; i < tempRosterList.size(); i++)
-								{
-									std::pair<std::string, std::string>* currPair = &tempRosterList[i];
-
-									// ... check to see if a roster of the same name already exists in our lists.
-									auto itr = std::find(ROSTER_LIST.begin(), ROSTER_LIST.end(), currPair->first);
-
-									// If one by that name doesn't already exist...
-									if (itr == ROSTER_LIST.end())
-									{
-										// Add it to our list...
-										ROSTER_LIST.push_back(currPair->first);
-										ROSTER_FILENAME_LIST.push_back(currPair->second);
-										// ... and announce that a roster has been successfully collected.
-										logOutput << "[ADDED]";
-									}
-									// Otherwise, if one by that name *does* already exist...
-									else
-									{
-										// ... overwrite the roster currently associated with that name...
-										ROSTER_FILENAME_LIST[itr - ROSTER_LIST.begin()] = currPair->second;
-										// ... and announce that the roster has been changed.
-										logOutput << "[CHANGED]";
-									}
-									logOutput << "\"" << currPair->first << "\" (Filename: " << currPair->second << ")\n";
-								}
-							}
-							// Otherwise, note that nothing was found.
-							else
-							{
-								logOutput << "[WARNING] Roster Declaration block parsed, but no valid entries were found!\n";
-							}
-
-							//Do final roster list summary.
-							logOutput << "\nFinal Roster List:\n";
-							for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
-							{
-								logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
-							}
-						}
-						// If we're set to collect Themes...
-						else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::themeDeclsTag)
-						{
-							logOutput << "\nAdding Themes to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
-							std::vector<menuTheme> tempThemeList = collectThemesFromXML(declNodeItr);
-							// If we actually retrieved any valid themes from the file, process them!
-							if (!tempThemeList.empty())
-							{
-								// For each newly collected theme...
-								for (int i = 0; i < tempThemeList.size(); i++)
-								{
-									menuTheme* currTheme = &tempThemeList[i];
-
-									// ... check to see if a theme of the same name already exists in our map.
-									auto itr = std::find(THEME_LIST.begin(), THEME_LIST.end(), currTheme->name);
-
-									// If one by that name doesn't already exist...
-									if (itr == THEME_LIST.end())
-									{
-										// Add it to our list...
-										THEME_LIST.push_back(currTheme->name);
-										THEME_SPEC_LIST.push_back(*currTheme);
-										// ... and announce that a theme has been successfully collected.
-										logOutput << "[ADDED]";
-									}
-									// Otherwise, if a theme by that name *does* already exist...
-									else
-									{
-										// ... overwrite the theme currently associated with that name...
-										THEME_SPEC_LIST[itr - THEME_LIST.begin()] = *currTheme;
-										// ... and announce that a theme has been changed.
-										logOutput << "[CHANGED]";
-									}
-									// Describe the processed theme.
-									logOutput << " \"" << currTheme->name << "\"\n";
-								}
-							}
-							// Otherwise, note that nothing was found.
-							else
-							{
-								logOutput << "[WARNING] Theme Declaration block parsed, but no valid entries were found!\n";
-							}
-
-							// Do final theme list summary.
-							logOutput << "\nFinal Theme List:\n";
-							for (std::size_t i = 0; i < THEME_LIST.size(); i++)
-							{
-								logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
-								for (std::size_t u = 0; u < THEME_SPEC_LIST[i].prefixes.size(); u++)
-								{
-									logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
-								}
-							}
-						}
-						// If we're set to collect Slot Colors...
-						else if (COLLECT_EXTERNAL_SLOT_COLORS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::slotColorDeclsTag)
-						{
-							
-						}
+					}
+					deleteControlsComments = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
+					if (deleteControlsComments)
+					{
+						logOutput << "[NOTE] Menu Controls comment block will be omitted!\n";
 					}
 				}
 			}
-		}
 
-		return result;
+			// If we're set to collect EX Characters...
+			if (COLLECT_EXTERNAL_EX_CHARACTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::characterDeclsTag)
+			{
+				// ... pull them from the XML and apply the changes to the menu lists.
+				logOutput << "\nAdding Characters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+
+				// Check if a character list version argument was given...
+				unsigned long requestedCharListVersion = declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_uint(ULONG_MAX);
+				if (requestedCharListVersion != ULONG_MAX)
+				{
+					// ... and attempt to apply it if so.
+					logOutput << "Base Character List argument detected, applying settings...\n";
+					if (applyCharacterListVersion(requestedCharListVersion))
+					{
+						logOutput << "[SUCCESS] Base Character list changed to \"" << characterListVersionNames[characterListVersion] << "\"!\n";
+					}
+					else
+					{
+						logOutput << "[WARNING] Invalid list requested! Using \"" << characterListVersionNames[characterListVersion] << "\" list instead!\n";
+					}
+					logOutput << "\n";
+				}
+
+				// Collect character entries from the XML, then add them to the menu.
+				std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
+				addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
+				
+				//Do final character list summary.
+				logOutput << "\nFinal Character List:\n";
+				for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
+				{
+					logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
+				}
+			}
+			// If we're set to collect EX Rosters...
+			else if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::roseterDeclsTag)
+			{
+				logOutput << "\nAdding Rosters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+
+				// Collect roster entries from the XML, then add them to the menu.
+				std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(declNodeItr);
+				addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
+
+				//Do final roster list summary.
+				logOutput << "\nFinal Roster List:\n";
+				for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
+				{
+					logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
+				}
+			}
+			// If we're set to collect Themes...
+			else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::themeDeclsTag)
+			{
+				logOutput << "\nAdding Themes to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+				
+				// Collect theme entries from the XML, then add them to the menu.
+				std::vector<menuTheme> tempThemeList = collectThemesFromXML(declNodeItr);
+				addCollectedThemesToMenuLists(tempThemeList, logOutput);
+
+				// Do final theme list summary.
+				logOutput << "\nFinal Theme List:\n";
+				for (std::size_t i = 0; i < THEME_LIST.size(); i++)
+				{
+					logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
+					for (std::size_t u = 0; u < THEME_SPEC_LIST[i].prefixes.size(); u++)
+					{
+						logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
+					}
+				}
+			}
+			// If we're set to collect Slot Colors...
+			else if (COLLECT_EXTERNAL_SLOT_COLORS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::slotColorDeclsTag)
+			{
+
+			}
+		}
+		
+		return 1;
 	}
 }
