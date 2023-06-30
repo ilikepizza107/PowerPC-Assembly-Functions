@@ -74,6 +74,7 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 const vector<float> DEFAULT_CAMERA_MATRIX = { 1,0,0,0, 0,1,0,0, 0,0,1,-64 };
 
 extern string MAIN_FOLDER;
+bool setMAIN_FOLDER(std::string mainFolderIn);
 
 ///addresses start
 

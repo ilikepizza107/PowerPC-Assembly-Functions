@@ -122,7 +122,6 @@ int main(int argc, char** argv)
 		string OutputTextPath = asmTextOutputFilePath;
 
 		loadMenuOptionsTree(cmnuOptionsOutputFilePath, menuOptionsTree);
-		applyCharacterListSettingFromMenuOptionsTree(menuOptionsTree);
 		buildCharacterIDLists();
 		buildRosterLists();
 		buildThemeLists();
@@ -199,6 +198,7 @@ int main(int argc, char** argv)
 
 		logOutput << "\n";
 
+		// Parse and apply any changes from the Menu Config File
 		lava::parseAndApplyConfigXML(menuConfigXMLFileName, logOutput);
 
 		CodeStart(OutputTextPath);

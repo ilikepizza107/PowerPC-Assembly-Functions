@@ -344,9 +344,6 @@ void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std:
 void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
 bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
 
-void applyCharacterListSettingFromMenuOptionsTree(const pugi::xml_document& xmlDocumentIn);
-bool applyCharacterListSettingFromMenuOptionsTree(std::string xmlPathIn);
-
 void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn);
 bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn);
 

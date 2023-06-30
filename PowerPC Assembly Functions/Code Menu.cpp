@@ -536,74 +536,8 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 	return result;
 }
 
-void applyCharacterListSettingFromMenuOptionsTree(const pugi::xml_document& xmlDocumentIn)
-{
-	bool foundValue = 0;
-	for (pugi::xml_node_iterator menuItr = xmlDocumentIn.begin();
-		!foundValue && menuItr != xmlDocumentIn.end(); menuItr++)
-	{
-		if (menuItr->name() == xmlTagConstants::codeMenuTag)
-		{
-			for (pugi::xml_node_iterator childItr = menuItr->begin();
-				!foundValue && childItr != menuItr->end(); childItr++)
-			{
-				if (childItr->name() == xmlTagConstants::characterListVerTag)
-				{
-					for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-						!foundValue && attrItr != childItr->attributes_end(); attrItr++)
-					{
-						if (attrItr->name() == xmlTagConstants::valueTag)
-						{
-							foundValue = 1;
-							int foundValue = std::clamp(attrItr->as_int(characterListVersion),
-								(int)characterListVersions::clv_vBRAWL, (int)characterListVersions::clv_PPEX_WALUIGI);
-							characterListVersion = foundValue;
-						}
-					}
-				}
-			}
-		}
-	}
-}
-bool applyCharacterListSettingFromMenuOptionsTree(std::string xmlPathIn)
-{
-	bool result = 0;
-
-	pugi::xml_document tempDoc;
-	if (loadMenuOptionsTree(xmlPathIn, tempDoc))
-	{
-		result = 1;
-		applyCharacterListSettingFromMenuOptionsTree(tempDoc);
-	}
-
-	return result;
-}
-
 void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn)
 {
-	for (pugi::xml_node_iterator menuItr = xmlDocumentIn.begin(); menuItr != xmlDocumentIn.end(); menuItr++)
-	{
-		if (menuItr->name() == xmlTagConstants::codeMenuTag)
-		{
-			for (pugi::xml_node_iterator childItr = menuItr->begin(); childItr != menuItr->end(); childItr++)
-			{
-				if (childItr->name() == xmlTagConstants::buildBaseFolderTag)
-				{
-					bool foundValue = 0;
-					for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-						!foundValue && attrItr != childItr->attributes_end(); attrItr++)
-					{
-						if (attrItr->name() == xmlTagConstants::valueTag)
-						{
-							foundValue = 1;
-							MAIN_FOLDER = attrItr->as_string(MAIN_FOLDER);
-						}
-					}
-				}
-			}
-		}
-	}
-
 	std::vector<Page*> Pages{ &mainPageIn };
 	recursivelyFindPages(mainPageIn, Pages);
 

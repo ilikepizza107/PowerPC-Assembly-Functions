@@ -27,6 +27,18 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 	"P+EX (Dark Samus)",
 	"P+EX (Sceptile)",
 };
+bool setMAIN_FOLDER(std::string mainFolderIn)
+{
+	bool result = 0;
+
+	if (mainFolderIn.size() == 0x8)
+	{
+		MAIN_FOLDER = mainFolderIn;
+		result = 1;
+	}
+
+	return result;
+}
 
 fstream WPtr;
 std::vector<ledger::codeLedgerEntry> codeLedger = {};

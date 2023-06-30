@@ -39,15 +39,6 @@ namespace lava
 	void WriteByteVec(std::vector<unsigned char> Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator = 0);
 	void WriteByteVec(std::string Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator = 0);
 
-	// EX Character Functions
-	std::vector<std::pair<std::string, u16>> collectNameSlotIDPairs(std::string exCharInputFilePath, bool& fileOpened);
-
-	// EX Roster Functions
-	std::vector<std::pair<std::string, std::string>> collectedRosterNamePathPairs(std::string exRosterInputFilePath, bool& fileOpened);
-
-	// EX Theme Functions
-	std::vector<menuTheme> collectThemesFromXML(std::string exThemeInputFilePath, bool& fileOpened);
-
 	bool parseAndApplyConfigXML(std::string configFilePath, lava::outputSplitter& logOutput);
 }
 

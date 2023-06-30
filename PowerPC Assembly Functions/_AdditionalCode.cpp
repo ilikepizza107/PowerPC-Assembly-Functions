@@ -252,6 +252,10 @@ namespace lava
 		const std::string nameTag = "name";
 		const std::string filenameTag = "filename";
 
+		// Menu Properties
+		const std::string menuPropsTag = "menuProperties";
+		const std::string baseFolderTag = "buildBaseFolder";
+
 		// EX Characters
 		const std::string characterDeclsTag = "characterDeclarations";
 		const std::string baseCharListTag = "baseListVersion";
@@ -511,11 +515,41 @@ namespace lava
 					result = 1;
 					for (pugi::xml_node_iterator declNodeItr = configRoot->begin(); declNodeItr != configRoot->end(); declNodeItr++)
 					{
+						// If a menu properties block exists...
+						if (declNodeItr->name() == configXMLConstants::menuPropsTag)
+						{
+							// ... apply the contained values.
+							logOutput << "\nApplying Menu Properties from \"" << menuConfigXMLFileName << "\"...\n";
+
+							// Used for pulling values from potential nodes! .
+							pugi::xml_node foundNode{};
+							std::string bufferStr("");
+
+							// Check if a base folder declaration node exists in the properties block.
+							foundNode = declNodeItr->child(configXMLConstants::baseFolderTag.c_str());
+							if (foundNode)
+							{
+								// If one was actually found...
+								logOutput << "Build Base Folder argument detected, applying settings...\n";
+								bufferStr = foundNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+								// ... attempt to use the retrieved value to set MAIN_FOLDER.
+								if (setMAIN_FOLDER(bufferStr))
+								{
+									logOutput << "[SUCCESS] Build Base Folder is now \"" << MAIN_FOLDER << "\"!\n";
+								}
+								else
+								{
+									logOutput << "[WARNING] Invalid Folder specified, using default value (\"" << MAIN_FOLDER << "\")!\n";
+								}
+								logOutput << "\n";
+							}
+						}
+
 						// If we're set to collect EX Characters...
 						if (COLLECT_EXTERNAL_EX_CHARACTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::characterDeclsTag)
 						{
 							// ... pull them from the XML and apply the changes to the menu lists.
-							logOutput << "Adding Characters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+							logOutput << "\nAdding Characters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
 
 							// Check if a character list version argument was given...
 							unsigned long requestedCharListVersion = declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_uint(ULONG_MAX);
@@ -531,7 +565,6 @@ namespace lava
 								else
 								{
 									logOutput << "[WARNING] Invalid list requested! Using \"" << characterListVersionNames[characterListVersion] << "\" list instead!\n";
-
 								}
 								logOutput << "\n";
 							}
@@ -584,13 +617,11 @@ namespace lava
 							{
 								logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
 							}
-
-							logOutput << "\n";
 						}
 						// If we're set to collect EX Rosters...
 						else if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::roseterDeclsTag)
 						{
-							logOutput << "Adding Rosters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+							logOutput << "\nAdding Rosters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
 							std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(declNodeItr);
 							// If we actually retrieved any valid rosters from the file, process them!
 							if (!tempRosterList.empty())
@@ -635,12 +666,11 @@ namespace lava
 							{
 								logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
 							}
-							logOutput << "\n";
 						}
 						// If we're set to collect Themes...
 						else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::themeDeclsTag)
 						{
-							logOutput << "Adding Themes to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+							logOutput << "\nAdding Themes to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
 							std::vector<menuTheme> tempThemeList = collectThemesFromXML(declNodeItr);
 							// If we actually retrieved any valid themes from the file, process them!
 							if (!tempThemeList.empty())
@@ -690,7 +720,6 @@ namespace lava
 									logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
 								}
 							}
-							logOutput << "\n";
 						}
 						// If we're set to collect Slot Colors...
 						else if (COLLECT_EXTERNAL_SLOT_COLORS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::slotColorDeclsTag)
