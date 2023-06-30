@@ -258,6 +258,9 @@ namespace lava
 		const std::string baseFolderTag = "buildBaseFolder";
 		const std::string menuTitleTag = "menuTitle";
 		const std::string disableNetplaySuffixTag = "disableNetplaySuffix";
+		const std::string menuCommentsTag = "menuComments";
+		const std::string commentTag = "comment";
+		const std::string deleteOrigCommentsTag = "deleteControlsComments";
 
 		// EX Characters
 		const std::string characterDeclsTag = "characterDeclarations";
@@ -569,6 +572,31 @@ namespace lava
 								if (!USE_MENU_NAME_NETPLAY_SUFFIX)
 								{
 									logOutput << "[NOTE] Menu title netplay suffix disabled!\n";
+								}
+							}
+
+							// Check if a menu comments declaration block exists in the properties block.
+							foundNode = declNodeItr->child(configXMLConstants::menuCommentsTag.c_str());
+							if (foundNode)
+							{
+								// If one was actually found...
+								logOutput << "Menu header comments block detected, collecting comment strings...\n";
+								for (pugi::xml_node_iterator commentItr = foundNode.begin(); commentItr != foundNode.end(); commentItr++)
+								{
+									if (commentItr->name() == configXMLConstants::commentTag)
+									{
+										pugi::xml_attribute tempAttr = commentItr->attribute(configXMLConstants::textTag.c_str());
+										if (tempAttr)
+										{
+											incomingMenuComments.push_back(tempAttr.as_string());
+											logOutput << "[ADDED] \"" << tempAttr.as_string() << "\"\n";
+										}
+									}
+								}
+								deleteControlsComments = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
+								if (deleteControlsComments)
+								{
+									logOutput << "[NOTE] Menu Controls comment block will be omitted!\n";
 								}
 							}
 						}

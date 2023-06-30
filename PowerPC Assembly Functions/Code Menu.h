@@ -283,8 +283,9 @@ extern unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT;
 static fstream MenuFile;
 void initMenuFileStream();
 
-
-
+// Menu Header Comments Variables
+extern std::vector<std::string> incomingMenuComments;
+extern bool deleteControlsComments;
 // Logging and Input Constants
 extern const std::string outputFolder;
 extern const std::string menuConfigXMLFileName;

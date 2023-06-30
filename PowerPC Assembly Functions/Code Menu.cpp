@@ -278,8 +278,9 @@ std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{}
 
 unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
 
-
-
+// Menu Header Comments Variables
+std::vector<std::string> incomingMenuComments{};
+bool deleteControlsComments = false;
 
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string menuConfigXMLFileName = "EX_Config.xml";
@@ -863,11 +864,19 @@ void CodeMenu()
 	//main page
 	vector<Line*> MainLines;
 	MainLines.push_back(new Comment(MENU_NAME + ((BUILD_NETPLAY_FILES) ? " (Netplay)" : ""), & MENU_TITLE_CHECK_LOCATION));
-	MainLines.push_back(new Comment("Green = Comments | Blue = Changed"));
-	MainLines.push_back(new Comment("A = Enter Submenu | B = Back/Exit"));
-	MainLines.push_back(new Comment("X = Reset Selection | Y = Reset Page"));
-	MainLines.push_back(new Comment("Hold Z = Scroll Faster"));
-	MainLines.push_back(new Comment(""));
+	if (!deleteControlsComments)
+	{
+		MainLines.push_back(new Comment("Green = Comments | Blue = Changed"));
+		MainLines.push_back(new Comment("A = Enter Submenu | B = Back/Exit"));
+		MainLines.push_back(new Comment("X = Reset Selection | Y = Reset Page"));
+		MainLines.push_back(new Comment("Hold Z = Scroll Faster"));
+		MainLines.push_back(new Comment(""));
+	}
+	for (std::size_t i = 0; i < incomingMenuComments.size(); i++)
+	{
+		MainLines.push_back(new Comment(incomingMenuComments[i]));
+	}
+	
 
 #if EON_DEBUG_BUILD
 	MainLines.push_back(&TestPage.CalledFromLine);
