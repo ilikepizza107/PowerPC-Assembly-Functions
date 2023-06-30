@@ -195,6 +195,7 @@ bool zipVectorsToMap(const std::vector<T1>& vec1, const std::vector<T2>& vec2, s
 	if (vec1.size() == vec2.size())
 	{
 		result = 1;
+		destinationMap.clear();
 		for (std::size_t i = 0; i < vec1.size(); i++)
 		{
 			auto res = destinationMap.emplace(vec1[i], vec2[i]);
@@ -227,6 +228,7 @@ void unzipMapToVectors(const std::map<T1, T2>& sourceMap, std::vector<T1>& vec1,
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
 void buildCharacterIDLists();
+bool applyCharacterListVersion(unsigned long targetVersion);
 
 // Declares existence of the two main roster lists, populated by the function below.
 // If COLLECT_EXTERNAL_ROSTERS (in "PowerPC Assembly Functions.h") is set to true,

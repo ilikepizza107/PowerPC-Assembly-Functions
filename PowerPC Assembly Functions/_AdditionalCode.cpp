@@ -254,6 +254,7 @@ namespace lava
 
 		// EX Characters
 		const std::string characterDeclsTag = "characterDeclarations";
+		const std::string baseCharListTag = "baseListVersion";
 		const std::string characterTag = "character";
 		const std::string slotIDTag = "slotID";
 
@@ -515,6 +516,26 @@ namespace lava
 						{
 							// ... pull them from the XML and apply the changes to the menu lists.
 							logOutput << "Adding Characters to Code Menu from \"" << menuConfigXMLFileName << "\"...\n";
+
+							// Check if a character list version argument was given...
+							unsigned long requestedCharListVersion = declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_uint(ULONG_MAX);
+							if (requestedCharListVersion != ULONG_MAX)
+							{
+								logOutput << "Base Character List argument detected, applying settings...\n";
+
+								// ... and attempt to apply it if so.
+								if (applyCharacterListVersion(requestedCharListVersion))
+								{
+									logOutput << "[SUCCESS] Base Character list changed to \"" << characterListVersionNames[characterListVersion] << "\"!\n";
+								}
+								else
+								{
+									logOutput << "[WARNING] Invalid list requested! Using \"" << characterListVersionNames[characterListVersion] << "\" list instead!\n";
+
+								}
+								logOutput << "\n";
+							}
+
 							std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
 							if (nameIDPairs.size())
 							{

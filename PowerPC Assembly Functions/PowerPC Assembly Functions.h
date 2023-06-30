@@ -43,7 +43,8 @@ enum characterListVersions
 	clv_PPEX_SCEPTILE,
 	__clv_Count
 };
-extern long characterListVersion;
+extern unsigned long characterListVersion;
+extern const std::array<std::string, characterListVersions::__clv_Count> characterListVersionNames;
 // P+EX Configuration Macros
 #define PROJECT_PLUS_EX_BUILD (true && (BUILD_TYPE == PROJECT_PLUS))
 // Controls whether or not externally defined character, rosters, and themes are loaded into their respective lists.

@@ -202,6 +202,23 @@ void buildCharacterIDLists()
 
 	unzipMapToVectors(characterNameToIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
 }
+bool applyCharacterListVersion(unsigned long targetVersion)
+{
+	bool result = 0;
+
+	// If the targeted version is valid...
+	if (targetVersion < characterListVersions::__clv_Count)
+	{
+		// ... replace the recorded list version...
+		characterListVersion = targetVersion;
+		// ... and rebuild the character lists.
+		buildCharacterIDLists();
+		result = 1;
+	}
+
+	return result;
+}
+
 
 vector<string> ROSTER_LIST{};
 vector<string> ROSTER_FILENAME_LIST{};

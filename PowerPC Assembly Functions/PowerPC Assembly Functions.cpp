@@ -5,16 +5,28 @@
 
 #if BUILD_TYPE == PROJECT_PLUS // If the program is configured by default for P+ builds...
 	#if PROJECT_PLUS_EX_BUILD // ... and this is a P+EX build... 
-		long characterListVersion = characterListVersions::clv_PPEX_WALUIGI; // ... we'll default to the current version's character list,
+		unsigned long characterListVersion = characterListVersions::clv_PPEX_WALUIGI; // ... we'll default to the current version's character list,
 		string MAIN_FOLDER = "P+EX/./."; // and use the "P+EX" base directory.
 	#else // Otherwise...
-		long characterListVersion = characterListVersions::clv_PPLUS; // ... we'll use the regular P+ Character List,
+		unsigned long characterListVersion = characterListVersions::clv_PPLUS; // ... we'll use the regular P+ Character List,
 		string MAIN_FOLDER = "Project+"; // and use the "Project+" directory.
 	#endif
 #else // If it's not for P+ builds...
-	long characterListVersion = characterListVersions::clv_PROJECTM; // ... then we'll default to the Project M character list,
+	unsigned long characterListVersion = characterListVersions::clv_PROJECTM; // ... then we'll default to the Project M character list,
 	string MAIN_FOLDER = "LegacyTE"; // and use the LegacyTE directory (this can be changed, this is just what it was originally).)
 #endif
+
+const std::array<std::string, characterListVersions::__clv_Count> characterListVersionNames = 
+{
+	"vBrawl",
+	"vBrawl+ (Sopo, Giga Bowser, WarioMan)",
+	"Project M (Roy, Mewtwo)",
+	"Project+ (Knuckles)",
+	"P+EX (Ridley)",
+	"P+EX (Waluigi)",
+	"P+EX (Dark Samus)",
+	"P+EX (Sceptile)",
+};
 
 fstream WPtr;
 std::vector<ledger::codeLedgerEntry> codeLedger = {};
