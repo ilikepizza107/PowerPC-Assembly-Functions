@@ -7,7 +7,7 @@
 	#if PROJECT_PLUS_EX_BUILD // ... and this is a P+EX build... 
 		unsigned long characterListVersion = characterListVersions::clv_PPEX_WALUIGI; // ... we'll default to the current version's character list,
 		string MAIN_FOLDER = "P+EX/./."; // use the "P+EX" base directory,
-		std::string MENU_NAME = "Project+ EX Code Menu"; // and use the P+EX menu name.
+		std::string MENU_NAME = "Project+Ex Code Menu"; // and use the P+EX menu name.
 
 	#else // Otherwise...
 		unsigned long characterListVersion = characterListVersions::clv_PPLUS; // ... we'll use the regular P+ Character List,

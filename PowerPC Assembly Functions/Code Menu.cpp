@@ -864,8 +864,8 @@ void CodeMenu()
 
 	//main page
 	vector<Line*> MainLines;
-	// Writes the Menu's Title, appending the netplay suffix only if the config file.
-	MainLines.push_back(new Comment(MENU_NAME + ((!CUSTOM_NAME_SUPPLIED && BUILD_NETPLAY_FILES) ? " (Netplay)" : ""), &MENU_TITLE_CHECK_LOCATION));
+	// Writes the Menu's Title, appending the netplay suffix only if the config file didn't specify its own title.
+	MainLines.push_back(new Comment(MENU_NAME + ((!CUSTOM_NAME_SUPPLIED && BUILD_NETPLAY_FILES) ? " (Netplay)" : "")));
 	if (!deleteControlsComments)
 	{
 		MainLines.push_back(new Comment("Green = Comments | Blue = Changed"));

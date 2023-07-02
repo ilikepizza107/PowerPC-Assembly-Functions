@@ -9,7 +9,7 @@
 #include "pugi/pugixml.hpp"
 
 //active codes
-extern int MENU_TITLE_CHECK_LOCATION;
+extern int MENU_TITLE_CHECK_LOCATION; // No longer used!
 extern int DI_DRAW_INDEX;
 extern int DEBUG_MODE_INDEX;
 extern int DISPLAY_HITBOXES_INDEX;
