@@ -1658,19 +1658,18 @@ void ControlCodeMenu()
 	int ActionReg = 14;
 
 	int NotLoaded = GetNextLabel();
-#if BUILD_TYPE == PROJECT_PLUS
-	LoadHalfToReg(Reg1, MENU_TITLE_CHECK_LOCATION + 7 + Line::COMMENT_LINE_TEXT_START);
-	If(Reg1, NOT_EQUAL_I_L, 0x7320); //+
-	{
-		JumpToLabel(NotLoaded);
-	}EndIf();
-#else
-	LoadHalfToReg(Reg1, MENU_TITLE_CHECK_LOCATION + 7 + Line::COMMENT_LINE_TEXT_START);
-	If(Reg1, NOT_EQUAL_I_L, 0x5445); //TE
-	{
-		JumpToLabel(NotLoaded);
-	}EndIf();
-#endif
+
+	// Rewritten check for whether or not menu is loaded!
+	// Load address of Menu Header
+	ADDIS(Reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+	// Load the value at that location into Reg4, so Reg4 should now be START_OF_CODE_MENU.
+	LWZ(Reg4, Reg1, START_OF_CODE_MENU_HEADER & 0xFFFF);
+	// Add the bottom half of START_OF_CODE_MENU to Reg1, so Reg1 should *also* now be START_OF_CODE_MENU.
+	ADDI(Reg1, Reg1, START_OF_CODE_MENU & 0xFFFF);
+	// Compare the two as unsigned integers.
+	CMPL(Reg1, Reg4, EQUAL_L);
+	// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
+	JumpToLabel(NotLoaded, bCACB_NOT_EQUAL);
 
 	LoadWordToReg(Reg4, HUD_DISPLAY_INDEX + Line::VALUE);
 	If(Reg4, EQUAL_I, 0);
