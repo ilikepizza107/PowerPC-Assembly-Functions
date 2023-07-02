@@ -1660,10 +1660,9 @@ void ControlCodeMenu()
 	int NotLoaded = GetNextLabel();
 
 	// Rewritten check for whether or not menu is loaded!
-	// Load address of Menu Header
+	// Load the main page pointer from just past the Menu Header Loc into Reg4 (this should be START_OF_CODE_MENU).
 	ADDIS(Reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
-	// Load the value at that location into Reg4, so Reg4 should now be START_OF_CODE_MENU.
-	LWZ(Reg4, Reg1, START_OF_CODE_MENU_HEADER & 0xFFFF);
+	LWZ(Reg4, Reg1, (START_OF_CODE_MENU_HEADER & 0xFFFF) + 4);
 	// Add the bottom half of START_OF_CODE_MENU to Reg1, so Reg1 should *also* now be START_OF_CODE_MENU.
 	ADDI(Reg1, Reg1, START_OF_CODE_MENU & 0xFFFF);
 	// Compare the two as unsigned integers.
