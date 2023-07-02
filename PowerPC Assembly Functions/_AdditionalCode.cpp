@@ -661,12 +661,12 @@ namespace lava
 
 				// Check if a base folder declaration node exists in the properties block.
 				foundNode = declNodeItr->child(configXMLConstants::baseFolderTag.c_str());
-				if (foundNode)
+				// If one was actually found, and its value isn't empty...
+				bufferStr = foundNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				if (!bufferStr.empty())
 				{
-					// If one was actually found...
-					logOutput << "Build Base Folder argument detected, applying settings...\n";
-					bufferStr = foundNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 					// ... attempt to use the retrieved value to set MAIN_FOLDER.
+					logOutput << "Build Base Folder argument detected, applying settings...\n";
 					if (setMAIN_FOLDER(bufferStr))
 					{
 						logOutput << "[SUCCESS] Build Base Folder is now \"" << MAIN_FOLDER << "\"!\n";
@@ -679,46 +679,43 @@ namespace lava
 
 				// Check if a menu title declaration node exists in the properties block.
 				foundNode = declNodeItr->child(configXMLConstants::menuTitleTag.c_str());
-				if (foundNode)
+				// If one was actually found, and its value isn't empty...
+				bufferStr = foundNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
+				if (!bufferStr.empty())
 				{
-					// If one was actually found...
+					// ... use the value to overwrite MENU_NAME.
+					MENU_NAME = bufferStr;
+					CUSTOM_NAME_SUPPLIED = 1;
 					logOutput << "Menu Title argument detected, applying settings...\n";
-					bufferStr = foundNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
-					// ... use the value to overwrite MENU_NAME if it isn't empty.
-					if (!bufferStr.empty())
-					{
-						MENU_NAME = bufferStr;
-						CUSTOM_NAME_SUPPLIED = 1;
-						logOutput << "[SUCCESS] Menu title is now \"" << MENU_NAME << "\"!\n";
-					}
-					else
-					{
-						logOutput << "[WARNING] Specified title was empty, using default title (\"" << MENU_NAME << "\")!\n";
-					}
+					logOutput << "[SUCCESS] Menu title is now \"" << MENU_NAME << "\"!\n";
 				}
 
 				// Check if a menu comments declaration block exists in the properties block.
 				foundNode = declNodeItr->child(configXMLConstants::menuCommentsTag.c_str());
+				// If the node is present, and it actually has comment declarations in it...
 				if (foundNode)
 				{
-					// If one was actually found...
-					logOutput << "Menu header comments block detected, collecting comment strings...\n";
-					for (pugi::xml_node_iterator commentItr = foundNode.begin(); commentItr != foundNode.end(); commentItr++)
-					{
-						if (commentItr->name() == configXMLConstants::commentTag)
-						{
-							pugi::xml_attribute tempAttr = commentItr->attribute(configXMLConstants::textTag.c_str());
-							if (tempAttr)
-							{
-								incomingMenuComments.push_back(tempAttr.as_string());
-								logOutput << "[ADDED] \"" << tempAttr.as_string() << "\"\n";
-							}
-						}
-					}
+					logOutput << "Menu header comments block detected! Parsing contents...\n";
 					deleteControlsComments = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
 					if (deleteControlsComments)
 					{
 						logOutput << "[NOTE] Menu Controls comment block will be omitted!\n";
+					}
+					if (foundNode.child(configXMLConstants::commentTag.c_str()))
+					{
+						logOutput << "Header Comments detected! Collecting comments...\n";
+						for (pugi::xml_node_iterator commentItr = foundNode.begin(); commentItr != foundNode.end(); commentItr++)
+						{
+							if (commentItr->name() == configXMLConstants::commentTag)
+							{
+								pugi::xml_attribute tempAttr = commentItr->attribute(configXMLConstants::textTag.c_str());
+								if (tempAttr)
+								{
+									incomingMenuComments.push_back(tempAttr.as_string());
+									logOutput << "\t[ADDED] \"" << tempAttr.as_string() << "\"\n";
+								}
+							}
+						}
 					}
 				}
 			}
@@ -730,7 +727,8 @@ namespace lava
 				logOutput << "\nAdding Characters to Code Menu from \"" << configFilePath << "\"...\n";
 
 				// Check if a character list version argument was given...
-				unsigned long requestedCharListVersion = declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_uint(ULONG_MAX);
+				unsigned long requestedCharListVersion =
+					lava::stringToNum(declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_string(), 0, ULONG_MAX);
 				if (requestedCharListVersion != ULONG_MAX)
 				{
 					// ... and attempt to apply it if so.
@@ -751,7 +749,7 @@ namespace lava
 				addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
 				
 				//Do final character list summary.
-				logOutput << "\nFinal Character List:\n";
+				logOutput << "\nFinal Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
 				for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
 				{
 					logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
