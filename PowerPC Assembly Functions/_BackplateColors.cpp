@@ -61,8 +61,8 @@ void playerSlotColorChangers(playerSlotColorLevel codeLevel)
 	storeTeamBattleStatus();
 	shieldColorChange();
 
-	// If you've got more than 10 colors defined...
-	if (BACKPLATE_COLOR_TOTAL_COLOR_COUNT > 10)
+	// If you've got more than 10 colors defined, and are using a mode that affects the HUD...
+	if ((BACKPLATE_COLOR_TOTAL_COLOR_COUNT > 10) && (codeLevel > playerSlotColorLevel::pSCL_SHIELDS_AND_PLUMES_ONLY))
 	{
 		// ... we need to disable CPU Team Colors.
 		// Necessary because the game stores CPU Team Colors 10 frames above the originals, so you'd be overwriting those colors.
@@ -357,10 +357,10 @@ void menSelChrElemntChange()
 			MTCTR(reg2);
 			BCTRL();
 
-			// Now that r3 is the length of the string, we can Subtract one to get the index we'll actually be overwriting.
+			// Now that r3 is the length of the string, we can subtract one to get the index we'll actually be overwriting.
 			ADDI(3, 3, -1);
-			// Load the current index byte into r3.
-			LBZX(4, 3, 31);
+			// Load the current index byte into r4, and store the location we'll be writing back to in r3 (will be our destination ptr for our sprintf later!)
+			LBZUX(4, 3, 31);
 
 			// Load buffered Team Battle Status Offset
 			ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
@@ -370,13 +370,21 @@ void menSelChrElemntChange()
 			RLWIMI(reg1, 4, 2, 0x1A, 0x1D);
 			// Use that to load our target line's index value...
 			LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
-			// ... then use that to load the relevant value.
-			LWZX(reg2, reg1, reg2);
+			// ... then use that to load the relevant value into r5 (our value argument for our upcoming sprintf call!)
+			LWZX(5, reg1, reg2);
 
-			// Now add '0' back to the value to get the ASCII hex for the index...
-			ADDI(reg2, reg2, '0');
-			// ... and store it at the destination location in the string, as calculated before.
-			STBX(reg2, 3, 31);
+			// Load sprintf ptr into CTR in preparation for running it.
+			SetRegister(reg1, 0x803f89fc);
+			MTCTR(reg1);
+
+			// Write and skip over our formatting string...
+			BL(2);
+			WriteIntToFile(0x25580000); // "%X\0\0"
+			// ... and move the pointer to it into r4, as our formatting string pointer.
+			MFLR(4);
+
+			// Launch sprintf, which will write our suffix into place!
+			BCTRL();
 
 			// Lastly, prepare to run _vc.
 			// Restore the params to what they were when we last ran _vC...
@@ -448,7 +456,7 @@ void backplateColorChange()
 			"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and"
 			"\nredirects them according to the appropriate Code Menu lines. Intended for use with:"
 			"\n\tIn sc_selcharacter.pac:"
-			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCursorA_TopN__0\n\t\t- MenSelchrCmark4_TopN__0"
+			"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCmark4_TopN__0\n\t\t- MenSelchrCursorA_TopN__0"
 			"\n\tIn info.pac (and its variants, eg. info_training.pac):"
 			"\n\t\t- InfArrow_TopN__0\n\t\t- InfFace_TopN__0\n\t\t- InfLoupe0_TopN__0\n\t\t- InfMark_TopN__0\n\t\t- InfPlynm_TopN__0"
 			"\n\tIn stgresult.pac:"
