@@ -52,17 +52,17 @@ const std::string codeSuffix = " " + codeVersion + " [QuickLava]";
 // Works a lot like the setFrameCol func, just need to intercept the frame being prescribed and overwrite it
 //
 
-void playerSlotColorChangers(playerSlotColorLevel codeLevel)
+void playerSlotColorChangers(unsigned char codeLevel)
 {
 	// If Color Changer is enabled, and the code isn't disabled by the codeLevel arg, write code.
-	if (BACKPLATE_COLOR_1_INDEX != -1 && codeLevel <= playerSlotColorLevel::pSCL_NONE) return;
+	if ((BACKPLATE_COLOR_1_INDEX == -1) || (codeLevel <= backplateColorConstants::pSCL_NONE) || (codeLevel >= backplateColorConstants::pSCL__COUNT)) return;
 
 	// These are always needed, do these first.
 	storeTeamBattleStatus();
 	shieldColorChange();
 
 	// If you've got more than 10 colors defined, and are using a mode that affects the HUD...
-	if ((BACKPLATE_COLOR_TOTAL_COLOR_COUNT > 10) && (codeLevel > playerSlotColorLevel::pSCL_SHIELDS_AND_PLUMES_ONLY))
+	if ((BACKPLATE_COLOR_TOTAL_COLOR_COUNT > 10) && (codeLevel > backplateColorConstants::pSCL_SHIELDS_AND_PLUMES_ONLY))
 	{
 		// ... we need to disable CPU Team Colors.
 		// Necessary because the game stores CPU Team Colors 10 frames above the originals, so you'd be overwriting those colors.
@@ -73,18 +73,18 @@ void playerSlotColorChangers(playerSlotColorLevel codeLevel)
 	switch (codeLevel)
 	{
 		// This case only additionally needs the infoPac code, include that and break.
-	case playerSlotColorLevel::pSCL_SHIELDS_PLUMES_AND_IN_GAME_HUD:
+	case backplateColorConstants::pSCL_SHIELDS_PLUMES_AND_IN_GAME_HUD:
 	{
 		infoPacCLR0ColorChange();
 		break;
 	}
 	// This case needs the increment input code, in addition to the stuff in the following case.
-	case playerSlotColorLevel::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT:
+	case backplateColorConstants::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT:
 	{
 		incrementOnButtonPress();
 	}
 	// And this case includes the code to drive the changer on the CSS + Results Screen.
-	case playerSlotColorLevel::pSCL_MENUS_AND_IN_GAME_WITHOUT_CSS_INPUT:
+	case backplateColorConstants::pSCL_MENUS_AND_IN_GAME_WITHOUT_CSS_INPUT:
 	{
 		backplateColorChange();
 		menSelChrElemntChange();
@@ -248,7 +248,7 @@ void storeTeamBattleStatus()
 	int reg2 = 12;
 
 	// Hooks "initDispSelect/[muSelCharPlayerArea]/mu_selchar_player_ar"
-	ASMStart(0x806945e8, codePrefix + "Cache SelChar Team Battle Status on Init" + codeSuffix);
+	ASMStart(0x806945e8, codePrefix + "Reset Cached SelChar Team Battle Status on Init" + codeSuffix);
 	storeTeamBattleStatusBody(3);
 	ASMEnd(0x7c651b78); // Restore original instruction: mr	r5, r3
 

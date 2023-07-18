@@ -237,11 +237,18 @@ int main(int argc, char** argv)
 
 		//LXPGreenOverlayFix();
 
-		CodeMenu(); tagBasedCostumes(); cssRosterChange(); themeChange(); 
+		CodeMenu(); tagBasedCostumes(); 
+		
+		cssRosterChange(); themeChange(); 
 
-		playerSlotColorChangers(playerSlotColorLevel::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT);
+		playerSlotColorChangers(CONFIG_BACKPLATE_COLOR_MODE);
 
-		// dashAttackItemGrab(); tripRateModifier();
+		if (CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED)
+		{
+			dashAttackItemGrab();
+		}
+
+		// tripRateModifier();
 
 		//musicPercentCode();
 

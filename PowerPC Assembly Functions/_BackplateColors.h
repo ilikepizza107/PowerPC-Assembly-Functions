@@ -4,17 +4,9 @@
 #include "stdafx.h"
 #include "_AdditionalCode.h"
 
-enum class playerSlotColorLevel
-{
-	pSCL_NONE = 0,
-	pSCL_SHIELDS_AND_PLUMES_ONLY,
-	pSCL_SHIELDS_PLUMES_AND_IN_GAME_HUD,
-	pSCL_MENUS_AND_IN_GAME_WITHOUT_CSS_INPUT,
-	pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT,
-};
 // Writes the code for the Player Slot Color Changer to the .asm output!
 // The codeLevel argument specifies what elements the code should be configured to affect.
-void playerSlotColorChangers(playerSlotColorLevel codeLevel = playerSlotColorLevel::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT);
+void playerSlotColorChangers(unsigned char codeLevel = backplateColorConstants::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT);
 
 void incrementOnButtonPress();
 

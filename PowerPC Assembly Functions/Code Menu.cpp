@@ -276,11 +276,24 @@ vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
 std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{};
 
-unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
+namespace backplateColorConstants
+{
+	const std::array<std::string, playerSlotColorLevel::pSCL__COUNT> modeNames =
+	{
+		"Disabled",
+		"Shields & Death Plumes",
+		"Shields, Death Plumes, & In-Game HUD",
+		"All In-Game Elements, CSS, & Results Screen",
+		"All Elements & CSS Color Change Input",
+	};
+}
+const unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
 
-// Menu Header Comments Variables
-std::vector<std::string> incomingMenuComments{};
-bool deleteControlsComments = false;
+// Incoming Configuration XML Variables
+std::vector<std::string> CONFIG_INCOMING_COMMENTS{};
+bool CONFIG_DELETE_CONTROLS_COMMENTS = false;
+unsigned char CONFIG_BACKPLATE_COLOR_MODE = backplateColorConstants::pSCL_NONE;
+bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED = 1;
 
 const std::string menuConfigXMLFileName = "EX_Config.xml";
 const std::string netMenuConfigXMLFileName = "Net-" + menuConfigXMLFileName;
@@ -830,7 +843,10 @@ void CodeMenu()
 	ConstantsLines.push_back(new Floating("Knockback Decay Rate", -999, 999, 0.051, .001, KNOCKBACK_DECAY_MULTIPLIER_INDEX, "%.3f"));
 	constantOverrides.emplace_back(0x80B88534, KNOCKBACK_DECAY_MULTIPLIER_INDEX);
 	ConstantsLines.push_back(new Selection("Staling Toggle", { "Default", "ON", "OFF" }, 0, STALING_TOGGLE_INDEX));
-	//ConstantsLines.push_back(new Selection("Dash Attack Item Grab Toggle", { "OFF", "ON" }, 0, DASH_ATTACK_ITEM_GRAB_INDEX));
+	if (CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED)
+	{
+		ConstantsLines.push_back(new Selection("Dash Attack Item Grab Toggle", { "OFF", "ON" }, 0, DASH_ATTACK_ITEM_GRAB_INDEX));
+	}
 	//ConstantsLines.push_back(new Selection("Tripping Toggle", { "OFF", "ON" }, 0, TRIP_TOGGLE_INDEX));
 	//ConstantsLines.push_back(new Floating("Tripping Rate", 0, 100, 1.0, 1.0, TRIP_RATE_MULTIPLIER_INDEX, "%.2f%"));
 	//ConstantsLines.push_back(new Selection("Tripping Cooldown Toggle", { "ON", "OFF" }, 0, TRIP_INTERVAL_INDEX));
@@ -866,7 +882,7 @@ void CodeMenu()
 	vector<Line*> MainLines;
 	// Writes the Menu's Title, appending the netplay suffix only if the config file didn't specify its own title.
 	MainLines.push_back(new Comment(MENU_NAME + ((!CUSTOM_NAME_SUPPLIED && BUILD_NETPLAY_FILES) ? " (Netplay)" : "")));
-	if (!deleteControlsComments)
+	if (!CONFIG_DELETE_CONTROLS_COMMENTS)
 	{
 		MainLines.push_back(new Comment("Green = Comments | Blue = Changed"));
 		MainLines.push_back(new Comment("A = Enter Submenu | B = Back/Exit"));
@@ -874,9 +890,9 @@ void CodeMenu()
 		MainLines.push_back(new Comment("Hold Z = Scroll Faster"));
 		MainLines.push_back(new Comment(""));
 	}
-	for (std::size_t i = 0; i < incomingMenuComments.size(); i++)
+	for (std::size_t i = 0; i < CONFIG_INCOMING_COMMENTS.size(); i++)
 	{
-		MainLines.push_back(new Comment(incomingMenuComments[i]));
+		MainLines.push_back(new Comment(CONFIG_INCOMING_COMMENTS[i]));
 	}
 	
 
@@ -914,11 +930,13 @@ void CodeMenu()
 	HUDColorLines.push_back(new Integer("Blue",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d"));
 	HUDColorLines.push_back(new Integer("Yellow",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d"));
 	HUDColorLines.push_back(new Integer("Green",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
+	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
-	MainLines.push_back(&HUDColorsPage.CalledFromLine);
-	
+	if ((CONFIG_BACKPLATE_COLOR_MODE > 0) && (CONFIG_BACKPLATE_COLOR_MODE < backplateColorConstants::pSCL__COUNT))
+	{
+		MainLines.push_back(&HUDColorsPage.CalledFromLine);
+	}
 
 
 #if BUILD_TYPE == PROJECT_PLUS

@@ -273,19 +273,38 @@ extern std::vector<menuTheme> THEME_SPEC_LIST;
 // Used to determine whether or not we actually need to output the hook for a given theme-able file.
 extern std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX;
 
+namespace backplateColorConstants
+{
+	enum playerSlotColorLevel
+	{
+		pSCL_NONE = 0,
+		pSCL_SHIELDS_AND_PLUMES_ONLY,
+		pSCL_SHIELDS_PLUMES_AND_IN_GAME_HUD,
+		pSCL_MENUS_AND_IN_GAME_WITHOUT_CSS_INPUT,
+		pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT,
+		pSCL__COUNT
+	};
+	extern const std::array<std::string, playerSlotColorLevel::pSCL__COUNT> modeNames;
+}
 // Denotes the total number colors available to the HUD Color Switcher.
 // Used to ensure that if we add a mechanism for adding additional colors, they'll be accounted for, both
 // in the actual generated ASM in _BackplateColors, and by the actual code menu lines themselves.
-extern unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT;
+extern const unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT;
+
+// Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)
+extern std::vector<std::string> CONFIG_INCOMING_COMMENTS;
+extern bool CONFIG_DELETE_CONTROLS_COMMENTS;
+extern unsigned char CONFIG_BACKPLATE_COLOR_MODE;
+extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
+
+
 
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
 void initMenuFileStream();
 
-// Menu Header Comments Variables
-extern std::vector<std::string> incomingMenuComments;
-extern bool deleteControlsComments;
+
 // Logging and Input Constants
 extern const std::string outputFolder;
 extern const std::string menuConfigXMLFileName;

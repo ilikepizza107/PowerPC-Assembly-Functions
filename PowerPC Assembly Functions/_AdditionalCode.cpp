@@ -250,10 +250,12 @@ namespace lava
 	{
 		// General
 		const std::string menuConfigTag = "codeMenuConfig";
+		const std::string enabledTag = "enabled";
 		const std::string disabledTag = "disabled";
 		const std::string nameTag = "name";
 		const std::string textTag = "text";
 		const std::string filenameTag = "filename";
+		const std::string codeModeTag = "codeMode";
 
 		// Menu Properties
 		const std::string menuPropsTag = "menuProperties";
@@ -269,19 +271,24 @@ namespace lava
 		const std::string characterTag = "character";
 		const std::string slotIDTag = "slotID";
 
+		// Code Settings
+		const std::string codeSettingsTag = "codeSettings";
+
 		// EX Rosters
-		const std::string roseterDeclsTag = "rosterDeclarations";
+		const std::string roseterDeclsTag = "rosterChanger";
 		const std::string roseterTag = "roster";
 
 		// Themes
-		const std::string themeDeclsTag = "themeDeclarations";
+		const std::string themeDeclsTag = "themeChanger";
 		const std::string themeTag = "menuTheme";
 		const std::string themeFileTag = "themeFile";
 		const std::string prefixTag = "replacementPrefix";
 
+		// Dash Attack Item Grab
+		const std::string dashAttackItemGrabTag = "dashAttackItemGrab";
+
 		// Colors
-		const std::string slotColorDeclsTag = "slotColorDeclarations";
-		const std::string slotColorTag = "slotColor";
+		const std::string slotColorDeclsTag = "slotColorChanger";
 	}
 
 	// EX Character Handling
@@ -625,6 +632,66 @@ namespace lava
 		}
 	}
 
+	// Generic Code Handling
+	// Reads in the requested code version from the from the incoming node, and (if it's less than the mode count passed in) stores it in the storage var.
+	// Returns the applied mode value, or UCHAR_MAX (0xFF) if either no mode was specified or the requested value was invalid.
+	unsigned char setCodeModeFromXML(const pugi::xml_node_iterator& codeNodeItr, unsigned char& modeStorageVariable, unsigned char modeCount, lava::outputSplitter& logOutput)
+	{
+		unsigned char result = UCHAR_MAX;
+
+		// Determine the result value:
+		// If a mode attribute exists for the code's node...
+		pugi::xml_attribute modeAttrObj = codeNodeItr->attribute(configXMLConstants::codeModeTag.c_str());
+		if (modeAttrObj)
+		{
+			// ... try to interpret its value as a number.
+			result = lava::stringToNum<unsigned char>(modeAttrObj.as_string(), 0, UCHAR_MAX, 0);
+			// If the result is valid...
+			if (result < modeCount)
+			{
+				// ... note the success and store the value!
+				modeStorageVariable = result;
+				logOutput << "[SUCCESS] Mode is now: " << +modeStorageVariable << "!\n";
+			}
+			// Otherwise...
+			else
+			{
+				// ... leave the value as is and note the invalid specification.
+				logOutput << "[WARNING] Invalid mode specified (" << +result << ")! Mode is still: " << +modeStorageVariable << "!\n";
+			}
+		}
+		// Otherwise...
+		else
+		{
+			// ... leave the value as is and note the lack of a mode specification.
+			logOutput << "[WARNING] No mode specified! Mode is still: " << +modeStorageVariable << "!\n";
+		}
+
+		return result;
+	}
+	// Reads in whether or not the code is enabled or disabled by the incoming node, and sets the storage var accordingly.
+	// Always returns the end value of the storage variable.
+	bool setCodeEnabledFromXML(const pugi::xml_node_iterator& codeNodeItr, bool& enabledStorageVariable, lava::outputSplitter& logOutput)
+	{
+		// If an "enabled" attribute exists for the code's node...
+		pugi::xml_attribute modeAttrObj = codeNodeItr->attribute(configXMLConstants::enabledTag.c_str());
+		if (modeAttrObj)
+		{
+			// ... interpret its value as a bool, and note the success.
+			enabledStorageVariable = modeAttrObj.as_bool(enabledStorageVariable);
+			logOutput << "[SUCCESS] Option is now " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
+		}
+		// Otherwise...
+		else
+		{
+			// ... we leave the value as is and note the lack of a mode specification.
+			logOutput << "[WARNING] No value specified! Option is still " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
+		}
+
+		return enabledStorageVariable;
+	}
+
+
 	// Core Functions
 	bool declNodeIsDisabled(const pugi::xml_node_iterator& declNodeItr)
 	{
@@ -696,8 +763,8 @@ namespace lava
 				if (foundNode)
 				{
 					logOutput << "Menu header comments block detected! Parsing contents...\n";
-					deleteControlsComments = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
-					if (deleteControlsComments)
+					CONFIG_DELETE_CONTROLS_COMMENTS = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
+					if (CONFIG_DELETE_CONTROLS_COMMENTS)
 					{
 						logOutput << "[NOTE] Menu Controls comment block will be omitted!\n";
 					}
@@ -711,7 +778,7 @@ namespace lava
 								pugi::xml_attribute tempAttr = commentItr->attribute(configXMLConstants::textTag.c_str());
 								if (tempAttr)
 								{
-									incomingMenuComments.push_back(tempAttr.as_string());
+									CONFIG_INCOMING_COMMENTS.push_back(tempAttr.as_string());
 									logOutput << "\t[ADDED] \"" << tempAttr.as_string() << "\"\n";
 								}
 							}
@@ -747,7 +814,7 @@ namespace lava
 				// Collect character entries from the XML, then add them to the menu.
 				std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
 				addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
-				
+
 				//Do final character list summary.
 				logOutput << "\nFinal Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
 				for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
@@ -755,46 +822,63 @@ namespace lava
 					logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
 				}
 			}
-			// If we're set to collect EX Rosters...
-			else if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::roseterDeclsTag)
+
+			// If we've reached the code configuration block...
+			if (declNodeItr->name() == configXMLConstants::codeSettingsTag)
 			{
-				logOutput << "\nAdding Rosters to Code Menu from \"" << configFilePath << "\"...\n";
-
-				// Collect roster entries from the XML, then add them to the menu.
-				std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(declNodeItr);
-				addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
-
-				//Do final roster list summary.
-				logOutput << "\nFinal Roster List:\n";
-				for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
+				for (pugi::xml_node_iterator codeNodeItr = declNodeItr->begin(); codeNodeItr != declNodeItr->end(); codeNodeItr++)
 				{
-					logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
-				}
-			}
-			// If we're set to collect Themes...
-			else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::themeDeclsTag)
-			{
-				logOutput << "\nAdding Themes to Code Menu from \"" << configFilePath << "\"...\n";
-				
-				// Collect theme entries from the XML, then add them to the menu.
-				std::vector<menuTheme> tempThemeList = collectThemesFromXML(declNodeItr);
-				addCollectedThemesToMenuLists(tempThemeList, logOutput);
-
-				// Do final theme list summary.
-				logOutput << "\nFinal Theme List:\n";
-				for (std::size_t i = 0; i < THEME_LIST.size(); i++)
-				{
-					logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
-					for (std::size_t u = 0; u < THEME_SPEC_LIST[i].prefixes.size(); u++)
+					// If we're looking at the EX Rosters block...
+					if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(codeNodeItr) && codeNodeItr->name() == configXMLConstants::roseterDeclsTag)
 					{
-						logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
+						logOutput << "\nAdding Rosters to Code Menu from \"" << configFilePath << "\"...\n";
+
+						// ... collect roster entries from the XML, then add them to the menu.
+						std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(codeNodeItr);
+						addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
+
+						//Do final roster list summary.
+						logOutput << "\nFinal Roster List:\n";
+						for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
+						{
+							logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
+						}
+					}
+					// If we're looking at the Themes block...
+					else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(codeNodeItr) && codeNodeItr->name() == configXMLConstants::themeDeclsTag)
+					{
+						logOutput << "\nAdding Themes to Code Menu from \"" << configFilePath << "\"...\n";
+
+						// ... collect theme entries from the XML, then add them to the menu.
+						std::vector<menuTheme> tempThemeList = collectThemesFromXML(codeNodeItr);
+						addCollectedThemesToMenuLists(tempThemeList, logOutput);
+
+						// Do final theme list summary.
+						logOutput << "\nFinal Theme List:\n";
+						for (std::size_t i = 0; i < THEME_LIST.size(); i++)
+						{
+							logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
+							for (std::size_t u = 0; u < THEME_SPEC_LIST[i].prefixes.size(); u++)
+							{
+								logOutput << "\t\t\"" << themeConstants::filenames[u] << "\": \"" << THEME_SPEC_LIST[i].prefixes[u] << "\"\n";
+							}
+						}
+					}
+					// If we're looking at the Item Grab block...
+					else if (codeNodeItr->name() == configXMLConstants::dashAttackItemGrabTag)
+					{
+						logOutput << "\nSetting Dash Attack Item Grab Toggle status...\n";
+						// ... handle enabling/disabling it.
+						setCodeEnabledFromXML(codeNodeItr, CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED, logOutput);
+					}
+					// If we're set looking at the Slot Colors block...
+					else if (codeNodeItr->name() == configXMLConstants::slotColorDeclsTag)
+					{
+						logOutput << "\nSetting Player Slot Color Changer mode... \n";
+						// ... handle setting its mode. 
+						setCodeModeFromXML(codeNodeItr, CONFIG_BACKPLATE_COLOR_MODE, backplateColorConstants::playerSlotColorLevel::pSCL__COUNT, logOutput);
 					}
 				}
-			}
-			// If we're set to collect Slot Colors...
-			else if (COLLECT_EXTERNAL_SLOT_COLORS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::slotColorDeclsTag)
-			{
-
 			}
 		}
 		
