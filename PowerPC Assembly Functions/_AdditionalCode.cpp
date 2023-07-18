@@ -265,7 +265,7 @@ namespace lava
 		const std::string deleteOrigCommentsTag = "deleteControlsComments";
 
 		// EX Characters
-		const std::string characterDeclsTag = "characterDeclarations";
+		const std::string characterListTag = "characterList";
 		const std::string baseCharListTag = "baseListVersion";
 		const std::string characterTag = "character";
 		const std::string slotIDTag = "slotID";
@@ -797,11 +797,10 @@ namespace lava
 				}
 			}
 
-			// If we're set to collect EX Characters...
-			if (COLLECT_EXTERNAL_EX_CHARACTERS && declNodeItr->name() == configXMLConstants::characterDeclsTag)
+			// If looking at the character list block...
+			if (declNodeItr->name() == configXMLConstants::characterListTag)
 			{
-				// ... pull them from the XML and apply the changes to the menu lists.
-				logOutput << "\nAdding Characters to Code Menu from \"" << configFilePath << "\"...\n";
+				logOutput << "\nParsing Character List block from \"" << configFilePath << "\"...\n";
 
 				// Check if a character list version argument was given...
 				unsigned long requestedCharListVersion =
@@ -821,9 +820,14 @@ namespace lava
 					logOutput << "\n";
 				}
 
-				// Collect character entries from the XML, then add them to the menu.
-				std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
-				addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
+				// If we're set to additionally collect externally defined EX Characters...
+				if (COLLECT_EXTERNAL_EX_CHARACTERS)
+				{
+					// ... collect character entries from the XML, then add them to the menu.
+					logOutput << "Adding EX Characters to Character List...\n";
+					std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
+					addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
+				}
 
 				//Do final character list summary.
 				logOutput << "\nFinal Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
