@@ -251,7 +251,6 @@ namespace lava
 		// General
 		const std::string menuConfigTag = "codeMenuConfig";
 		const std::string enabledTag = "enabled";
-		const std::string disabledTag = "disabled";
 		const std::string nameTag = "name";
 		const std::string textTag = "text";
 		const std::string filenameTag = "filename";
@@ -693,9 +692,20 @@ namespace lava
 
 
 	// Core Functions
-	bool declNodeIsDisabled(const pugi::xml_node_iterator& declNodeItr)
+	bool declNodeIsEnabled(const pugi::xml_node_iterator& declNodeItr)
 	{
-		return declNodeItr->attribute(configXMLConstants::disabledTag.c_str()).as_bool() == 1;
+		// Note, we default to enabled if no value is specified!
+		bool result = 1;
+
+		// If an "enabled" attribute is present in this node...
+		pugi::xml_attribute enabledAttr = declNodeItr->attribute(configXMLConstants::enabledTag.c_str());
+		if (enabledAttr)
+		{
+			// ... attempt to read it as a bool, store its value in the result.
+			result = enabledAttr.as_bool(1);
+		}
+
+		return result;
 	}
 	bool parseAndApplyConfigXML(std::string configFilePath, lava::outputSplitter& logOutput)
 	{
@@ -788,7 +798,7 @@ namespace lava
 			}
 
 			// If we're set to collect EX Characters...
-			if (COLLECT_EXTERNAL_EX_CHARACTERS && !declNodeIsDisabled(declNodeItr) && declNodeItr->name() == configXMLConstants::characterDeclsTag)
+			if (COLLECT_EXTERNAL_EX_CHARACTERS && declNodeItr->name() == configXMLConstants::characterDeclsTag)
 			{
 				// ... pull them from the XML and apply the changes to the menu lists.
 				logOutput << "\nAdding Characters to Code Menu from \"" << configFilePath << "\"...\n";
@@ -829,7 +839,7 @@ namespace lava
 				for (pugi::xml_node_iterator codeNodeItr = declNodeItr->begin(); codeNodeItr != declNodeItr->end(); codeNodeItr++)
 				{
 					// If we're looking at the EX Rosters block...
-					if (COLLECT_EXTERNAL_ROSTERS && !declNodeIsDisabled(codeNodeItr) && codeNodeItr->name() == configXMLConstants::roseterDeclsTag)
+					if (COLLECT_EXTERNAL_ROSTERS && declNodeIsEnabled(codeNodeItr) && codeNodeItr->name() == configXMLConstants::roseterDeclsTag)
 					{
 						logOutput << "\nAdding Rosters to Code Menu from \"" << configFilePath << "\"...\n";
 
@@ -845,7 +855,7 @@ namespace lava
 						}
 					}
 					// If we're looking at the Themes block...
-					else if (COLLECT_EXTERNAL_THEMES && !declNodeIsDisabled(codeNodeItr) && codeNodeItr->name() == configXMLConstants::themeDeclsTag)
+					else if (COLLECT_EXTERNAL_THEMES && declNodeIsEnabled(codeNodeItr) && codeNodeItr->name() == configXMLConstants::themeDeclsTag)
 					{
 						logOutput << "\nAdding Themes to Code Menu from \"" << configFilePath << "\"...\n";
 
