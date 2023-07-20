@@ -227,6 +227,7 @@ void unzipMapToVectors(const std::map<T1, T2>& sourceMap, std::vector<T1>& vec1,
 // additional EX Character declarations will be collected from the file described by exCharInputFilename (see "Code Menu.cpp").
 extern vector<string> CHARACTER_LIST;
 extern vector<u16> CHARACTER_ID_LIST;
+constexpr unsigned char CHARACTER_ID_MAX_VALUE = 0x7F;
 void buildCharacterIDLists();
 bool applyCharacterListVersion(unsigned long targetVersion);
 

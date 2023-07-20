@@ -275,7 +275,7 @@ namespace lava
 
 		// EX Rosters
 		const std::string roseterDeclsTag = "rosterChanger";
-		const std::string roseterTag = "roster";
+		const std::string rosterTag = "roster";
 
 		// Themes
 		const std::string themeDeclsTag = "themeChanger";
@@ -290,10 +290,25 @@ namespace lava
 		const std::string slotColorDeclsTag = "slotColorChanger";
 	}
 
-	// EX Character Handling
-	std::vector<std::pair<std::string, u16>> collectEXCharactersFromPlaintext(std::istream& streamIn)
+	// Returns a string to be used as padding to replace the newline and indentation from replaced plaintext nodes. 
+	std::string getNodeIndentationPCDataReplacement(const pugi::xml_node_iterator& nodeItr)
 	{
-		std::vector<std::pair<std::string, u16>> result{};
+		// Indentation is for the children of the current node, so we include a tab to start.
+		std::string result = "\n\t";
+		// Then for each level up we can go through the parents of this node...
+		for (pugi::xml_node_iterator currNode = nodeItr->parent(); !currNode->parent().empty(); currNode = currNode->parent())
+		{
+			// ... add an additional tab!
+			result += "\t";
+		}
+		return result;
+	}
+
+	// EX Character Handling
+	// Adds any collected entries to the destination vector, and returns the number of entries collected in this call.
+	std::size_t collectEXCharactersFromPlaintext(std::istream& streamIn, std::vector<std::pair<std::string, u16>>& destinationVector)
+	{
+		std::size_t originalCount = destinationVector.size();
 
 		if (streamIn.good())
 		{
@@ -337,41 +352,48 @@ namespace lava
 						// Handles hex input for character id
 						characterSlotIDIn = lava::stringToNum(manipStr.substr(delimLoc + 1, std::string::npos), 1, SHRT_MAX);
 						// Insert new entry into list.
-						result.push_back(std::make_pair(characterNameIn, characterSlotIDIn));
+						destinationVector.push_back(std::make_pair(characterNameIn, characterSlotIDIn));
 					}
 				}
 			}
 		}
-
-		return result;
+		
+		return destinationVector.size() - originalCount;
 	}
-	std::vector<std::pair<std::string, u16>> collectEXCharactersFromXML(const pugi::xml_node_iterator& characterDeclNodeItr)
+	std::vector<std::pair<std::string, u16>> collectEXCharactersFromXML(pugi::xml_node_iterator& characterDeclNodeItr, bool& collectedPlaintextEntry)
 	{
 		std::vector<std::pair<std::string, u16>> result{};
 
-		// Collect proper node entries.
-		for (pugi::xml_node_iterator rosterItr = characterDeclNodeItr->begin(); rosterItr != characterDeclNodeItr->end(); rosterItr++)
+		// Collect any entries contained in the node.
+		for (pugi::xml_node_iterator characterItr = characterDeclNodeItr->begin(); characterItr != characterDeclNodeItr->end(); characterItr++)
 		{
-			if (rosterItr->name() == configXMLConstants::characterTag)
+			// If we're looking at a proper character node, we can just parse its XML contents as normal.
+			if (characterItr->name() == configXMLConstants::characterTag)
 			{
 				std::pair<std::string, u16> tempPair("", USHRT_MAX);
-				tempPair.first = rosterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
-				tempPair.second = rosterItr->attribute(configXMLConstants::slotIDTag.c_str()).as_int(USHRT_MAX);
+				tempPair.first = characterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				tempPair.second = characterItr->attribute(configXMLConstants::slotIDTag.c_str()).as_int(USHRT_MAX);
 
 				if (!tempPair.first.empty() && (tempPair.second != USHRT_MAX))
 				{
 					result.push_back(tempPair);
 				}
 			}
-		}
-
-		// Collect any plaintext entries from the declaration node.
-		std::stringstream nodePlainTextStream(characterDeclNodeItr->text().as_string(""));
-		std::vector<std::pair<std::string, u16>> plainTextEntries = collectEXCharactersFromPlaintext(nodePlainTextStream);
-		result.reserve(result.size() + plainTextEntries.size());
-		for (std::size_t i = 0; i < plainTextEntries.size(); i++)
-		{
-			result.push_back(plainTextEntries[i]);
+			// The only other thing we care about are plaintext nodes, since those *could* contain old-school entries.
+			else if (characterItr->type() == pugi::node_pcdata)
+			{
+				// For these, populate a stringstream with the node's text, 
+				// and attempt to pull any entries from the text. This'll return the number of nodes, so if it's greater than 0...
+				if (collectEXCharactersFromPlaintext(std::stringstream(characterItr->value()), result) > 0)
+				{
+					// ... then flag that we've collected a plaintext entry...
+					collectedPlaintextEntry = 1;
+					// ... and replace its value with an appropriately built indentation string.
+					// Note: this removes those plaintext entries from the tree, 
+					// they'll be re-generated later so that they use proper XML syntax!
+					characterItr->set_value(getNodeIndentationPCDataReplacement(characterDeclNodeItr).c_str());
+				}
+			}
 		}
 
 		return result;
@@ -421,11 +443,26 @@ namespace lava
 			logOutput << "[WARNING] EX Character Declaration block parsed, but no valid entries were found!\n";
 		}
 	}
+	void regenEXCharacterDeclsInXML(pugi::xml_node_iterator& characterDeclNodeItr, const std::vector<std::pair<std::string, u16>>& nameIDPairs)
+	{
+		// Remove all the proper character nodes from the XML...
+		while (characterDeclNodeItr->remove_child(configXMLConstants::characterTag.c_str())) {}
+
+		// And for each nameID pair...
+		for (std::size_t i = 0; i < nameIDPairs.size(); i++)
+		{
+			// ... generate a proper character node for it.
+			pugi::xml_node tempCharNode = characterDeclNodeItr->append_child(configXMLConstants::characterTag.c_str());
+			tempCharNode.append_attribute(configXMLConstants::nameTag.c_str()) = nameIDPairs[i].first.c_str();
+			tempCharNode.append_attribute(configXMLConstants::slotIDTag.c_str()) = ("0x" + lava::numToHexStringWithPadding(nameIDPairs[i].second, 2)).c_str();
+		}
+	}
 
 	// EX Roster Handling
-	std::vector<std::pair<std::string, std::string>> collectEXRostersFromPlaintext(std::istream& streamIn)
+	// Adds any collected entries to the destination vector, and returns the number of entries collected in this call.
+	std::size_t collectEXRostersFromPlaintext(std::istream& streamIn, std::vector<std::pair<std::string, std::string>>& destinationVector)
 	{
-		std::vector<std::pair<std::string, std::string>> result{};
+		std::size_t originalCount = destinationVector.size();
 
 		if (streamIn.good())
 		{
@@ -467,22 +504,23 @@ namespace lava
 						// Store roster filename portion of string
 						std::string fileNameIn = manipStr.substr(delimLoc + 1, std::string::npos);
 						// Insert new entry into list.
-						result.push_back(std::make_pair(rosterNameIn, fileNameIn));
+						destinationVector.push_back(std::make_pair(rosterNameIn, fileNameIn));
 					}
 				}
 			}
 		}
 
-		return result;
+		return destinationVector.size() - originalCount;
 	}
-	std::vector<std::pair<std::string, std::string>> collectEXRostersFromXML(const pugi::xml_node_iterator& rosterDeclNodeItr)
+	std::vector<std::pair<std::string, std::string>> collectEXRostersFromXML(const pugi::xml_node_iterator& rosterDeclNodeItr, bool& collectedPlaintextEntry)
 	{
 		std::vector<std::pair<std::string, std::string>> result{};
 
 		// Collect proper node entries.
 		for (pugi::xml_node_iterator rosterItr = rosterDeclNodeItr->begin(); rosterItr != rosterDeclNodeItr->end(); rosterItr++)
 		{
-			if (rosterItr->name() == configXMLConstants::roseterTag)
+			// If we're looking at a proper roster node, we can just parse its XML contents as normal.
+			if (rosterItr->name() == configXMLConstants::rosterTag)
 			{
 				std::pair<std::string, std::string> tempPair("", "");
 				tempPair.first = rosterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
@@ -493,15 +531,21 @@ namespace lava
 					result.push_back(tempPair);
 				}
 			}
-		}
-
-		// Collect any plaintext entries from the declaration node.
-		std::stringstream nodePlainTextStream(rosterDeclNodeItr->text().as_string(""));
-		std::vector<std::pair<std::string, std::string>> plainTextEntries = collectEXRostersFromPlaintext(nodePlainTextStream);
-		result.reserve(result.size() + plainTextEntries.size());
-		for (std::size_t i = 0; i < plainTextEntries.size(); i++)
-		{
-			result.push_back(plainTextEntries[i]);
+			// The only other thing we care about are plaintext nodes, since those *could* contain old-school entries.
+			else if (rosterItr->type() == pugi::node_pcdata)
+			{
+				// For these, populate a stringstream with the node's text, 
+				// and attempt to pull any entries from the text. This'll return the number of nodes, so if it's greater than 0...
+				if (collectEXRostersFromPlaintext(std::stringstream(rosterItr->value()), result) > 0)
+				{
+					// ... then flag that we've collected a plaintext entry...
+					collectedPlaintextEntry = 1;
+					// ... and replace its value with an appropriately built indentation string.
+					// Note: this removes those plaintext entries from the tree, 
+					// they'll be re-generated later so that they use proper XML syntax!
+					rosterItr->set_value(getNodeIndentationPCDataReplacement(rosterDeclNodeItr).c_str());
+				}
+			}
 		}
 
 		return result;
@@ -543,6 +587,20 @@ namespace lava
 		else
 		{
 			logOutput << "[WARNING] Roster Declaration block parsed, but no valid entries were found!\n";
+		}
+	}
+	void regenRosterDeclsInXML(pugi::xml_node_iterator& rosterDeclNodeItr, const std::vector<std::pair<std::string, std::string>>& tempRosterList)
+	{
+		// Remove all the proper roster nodes from the XML.
+		while (rosterDeclNodeItr->remove_child(configXMLConstants::rosterTag.c_str())) {}
+
+		// And for each roster string pair...
+		for (std::size_t i = 0; i < tempRosterList.size(); i++)
+		{
+			// ... generate a proper roster node for it.
+			pugi::xml_node tempCharNode = rosterDeclNodeItr->append_child(configXMLConstants::rosterTag.c_str());
+			tempCharNode.append_attribute(configXMLConstants::nameTag.c_str()) = tempRosterList[i].first.c_str();
+			tempCharNode.append_attribute(configXMLConstants::filenameTag.c_str()) = tempRosterList[i].second.c_str();
 		}
 	}
 
@@ -714,7 +772,7 @@ namespace lava
 
 		// Otherwise, create our configDoc object and attempt to populate it from the file...
 		pugi::xml_document configDoc;
-		pugi::xml_parse_result res = configDoc.load_file(configFilePath.c_str());
+		pugi::xml_parse_result res = configDoc.load_file(configFilePath.c_str(), pugi::parse_default | pugi::parse_comments | pugi::parse_ws_pcdata);
 		// ... and return 0 if the document doesn't successfully parse.
 		if (res.status != pugi::xml_parse_status::status_ok) return 0;
 
@@ -722,6 +780,8 @@ namespace lava
 		pugi::xml_node configRoot = configDoc.child(configXMLConstants::menuConfigTag.c_str());
 		// ... and return 0 if we fail to find one.
 		if (!configRoot) return 0;
+
+		bool doRebuild = 0;
 
 		// If we've successfully reached our config root node, we can begin iterating through its child nodes!
 		for (pugi::xml_node_iterator declNodeItr = configRoot.begin(); declNodeItr != configRoot.end(); declNodeItr++)
@@ -825,8 +885,23 @@ namespace lava
 				{
 					// ... collect character entries from the XML, then add them to the menu.
 					logOutput << "Adding EX Characters to Character List...\n";
-					std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr);
-					addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
+					bool collectedPlaintextEntry = 0;
+					// Populate our entry list...
+					std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr, collectedPlaintextEntry);
+					// ... and if that list doesn't end up empty...
+					if (!nameIDPairs.empty())
+					{
+						// ... then we'll add those to the menu lists proper.
+						addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
+						// Additionally, if we pulled any entries from plaintext...
+						if (collectedPlaintextEntry)
+						{
+							// ... then we need to promote them to properly formatted entries, so regen the entries.
+							regenEXCharacterDeclsInXML(declNodeItr, nameIDPairs);
+							// Additionally, flag that we need to do a rebuild later.
+							doRebuild = 1;
+						}
+					}
 				}
 
 				//Do final character list summary.
@@ -848,8 +923,23 @@ namespace lava
 						logOutput << "\nAdding Rosters to Code Menu from \"" << configFilePath << "\"...\n";
 
 						// ... collect roster entries from the XML, then add them to the menu.
-						std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(codeNodeItr);
-						addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
+						bool collectedPlaintextEntry = 0;
+						// Populate our entry list...
+						std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(codeNodeItr, collectedPlaintextEntry);
+						// ... and if that list doesn't end up empty...
+						if (!tempRosterList.empty())
+						{
+							// ... then we'll add those to the menu lists proper.
+							addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
+							// Additionally, if we pulled any entries from plaintext...
+							if (collectedPlaintextEntry)
+							{
+								// ... then we need to promote them to properly formatted entries, so regen the entries.
+								regenRosterDeclsInXML(codeNodeItr, tempRosterList);
+								// Additionally, flag that we need to do a rebuild later.
+								doRebuild = 1;
+							}
+						}
 
 						//Do final roster list summary.
 						logOutput << "\nFinal Roster List:\n";
@@ -894,6 +984,11 @@ namespace lava
 					}
 				}
 			}
+		}
+
+		if (doRebuild)
+		{
+			configDoc.save_file(configFilePath.c_str());
 		}
 		
 		return 1;
