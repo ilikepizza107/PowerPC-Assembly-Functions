@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<!--PowerPC Assembly Functions (Code Menu Building Utility) Theme Declaration Document-->
-<!--Add new themes in the following format: -->
-<!--
-<menuTheme name="YOUR_NAME_HERE!">
-	<themeFile name="sc_selcharacter.pac" replacementPrefix="ex_"/>
-</menuTheme>
--->
-<!--See README.md for further details.-->
