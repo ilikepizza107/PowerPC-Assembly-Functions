@@ -1,3 +1,0 @@
-#Add new lines in the following format:
-#	"Roster Name" = "Roster Filename"
-#See README.md for further details.
