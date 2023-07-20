@@ -295,7 +295,11 @@ bool CONFIG_DELETE_CONTROLS_COMMENTS = false;
 unsigned char CONFIG_BACKPLATE_COLOR_MODE = backplateColorConstants::pSCL_NONE;
 bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED = 1;
 
+#if PROJECT_PLUS_EX_BUILD
 const std::string menuConfigXMLFileName = "EX_Config.xml";
+#else
+const std::string menuConfigXMLFileName = "Config.xml";
+#endif
 const std::string netMenuConfigXMLFileName = "Net-" + menuConfigXMLFileName;
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string symbolMapInputFileName = "symbols.map";
