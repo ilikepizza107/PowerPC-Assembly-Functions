@@ -308,7 +308,7 @@ int main(int argc, char** argv)
 		lava::gecko::buildGeckoCodeDictionary();
 		if (std::filesystem::is_regular_file(symbolMapInputFileName))
 		{
-			logOutput << "Symbol map file detected! Parsing \"" << symbolMapInputFileName << "\"... ";
+			logOutput << "\nSymbol map file detected! Parsing \"" << symbolMapInputFileName << "\"... ";
 			if (lava::ppc::parseMapFile(symbolMapInputFileName))
 			{
 				logOutput << "Success!\n";

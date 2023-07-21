@@ -62,7 +62,7 @@ namespace lava
 
 		if (std::filesystem::is_regular_file(fileToCopy) && std::filesystem::is_regular_file(fileToOverwrite))
 		{
-			std::cout << "Detected \"" << fileToOverwrite << "\".\n" <<
+			std::cout << "\nDetected \"" << fileToOverwrite << "\".\n" <<
 				"Would you like to copy \"" << fileToCopy << "\" over it? " <<
 				"A backup will be made of the existing file.\n";
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
@@ -92,7 +92,6 @@ namespace lava
 			{
 				std::cout << "Skipping copy.\n";
 			}
-			std::cout << "\n";
 		}
 
 		return backupSucceeded && copySucceeded;
@@ -103,7 +102,7 @@ namespace lava
 
 		if (std::filesystem::is_regular_file(fileToCopy) && !std::filesystem::is_regular_file(fileToOverwrite))
 		{
-			std::cout << "Couldn't detect \"" << fileToOverwrite << "\".\n" << "Would you like to copy \"" << fileToCopy << "\" to that location?\n";
+			std::cout << "\nCouldn't detect \"" << fileToOverwrite << "\".\n" << "Would you like to copy \"" << fileToCopy << "\" to that location?\n";
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
 			if ((decisionOverride == INT_MAX && yesNoDecision('y', 'n')) || (decisionOverride != INT_MAX && decisionOverride != 0))
 			{
@@ -133,7 +132,7 @@ namespace lava
 
 		if (std::filesystem::is_regular_file(GCTRMExePath) && std::filesystem::is_regular_file(mainGCTTextFile) && std::filesystem::is_regular_file(boostGCTTextFile))
 		{
-			std::cout << "Detected \"" << GCTRMExePath << "\".\nWould you like to build \"" << mainGCTFile << "\" and \"" << boostGCTFile << "\"? Backups will be made of any existing files.\n";
+			std::cout << "\nDetected \"" << GCTRMExePath << "\".\nWould you like to build \"" << mainGCTFile << "\" and \"" << boostGCTFile << "\"? Backups will be made of any existing files.\n";
 
 			bool mainGCTBackupNeeded = std::filesystem::is_regular_file(mainGCTFile);
 			// If no backup is needed, we can consider the backup resolved. If one is, we cannot.
@@ -159,7 +158,7 @@ namespace lava
 				}
 				if (mainGCTBackupResolved && boostGCTBackupResolved)
 				{
-					std::cout << "Success! Running GCTRM.\n";
+					std::cout << "Success! Running GCTRM:\n";
 					result = 1;
 					std::string commandFull = "\"" + GCTRMCommandBase + "\"" + mainGCTTextFile + "\"\"";
 					std::cout << "\n" << commandFull << "\n";
