@@ -2,7 +2,7 @@
 #include "_BackplateColors.h"
 
 const std::string codePrefix = "[CM: _BackplateColors] ";
-const std::string codeVersion = "v2.0.0";
+const std::string codeVersion = "v2.0.1";
 const std::string codeSuffix = " " + codeVersion + " [QuickLava]";
 
 // Shield Color Notes:
@@ -257,10 +257,19 @@ void storeTeamBattleStatus()
 	storeTeamBattleStatusBody(4);
 	ASMEnd(0x7c7c1b78); // Restore original instruction: mr	r28, r3
 
-	// Hooks "setStageSetting/[sqSingleSimple]/sq_single_simple.o"
-	ASMStart(0x806e10dc, codePrefix + "Cache Classic Mode Team Battle Status" + codeSuffix);
+	// Hooks "appear/[IfPlayer]/if_player.o"
+	ASMStart(0x800e0a44, codePrefix + "Cache In-game Mode Team Battle Status" + codeSuffix);
 	storeTeamBattleStatusBody(0);
-	ASMEnd(0x88170009); // Restore Original Instruction: lbz	r0, 0x0009 (r23)
+	ASMEnd(0x2c000000); // Restore Original Instruction: cmpwi	r0, 0
+
+	// Hooks "setAdventureCondition/[sqSingleBoss]/sq_single_boss.o"
+	ASMStart(0x806e5f08, codePrefix + "Only 2P Stadium Boss Battles Are Considered Team Battles" + codeSuffix);
+	// Where we're hooking, we're in a loop being used to initialize player slots for Stadium Boss Battles.
+	// Here, r23 is the iterator register (starts at 0, increments once per cycle), and r30 is a pointer to the GameModeMelee struct.
+	// This specific line we're hooking is in a block which indicates that the given player slot is active, so on the first run
+	// through we guarantee set the Team Mode byte to '0', and *if* a second player exists, we'll set it to '1' on the second run through.
+	STB(23, 30, 0x13);
+	ASMEnd(0x9bf90099); // Restore Original Instruction: stb	r31, 0x0099 (r25)
 
 	// 806dcf00
 	// 806e0aec setSimpleSetting/[sqSingleSimple]/sq_single_simple.o
