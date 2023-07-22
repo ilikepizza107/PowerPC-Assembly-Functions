@@ -10,7 +10,7 @@
 
 namespace lava
 {
-	const std::string version = "v1.2.0";
+	const std::string version = "v1.2.1";
 	extern int CMNUCopyOverride;
 	extern int ASMCopyOverride;
 	extern int GCTBuildOverride;
