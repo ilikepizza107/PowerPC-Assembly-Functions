@@ -4,6 +4,6 @@
 #include "stdafx.h"
 #include "_AdditionalCode.h"
 
-void dashAttackItemGrab();
+void dashAttackItemGrab(bool codeEnabled = 1);
 
 #endif

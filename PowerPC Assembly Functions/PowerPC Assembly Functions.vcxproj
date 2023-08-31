@@ -177,6 +177,7 @@
     <ClInclude Include="IkeClimbers.h" />
     <ClInclude Include="Last Character Auto Select.h" />
     <ClInclude Include="_AdditionalCode_Util.h" />
+    <ClInclude Include="_JumpsquatOverride.h" />
     <ClInclude Include="_lavaASMHexConvert.h" />
     <ClInclude Include="Light Shield.h" />
     <ClInclude Include="Miscellaneous Code.h" />
@@ -258,6 +259,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="_JumpsquatOverride.cpp" />
     <ClCompile Include="_lavaASMHexConvert.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>

@@ -3,10 +3,10 @@
 
 const std::string codeVersion = "v1.0.0";
 
-void dashAttackItemGrab()
+void dashAttackItemGrab(bool codeEnabled)
 {
-	// If Toggle Enabled
-	if (DASH_ATTACK_ITEM_GRAB_INDEX != -1)
+	// If Code Enabled
+	if (codeEnabled && DASH_ATTACK_ITEM_GRAB_INDEX != -1)
 	{
 		int reg1 = 30;
 		int reg2 = 12;

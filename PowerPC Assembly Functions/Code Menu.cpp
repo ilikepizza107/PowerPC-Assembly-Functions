@@ -82,6 +82,8 @@ int BACKPLATE_COLOR_3_INDEX = -1;
 int BACKPLATE_COLOR_4_INDEX = -1;
 int BACKPLATE_COLOR_C_INDEX = -1;
 int BACKPLATE_COLOR_T_INDEX = -1;
+int JUMPSQUAT_OVERRIDE_TOGGLE_INDEX = -1;
+int JUMPSQUAT_OVERRIDE_FRAMES_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
 
 //constant overrides
@@ -294,6 +296,8 @@ std::vector<std::string> CONFIG_INCOMING_COMMENTS{};
 bool CONFIG_DELETE_CONTROLS_COMMENTS = false;
 unsigned char CONFIG_BACKPLATE_COLOR_MODE = backplateColorConstants::pSCL_NONE;
 bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED = 1;
+bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED = 1;
+
 
 #if PROJECT_PLUS_EX_BUILD
 const std::string menuConfigXMLFileName = "EX_Config.xml";
@@ -854,6 +858,11 @@ void CodeMenu()
 	//ConstantsLines.push_back(new Selection("Tripping Toggle", { "OFF", "ON" }, 0, TRIP_TOGGLE_INDEX));
 	//ConstantsLines.push_back(new Floating("Tripping Rate", 0, 100, 1.0, 1.0, TRIP_RATE_MULTIPLIER_INDEX, "%.2f%"));
 	//ConstantsLines.push_back(new Selection("Tripping Cooldown Toggle", { "ON", "OFF" }, 0, TRIP_INTERVAL_INDEX));
+	if (CONFIG_JUMPSQUAT_OVERRIDE_ENABLED)
+	{
+		ConstantsLines.push_back(new Toggle("Universal Jumpsquats Toggle", 0, JUMPSQUAT_OVERRIDE_TOGGLE_INDEX));
+		ConstantsLines.push_back(new Integer("Universal Jumpsquats Length", 0, 999, 3, 1, JUMPSQUAT_OVERRIDE_FRAMES_INDEX, "%d Frame(s)"));
+	}
 	Page ConstantsPage("Gameplay Modifiers", ConstantsLines);
 
 	//DBZ Mode settings
@@ -1546,7 +1555,9 @@ void CreateMenu(Page MainPage)
 	// First byte is an offset used to lbzx to either VALUE or DEFAULT quickly (init to VALUE).
 	AddValueToByteArray(Line::VALUE << 0x18, Header);
 
-	
+	// Jumpsquat Override
+	AddValueToByteArray(JUMPSQUAT_OVERRIDE_TOGGLE_INDEX, Header);
+	AddValueToByteArray(JUMPSQUAT_OVERRIDE_FRAMES_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
