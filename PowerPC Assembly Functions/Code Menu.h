@@ -831,8 +831,13 @@ public:
 class Integer : public Line
 {
 public:
-	Integer(string Text, int Min, int Max, int Default, int Speed, int &Index, std::string format = "%d")
-	: Line(Text + ":  " + format, NUMBER_LINE_TEXT_START, INTEGER_LINE, 0, NORMAL_LINE_COLOR_OFFSET, &Index)
+	enum INTEGER_FLAGS_FIELDS
+	{
+		INT_FLAG_ALLOW_WRAP = 0b10000000,
+	};
+
+	Integer(string Text, int Min, int Max, int Default, int Speed, int &Index, std::string format = "%d", u8 flags = 0)
+	: Line(Text + ":  " + format, NUMBER_LINE_TEXT_START, INTEGER_LINE, flags, NORMAL_LINE_COLOR_OFFSET, &Index)
 	{
 		this->Min = Min;
 		this->Max = Max;

@@ -865,9 +865,9 @@ void CodeMenu()
 		const int minFrameCount = 1;
 		const int maxFrameCount = 3600;
 		ConstantsLines.push_back(new Selection("Jumpsquat Modifier Mode", { "Disabled", "Replace", "Add", "Subtract", "Multiply", "Divide", "Distance From Value", "Random Within Range"}, 0, JUMPSQUAT_OVERRIDE_TOGGLE_INDEX));
-		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Value", minFrameCount, maxFrameCount, 3, 1, JUMPSQUAT_OVERRIDE_FRAMES_INDEX, "%d"));
-		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Minimum Length", minFrameCount, maxFrameCount, minFrameCount, 1, JUMPSQUAT_OVERRIDE_MIN_INDEX, "%d"));
-		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Maximum Length", minFrameCount, maxFrameCount, maxFrameCount, 1, JUMPSQUAT_OVERRIDE_MAX_INDEX, "%d"));
+		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Value", minFrameCount, maxFrameCount, 3, 1, JUMPSQUAT_OVERRIDE_FRAMES_INDEX, "%d", Integer::INT_FLAG_ALLOW_WRAP));
+		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Minimum Length", minFrameCount, maxFrameCount, minFrameCount, 1, JUMPSQUAT_OVERRIDE_MIN_INDEX, "%d", Integer::INT_FLAG_ALLOW_WRAP));
+		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Maximum Length", minFrameCount, maxFrameCount, maxFrameCount, 1, JUMPSQUAT_OVERRIDE_MAX_INDEX, "%d", Integer::INT_FLAG_ALLOW_WRAP));
 	}
 	Page ConstantsPage("Gameplay Modifiers", ConstantsLines);
 
@@ -945,10 +945,10 @@ void CodeMenu()
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
 	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	HUDColorLines.push_back(new Integer("Red",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Blue",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Yellow",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d"));
-	HUDColorLines.push_back(new Integer("Green",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d"));
+	HUDColorLines.push_back(new Integer("Red",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
+	HUDColorLines.push_back(new Integer("Blue",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
+	HUDColorLines.push_back(new Integer("Yellow",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
+	HUDColorLines.push_back(new Integer("Green",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
 	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
 	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
@@ -2498,11 +2498,22 @@ void DecreaseValue(int LineReg, int PageReg, int TypeReg, int TempReg1, int Temp
 			SUBF(TempReg1, TempReg1, TempReg3);
 
 			LWZ(TempReg3, LineReg, Integer::MIN);
+			// If Decremented Value is less than Min value...
 			If(TempReg1, LESS, TempReg3); {
-				STW(TempReg3, LineReg, Line::VALUE);
-			}Else(); {
-				STW(TempReg1, LineReg, Line::VALUE);
+				// ... load flag byte...
+				LBZ(TempReg2, LineReg, Line::FLAGS);
+				// ... and check if the Wrap flag is enabled.
+				ANDI(TempReg2, TempReg2, Integer::INT_FLAG_ALLOW_WRAP);
+				BC(2, bCACB_EQUAL);
+				// If it is, overwrite the MIN value in TempReg3 with the MAX value!
+				LWZ(TempReg3, LineReg, Line::MAX);
+
+				// And finally, copy the TempReg3 into TempReg1.
+				// Final result being, if Wrap flag is enabled, TempReg1 == Max, if not, TempReg1 == Min.
+				MR(TempReg1, TempReg3);
 			}EndIf();
+
+			STW(TempReg1, LineReg, Line::VALUE);
 		}Else(); {
 			//floating
 			LFS(2, LineReg, Line::VALUE);
@@ -2557,11 +2568,22 @@ void IncreaseValue(int LineReg, int PageReg, int TypeReg, int TempReg1, int Temp
 			ADD(TempReg1, TempReg1, TempReg3);
 
 			LWZ(TempReg3, LineReg, Integer::MAX);
+			// If Incremented Value is greater than Max value...
 			If(TempReg1, GREATER, TempReg3); {
-				STW(TempReg3, LineReg, Line::VALUE);
-			}Else(); {
-				STW(TempReg1, LineReg, Line::VALUE);
+				// ... load flag byte...
+				LBZ(TempReg2, LineReg, Line::FLAGS);
+				// ... and check if the Wrap flag is enabled.
+				ANDI(TempReg2, TempReg2, Integer::INT_FLAG_ALLOW_WRAP);
+				BC(2, bCACB_EQUAL);
+				// If it is, overwrite the MAX value in TempReg3 with the MIN value!
+				LWZ(TempReg3, LineReg, Line::MIN);
+
+				// And finally, copy TempReg3 into TempReg1.
+				// Final result being, if Wrap flag is enabled, TempReg1 == Min, if not, TempReg1 == Max.
+				MR(TempReg1, TempReg3);
 			}EndIf();
+
+			STW(TempReg1, LineReg, Line::VALUE);
 		}Else(); {
 			//floating
 			LFS(2, LineReg, Line::VALUE);
