@@ -52,6 +52,14 @@ void jumpsquatOverride(bool codeEnabled)
 		ADDIC(reg2, reg2, -1, 1);
 		JumpToLabel(applyChangesLabel, bCACB_EQUAL);
 
+		// Distance Case (New Value = ABS(MOD_VAL - FRAME_COUNT)):
+		SUBF(modificationResultReg, reg1, frameReg);
+		CMPI(modificationResultReg, 0, 0);
+		BC(2, bCACB_GREATER_OR_EQ);
+		NEG(modificationResultReg, modificationResultReg);
+		ADDIC(reg2, reg2, -1, 1);
+		JumpToLabel(applyChangesLabel, bCACB_EQUAL);
+
 		// Random Case:
 		Randi(modificationResultReg, reg1, frameReg); // We can just use the canned Randi implementation for this!	
 		// And we don't need to do the normal ADDIC, Jump idiom here since it's the last case in the list.
