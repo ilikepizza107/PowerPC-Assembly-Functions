@@ -62,15 +62,27 @@ void jumpsquatOverride(bool codeEnabled)
 
 		// Random Case:
 		Randi(modificationResultReg, reg1, frameReg); // We can just use the canned Randi implementation for this!	
-		// And we don't need to do the normal ADDIC, Jump idiom here since it's the last case in the list.
+		// And we don't need to do the normal ADDIC-Jump idiom here since it's the last case in the list.
 
-		Label(applyChangesLabel);
+		Label(applyChangesLabel); // Note: Past this point, we can freely use reg1 and reg2 again, since we no longer need their old values!
 
-		// Check if our result ended up less than 1...
-		CMPI(modificationResultReg, 1, 0);
+		// Clamp our result value between our minimum and maximum values!
+		// Grab our minimum value...
+		ADDIS(reg1, 0, JUMPSQUAT_OVERRIDE_MIN_INDEX >> 0x10);
+		LWZ(reg2, reg1, (JUMPSQUAT_OVERRIDE_MIN_INDEX & 0xFFFF) + Line::VALUE);
+		// ... and if our calculated length isn't greater than or equal to our minimum...
+		CMP(modificationResultReg, reg2, 0);
 		BC(2, bCACB_GREATER_OR_EQ);
-		// ... and hard set it to 1 if it did.
-		ADDI(modificationResultReg, 0, 1);
+		// ... set it to our minimum!
+		MR(modificationResultReg, reg2);
+
+		// Same for the maximum, grab the max value...
+		LWZ(reg2, reg1, (JUMPSQUAT_OVERRIDE_MAX_INDEX & 0xFFFF) + Line::VALUE);
+		// ... and if our calculated length isn't less than or equal to our maximum...
+		CMP(modificationResultReg, reg2, 0);
+		BC(2, bCACB_LESSER_OR_EQ);
+		// ... set it to our maximum!
+		MR(modificationResultReg, reg2);
 
 		// And finally, copy the modified value into the frame register!
 		MR(frameReg, modificationResultReg);

@@ -84,6 +84,8 @@ int BACKPLATE_COLOR_C_INDEX = -1;
 int BACKPLATE_COLOR_T_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_TOGGLE_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_FRAMES_INDEX = -1;
+int JUMPSQUAT_OVERRIDE_MIN_INDEX = -1;
+int JUMPSQUAT_OVERRIDE_MAX_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
 
 //constant overrides
@@ -860,8 +862,12 @@ void CodeMenu()
 	//ConstantsLines.push_back(new Selection("Tripping Cooldown Toggle", { "ON", "OFF" }, 0, TRIP_INTERVAL_INDEX));
 	if (CONFIG_JUMPSQUAT_OVERRIDE_ENABLED)
 	{
+		const int minFrameCount = 1;
+		const int maxFrameCount = 3600;
 		ConstantsLines.push_back(new Selection("Jumpsquat Modifier Mode", { "Disabled", "Replace", "Add", "Subtract", "Multiply", "Divide", "Distance From Value", "Random Within Range"}, 0, JUMPSQUAT_OVERRIDE_TOGGLE_INDEX));
-		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Value", 1, 999, 3, 1, JUMPSQUAT_OVERRIDE_FRAMES_INDEX, "%d"));
+		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Value", minFrameCount, maxFrameCount, 3, 1, JUMPSQUAT_OVERRIDE_FRAMES_INDEX, "%d"));
+		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Minimum Length", minFrameCount, maxFrameCount, minFrameCount, 1, JUMPSQUAT_OVERRIDE_MIN_INDEX, "%d"));
+		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Maximum Length", minFrameCount, maxFrameCount, maxFrameCount, 1, JUMPSQUAT_OVERRIDE_MAX_INDEX, "%d"));
 	}
 	Page ConstantsPage("Gameplay Modifiers", ConstantsLines);
 
@@ -1558,6 +1564,8 @@ void CreateMenu(Page MainPage)
 	// Jumpsquat Override
 	AddValueToByteArray(JUMPSQUAT_OVERRIDE_TOGGLE_INDEX, Header);
 	AddValueToByteArray(JUMPSQUAT_OVERRIDE_FRAMES_INDEX, Header);
+	AddValueToByteArray(JUMPSQUAT_OVERRIDE_MIN_INDEX, Header);
+	AddValueToByteArray(JUMPSQUAT_OVERRIDE_MAX_INDEX, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
