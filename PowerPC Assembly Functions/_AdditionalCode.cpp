@@ -289,7 +289,7 @@ namespace lava
 		const std::string slotColorDeclsTag = "slotColorChanger";
 
 		// Jumpsquat Override
-		const std::string jumpsquatOverrideTag = "jumpsquatOverride";
+		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
 	}
 
 	// Returns a string to be used as padding to replace the newline and indentation from replaced plaintext nodes. 
@@ -980,7 +980,7 @@ namespace lava
 					// If we're looking at the Jumpsquat Override block...
 					else if (codeNodeItr->name() == configXMLConstants::jumpsquatOverrideTag)
 					{
-						logOutput << "\nSetting Jumpsquat Override status...\n";
+						logOutput << "\nSetting Jumpsquat Modifier status...\n";
 						// ... handle enabling/disabling it.
 						setCodeEnabledFromXML(codeNodeItr, CONFIG_JUMPSQUAT_OVERRIDE_ENABLED, logOutput);
 					}

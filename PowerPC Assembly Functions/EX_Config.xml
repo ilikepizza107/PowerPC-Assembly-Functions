@@ -53,7 +53,7 @@
 		<dashAttackItemGrab enabled="true" />
 		
 		<!--Adds lines for manipulating how many frames of jumpsquat characters go through to the "Gameplay Modifiers" menu!-->
-		<jumpsquatOverride enabled="true" />
+		<jumpsquatModifier enabled="true" />
 		
 		<!--Controls the behavior of the Player Slot Color Changer Code!-->
 		<!--The "mode" field dictates what elements of the game the code will affect:-->
