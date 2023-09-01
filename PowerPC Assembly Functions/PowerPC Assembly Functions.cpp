@@ -1748,12 +1748,32 @@ void ADDI(int DestReg, int SourceReg, int Immediate)
 	WriteIntToFile(OpHex);
 }
 
+void ADDIC(int DestReg, int SourceReg, int Immediate, bool SetConditionReg)
+{
+	// Op Code is 13 if we're updating the condition register, 12 if we aren't! 
+	OpHex = GetOpSegment((SetConditionReg) ? 13 : 12, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
 void ADDIS(int DestReg, int SourceReg, int Immediate)
 {
 	OpHex = GetOpSegment(15, 6, 5);
 	OpHex |= GetOpSegment(DestReg, 5, 10);
 	OpHex |= GetOpSegment(SourceReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void ADDME(int DestReg, int SourceReg, bool SetConditionReg)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 15);
+	OpHex |= GetOpSegment(234, 9, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
