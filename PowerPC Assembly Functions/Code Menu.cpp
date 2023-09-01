@@ -860,8 +860,8 @@ void CodeMenu()
 	//ConstantsLines.push_back(new Selection("Tripping Cooldown Toggle", { "ON", "OFF" }, 0, TRIP_INTERVAL_INDEX));
 	if (CONFIG_JUMPSQUAT_OVERRIDE_ENABLED)
 	{
-		ConstantsLines.push_back(new Selection("Jumpsquat Modifier Mode", { "Disabled", "Replace", "Add", "Subtract", "Multiply", "Divide"}, 0, JUMPSQUAT_OVERRIDE_TOGGLE_INDEX));
-		ConstantsLines.push_back(new Floating("Jumpsquat Modifier Value", 1.0f, 999.0f, 3.0f, 1.0f, JUMPSQUAT_OVERRIDE_FRAMES_INDEX, "%f"));
+		ConstantsLines.push_back(new Selection("Jumpsquat Modifier Mode", { "Disabled", "Replace", "Add", "Subtract", "Multiply", "Divide", "Random"}, 0, JUMPSQUAT_OVERRIDE_TOGGLE_INDEX));
+		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Value", 1, 999, 3, 1, JUMPSQUAT_OVERRIDE_FRAMES_INDEX, "%d"));
 	}
 	Page ConstantsPage("Gameplay Modifiers", ConstantsLines);
 
