@@ -18,9 +18,7 @@ void dashAttackItemGrab(bool codeEnabled)
 		int reg4 = 11;
 		int reg5 = 12;
 
-		int onLoopStartLabel = GetNextLabel();
-		int offLoopStartLabel = GetNextLabel();
-		int exitLabel = GetNextLabel();
+		int loopStartLabel = GetNextLabel();
 
 		// First Element: Signature Location
 		// Second Element: Replacement Signature
@@ -41,7 +39,6 @@ void dashAttackItemGrab(bool codeEnabled)
 
 		// Create Instruction Address and Content Table
 		BL(1 + (instrOverrideTableTableSize / 4));
-
 		for (auto i : instrOverrideTable)
 		{
 			WriteIntToFile(i[0]);
@@ -52,60 +49,43 @@ void dashAttackItemGrab(bool codeEnabled)
 		// Load the current state of the toggle...
 		ADDIS(reg1, 0, DASH_ATTACK_ITEM_GRAB_INDEX >> 0x10);
 		LWZ(reg1, reg1, (DASH_ATTACK_ITEM_GRAB_INDEX & 0xFFFF) + 0x8);
+		// ... and check whether or not the Toggle was on, which we'll use in a moment.
+		CMPLI(reg1, 0, 0);
 
-		// ... and if the toggle is set to on (ie. item grabbing is on)...
-		If(reg1, EQUAL_I, 1);
-		{
-			// Setup XER for LSWX...
-			ADDI(reg1, 0, 0xC);
-			MTXER(reg1);
-			// ... pull the table address from LR...
-			MFLR(reg1);
-			// ... and zero reg2, which'll be our offset iterator.
-			ADDI(reg2, 0, 0);
-			
-			// Beginning of Toggle On Loop
-			Label(onLoopStartLabel);
-			// Load our 3 entries from (reg1 + reg2) into registers starting at reg3!
-			LSWX(reg3, reg1, reg2);
-			// Our first value is the address to write the following 0x8 bytes from the table to,
-			// so we STSWI to reg3, starting from register reg4, for 0x8 bytes!
-			STSWI(reg4, reg3, 0x8);
-			// Push offset register forwards by one entry...
-			ADDI(reg2, reg2, instrOverrideTableEntrySize);
-			// ... and if we're still within our table...
-			CMPLI(reg2, instrOverrideTableTableSize, 0);
-			// ... continue with our loop!
-			JumpToLabel(onLoopStartLabel, bCACB_LESSER);
-		}
-		// Otherwise...
-		Else();
-		{
-			// Pull the table address from LR...
-			MFLR(reg1);
-			// ... and zero reg2, which'll be our offset iterator.
-			ADDI(reg2, 0, 0);
+		// Setup Predefined Values Here:
+		// These are the values for the NOP signature, which we'll preload into reg4 and reg5.
+		// They'll be overwritten if the toggle was on, but left alone if not!
+		SetRegister(reg4, 0x00020000);
+		SetRegister(reg5, 0x00000000);
+		// This is the number of bytes we're gonna LSWX with later.
+		// By default we'll set it to 0xC, which pulls the full 3 values for each entry from the table, populating reg3, reg4, and reg5.
+		ADDI(reg1, 0, 0xC);
+		// But if the Toggle was off...
+		BC(2, bCACB_NOT_EQUAL);
+		// ... then we'll overwrite that if 0x4, so we only pull the target location instead, leaving our preloaded NOP Signature in place!
+		ADDI(reg1, 0, 0x4);
+		// Either way, we store the result in XER.
+		MTXER(reg1);
+		// Finally, we'll pull the table address from LR...
+		MFLR(reg1);
+		// ... and zero reg2, which'll be our offset iterator.
+		ADDI(reg2, 0, 0);
 
-			// Load NOP Signature into reg2, 0x0 into reg3 in preparation for storage
-			ADDIS(reg4, 0, 0x02);
-			ADDI(reg5, 0, 0x00);
-
-			// Beginning of Toggle Off Loop
-			Label(offLoopStartLabel);
-			// Load *just the Signature Loc* from (reg1 + reg2) into reg3!
-			LWZX(reg3, reg1, reg2);
-			// We can then STSWI to reg3, to write our NOP signature!
-			STSWI(reg4, reg3, 0x8);
-			// Push offset register forwards by one entry...
-			ADDI(reg2, reg2, instrOverrideTableEntrySize);
-			// ... and if we're still within our table...
-			CMPLI(reg2, instrOverrideTableTableSize, 0);
-			// ... continue with our loop!
-			JumpToLabel(offLoopStartLabel, bCACB_LESSER);
-		}
-		EndIf();
-
-		Label(exitLabel);
+		// Beginning of Loop
+		Label(loopStartLabel);
+		// Load the necessary values frmo the table based on Toggle State:
+		// If Toggle was on, loads all 3 entries from (reg1 + reg2) into registers starting at reg3!
+		// If it's off, loads just the signatuer Loc, leaving reg4 and reg5 alone!
+		LSWX(reg3, reg1, reg2);
+		// Our first value is the address to write the following 0x8 bytes from the table to,
+		// so we STSWI to reg3, starting from register reg4, for 0x8 bytes!
+		STSWI(reg4, reg3, 0x8);
+		// Push offset register forwards by one entry...
+		ADDI(reg2, reg2, instrOverrideTableEntrySize);
+		// ... and if we're still within our table...
+		CMPLI(reg2, instrOverrideTableTableSize, 0);
+		// ... continue with our loop!
+		JumpToLabel(loopStartLabel, bCACB_LESSER);
 
 		ASMEnd(0x7c7e1b78); // Restore the instruction replaced by the branch; mr r30, r3.
 	}
