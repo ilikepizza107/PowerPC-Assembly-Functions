@@ -373,17 +373,21 @@ void EndIf()
 	assert(IfIndex >= 0);
 	int holdPos = WPtr.tellp();
 	WPtr.seekp(IfStartPos[IfIndex]);
-	int BranchCond = BRANCH_IF_FALSE;
 	if(IfConditionArray[IfIndex] == IS_ELSE)
 	{
-		BranchCond = BRANCH_ALWAYS;
+		B(CalcBranchOffset(IfStartPos[IfIndex], holdPos));
 	}
-	else if(IfConditionArray[IfIndex] > 2)
+	else
 	{
-		BranchCond = BRANCH_IF_TRUE;
-		IfConditionArray[IfIndex] -= 3;
+		int BranchCond = BRANCH_IF_FALSE;
+		if (IfConditionArray[IfIndex] > 2)
+		{
+			BranchCond = BRANCH_IF_TRUE;
+			IfConditionArray[IfIndex] -= 3;
+		}
+		BC(CalcBranchOffset(IfStartPos[IfIndex], holdPos), BranchCond, IfConditionArray[IfIndex]);
 	}
-	BC(CalcBranchOffset(IfStartPos[IfIndex], holdPos), BranchCond, IfConditionArray[IfIndex]);
+	
 	WPtr.seekp(holdPos);
 }
 

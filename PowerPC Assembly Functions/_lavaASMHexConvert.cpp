@@ -262,10 +262,12 @@ namespace lava::ppc
 				baseMnemonicSuffix += "a";
 			}
 
-			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix);
+			std::string crfString = (BI / 4) ? (" cr" + lava::numToDecStringWithPadding(BI / 4, 0) + ",") : ("");
+
+			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI % 4, baseMnemonicSuffix);
 			if (!simpleMnem.empty())
 			{
-				result << simpleMnem;
+				result << simpleMnem << crfString;
 			}
 			else
 			{
@@ -279,7 +281,7 @@ namespace lava::ppc
 					result << "a";
 				}
 
-				result << " " << (unsigned long)BO << ", " << (unsigned long)BI << ", ";
+				result << " " << (unsigned long)BO << ", " << (unsigned long)BI << ",";
 			}
 			
 			result << " " << immediateStr;
@@ -307,10 +309,12 @@ namespace lava::ppc
 				baseMnemonicSuffix += "l";
 			}
 
-			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix) : "";
+			std::string crfString = (BI / 4) ? (" cr" + lava::numToDecStringWithPadding(BI / 4, 0) + ",") : ("");
+
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI % 4, baseMnemonicSuffix) : "";
 			if (!simpleMnem.empty())
 			{
-				result << simpleMnem;
+				result << simpleMnem << crfString;
 			}
 			else
 			{
@@ -346,10 +350,12 @@ namespace lava::ppc
 				baseMnemonicSuffix += "l";
 			}
 
-			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI, baseMnemonicSuffix) : "";
+			std::string crfString = (BI / 4) ? (" cr" + lava::numToDecStringWithPadding(BI / 4, 0) + ",") : ("");
+
+			std::string simpleMnem = (BH == 0) ? parseBOAndBIToBranchMnem(BO, BI % 4, baseMnemonicSuffix) : "";
 			if (!simpleMnem.empty())
 			{
-				result << simpleMnem;
+				result << simpleMnem << crfString;
 			}
 			else
 			{
