@@ -2398,15 +2398,18 @@ void LSWI(int StartReg, int AddressReg, int numBytes) {
 	WriteIntToFile(OpHex);
 }
 
-void LSWX(int StartReg, int AddressReg1, int AddressReg2, int NumArgsReg) {
-	MTXER(NumArgsReg);
-
+void LSWX(int StartReg, int AddressReg1, int AddressReg2)
+{
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(StartReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg1, 5, 15);
 	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(533, 10, 30);
 	WriteIntToFile(OpHex);
+}
+void LSWX(int StartReg, int AddressReg1, int AddressReg2, int NumArgsReg) {
+	MTXER(NumArgsReg);
+	LSWX(StartReg, AddressReg1, AddressReg2);
 }
 
 void MFCTR(int TargetReg)
@@ -2423,6 +2426,15 @@ void MFLR(int TargetReg)
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(TargetReg, 5, 10);
 	OpHex |= GetOpSegment(8 << 5, 10, 20); //spr
+	OpHex |= GetOpSegment(339, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
+void MFXER(int TargetReg)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(TargetReg, 5, 10);
+	OpHex |= GetOpSegment(1 << 5, 10, 20); //xer
 	OpHex |= GetOpSegment(339, 10, 30);
 	WriteIntToFile(OpHex);
 }
@@ -2717,6 +2729,31 @@ void STMW(int StartReg, int AddressReg, int Immediate)
 	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
+}
+
+void STSWI(int StartReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(StartReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 5, 20);
+	OpHex |= GetOpSegment(725, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
+void STSWX(int StartReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(StartReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(661, 10, 30);
+	WriteIntToFile(OpHex);
+}
+void STSWX(int StartReg, int AddressReg1, int AddressReg2, int NumArgsReg)
+{
+	MTXER(NumArgsReg);
+	STSWX(StartReg, AddressReg1, AddressReg2);
 }
 
 void STW(int DestReg, int AddressReg, int Immediate)
