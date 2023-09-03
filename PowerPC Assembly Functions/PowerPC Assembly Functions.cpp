@@ -131,6 +131,30 @@ bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStream
 	return lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0) == expectedLength;
 }
 
+branchConditionAndConditionBit::branchConditionAndConditionBit(int BranchConditionIn, int ConditionBitIn, unsigned char ConditionRegFieldIn)
+{
+	BranchCondition = BranchConditionIn;
+	if (ConditionRegFieldIn == UCHAR_MAX)
+	{
+		if (ConditionBitIn != INT_MAX)
+		{
+			assert(ConditionBitIn < 32 && "Invalid ConditionBitIn: Value must be less than 32; Condition Register is only 32 bits!");
+		}
+		ConditionBit = ConditionBitIn;
+	}
+	else
+	{
+		assert(ConditionRegFieldIn < 8 && "Invalid ConditionRegFieldIn: Value must be less than 8; there are only 8 Condition Register fields!");
+		assert(ConditionBitIn < 4 && "Invalid ConditionBitIn: If ConditionRegFieldIn is specified, ConditionBitIn must only indicate bit, not field!");
+		ConditionBit = ConditionBitIn + (4 * ConditionRegFieldIn);
+	}
+}
+// Returns a copy of this bCACB, with the ConditionRegField set to the specified value!
+branchConditionAndConditionBit branchConditionAndConditionBit::inConditionRegField(unsigned char ConditionRegFieldIn) const
+{
+	return branchConditionAndConditionBit(BranchCondition, ConditionBit % 4, ConditionRegFieldIn);
+}
+
 //converts char hex digit to decimal
 int HexToDec(char x)
 {

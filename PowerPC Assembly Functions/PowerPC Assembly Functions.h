@@ -298,6 +298,7 @@ constexpr unsigned long bitIndexFromButtonHex(unsigned long buttonHex, bool doIn
 #define LT 0
 #define GT 1
 #define EQ 2
+#define SO 3
 #define MAX_CSTICK_VALUE 0x55
 #define CSTICK_COEFFICIENT 0.011775
 #define TERMINATE_REPLAY_VALUE 0x06000000
@@ -329,16 +330,20 @@ struct branchConditionAndConditionBit
 	int BranchCondition = INT_MAX;
 	int ConditionBit = INT_MAX;
 
-	branchConditionAndConditionBit(int BranchConditionIn = INT_MAX, int ConditionBitIn = INT_MAX) :
-		BranchCondition(BranchConditionIn), ConditionBit(ConditionBitIn) {};
+	branchConditionAndConditionBit(int BranchConditionIn = INT_MAX, int ConditionBitIn = INT_MAX, unsigned char ConditionRegFieldIn = UCHAR_MAX);
+
+	// Returns a copy of this bCACB, with the ConditionRegField set to the specified value!
+	branchConditionAndConditionBit inConditionRegField(unsigned char ConditionRegFieldIn) const;
 };
-const static branchConditionAndConditionBit bCACB_EQUAL				=		{ BRANCH_IF_TRUE, EQ };
-const static branchConditionAndConditionBit bCACB_NOT_EQUAL			=		{ BRANCH_IF_FALSE, EQ };
-const static branchConditionAndConditionBit bCACB_GREATER			=		{ BRANCH_IF_TRUE, GT};
-const static branchConditionAndConditionBit bCACB_GREATER_OR_EQ		=		{ BRANCH_IF_FALSE, LT};
-const static branchConditionAndConditionBit bCACB_LESSER			=		{ BRANCH_IF_TRUE, LT };
-const static branchConditionAndConditionBit bCACB_LESSER_OR_EQ		=		{ BRANCH_IF_FALSE, GT };
-const static branchConditionAndConditionBit bCACB_UNSPECIFIED		=		{ INT_MAX, INT_MAX };
+const static branchConditionAndConditionBit bCACB_EQUAL				=		{ BRANCH_IF_TRUE, EQ, 0 };
+const static branchConditionAndConditionBit bCACB_NOT_EQUAL			=		{ BRANCH_IF_FALSE, EQ, 0 };
+const static branchConditionAndConditionBit bCACB_GREATER			=		{ BRANCH_IF_TRUE, GT, 0};
+const static branchConditionAndConditionBit bCACB_GREATER_OR_EQ		=		{ BRANCH_IF_FALSE, LT, 0};
+const static branchConditionAndConditionBit bCACB_LESSER			=		{ BRANCH_IF_TRUE, LT, 0 };
+const static branchConditionAndConditionBit bCACB_LESSER_OR_EQ		=		{ BRANCH_IF_FALSE, GT, 0 };
+const static branchConditionAndConditionBit bCACB_OVERFLOW			=		{ BRANCH_IF_TRUE, SO, 0 };
+const static branchConditionAndConditionBit bCACB_NO_OVERFLOW		=		{ BRANCH_IF_FALSE, SO, 0 };
+const static branchConditionAndConditionBit bCACB_UNSPECIFIED		=		{ INT_MAX, INT_MAX, UCHAR_MAX };
 
 ///variables start
 extern fstream WPtr;
