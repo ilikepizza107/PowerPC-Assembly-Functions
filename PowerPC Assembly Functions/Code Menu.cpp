@@ -2147,17 +2147,17 @@ void ControlCodeMenu()
 							LBZ(4, Reg2, 0); //get current ID
 							ADDI(5, 5, Selection::SELECTION_LINE_OFFSETS_START + 2);
 							LHZX(5, 3, 5);
-							If(4, NOT_EQUAL, 5); {
+							If(4, NOT_EQUAL, 5); { // If the New ID and Old ID don't match...
 								SetRegister(Reg1, 0);
-								STB(5, Reg2, 0);
+								STB(5, Reg2, 0); // Overwrite Old ID with New one
 
 								SetRegister(Reg3, 0x43AD8);
-								LoadWordToReg(Reg4, 0x805A00E0);
-								LWZ(Reg4, Reg4, 0x10);
-								ADD(Reg4, Reg4, Reg3);
-								LWZ(Reg3, CharacterBufferReg, CHR_BUFFER_PORT_OFFSET);
-								MULLI(Reg3, Reg3, 0x5C);
-								STWX(Reg1, Reg4, Reg3);
+								LoadWordToReg(Reg4, 0x805A00E0); // Get ptr to GameGlobal Struct
+								LWZ(Reg4, Reg4, 0x10); // Get ptr to gmSelCharData
+								ADD(Reg4, Reg4, Reg3); // Add 0x43AD8 to addr of this struct? Way beyond the listed range in Ghidra (0x901c4618?)
+								LWZ(Reg3, CharacterBufferReg, CHR_BUFFER_PORT_OFFSET); // Get port for character to change...
+								MULLI(Reg3, Reg3, 0x5C); // ... and multiply it by 0x5C, probably to index into a list of entries
+								STWX(Reg1, Reg4, Reg3); // Write 0 into (&gmSelCharData + 0x43AD8 + OffsetIntoListForTargetPort), Setting to 1 gives RAlt?
 
 								STB(Reg1, Reg2, 5); //force costume to 0
 								STB(Reg1, Reg2, 6); //force HUD to 0
