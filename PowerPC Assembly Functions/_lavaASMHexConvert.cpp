@@ -13,6 +13,30 @@ namespace lava::ppc
 	const std::string opName_SinglePrecision = " Single";
 
 	// Utility
+	void printStringWithComment(std::ostream& outputStream, const std::string& primaryString, const std::string& commentString, bool printNewLine, unsigned long relativeCommentLoc, unsigned long commentIndentationLevel)
+	{
+		unsigned long originalFlags = outputStream.flags();
+		if (!commentString.empty())
+		{
+			outputStream << std::left << std::setw(relativeCommentLoc) << primaryString << "# " << std::string(commentIndentationLevel, '\t') << commentString;
+		}
+		else
+		{
+			outputStream << primaryString;
+		}
+		if (printNewLine)
+		{
+			outputStream << "\n";
+		}
+		outputStream.setf(originalFlags);
+	}
+	std::string getStringWithComment(const std::string& primaryString, const std::string& commentString, unsigned long relativeCommentLoc, unsigned long commentIndentationLevel)
+	{
+		static std::stringstream result("");
+		result.str("");
+		printStringWithComment(result, primaryString, commentString, 0, relativeCommentLoc, commentIndentationLevel);
+		return result.str();
+	}
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length)
 	{
 		unsigned long result = ULONG_MAX;
@@ -2603,7 +2627,7 @@ namespace lava::ppc
 
 		return result.str();
 	}
-	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, std::size_t refCountThresholdForBranchLabel)
+	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, const std::set<std::string>& disallowedMnemonics, std::size_t refsNeededForBranchLabel)
 	{
 		// Declare and pre-size the results vector.
 		std::vector<std::string> result{};
@@ -2612,7 +2636,7 @@ namespace lava::ppc
 		// Catalogue every relative branch event in the block.
 		populateBranchEventMap(hexVecIn);
 		
-		// Use the catalogue of branch events to detect any data embed.
+		// Use the catalogue of branch events to detect any data embeds.
 		std::size_t currentEmbedStart = SIZE_MAX;
 		std::map<std::size_t, std::size_t> dataEmbedStartsToLengths{};
 		for (auto i : currentBlockBranchEvents)
@@ -2638,6 +2662,7 @@ namespace lava::ppc
 			}
 		}
 
+		// Iterate through each instruction, 
 		bool currentEmbedJustStarted = 0;
 		std::size_t currentEmbedLengthCounter = 0;
 		auto currentEmbedItr = dataEmbedStartsToLengths.end();
@@ -2659,12 +2684,25 @@ namespace lava::ppc
 			// If the length counter is zero, we aren't in an embed...
 			if (currentEmbedLengthCounter == 0)
 			{
-				// ... so use a proper conversion.
-				result.push_back(convertInstructionHexToString(hexVecIn[i]));
-				if (result.back().empty())
+				// ... so use a proper conversion. 
+				std::string conversion = convertInstructionHexToString(hexVecIn[i]);
+				// Failed conversions return an empty string, which we'll use to take care of conversions using disallowed mnemonics.
+				// If a conversion wasn't empty (ie. was successful)...
+				if (!conversion.empty())
 				{
-					result.back() = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8);
+					// ... but its mnemonic is disallowed...
+					if (disallowedMnemonics.find(conversion.substr(0, conversion.find(' '))) != disallowedMnemonics.end())
+					{
+						// ... pretend the conversion simply failed, we'll pass back an empty string.
+						conversion = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8);
+					}
 				}
+				else
+				{
+					conversion = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8);
+				}
+				// Push the result to our result vector.
+				result.push_back(conversion);
 			}
 			// Otherwise...
 			else
@@ -2675,7 +2713,8 @@ namespace lava::ppc
 				if (currentEmbedJustStarted)
 				{
 					// ... also append the embed label and length to the line!
-					result.back() += " # DATA_EMBED (0x" + lava::numToHexStringWithPadding(currentEmbedItr->second * 4, 0) + " bytes)";
+					result.back() = getStringWithComment(result.back(), 
+						"DATA_EMBED(0x" + lava::numToHexStringWithPadding(currentEmbedItr->second * 4, 0) + " bytes)");
 				}
 				currentEmbedJustStarted = 0;
 				currentEmbedLengthCounter--;
@@ -2686,83 +2725,14 @@ namespace lava::ppc
 			}
 		}
 
-		/*
-		// We maintain two iterators, one to next Branch Event relative to the current instruction, and another to the previous.
-		auto prevBranchEventItr = currentBlockBranchEvents.end();
-		auto nextBranchEventItr = (currentBlockBranchEvents.empty()) ? currentBlockBranchEvents.end() : currentBlockBranchEvents.begin();
-		std::size_t mostRecentUnconditionalForwardBranch = SIZE_MAX;
-		std::size_t mostRecentBranchDestination = SIZE_MAX;
-
-		bool inEmbed = 0;
-		bool justEnteredEmbed = 0;
-		for (std::size_t i = 0; i < hexVecIn.size(); i++)
-		{
-			justEnteredEmbed = 0;
-
-			// If there is still a "next" event to consider, and we've either reached it or are about to pass it...
-			if (nextBranchEventItr != currentBlockBranchEvents.end() && (i >= nextBranchEventItr->first))
-			{
-				// If we've just *passed* our "next" event...
-				if (i > nextBranchEventItr->first)
-				{
-					// ... we need to update our iterators...
-					prevBranchEventItr = nextBranchEventItr;
-					nextBranchEventItr++;
-
-					// ... and if we've just passed an unconditional branch line...
-					if (prevBranchEventItr->second.outgoingBranchIsUnconditional && !prevBranchEventItr->second.outgoingBranchGoesBackwards)
-					{
-						// ... record its index.
-						mostRecentUnconditionalForwardBranch = prevBranchEventItr->first;
-					}
-				}
-
-				// If there is a "next" event, and we're *at* that event...
-				if (nextBranchEventItr != currentBlockBranchEvents.end() && i == nextBranchEventItr->first)
-				{
-					// ... and its line is a destination line...
-					if (!nextBranchEventItr->second.incomingBranchStartIndices.empty())
-					{
-						// ... record its index.
-						mostRecentBranchDestination = nextBranchEventItr->first;
-					}
-				}
-
-				// If we've reached an unconditional forward branch...
-				if (mostRecentUnconditionalForwardBranch != SIZE_MAX)
-				{
-					// ... we know we're in an embed if either we haven't reached a destination event at all,
-					// or that destination came *before* the forward branch!
-					inEmbed = (mostRecentBranchDestination == SIZE_MAX) || (mostRecentBranchDestination < mostRecentUnconditionalForwardBranch);
-					justEnteredEmbed = inEmbed;
-				}
-			}
-
-			if (!inEmbed)
-			{
-				result.push_back(convertInstructionHexToString(hexVecIn[i]));
-			}
-			else
-			{
-				result.push_back("word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8));
-				if (justEnteredEmbed)
-				{
-
-
-					result.back() += " DATA_EMBED";
-				}
-			}
-		}
-		*/
-
 		// If there are enough lines in the block that it's at least *possible* that we'd end up using a label, try to apply them.
-		if (hexVecIn.size() >= refCountThresholdForBranchLabel)
+		if (hexVecIn.size() >= refsNeededForBranchLabel)
 		{
 			// For each existing Branch Event...
 			for (auto i : currentBlockBranchEvents)
 			{
 				// ... check if we're looking at a destination with enough references to trigger a label. If so...
-				if (i.second.incomingBranchStartIndices.size() >= refCountThresholdForBranchLabel)
+				if (i.second.incomingBranchStartIndices.size() >= refsNeededForBranchLabel)
 				{
 					// ... generate the name for our label...
 					std::string labelName = "loc_0x" + lava::numToHexStringWithPadding(i.first, 4);
@@ -2777,11 +2747,6 @@ namespace lava::ppc
 					}
 				}
 			}
-		}
-
-		for (auto i : result)
-		{
-			std::cout << i << "\n";
 		}
 
 		return result;

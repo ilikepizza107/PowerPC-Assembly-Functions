@@ -173,6 +173,8 @@ namespace lava::ppc
 	};
 
 	// Utility
+	void printStringWithComment(std::ostream& outputStream, const std::string& primaryString, const std::string& commentString, bool printNewLine = 1, unsigned long relativeCommentLoc = 0x20, unsigned long commentIndentationLevel = 0x00);
+	std::string getStringWithComment(const std::string& primaryString, const std::string& commentString, unsigned long relativeCommentLoc = 0x20, unsigned long commentIndentationLevel = 0x00);
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length);
 	unsigned long getInstructionOpCode(unsigned long hexIn);
 
@@ -246,7 +248,7 @@ namespace lava::ppc
 	void buildInstructionDictionary();
 	asmInstruction* getInstructionPtrFromHex(unsigned long hexIn);
 	std::string convertInstructionHexToString(unsigned long hexIn);
-	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, std::size_t refCountThresholdForBranchLabel = SIZE_MAX);
+	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, const std::set<std::string>& disallowedMnemonics = {}, std::size_t refsNeededForBranchLabel = SIZE_MAX);
 	bool summarizeInstructionDictionary(std::ostream& output);
 	bool summarizeInstructionDictionary(std::string outputFilepath);
 
