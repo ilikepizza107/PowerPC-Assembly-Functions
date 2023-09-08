@@ -193,9 +193,9 @@ namespace lava::ppc
 
 		// First is Reserved Zero Mask, Second is Reserved One Mask (If Bit == 1, Must Respect Reservation)
 		void setArgumentReservations(std::vector<std::pair<char, asmInstructionArgResStatus>> reservationsIn);
-		unsigned long getSecOpMask();
-		bool validateReservedArgs(unsigned long instructionHexIn);
-		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn);
+		unsigned long getSecOpMask() const;
+		bool validateReservedArgs(unsigned long instructionHexIn) const;
+		std::vector<unsigned long> splitHexIntoArguments(unsigned long instructionHexIn) const;
 		unsigned char getArgLengthInBits(unsigned char argIndex) const;
 		asmInstructionArgResStatus getArgReservation(unsigned char argIndex) const;
 	};
@@ -244,7 +244,9 @@ namespace lava::ppc
 	extern std::map<unsigned short, asmPrOpCodeGroup> instructionDictionary;
 	asmPrOpCodeGroup* pushOpCodeGroupToDict(asmPrimaryOpCodes opCodeIn, unsigned char secOpCodeStart = UCHAR_MAX, unsigned char secOpCodeLength = UCHAR_MAX);
 	void buildInstructionDictionary();
+	asmInstruction* getInstructionPtrFromHex(unsigned long hexIn);
 	std::string convertInstructionHexToString(unsigned long hexIn);
+	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, std::size_t refCountThresholdForBranchLabel = SIZE_MAX);
 	bool summarizeInstructionDictionary(std::ostream& output);
 	bool summarizeInstructionDictionary(std::string outputFilepath);
 

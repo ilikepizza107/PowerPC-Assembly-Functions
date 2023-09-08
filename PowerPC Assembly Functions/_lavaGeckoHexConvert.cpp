@@ -1710,10 +1710,12 @@ namespace lava::gecko
 				bool mnemDisallowed = 0;
 				unsigned long convertedHex = ULONG_MAX;
 				unsigned long instructionsToConvert = lengthNum * 2;
+				std::vector<unsigned long> hexVec{};
 				for (unsigned long i = 0; i < instructionsToConvert; i++)
 				{
 					lava::readNCharsFromStream(hexWord, codeStreamIn, 8, 0);
 					convertedHex = lava::stringToNum<unsigned long>(hexWord, 0, ULONG_MAX, 1);
+					hexVec.push_back(convertedHex);
 					conversion = convertPPCInstructionHex(hexWord, 1);
 					// Note: GCTRM doesn't properly support m[tf]spr's numeric SPR arguments, so for now, I'm including a check
 					// to ensure that these are output un-converted; hopefully this can be undone eventually. This is also set up
@@ -1733,6 +1735,7 @@ namespace lava::gecko
 						printStringWithComment(outputStreamIn, "word 0x" + hexWord, conversion, 1);
 					}
 				}
+				lava::ppc::convertInstructionHexBlockToStrings(hexVec, 3);
 				outputStreamIn << "}\n";
 			}
 			else

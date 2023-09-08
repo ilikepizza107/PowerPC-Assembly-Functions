@@ -12,7 +12,6 @@ namespace lava::ppc
 	const std::string opName_DoublePrecision = " (Double-Precision)";
 	const std::string opName_SinglePrecision = " Single";
 
-
 	// Utility
 	unsigned long extractInstructionArg(unsigned long hexIn, unsigned char startBitIndex, unsigned char length)
 	{
@@ -211,6 +210,73 @@ namespace lava::ppc
 		return result;
 	}
 
+	// Branch Label + Data Embed Tracking
+	struct branchEventSummary
+	{
+		bool outgoingBranchIsUnconditional = false;
+		bool outgoingBranchGoesBackwards = false;
+		std::size_t outgoingBranchDestIndex = SIZE_MAX;
+		std::set<std::size_t> incomingBranchStartIndices{};
+	};
+	// Log all the branch events in the block, for data embed tracking.
+	std::map<std::size_t, branchEventSummary> currentBlockBranchEvents{};
+	void populateBranchEventMap(const std::vector<unsigned long>& hexVecIn)
+	{
+		currentBlockBranchEvents.clear();
+		for (std::size_t i = 0; i < hexVecIn.size(); i++)
+		{
+			const lava::ppc::asmInstruction* instructionPtr = getInstructionPtrFromHex(hexVecIn[i]);
+
+			// If the returned instructionPtr was null...
+			if (instructionPtr == nullptr) continue; 
+			// ... or doesnt' belong to a branch condition, skip to the next instruction.
+			if (!(instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B) && !(instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_BC)) continue;
+			
+			const lava::ppc::argumentLayout* instructionArgLayoutPtr = instructionPtr->getArgLayoutPtr();
+			std::vector<unsigned long> instructionArgs = instructionArgLayoutPtr->splitHexIntoArguments(hexVecIn[i]);
+
+			// Immediate Arg Index is 1 for B instructions, 3 for BC instructions. AA bit is always this plus 1, LK is this plus 2.
+			unsigned char immArgIndex = (instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B) ? 1 : 3;
+
+			// If the AA bit is set, we can skip to the next instruction.
+			if (instructionArgs[immArgIndex + 1]) continue;
+
+			// Convert the immediate arg to num...
+			signed long branchDistance = lava::stringToNum(
+				unsignedImmArgToSignedString(instructionArgs[immArgIndex] << 2, instructionArgLayoutPtr->getArgLengthInBits(immArgIndex), 0),
+				1, LONG_MAX, 0);
+
+			// ... and if the result was valid and non-zero...
+			if (branchDistance != LONG_MAX && branchDistance != 0)
+			{
+				// ... divide the distance by 4, to see how many instructions forwards or backwards we'd be travelling.
+				branchDistance /= 0x4;
+
+				// Use that to determine the index of the instruction index we'd end up at relative to this branch instruction...
+				signed long destinationInstructionIndex = signed long (i) + branchDistance;
+				// ... and if that maps to another instruction within this block...
+				if ((destinationInstructionIndex > 0) && (destinationInstructionIndex < hexVecIn.size()))
+				{
+					// ... set the appropriate values in our current entry.
+					currentBlockBranchEvents[i].outgoingBranchGoesBackwards = i > destinationInstructionIndex;
+					currentBlockBranchEvents[i].outgoingBranchDestIndex = destinationInstructionIndex;
+					if (instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B)
+					{
+						// B instructions are by definition unconditioned.
+						currentBlockBranchEvents[i].outgoingBranchIsUnconditional = 1;
+					}
+					else
+					{
+						// ... and BC instructions are unconditioned if BO sets the unconditional branch bits.
+						currentBlockBranchEvents[i].outgoingBranchIsUnconditional = (instructionArgs[1] & 0b10100) == 0b10100;
+					}
+
+					// And add it to the list of incoming branches in the destination entry.
+					currentBlockBranchEvents[destinationInstructionIndex].incomingBranchStartIndices.insert(i);
+				}
+			}
+		}
+	}
 	
 	// Instruction to String Conversion Predicates
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn)
@@ -1405,7 +1471,7 @@ namespace lava::ppc
 	}
 
 
-	// asmInstruction Functions
+	// argumentLayout Functions
 	std::array<argumentLayout, (int)asmInstructionArgLayout::aIAL_LAYOUT_COUNT> layoutDictionary{};
 	void argumentLayout::setArgumentReservations(std::vector<std::pair<char, asmInstructionArgResStatus>> reservationsIn)
 	{
@@ -1442,7 +1508,7 @@ namespace lava::ppc
 			}
 		}
 	}
-	unsigned long argumentLayout::getSecOpMask()
+	unsigned long argumentLayout::getSecOpMask() const
 	{
 		unsigned long result = 0;
 
@@ -1456,7 +1522,7 @@ namespace lava::ppc
 
 		return result;
 	}
-	bool argumentLayout::validateReservedArgs(unsigned long instructionHexIn)
+	bool argumentLayout::validateReservedArgs(unsigned long instructionHexIn) const
 	{
 		bool result = 1;
 
@@ -1465,7 +1531,7 @@ namespace lava::ppc
 
 		return result;
 	}
-	std::vector<unsigned long> argumentLayout::splitHexIntoArguments(unsigned long instructionHexIn)
+	std::vector<unsigned long> argumentLayout::splitHexIntoArguments(unsigned long instructionHexIn) const
 	{
 		std::vector<unsigned long> result{};
 
@@ -2496,40 +2562,229 @@ namespace lava::ppc
 		}
 		return;
 	}
-	std::string convertInstructionHexToString(unsigned long hexIn)
+	asmInstruction* getInstructionPtrFromHex(unsigned long hexIn)
 	{
-		std::stringstream result;
+		asmInstruction* result = nullptr;
 
 		unsigned long opCode = extractInstructionArg(hexIn, 0, 6);
 		if (instructionDictionary.find(opCode) != instructionDictionary.end())
 		{
 			asmPrOpCodeGroup* opCodeGroup = &instructionDictionary[opCode];
-			asmInstruction* targetInstruction = nullptr;
 
 			if (opCodeGroup->secOpCodeStartsAndLengths.empty())
 			{
-				targetInstruction = &opCodeGroup->secondaryOpCodeToInstructions.begin()->second;
+				result = &opCodeGroup->secondaryOpCodeToInstructions.begin()->second;
 			}
 			else
 			{
 				unsigned short secondaryOpCode = USHRT_MAX;
-				for (auto currPair = opCodeGroup->secOpCodeStartsAndLengths.cbegin(); targetInstruction == nullptr && currPair != opCodeGroup->secOpCodeStartsAndLengths.cend(); currPair++)
+				for (auto currPair = opCodeGroup->secOpCodeStartsAndLengths.cbegin(); result == nullptr && currPair != opCodeGroup->secOpCodeStartsAndLengths.cend(); currPair++)
 				{
 					secondaryOpCode = (unsigned short)extractInstructionArg(hexIn, currPair->first, currPair->second);
 					if (opCodeGroup->secondaryOpCodeToInstructions.find(secondaryOpCode) != opCodeGroup->secondaryOpCodeToInstructions.end())
 					{
-						targetInstruction = &opCodeGroup->secondaryOpCodeToInstructions[secondaryOpCode];
+						result = &opCodeGroup->secondaryOpCodeToInstructions[secondaryOpCode];
 					}
 				}
 			}
+		}
 
-			if (targetInstruction != nullptr && targetInstruction->getArgLayoutPtr()->validateReservedArgs(hexIn))
-			{
-				result << targetInstruction->getArgLayoutPtr()->conversionFunc(targetInstruction, hexIn);
-			}
+		return result;
+	}
+	std::string convertInstructionHexToString(unsigned long hexIn)
+	{
+		std::stringstream result;
+
+		asmInstruction* targetInstruction = getInstructionPtrFromHex(hexIn);
+		if (targetInstruction != nullptr && targetInstruction->getArgLayoutPtr()->validateReservedArgs(hexIn))
+		{
+			result << targetInstruction->getArgLayoutPtr()->conversionFunc(targetInstruction, hexIn);
 		}
 
 		return result.str();
+	}
+	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, std::size_t refCountThresholdForBranchLabel)
+	{
+		// Declare and pre-size the results vector.
+		std::vector<std::string> result{};
+		result.reserve(hexVecIn.size());
+
+		// Catalogue every relative branch event in the block.
+		populateBranchEventMap(hexVecIn);
+		
+		// Use the catalogue of branch events to detect any data embed.
+		std::size_t currentEmbedStart = SIZE_MAX;
+		std::map<std::size_t, std::size_t> dataEmbedStartsToLengths{};
+		for (auto i : currentBlockBranchEvents)
+		{
+			// If there is no embed open, and this event is a unconditional forward branch...
+			if ((currentEmbedStart == SIZE_MAX) && (i.second.outgoingBranchIsUnconditional && !i.second.outgoingBranchGoesBackwards))
+			{
+				// ... mark the instruction immediately following it as the start of an embed.
+				currentEmbedStart = i.first + 1;
+			}
+			// Alternatively, if we've got an embed open, and we've reached a destination event...
+			else if ((currentEmbedStart != SIZE_MAX) && (!i.second.incomingBranchStartIndices.empty()))
+			{
+				// ... that'd be the end of our embed! And if our end comes after embed start (ie. our embed would have >0 length)...
+				if (i.first > currentEmbedStart)
+				{
+					// ... record it.
+					dataEmbedStartsToLengths[currentEmbedStart] = i.first - currentEmbedStart;
+				}
+
+				// In any case, close the open embed.
+				currentEmbedStart = SIZE_MAX;
+			}
+		}
+
+		bool currentEmbedJustStarted = 0;
+		std::size_t currentEmbedLengthCounter = 0;
+		auto currentEmbedItr = dataEmbedStartsToLengths.end();
+		auto nextEmbedItr = (dataEmbedStartsToLengths.empty()) ? dataEmbedStartsToLengths.end() : dataEmbedStartsToLengths.begin();
+		for (std::size_t i = 0; i < hexVecIn.size(); i++)
+		{
+			// If there are embeds left, and we've reached one...
+			if ((nextEmbedItr != dataEmbedStartsToLengths.end()) && (i == nextEmbedItr->first))
+			{
+				// ... put its length into the counter...
+				currentEmbedLengthCounter = nextEmbedItr->second;
+				// ... advance our embed iterators...
+				currentEmbedItr = nextEmbedItr;
+				nextEmbedItr++;
+				// ... and set the flag that our embed just started.
+				currentEmbedJustStarted = 1;
+			}
+
+			// If the length counter is zero, we aren't in an embed...
+			if (currentEmbedLengthCounter == 0)
+			{
+				// ... so use a proper conversion.
+				result.push_back(convertInstructionHexToString(hexVecIn[i]));
+				if (result.back().empty())
+				{
+					result.back() = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8);
+				}
+			}
+			// Otherwise...
+			else
+			{
+				// ... push the word into the back of the vector...
+				result.push_back("word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8));
+				// ... and if the embed just started...
+				if (currentEmbedJustStarted)
+				{
+					// ... also append the embed label and length to the line!
+					result.back() += " # DATA_EMBED (0x" + lava::numToHexStringWithPadding(currentEmbedItr->second * 4, 0) + " bytes)";
+				}
+				currentEmbedJustStarted = 0;
+				currentEmbedLengthCounter--;
+				if (currentEmbedLengthCounter == 0)
+				{
+					currentEmbedItr = dataEmbedStartsToLengths.end();
+				}
+			}
+		}
+
+		/*
+		// We maintain two iterators, one to next Branch Event relative to the current instruction, and another to the previous.
+		auto prevBranchEventItr = currentBlockBranchEvents.end();
+		auto nextBranchEventItr = (currentBlockBranchEvents.empty()) ? currentBlockBranchEvents.end() : currentBlockBranchEvents.begin();
+		std::size_t mostRecentUnconditionalForwardBranch = SIZE_MAX;
+		std::size_t mostRecentBranchDestination = SIZE_MAX;
+
+		bool inEmbed = 0;
+		bool justEnteredEmbed = 0;
+		for (std::size_t i = 0; i < hexVecIn.size(); i++)
+		{
+			justEnteredEmbed = 0;
+
+			// If there is still a "next" event to consider, and we've either reached it or are about to pass it...
+			if (nextBranchEventItr != currentBlockBranchEvents.end() && (i >= nextBranchEventItr->first))
+			{
+				// If we've just *passed* our "next" event...
+				if (i > nextBranchEventItr->first)
+				{
+					// ... we need to update our iterators...
+					prevBranchEventItr = nextBranchEventItr;
+					nextBranchEventItr++;
+
+					// ... and if we've just passed an unconditional branch line...
+					if (prevBranchEventItr->second.outgoingBranchIsUnconditional && !prevBranchEventItr->second.outgoingBranchGoesBackwards)
+					{
+						// ... record its index.
+						mostRecentUnconditionalForwardBranch = prevBranchEventItr->first;
+					}
+				}
+
+				// If there is a "next" event, and we're *at* that event...
+				if (nextBranchEventItr != currentBlockBranchEvents.end() && i == nextBranchEventItr->first)
+				{
+					// ... and its line is a destination line...
+					if (!nextBranchEventItr->second.incomingBranchStartIndices.empty())
+					{
+						// ... record its index.
+						mostRecentBranchDestination = nextBranchEventItr->first;
+					}
+				}
+
+				// If we've reached an unconditional forward branch...
+				if (mostRecentUnconditionalForwardBranch != SIZE_MAX)
+				{
+					// ... we know we're in an embed if either we haven't reached a destination event at all,
+					// or that destination came *before* the forward branch!
+					inEmbed = (mostRecentBranchDestination == SIZE_MAX) || (mostRecentBranchDestination < mostRecentUnconditionalForwardBranch);
+					justEnteredEmbed = inEmbed;
+				}
+			}
+
+			if (!inEmbed)
+			{
+				result.push_back(convertInstructionHexToString(hexVecIn[i]));
+			}
+			else
+			{
+				result.push_back("word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8));
+				if (justEnteredEmbed)
+				{
+
+
+					result.back() += " DATA_EMBED";
+				}
+			}
+		}
+		*/
+
+		// If there are enough lines in the block that it's at least *possible* that we'd end up using a label, try to apply them.
+		if (hexVecIn.size() >= refCountThresholdForBranchLabel)
+		{
+			// For each existing Branch Event...
+			for (auto i : currentBlockBranchEvents)
+			{
+				// ... check if we're looking at a destination with enough references to trigger a label. If so...
+				if (i.second.incomingBranchStartIndices.size() >= refCountThresholdForBranchLabel)
+				{
+					// ... generate the name for our label...
+					std::string labelName = "loc_0x" + lava::numToHexStringWithPadding(i.first, 4);
+
+					// ... then prepend it to the destination line.
+					result[i.first] = labelName + ": " + result[i.first];
+					// Additionally, find each of the branch lines themselves...
+					for (auto u : i.second.incomingBranchStartIndices)
+					{
+						// ... and overwrite the immediate branch with our branch label.
+						result[u] = result[u].substr(0, result[u].find_last_of(' ')) + " " + labelName;
+					}
+				}
+			}
+		}
+
+		for (auto i : result)
+		{
+			std::cout << i << "\n";
+		}
+
+		return result;
 	}
 	bool summarizeInstructionDictionary(std::ostream& output)
 	{
