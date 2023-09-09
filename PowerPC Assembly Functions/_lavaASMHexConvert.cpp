@@ -2627,7 +2627,7 @@ namespace lava::ppc
 
 		return result.str();
 	}
-	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, const std::set<std::string>& disallowedMnemonics, std::size_t refsNeededForBranchLabel)
+	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, const std::set<std::string>& disallowedMnemonics, std::size_t refsNeededForBranchLabel, bool applyHexComments)
 	{
 		// Declare and pre-size the results vector.
 		std::vector<std::string> result{};
@@ -2686,7 +2686,6 @@ namespace lava::ppc
 			{
 				// ... so use a proper conversion. 
 				std::string conversion = convertInstructionHexToString(hexVecIn[i]);
-				// Failed conversions return an empty string, which we'll use to take care of conversions using disallowed mnemonics.
 				// If a conversion wasn't empty (ie. was successful)...
 				if (!conversion.empty())
 				{
@@ -2713,7 +2712,7 @@ namespace lava::ppc
 				if (currentEmbedJustStarted)
 				{
 					// ... also append the embed label and length to the line!
-					result.back() = getStringWithComment(result.back(), 
+					result.back() = lava::ppc::getStringWithComment(result.back(), 
 						"DATA_EMBED(0x" + lava::numToHexStringWithPadding(currentEmbedItr->second * 4, 0) + " bytes)");
 				}
 				currentEmbedJustStarted = 0;
@@ -2735,7 +2734,7 @@ namespace lava::ppc
 				if (i.second.incomingBranchStartIndices.size() >= refsNeededForBranchLabel)
 				{
 					// ... generate the name for our label...
-					std::string labelName = "loc_0x" + lava::numToHexStringWithPadding(i.first, 4);
+					std::string labelName = "loc_0x" + lava::numToHexStringWithPadding(i.first, 3);
 
 					// ... then prepend it to the destination line.
 					result[i.first] = labelName + ": " + result[i.first];
@@ -2745,6 +2744,21 @@ namespace lava::ppc
 						// ... and overwrite the immediate branch with our branch label.
 						result[u] = result[u].substr(0, result[u].find_last_of(' ')) + " " + labelName;
 					}
+				}
+			}
+		}
+
+		// Lastly, if the conversion was successful, and hex comments were requested... 
+		if (applyHexComments)
+		{
+			// ... iterate through every line of the output...
+			for (std::size_t i = 0; i < result.size(); i++)
+			{
+				// ... and if a given line isn't using embed encoding...
+				if (result[i].find("word 0x") != 0x00)
+				{
+					// ... append a comment to it with the hex encoding of the line.
+					result[i] = lava::ppc::getStringWithComment(result[i], "0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8));
 				}
 			}
 		}

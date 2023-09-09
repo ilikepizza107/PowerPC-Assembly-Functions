@@ -1698,12 +1698,11 @@ namespace lava::gecko
 					hexVec.push_back(lava::stringToNum<unsigned long>(hexWord, 0, ULONG_MAX, 1));
 				}
 
-				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 3);
+				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 2, 1);
 				outputStreamIn << "{\n";
 				for (unsigned long i = 0; i < (convertedHexVec.size() - 1); i++)
 				{
-					outputStreamIn << "\t";
-					lava::gecko::printStringWithComment(outputStreamIn, convertedHexVec[i], "0x" + lava::numToHexStringWithPadding(hexVec[i], 8), 1);
+					outputStreamIn << "\t" << convertedHexVec[i] << "\n";
 				}
 				outputStreamIn << "}\n";
 			}

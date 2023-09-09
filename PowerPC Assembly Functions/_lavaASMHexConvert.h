@@ -248,7 +248,7 @@ namespace lava::ppc
 	void buildInstructionDictionary();
 	asmInstruction* getInstructionPtrFromHex(unsigned long hexIn);
 	std::string convertInstructionHexToString(unsigned long hexIn);
-	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, const std::set<std::string>& disallowedMnemonics = {}, std::size_t refsNeededForBranchLabel = SIZE_MAX);
+	std::vector<std::string> convertInstructionHexBlockToStrings(const std::vector<unsigned long>& hexVecIn, const std::set<std::string>& disallowedMnemonics = {}, std::size_t refsNeededForBranchLabel = SIZE_MAX, bool applyHexComments = 0);
 	bool summarizeInstructionDictionary(std::ostream& output);
 	bool summarizeInstructionDictionary(std::string outputFilepath);
 
