@@ -237,9 +237,10 @@ namespace lava::ppc
 	// Branch Label + Data Embed Tracking
 	struct branchEventSummary
 	{
-		bool outgoingBranchIsUnconditional = false;
-		bool outgoingBranchGoesBackwards = false;
+		bool outgoingBranchIsUnconditional = 0;
+		bool outgoingBranchGoesBackwards = 0;
 		std::size_t outgoingBranchDestIndex = SIZE_MAX;
+		bool doForcedDataLabel = 0;
 		std::set<std::size_t> incomingBranchStartIndices{};
 	};
 	// Log all the branch events in the block, for data embed tracking.
@@ -2639,22 +2640,24 @@ namespace lava::ppc
 		// Use the catalogue of branch events to detect any data embeds.
 		std::size_t currentEmbedStart = SIZE_MAX;
 		std::map<std::size_t, std::size_t> dataEmbedStartsToLengths{};
-		for (auto i : currentBlockBranchEvents)
+		for (auto i = currentBlockBranchEvents.begin(); i != currentBlockBranchEvents.end(); i++)
 		{
 			// If there is no embed open, and this event is a unconditional forward branch...
-			if ((currentEmbedStart == SIZE_MAX) && (i.second.outgoingBranchIsUnconditional && !i.second.outgoingBranchGoesBackwards))
+			if ((currentEmbedStart == SIZE_MAX) && (i->second.outgoingBranchIsUnconditional && !i->second.outgoingBranchGoesBackwards))
 			{
 				// ... mark the instruction immediately following it as the start of an embed.
-				currentEmbedStart = i.first + 1;
+				currentEmbedStart = i->first + 1;
 			}
 			// Alternatively, if we've got an embed open, and we've reached a destination event...
-			else if ((currentEmbedStart != SIZE_MAX) && (!i.second.incomingBranchStartIndices.empty()))
+			else if ((currentEmbedStart != SIZE_MAX) && (!i->second.incomingBranchStartIndices.empty()))
 			{
 				// ... that'd be the end of our embed! And if our end comes after embed start (ie. our embed would have >0 length)...
-				if (i.first > currentEmbedStart)
+				if (i->first > currentEmbedStart)
 				{
 					// ... record it.
-					dataEmbedStartsToLengths[currentEmbedStart] = i.first - currentEmbedStart;
+					dataEmbedStartsToLengths[currentEmbedStart] = i->first - currentEmbedStart;
+					// Additionally, flag that it needs a branch label!
+					i->second.doForcedDataLabel = 1;
 				}
 
 				// In any case, close the open embed.
@@ -2724,20 +2727,31 @@ namespace lava::ppc
 			}
 		}
 
-		// If there are enough lines in the block that it's at least *possible* that we'd end up using a label, try to apply them.
-		if (hexVecIn.size() >= refsNeededForBranchLabel)
+		// If the labels aren't disabled, and there are enough lines that it's at least *possible* that we'd end up using a label, try to apply them.
+		if ((refsNeededForBranchLabel != SIZE_MAX) && (hexVecIn.size() >= refsNeededForBranchLabel))
 		{
 			// For each existing Branch Event...
 			for (auto i : currentBlockBranchEvents)
 			{
-				// ... check if we're looking at a destination with enough references to trigger a label. If so...
-				if (i.second.incomingBranchStartIndices.size() >= refsNeededForBranchLabel)
+				// ... check if we're looking at a destination with enough references to trigger a label (or if one's being forced on). If so...
+				if (i.second.doForcedDataLabel || i.second.incomingBranchStartIndices.size() >= refsNeededForBranchLabel)
 				{
 					// ... generate the name for our label...
-					std::string labelName = "loc_0x" + lava::numToHexStringWithPadding(i.first, 3);
+					std::string labelName = "";
+					if (!i.second.doForcedDataLabel)
+					{
+						labelName = "loc_";
+					}
+					else
+					{
+						labelName = "data_";
+					}
+					labelName += "0x" + lava::numToHexStringWithPadding(i.first, 3);
 
 					// ... then prepend it to the destination line.
-					result[i.first] = labelName + ": " + result[i.first];
+					// Note: we're delimiting with a newline here, so if these lines need to be printed with a prefix, that
+					// needs to be handled on the output side, like the PPC Conversion predicate in lavaGeckoHexConvert does.
+					result[i.first] = labelName + ":\n" + result[i.first];
 					// Additionally, find each of the branch lines themselves...
 					for (auto u : i.second.incomingBranchStartIndices)
 					{
@@ -2758,7 +2772,17 @@ namespace lava::ppc
 				if (result[i].find("word 0x") != 0x00)
 				{
 					// ... append a comment to it with the hex encoding of the line.
-					result[i] = lava::ppc::getStringWithComment(result[i], "0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8));
+					// Note: Lines with branch destinations prepended to them need to have their relativeCommentPosition adjusted to account
+					// for the destination tag's length; otherwise the comment appears too close to the end of the instruction line itself.
+					// We're doing that here by strategically making use of an unsigned integer overflow lol:
+					//	- If we prepended a branch destination line: relativeCommentPosition adjustment should equal length of that prepended bit
+					//	- If we *didn't*: relativeCommentPosition adjustment should be 0
+					//	- We delimit the destination tag with a '\n' character, and we know for certain that character is never used otherwise
+					//	- Additionally, .find() returns std::string::npos (ULONG_MAX) if it fails to find the search term, and ULONG_MAX + 1 == 0
+					//	- We can take advantage of that, by adding 1 to the return value of .find('\n')!
+					//		- If there *is* a newline, then we push the comment out by exactly the right length
+					//		- If there *isn't* a newline, then we don't push the comment out *at all*!
+					result[i] = lava::ppc::getStringWithComment(result[i], "0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8), 0x20 + (result[i].find('\n') + 1));
 				}
 			}
 		}

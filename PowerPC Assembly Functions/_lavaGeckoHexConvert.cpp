@@ -1700,9 +1700,31 @@ namespace lava::gecko
 
 				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 2, 1);
 				outputStreamIn << "{\n";
+				// Do indented output, accounting for newline characters!
 				for (unsigned long i = 0; i < (convertedHexVec.size() - 1); i++)
 				{
-					outputStreamIn << "\t" << convertedHexVec[i] << "\n";
+					// Stringview of the converted line, which we'll be using to simplify moving past newline chars
+					std::string_view conversionView = convertedHexVec[i];
+					// Keeps track of the position of the next newline char on each iteration.
+					std::size_t newlineLoc = SIZE_MAX;
+					// We're gonna do the first print regardless, so we do-while
+					do
+					{
+						// Get the location of the next newline char within the current view of the conversion string...
+						newlineLoc = conversionView.find('\n');
+						// ... and get the region before the newline.
+						std::string_view segmentView = conversionView.substr(0, newlineLoc);
+						// Only do indentation if we aren't looking at a branch destination tag segment!
+						// Literally: if there's a colon in the line, and it doesn't come after a '#' (ie. isn't in a comment), skip indentation
+						if (!(segmentView.find(':') < segmentView.find('#')))
+						{
+							outputStreamIn << "\t";
+						}
+						// Output the segment that comes before the newline (or the whole thing, if there isn't one).
+						outputStreamIn << segmentView << "\n";
+						// And push our stringview forward, past the last found newline, to move further iterations forwards.
+						conversionView.remove_prefix(newlineLoc + 1);
+					} while (newlineLoc != std::string::npos); // And repeat, for as long the previous iteration found a newline!
 				}
 				outputStreamIn << "}\n";
 			}
