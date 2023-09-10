@@ -1053,7 +1053,7 @@ namespace lava::gecko
 			std::stringstream commentStr("");
 			commentStr << codeTypeIn->name << ": ";
 			// If we're setting BA
-			if ((signatureNum & signatureBaPoMask) == 0)
+			if ((signatureNum >> 0x18) == 0x46)
 			{
 				commentStr << "ba";
 				// We won't know the value for this, so invalidate.
