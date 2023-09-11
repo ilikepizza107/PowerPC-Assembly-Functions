@@ -237,11 +237,18 @@ namespace lava::ppc
 	// Branch Label + Data Embed Tracking
 	struct branchEventSummary
 	{
+		enum destinationLabelCondition
+		{
+			dlc_THRESHOLD = 0,
+			dlc_DATA_EMBED,
+			dlc_END_BRANCH,
+		};
+
 		bool outgoingBranchIsUnconditional = 0;
 		bool outgoingBranchGoesBackwards = 0;
 		std::size_t outgoingBranchDestIndex = SIZE_MAX;
-		bool doForcedDataLabel = 0;
 		std::set<std::size_t> incomingBranchStartIndices{};
+		destinationLabelCondition labelCondition = destinationLabelCondition::dlc_THRESHOLD;
 	};
 	// Log all the branch events in the block, for data embed tracking.
 	std::map<std::size_t, branchEventSummary> currentBlockBranchEvents{};
@@ -299,6 +306,17 @@ namespace lava::ppc
 					// And add it to the list of incoming branches in the destination entry.
 					currentBlockBranchEvents[destinationInstructionIndex].incomingBranchStartIndices.insert(i);
 				}
+			}
+		}
+		// Lastly though, if we actually catalogued some branch events, and our block is Gecko-compliant (ie. last word is 0x00, and aligned to 8 bytes)...
+		if (!currentBlockBranchEvents.empty() && !(hexVecIn.size() % 2) && (hexVecIn.back() == 0x00))
+		{
+			// ... and the final branch event we recorded was a destination event for the very last instruction in that block (ie. the 0x00 word)...
+			auto finalEvent = currentBlockBranchEvents.rbegin();
+			if (finalEvent->first == (hexVecIn.size() - 1) && !finalEvent->second.incomingBranchStartIndices.empty())
+			{
+				// ... mark it as a end branch, so we can do our %END% output later! 
+				finalEvent->second.labelCondition = branchEventSummary::dlc_END_BRANCH;
 			}
 		}
 	}
@@ -2656,8 +2674,8 @@ namespace lava::ppc
 				{
 					// ... record it.
 					dataEmbedStartsToLengths[currentEmbedStart] = i->first - currentEmbedStart;
-					// Additionally, flag that it needs a branch label!
-					i->second.doForcedDataLabel = 1;
+					// Additionally, set its label condition appropriately!
+					i->second.labelCondition = branchEventSummary::destinationLabelCondition::dlc_DATA_EMBED;
 				}
 
 				// In any case, close the open embed.
@@ -2734,21 +2752,37 @@ namespace lava::ppc
 			for (auto i : currentBlockBranchEvents)
 			{
 				// ... check if we're looking at a destination with enough references to trigger a label (or if one's being forced on). If so...
-				if (i.second.doForcedDataLabel || i.second.incomingBranchStartIndices.size() >= refsNeededForBranchLabel)
+				bool doLabel = 0;
+				
+				if (i.second.labelCondition || i.second.incomingBranchStartIndices.size() >= refsNeededForBranchLabel)
 				{
-					// ... generate the name for our label...
+					// ... generate the name for our label:
 					std::string labelName = "";
-					if (!i.second.doForcedDataLabel)
-					{
-						labelName = "loc_";
-					}
-					else
-					{
-						labelName = "data_";
-					}
-					labelName += "0x" + lava::numToHexStringWithPadding(i.first, 3);
 
-					// ... then prepend it to the destination line.
+					switch (i.second.labelCondition)
+					{
+						case branchEventSummary::destinationLabelCondition::dlc_THRESHOLD:
+						{
+							labelName = "loc_0x" + lava::numToHexStringWithPadding(i.first, 3);
+							break; 
+						}
+						case branchEventSummary::destinationLabelCondition::dlc_DATA_EMBED:
+						{
+							labelName = "data_0x" + lava::numToHexStringWithPadding(i.first, 3);
+							break;
+						}
+						case branchEventSummary::destinationLabelCondition::dlc_END_BRANCH:
+						{ 
+							labelName = "%END%";
+							break;
+						}
+						default:
+						{
+							break;
+						}
+					}
+					
+					// Then, prepend that name to the destination line.
 					// Note: we're delimiting with a newline here, so if these lines need to be printed with a prefix, that
 					// needs to be handled on the output side, like the PPC Conversion predicate in lavaGeckoHexConvert does.
 					result[i.first] = labelName + ":\n" + result[i.first];
