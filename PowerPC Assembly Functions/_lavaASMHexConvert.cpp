@@ -60,6 +60,69 @@ namespace lava::ppc
 	{
 		return extractInstructionArg(hexIn, 0, 6);
 	}
+	std::vector<std::string> formatRawDataEmbedOutput(const std::vector<unsigned long>& hexVecIn, std::string linePrefixIn, std::string wordPrefixIn, unsigned char wordsPerLineIn, unsigned long relativeLabelLoc)
+	{
+		// Ensure wordsPerLine is at least 1.
+		wordsPerLineIn = (wordsPerLineIn > 0) ? wordsPerLineIn : 1;
+
+		// Initialize and pre-size our string vec.
+		std::vector<std::string> result{};
+		result.reserve(hexVecIn.size() / wordsPerLineIn);
+
+		// Array for splitting the bytes of incoming words.
+		std::array<unsigned char, 4> hexWordByteBuff{};
+
+		// Strings for building our main and comment lines
+		std::stringstream currentLine("");
+		currentLine << linePrefixIn;
+		std::stringstream commentLine("");
+
+		// Counter for tracking when to move to new line.
+		unsigned char wordCounter = wordsPerLineIn;
+
+		// For each hex word...
+		for (std::size_t i = 0; i < hexVecIn.size(); i++)
+		{
+			// ... write its string representation to the line buffer.
+			currentLine << wordPrefixIn << lava::numToHexStringWithPadding(hexVecIn[i], 8);
+
+			// Then, get the bytes in the word...
+			lava::writeFundamentalToBuffer(hexVecIn[i], &hexWordByteBuff[0]);
+			// ... and for each byte...
+			for (unsigned char hexWordByte : hexWordByteBuff)
+			{
+				// ... write its native representation to the comment buffer if it's a printable character, and '.' otherwise.
+				if (std::isprint(hexWordByte))
+				{
+					commentLine << hexWordByte;
+				}
+				else
+				{
+					commentLine << ".";
+				}
+			}
+
+			// Decrement word counter...
+			wordCounter--;
+			// ... and if we've either written the requested number of words to this line, or we're at the end of the embed...
+			if (wordCounter == 0 || (i == (hexVecIn.size() - 1)))
+			{
+				// ... push our finished line to the results vector...
+				result.push_back(lava::ppc::getStringWithComment(currentLine.str(), commentLine.str()));
+
+				// ... and reset our per-line variables.
+				wordCounter = wordsPerLineIn;
+				currentLine.str("");
+				currentLine << linePrefixIn;
+				commentLine.str("");
+			}
+		}
+		// And lastly, on the first line of the embed, write in a comment labeling the EMBED itself.
+		result.front() = lava::ppc::getStringWithComment(result.front(), "DATA_EMBED (0x" + lava::numToHexStringWithPadding(hexVecIn.size() * 4, 0) + " bytes)", relativeLabelLoc);
+
+		return result;
+	}
+
 	std::string unsignedImmArgToSignedString(unsigned long argIn, unsigned char argLengthInBitsIn, bool hexMode = 1)
 	{
 		std::stringstream result;
@@ -2876,35 +2939,15 @@ namespace lava::ppc
 			// For each embed...
 			for (auto i = currentBlockInfo.dataEmbedStartsToLengths.begin(); i != currentBlockInfo.dataEmbedStartsToLengths.end(); i++)
 			{
-				std::array<unsigned char, 4> hexWordByteBuff{};
-				// ... for each line *of* that embed...
+				// Get the relevant slice of our vector...
+				std::vector<unsigned long> embedHexVec(hexVecIn.begin() + i->first, hexVecIn.begin() + i->first + i->second);
+				// ... use it to generate the formatted output for our embed...
+				std::vector<std::string> formattedEmbedVec = formatRawDataEmbedOutput(embedHexVec, "", "word 0x", 1, 0x2C);
+				// ... and write each line of it to the results vector.
 				for (std::size_t u = 0; u < i->second; u++)
 				{
-					// ... overwrite its output line with word encoding.
-					std::size_t targetIndex = i->first + u;
-					result[targetIndex] = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[targetIndex], 0x8);
-					// Lastly, handle embed content output:
-					// Split up the bytes of the target hex word...
-					lava::writeFundamentalToBuffer(hexVecIn[targetIndex], &hexWordByteBuff[0]);
-					// ... and populate our stringstream with the attempted text representation.
-					std::stringstream hexWordString{};
-					for (unsigned char hexWordByte : hexWordByteBuff)
-					{
-						if (std::isprint(hexWordByte))
-						{
-							hexWordString << hexWordByte;
-						}
-						else
-						{
-							hexWordString << ".";
-						}
-					}
-					hexWordString << "      ";
-					result[targetIndex] = lava::ppc::getStringWithComment(result[targetIndex], hexWordString.str());
-
+					result[i->first + u] = formattedEmbedVec[u];
 				}
-				// And lastly, on the first line of the embed, write in a comment labeling the EMBED itself.
-				result[i->first] = lava::ppc::getStringWithComment(result[i->first], "DATA_EMBED (0x" + lava::numToHexStringWithPadding(i->second * 4, 0) + " bytes)");
 			}
 		}
 
