@@ -1689,7 +1689,7 @@ namespace lava::gecko
 					hexVec.push_back(lava::stringToNum<unsigned long>(hexWord, 0, ULONG_MAX, 1));
 				}
 
-				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 2, 1);
+				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 1, 1);
 				outputStreamIn << "{\n";
 				// Do indented output, accounting for newline characters!
 				for (unsigned long i = 0; i < convertedHexVec.size(); i++)
