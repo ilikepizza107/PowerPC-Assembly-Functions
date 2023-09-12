@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "_lavaASMHexConvert.h"
+#include "_lavaBytes.h"
 
 namespace lava::ppc
 {
@@ -18,7 +19,8 @@ namespace lava::ppc
 		unsigned long originalFlags = outputStream.flags();
 		if (!commentString.empty())
 		{
-			outputStream << std::left << std::setw(relativeCommentLoc) << primaryString << "# " << std::string(commentIndentationLevel, '\t') << commentString;
+			outputStream << std::left << std::setw(relativeCommentLoc) << primaryString <<
+				((primaryString.find('#') == std::string::npos) ? "# " : "| ") << std::string(commentIndentationLevel, '\t') << commentString;
 		}
 		else
 		{
@@ -2874,11 +2876,32 @@ namespace lava::ppc
 			// For each embed...
 			for (auto i = currentBlockInfo.dataEmbedStartsToLengths.begin(); i != currentBlockInfo.dataEmbedStartsToLengths.end(); i++)
 			{
+				std::array<unsigned char, 4> hexWordByteBuff{};
 				// ... for each line *of* that embed...
 				for (std::size_t u = 0; u < i->second; u++)
 				{
 					// ... overwrite its output line with word encoding.
-					result[i->first + u] = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i->first + u], 0x8);
+					std::size_t targetIndex = i->first + u;
+					result[targetIndex] = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[targetIndex], 0x8);
+					// Lastly, handle embed content output:
+					// Split up the bytes of the target hex word...
+					lava::writeFundamentalToBuffer(hexVecIn[targetIndex], &hexWordByteBuff[0]);
+					// ... and populate our stringstream with the attempted text representation.
+					std::stringstream hexWordString{};
+					for (unsigned char hexWordByte : hexWordByteBuff)
+					{
+						if (std::isprint(hexWordByte))
+						{
+							hexWordString << hexWordByte;
+						}
+						else
+						{
+							hexWordString << ".";
+						}
+					}
+					hexWordString << "      ";
+					result[targetIndex] = lava::ppc::getStringWithComment(result[targetIndex], hexWordString.str());
+
 				}
 				// And lastly, on the first line of the embed, write in a comment labeling the EMBED itself.
 				result[i->first] = lava::ppc::getStringWithComment(result[i->first], "DATA_EMBED (0x" + lava::numToHexStringWithPadding(i->second * 4, 0) + " bytes)");
