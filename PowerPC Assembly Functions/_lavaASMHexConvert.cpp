@@ -234,7 +234,6 @@ namespace lava::ppc
 		return result;
 	}
 
-	// Branch Label + Data Embed Tracking
 	struct branchEventSummary
 	{
 		enum destinationLabelCondition
@@ -246,80 +245,194 @@ namespace lava::ppc
 
 		bool outgoingBranchIsUnconditional = 0;
 		bool outgoingBranchGoesBackwards = 0;
+		bool outgoingBranchSetsLinkRegister = 0;
 		std::size_t outgoingBranchDestIndex = SIZE_MAX;
 		std::set<std::size_t> incomingBranchStartIndices{};
 		destinationLabelCondition labelCondition = destinationLabelCondition::dlc_THRESHOLD;
 	};
-	// Log all the branch events in the block, for data embed tracking.
-	std::map<std::size_t, branchEventSummary> currentBlockBranchEvents{};
-	void populateBranchEventMap(const std::vector<unsigned long>& hexVecIn)
+	struct
 	{
-		currentBlockBranchEvents.clear();
-		for (std::size_t i = 0; i < hexVecIn.size(); i++)
+	public:
+		bool blockIsGeckoCompliant = 0;
+		bool disableDataEmbedOutput = 0;
+		std::vector<asmInstruction*> instructionPtrVec{};
+		std::map<std::size_t, branchEventSummary> relativeBranchEventsMap{};
+		std::map<std::size_t, std::size_t> dataEmbedStartsToLengths{};
+
+	private:
+		void populateInstructionPtrVec(const std::vector<unsigned long>& hexVecIn)
 		{
-			const lava::ppc::asmInstruction* instructionPtr = getInstructionPtrFromHex(hexVecIn[i]);
-
-			// If the returned instructionPtr was null...
-			if (instructionPtr == nullptr) continue; 
-			// ... or doesnt' belong to a branch condition, skip to the next instruction.
-			if (!(instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B) && !(instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_BC)) continue;
-			
-			const lava::ppc::argumentLayout* instructionArgLayoutPtr = instructionPtr->getArgLayoutPtr();
-			std::vector<unsigned long> instructionArgs = instructionArgLayoutPtr->splitHexIntoArguments(hexVecIn[i]);
-
-			// Immediate Arg Index is 1 for B instructions, 3 for BC instructions. AA bit is always this plus 1, LK is this plus 2.
-			unsigned char immArgIndex = (instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B) ? 1 : 3;
-
-			// If the AA bit is set, we can skip to the next instruction.
-			if (instructionArgs[immArgIndex + 1]) continue;
-
-			// Convert the immediate arg to num...
-			signed long branchDistance = lava::stringToNum(
-				unsignedImmArgToSignedString(instructionArgs[immArgIndex] << 2, instructionArgLayoutPtr->getArgLengthInBits(immArgIndex), 0),
-				1, LONG_MAX, 0);
-
-			// ... and if the result was valid and non-zero...
-			if (branchDistance != LONG_MAX && branchDistance != 0)
+			instructionPtrVec.resize(hexVecIn.size(), nullptr);
+			for (std::size_t i = 0; i < hexVecIn.size(); i++)
 			{
-				// ... divide the distance by 4, to see how many instructions forwards or backwards we'd be travelling.
-				branchDistance /= 0x4;
+				instructionPtrVec[i] = getInstructionPtrFromHex(hexVecIn[i]);
+			}
+		}
+		void populateBranchEventMap(const std::vector<unsigned long>& hexVecIn)
+		{
+			relativeBranchEventsMap.clear();
+			for (std::size_t i = 0; i < hexVecIn.size(); i++)
+			{
+				const lava::ppc::asmInstruction* instructionPtr = instructionPtrVec[i];
 
-				// Use that to determine the index of the instruction index we'd end up at relative to this branch instruction...
-				signed long destinationInstructionIndex = signed long (i) + branchDistance;
-				// ... and if that maps to another instruction within this block...
-				if ((destinationInstructionIndex > 0) && (destinationInstructionIndex < hexVecIn.size()))
+				// If this instruction's instructionPtr was null...
+				if (instructionPtr == nullptr) continue;
+				// ... or doesnt' belong to a branch condition, skip to the next instruction.
+				if (!(instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B) && !(instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_BC)) continue;
+
+				const lava::ppc::argumentLayout* instructionArgLayoutPtr = instructionPtr->getArgLayoutPtr();
+				std::vector<unsigned long> instructionArgs = instructionArgLayoutPtr->splitHexIntoArguments(hexVecIn[i]);
+
+				// Immediate Arg Index is 1 for B instructions, 3 for BC instructions. AA bit is always this plus 1, LK is this plus 2.
+				unsigned char immArgIndex = (instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B) ? 1 : 3;
+
+				// If the AA bit is set, we can skip to the next instruction.
+				if (instructionArgs[immArgIndex + 1]) continue;
+
+				// Convert the immediate arg to num...
+				signed long branchDistance = lava::stringToNum(
+					unsignedImmArgToSignedString(instructionArgs[immArgIndex] << 2, instructionArgLayoutPtr->getArgLengthInBits(immArgIndex), 0),
+					1, LONG_MAX, 0);
+
+				// ... and if the result was valid and non-zero...
+				if (branchDistance != LONG_MAX && branchDistance != 0)
 				{
-					// ... set the appropriate values in our current entry.
-					currentBlockBranchEvents[i].outgoingBranchGoesBackwards = i > destinationInstructionIndex;
-					currentBlockBranchEvents[i].outgoingBranchDestIndex = destinationInstructionIndex;
-					if (instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B)
-					{
-						// B instructions are by definition unconditioned.
-						currentBlockBranchEvents[i].outgoingBranchIsUnconditional = 1;
-					}
-					else
-					{
-						// ... and BC instructions are unconditioned if BO sets the unconditional branch bits.
-						currentBlockBranchEvents[i].outgoingBranchIsUnconditional = (instructionArgs[1] & 0b10100) == 0b10100;
-					}
+					// ... divide the distance by 4, to see how many instructions forwards or backwards we'd be travelling.
+					branchDistance /= 0x4;
 
-					// And add it to the list of incoming branches in the destination entry.
-					currentBlockBranchEvents[destinationInstructionIndex].incomingBranchStartIndices.insert(i);
+					// Use that to determine the index of the instruction index we'd end up at relative to this branch instruction...
+					signed long destinationInstructionIndex = signed long(i) + branchDistance;
+					// ... and if that maps to another instruction within this block...
+					if ((destinationInstructionIndex > 0) && (destinationInstructionIndex < hexVecIn.size()))
+					{
+						// ... set the appropriate values in our current entry.
+						relativeBranchEventsMap[i].outgoingBranchGoesBackwards = i > destinationInstructionIndex;
+						relativeBranchEventsMap[i].outgoingBranchDestIndex = destinationInstructionIndex;
+						relativeBranchEventsMap[i].outgoingBranchSetsLinkRegister = instructionArgs[immArgIndex + 2];
+						if (instructionPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B)
+						{
+							// B instructions are by definition unconditioned.
+							relativeBranchEventsMap[i].outgoingBranchIsUnconditional = 1;
+						}
+						else
+						{
+							// ... and BC instructions are unconditioned if BO sets the unconditional branch bits.
+							relativeBranchEventsMap[i].outgoingBranchIsUnconditional = (instructionArgs[1] & 0b10100) == 0b10100;
+						}
+
+						// And add it to the list of incoming branches in the destination entry.
+						relativeBranchEventsMap[destinationInstructionIndex].incomingBranchStartIndices.insert(i);
+					}
+				}
+			}
+			// Lastly though, if we actually catalogued some branch events, and our block is Gecko-compliant (ie. last word is 0x00, and aligned to 8 bytes)...
+			if (!relativeBranchEventsMap.empty() && blockIsGeckoCompliant)
+			{
+				// ... and the final branch event we recorded was a destination event for the very last instruction in that block (ie. the 0x00 word)...
+				auto finalEvent = relativeBranchEventsMap.rbegin();
+				if (finalEvent->first == (hexVecIn.size() - 1) && !finalEvent->second.incomingBranchStartIndices.empty())
+				{
+					// ... mark it as a end branch, so we can do our %END% output later! 
+					finalEvent->second.labelCondition = branchEventSummary::dlc_END_BRANCH;
 				}
 			}
 		}
-		// Lastly though, if we actually catalogued some branch events, and our block is Gecko-compliant (ie. last word is 0x00, and aligned to 8 bytes)...
-		if (!currentBlockBranchEvents.empty() && !(hexVecIn.size() % 2) && (hexVecIn.back() == 0x00))
+		void populateDataEmbedMap(const std::vector<unsigned long>& hexVecIn)
 		{
-			// ... and the final branch event we recorded was a destination event for the very last instruction in that block (ie. the 0x00 word)...
-			auto finalEvent = currentBlockBranchEvents.rbegin();
-			if (finalEvent->first == (hexVecIn.size() - 1) && !finalEvent->second.incomingBranchStartIndices.empty())
+			// Clear the map first to start.
+			dataEmbedStartsToLengths.clear();
+
+			// Before we look for embeds, we need to see if the block uses *both* a BL/BCL and a BCLR instruction.
+			// If so, we can't confidently guarantee that unreached regions are *actually* unreachable, since
+			// it's possible that we'll non-relatively branch back to the region skipped by the BL/BCL call!
+			bool foundBL = 0;
+			bool foundBLR = 0;
+			// So, iterate through all the instructions in our block, for as long we haven't found both a BL and a BLR
+			for (std::size_t i = 0; (!foundBL || !foundBLR) && i < instructionPtrVec.size(); i++)
 			{
-				// ... mark it as a end branch, so we can do our %END% output later! 
-				finalEvent->second.labelCondition = branchEventSummary::dlc_END_BRANCH;
+				asmInstruction* currPtr = instructionPtrVec[i];
+				// Skip if the instructionPtr was null (generally because parsing the incoming hex failed).
+				if (currPtr == nullptr) continue;
+
+				// If we're looking at a BCLR of any kind...
+				if (!foundBLR && currPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B_SpReg && currPtr->secondaryOpCode == 16)
+				{
+					// ... mark that down.
+					foundBLR = 1;
+				}
+				// If we're looking at a B or BC instruction...
+				else if (!foundBL && (currPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_B) || (currPtr->primaryOpCode == asmPrimaryOpCodes::aPOC_BC))
+				{
+					lava::ppc::argumentLayout* currLayoutPtr = currPtr->getArgLayoutPtr();
+					if (currLayoutPtr != nullptr)
+					{
+						// Grab its set of instructions...
+						std::vector<unsigned long> instructionArgs = currLayoutPtr->splitHexIntoArguments(hexVecIn[i]);
+						// ... and if the LK bit is set, mark that down as well.
+						foundBL |= instructionArgs.back();
+					}
+				}
+			}
+			// If we did find the pair of instructions we're looking for we need to disable Embed output.
+			disableDataEmbedOutput = foundBL && foundBLR;
+
+			std::size_t currentEmbedStart = SIZE_MAX;
+			std::size_t currentEmbedExpectedEnd = SIZE_MAX;
+			// If embeds *aren't* disabled, use the catalogue of branch events to detect any data embeds.
+			for (auto i = relativeBranchEventsMap.begin(); !disableDataEmbedOutput && i != relativeBranchEventsMap.end(); i++)
+			{
+				// If there is no embed open, and this event is a unconditional forward branch...
+				if ((currentEmbedStart == SIZE_MAX) && (i->second.outgoingBranchIsUnconditional && !i->second.outgoingBranchGoesBackwards))
+				{
+					// ... and this instruction branches over at least 1 instruction/word of data (ie. our embed length > 0)...
+					if ((i->first + 1) < i->second.outgoingBranchDestIndex)
+					{
+						// ... note the instruction immediately following it as the prospective start of an embed...
+						currentEmbedStart = i->first + 1;
+						// ... and the targeted instruction as the prospective end.
+						currentEmbedExpectedEnd = i->second.outgoingBranchDestIndex;
+					}
+				}
+				// Alternatively, if we've got an embed open, and we've reached a destination event...
+				else if ((currentEmbedStart != SIZE_MAX) && (!i->second.incomingBranchStartIndices.empty()))
+				{
+					// ... and this location is the expected end of our embed, that's a valid embed!
+					if (i->first == currentEmbedExpectedEnd)
+					{
+						// ... record it.
+						dataEmbedStartsToLengths[currentEmbedStart] = i->first - currentEmbedStart;
+						// Additionally, set its label condition appropriately!
+						if (i->second.labelCondition != branchEventSummary::destinationLabelCondition::dlc_END_BRANCH)
+						{
+							i->second.labelCondition = branchEventSummary::destinationLabelCondition::dlc_DATA_EMBED;
+						}
+					}
+
+					// In any case, close the open embed.
+					currentEmbedStart = SIZE_MAX;
+				}
 			}
 		}
-	}
+
+	public:
+		// Takes in a block of PPC Hex Instructions and analyzes it for information to aid the Block Parsing process.
+		bool populateProfileFromHexBlock(const std::vector<unsigned long>& hexVecIn)
+		{
+			if (hexVecIn.empty()) return 0;
+
+			// Determine whether or not the block contains an even number of instructions, and ends with null word, as Gecko expects.
+			blockIsGeckoCompliant = !(hexVecIn.size() % 2) && (hexVecIn.back() == 0x00);
+			// Stores the asmInstruction pointer for each instruction in the block.
+			populateInstructionPtrVec(hexVecIn);
+			// Log all the branch events in the block, for data embed tracking.
+			populateBranchEventMap(hexVecIn);
+			// Determine whether or not data embed output needed to be disabled, and if they aren't, find any data embeds in the block.
+			populateDataEmbedMap(hexVecIn);
+
+			return 1;
+		}
+
+	} currentBlockInfo;
 	
 	// Instruction to String Conversion Predicates
 	std::string defaultAsmInstrToStrFunc(asmInstruction* instructionIn, unsigned long hexIn)
@@ -374,7 +487,7 @@ namespace lava::ppc
 			std::string crfString = (BI / 4) ? (" cr" + lava::numToDecStringWithPadding(BI / 4, 0) + ",") : ("");
 
 			std::string simpleMnem = parseBOAndBIToBranchMnem(BO, BI % 4, baseMnemonicSuffix);
-			if (!simpleMnem.empty())
+			if (!simpleMnem.empty() && (simpleMnem != "b"))
 			{
 				result << simpleMnem << crfString;
 			}
@@ -2652,104 +2765,38 @@ namespace lava::ppc
 		std::vector<std::string> result{};
 		result.reserve(hexVecIn.size());
 
-		// Catalogue every relative branch event in the block.
-		populateBranchEventMap(hexVecIn);
+		// Do our analysis on the incoming block.
+		currentBlockInfo.populateProfileFromHexBlock(hexVecIn);
 		
-		// Use the catalogue of branch events to detect any data embeds.
-		std::size_t currentEmbedStart = SIZE_MAX;
-		std::map<std::size_t, std::size_t> dataEmbedStartsToLengths{};
-		for (auto i = currentBlockBranchEvents.begin(); i != currentBlockBranchEvents.end(); i++)
-		{
-			// If there is no embed open, and this event is a unconditional forward branch...
-			if ((currentEmbedStart == SIZE_MAX) && (i->second.outgoingBranchIsUnconditional && !i->second.outgoingBranchGoesBackwards))
-			{
-				// ... mark the instruction immediately following it as the start of an embed.
-				currentEmbedStart = i->first + 1;
-			}
-			// Alternatively, if we've got an embed open, and we've reached a destination event...
-			else if ((currentEmbedStart != SIZE_MAX) && (!i->second.incomingBranchStartIndices.empty()))
-			{
-				// ... that'd be the end of our embed! And if our end comes after embed start (ie. our embed would have >0 length)...
-				if (i->first > currentEmbedStart)
-				{
-					// ... record it.
-					dataEmbedStartsToLengths[currentEmbedStart] = i->first - currentEmbedStart;
-					// Additionally, set its label condition appropriately!
-					i->second.labelCondition = branchEventSummary::destinationLabelCondition::dlc_DATA_EMBED;
-				}
-
-				// In any case, close the open embed.
-				currentEmbedStart = SIZE_MAX;
-			}
-		}
-
-		// Iterate through each instruction, 
-		bool currentEmbedJustStarted = 0;
-		std::size_t currentEmbedLengthCounter = 0;
-		auto currentEmbedItr = dataEmbedStartsToLengths.end();
-		auto nextEmbedItr = (dataEmbedStartsToLengths.empty()) ? dataEmbedStartsToLengths.end() : dataEmbedStartsToLengths.begin();
+		// Do initial conversion pass on the block.
 		for (std::size_t i = 0; i < hexVecIn.size(); i++)
 		{
-			// If there are embeds left, and we've reached one...
-			if ((nextEmbedItr != dataEmbedStartsToLengths.end()) && (i == nextEmbedItr->first))
+			std::string conversion = convertInstructionHexToString(hexVecIn[i]);
+			// If a conversion wasn't empty (ie. was successful)...
+			if (!conversion.empty())
 			{
-				// ... put its length into the counter...
-				currentEmbedLengthCounter = nextEmbedItr->second;
-				// ... advance our embed iterators...
-				currentEmbedItr = nextEmbedItr;
-				nextEmbedItr++;
-				// ... and set the flag that our embed just started.
-				currentEmbedJustStarted = 1;
-			}
-
-			// If the length counter is zero, we aren't in an embed...
-			if (currentEmbedLengthCounter == 0)
-			{
-				// ... so use a proper conversion. 
-				std::string conversion = convertInstructionHexToString(hexVecIn[i]);
-				// If a conversion wasn't empty (ie. was successful)...
-				if (!conversion.empty())
+				// ... but its mnemonic is disallowed...
+				if (disallowedMnemonics.find(conversion.substr(0, conversion.find(' '))) != disallowedMnemonics.end())
 				{
-					// ... but its mnemonic is disallowed...
-					if (disallowedMnemonics.find(conversion.substr(0, conversion.find(' '))) != disallowedMnemonics.end())
-					{
-						// ... pretend the conversion simply failed, we'll pass back an empty string.
-						conversion = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8);
-					}
+					// ... use word encoding instead, but keep the .
+					conversion = lava::ppc::getStringWithComment("word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8), conversion);
 				}
-				else
-				{
-					conversion = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8);
-				}
-				// Push the result to our result vector.
-				result.push_back(conversion);
 			}
-			// Otherwise...
+			// ... otherwise, if the conversion simply failed...
 			else
 			{
-				// ... push the word into the back of the vector...
-				result.push_back("word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8));
-				// ... and if the embed just started...
-				if (currentEmbedJustStarted)
-				{
-					// ... also append the embed label and length to the line!
-					result.back() = lava::ppc::getStringWithComment(result.back(), 
-						"DATA_EMBED(0x" + lava::numToHexStringWithPadding(currentEmbedItr->second * 4, 0) + " bytes)");
-				}
-				currentEmbedJustStarted = 0;
-				currentEmbedLengthCounter--;
-				if (currentEmbedLengthCounter == 0)
-				{
-					currentEmbedItr = dataEmbedStartsToLengths.end();
-				}
+				// ... use word encoding.
+				conversion = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8);
 			}
+			// Push the result to our result vector.
+			result.push_back(conversion);
 		}
 
-		// If the labels aren't disabled, and there are enough lines that it's at least *possible* that we'd end up using a label, try to apply them.
+		// If branch labels aren't disabled, and there are enough lines that it's at least *possible* that we'd end up using a label, try to apply them.
 		if ((refsNeededForBranchLabel != SIZE_MAX) && (hexVecIn.size() >= refsNeededForBranchLabel))
 		{
 			// For each existing Branch Event...
-			for (auto i : currentBlockBranchEvents)
+			for (auto i : currentBlockInfo.relativeBranchEventsMap)
 			{
 				// ... check if we're looking at a destination with enough references to trigger a label (or if one's being forced on). If so...
 				bool doLabel = 0;
@@ -2819,6 +2866,30 @@ namespace lava::ppc
 					result[i] = lava::ppc::getStringWithComment(result[i], "0x" + lava::numToHexStringWithPadding(hexVecIn[i], 8), 0x20 + (result[i].find('\n') + 1));
 				}
 			}
+		}
+
+		// Lastly, if data embeds weren't disabled, go through and write those in.
+		if (!currentBlockInfo.disableDataEmbedOutput)
+		{
+			// For each embed...
+			for (auto i = currentBlockInfo.dataEmbedStartsToLengths.begin(); i != currentBlockInfo.dataEmbedStartsToLengths.end(); i++)
+			{
+				// ... for each line *of* that embed...
+				for (std::size_t u = 0; u < i->second; u++)
+				{
+					// ... overwrite its output line with word encoding.
+					result[i->first + u] = "word 0x" + lava::numToHexStringWithPadding(hexVecIn[i->first + u], 0x8);
+				}
+				// And lastly, on the first line of the embed, write in a comment labeling the EMBED itself.
+				result[i->first] = lava::ppc::getStringWithComment(result[i->first], "DATA_EMBED (0x" + lava::numToHexStringWithPadding(i->second * 4, 0) + " bytes)");
+			}
+		}
+
+		// And lastly, if our block was Gecko Encoded, with the code-final 0x00
+		if (currentBlockInfo.blockIsGeckoCompliant)
+		{
+			// ...then we can drop that 0x00 from the output.
+			result.resize(result.size() - 1);
 		}
 
 		return result;

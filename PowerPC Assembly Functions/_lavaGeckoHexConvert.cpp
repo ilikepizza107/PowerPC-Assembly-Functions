@@ -1701,7 +1701,7 @@ namespace lava::gecko
 				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 2, 1);
 				outputStreamIn << "{\n";
 				// Do indented output, accounting for newline characters!
-				for (unsigned long i = 0; i < (convertedHexVec.size() - 1); i++)
+				for (unsigned long i = 0; i < convertedHexVec.size(); i++)
 				{
 					// Stringview of the converted line, which we'll be using to simplify moving past newline chars
 					std::string_view conversionView = convertedHexVec[i];
