@@ -384,15 +384,9 @@ static const int CURRENT_PAGE_PTR_LOC = START_OF_CODE_MENU_HEADER; //4
 static const int MAIN_PAGE_PTR_LOC = CURRENT_PAGE_PTR_LOC + 4; //4
 static const int SALTY_RUNBACK_BUTTON_COMBO_LOC = MAIN_PAGE_PTR_LOC + 4; //4
 static const int SKIP_RESULTS_BUTTON_COMBO_LOC = SALTY_RUNBACK_BUTTON_COMBO_LOC + 4; //4
-//colors
-static const int COLOR_ARRAY_START = SKIP_RESULTS_BUTTON_COMBO_LOC + 4; //4 * num colors
-static const u8 NORMAL_LINE_COLOR_OFFSET = 0;
-static const u8 HIGHLIGHTED_LINE_COLOR_OFFSET = NORMAL_LINE_COLOR_OFFSET + 4;
-static const u8 CHANGED_LINE_COLOR_OFFSET = HIGHLIGHTED_LINE_COLOR_OFFSET + 4;
-static const u8 CHANGED_AND_HIGHLIGHTED_LINE_COLOR_OFFSET = CHANGED_LINE_COLOR_OFFSET + 4;
-static const u8 COMMENT_LINE_COLOR_OFFSET = CHANGED_AND_HIGHLIGHTED_LINE_COLOR_OFFSET + 4;
-
-static const int MOVE_FRAME_TIMER_LOC = COLOR_ARRAY_START + 0x14; //4
+// This is deprecated, the color array has been moved to LINE_COLOR_TABLE!
+static const int OLD_COLOR_ARRAY = SKIP_RESULTS_BUTTON_COMBO_LOC + 4; // 0x14
+static const int MOVE_FRAME_TIMER_LOC = OLD_COLOR_ARRAY + 0x14; //4
 static const int INCREMENT_FRAME_TIMER_LOC = MOVE_FRAME_TIMER_LOC + 4; //4
 static const int FRAME_ADVANCE_FRAME_TIMER = INCREMENT_FRAME_TIMER_LOC + 4; //4
 
@@ -533,7 +527,57 @@ static struct
 	constexpr unsigned int table_end() { return table_start() + table_size(); };
 } HOOK_VTABLE;
 
-static const int START_OF_CODE_MENU = HOOK_VTABLE.table_end();
+// Line Color Expansion
+static struct
+{
+	constexpr unsigned int table_start() { return HOOK_VTABLE.table_end(); };
+
+	enum COLORS
+	{
+		COLOR_WHITE,
+		COLOR_YELLOW,
+		COLOR_TEAL,
+		COLOR_BLUE,
+		COLOR_GREEN,
+		COLOR_RED,
+		COLOR_ORANGE,
+		COLOR_PURPLE,
+		COLOR_PINK,
+		COLOR_GRAY, 
+		COLOR_LIGHT_GRAY, 
+		COLOR_BLACK, 
+		COLOR_COUNT
+	};
+	const unsigned int COLORS[COLOR_COUNT] = { 
+		WHITE,		// WHITE
+		YELLOW,		// YELLOW
+		TEAL,		// TEAL
+		BLUE,		// BLUE
+		GREEN,		// GREEN
+		RED,		// RED
+		ORANGE,		// ORANGE
+		PURPLE,		// PURPLE
+		0xFF60C0FF,	// PINK
+		0xFFFFFF80,	// GRAY
+		0xFFFFFFB8,	// LIGHT GRAY
+		BLACK,		// BLACK
+	};
+
+	constexpr unsigned int table_size() { return (sizeof(*this) > 1) ? (sizeof(*this)) : 0; };
+	constexpr unsigned int table_end() { return table_start() + table_size(); };
+
+	constexpr unsigned int offset(enum COLORS colorIn) { return colorIn * 4; };
+
+} LINE_COLOR_TABLE;
+static const u8 NORMAL_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_WHITE);
+static const u8 HIGHLIGHTED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_YELLOW);
+static const u8 CHANGED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_TEAL);
+static const u8 CHANGED_AND_HIGHLIGHTED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_BLUE);
+static const u8 COMMENT_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_GREEN);
+static const u8 UNSELECTABLE_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_LIGHT_GRAY);
+
+
+static const int START_OF_CODE_MENU = LINE_COLOR_TABLE.table_end();
 
 
 static int CurrentOffset = START_OF_CODE_MENU;
@@ -685,6 +729,9 @@ public:
 	u8 lineNum;
 	int Padding;
 	vector<int*> args;
+
+	bool isUnselectable = 0;
+
 	//offsets
 	static const int SIZE = 0; //2
 	static const int TYPE = SIZE + 2; //1
@@ -935,7 +982,14 @@ public:
 	{
 		for (int i = 0; i < Lines.size(); i++) {
 			if (Lines[i]->type != COMMENT_LINE && Lines[i]->type != PRINT_LINE) {
-				SelectableLines.push_back(i);
+				if (!Lines[i]->isUnselectable)
+				{
+					SelectableLines.push_back(i);
+				}
+				else
+				{
+					Lines[i]->Color = UNSELECTABLE_LINE_COLOR_OFFSET;
+				}
 			}
 		}
 	}

@@ -950,7 +950,9 @@ void CodeMenu()
 	HUDColorLines.push_back(new Integer("Yellow",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
 	HUDColorLines.push_back(new Integer("Green",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
 	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
+	HUDColorLines.back()->isUnselectable = 1;
 	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
+	HUDColorLines.back()->isUnselectable = 1;
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
 	if ((CONFIG_BACKPLATE_COLOR_MODE > 0) && (CONFIG_BACKPLATE_COLOR_MODE < backplateColorConstants::pSCL__COUNT))
 	{
@@ -1382,12 +1384,12 @@ void CreateMenu(Page MainPage)
 	//button combos
 	AddValueToByteArray(BUTTON_L | BUTTON_R | BUTTON_Y , Header); //salty runback
 	AddValueToByteArray(BUTTON_L | BUTTON_R | BUTTON_X, Header); //skip results
-	//line colors
-	AddValueToByteArray(WHITE, Header); //normal line color
-	AddValueToByteArray(YELLOW, Header); //highlighted line color
-	AddValueToByteArray(TEAL, Header); //changed line color
-	AddValueToByteArray(BLUE, Header); //changed and highlighted line color
-	AddValueToByteArray(GREEN, Header); //comment line color
+	// Old Line Color Table
+	AddValueToByteArray(0x00, Header);
+	AddValueToByteArray(0x00, Header);
+	AddValueToByteArray(0x00, Header);
+	AddValueToByteArray(0x00, Header);
+	AddValueToByteArray(0x00, Header);
 	//frame timers
 	AddValueToByteArray(0, Header); //move frame timer
 	AddValueToByteArray(0, Header); //value frame timer
@@ -1585,6 +1587,13 @@ void CreateMenu(Page MainPage)
 	if (HOOK_VTABLE.table_size() > 0)
 	{
 		Header.resize(Header.size() + HOOK_VTABLE.table_size(), 0);
+	}
+	if (LINE_COLOR_TABLE.table_size() > 0)
+	{
+		for (std::size_t i = 0; i < LINE_COLOR_TABLE.COLOR_COUNT; i++)
+		{
+			AddValueToByteArray(LINE_COLOR_TABLE.COLORS[i], Header);
+		}
 	}
 
 	if (START_OF_CODE_MENU - START_OF_CODE_MENU_HEADER != Header.size()) {
@@ -3041,7 +3050,7 @@ void PrintPage(int PageReg, int SettingsPtrReg, int Reg1, int Reg2, int Reg3, in
 {
 	SetupPrintText(SettingsPtrReg);
 
-	SetRegister(Reg5, COLOR_ARRAY_START);
+	SetRegister(Reg5, LINE_COLOR_TABLE.table_start());
 
 	//set initial text pos
 	SetRegister(Reg1, GetHexFromFloat(INITIAL_XPOS));
