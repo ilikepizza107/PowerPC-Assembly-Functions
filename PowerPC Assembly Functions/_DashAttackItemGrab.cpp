@@ -3,7 +3,8 @@
 
 const std::string codeVersion = "v1.0.0";
 
-//FighterPac Start? 80F9FC68
+//FighterPac Start = 80F9FC20
+//Add 0x80 to PSAC Offset to get .pac relative offset, 0x20 for .dat relative offset
 
 void dashAttackItemGrab(bool codeEnabled)
 {
@@ -73,7 +74,7 @@ void dashAttackItemGrab(bool codeEnabled)
 
 		// Beginning of Loop
 		Label(loopStartLabel);
-		// Load the necessary values frmo the table based on Toggle State:
+		// Load the necessary values from the table based on Toggle State:
 		// If Toggle was on, loads all 3 entries from (reg1 + reg2) into registers starting at reg3!
 		// If it's off, loads just the signatuer Loc, leaving reg4 and reg5 alone!
 		LSWX(reg3, reg1, reg2);
