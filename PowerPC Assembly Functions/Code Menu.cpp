@@ -398,6 +398,7 @@ namespace xmlTagConstants
 	const std::string selectionOptionTag = "option";
 	const std::string intTag = "codeMenuInt";
 	const std::string floatTag = "codeMenuFloat";
+	const std::string lockedTag = "locked";
 }
 
 pugi::xml_document menuOptionsTree{};
@@ -497,6 +498,10 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::selectionTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
+					if (currLine->isUnselectable)
+					{
+						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
+					}
 					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::selectionDefaultTag.c_str());
 					defaultValNode.append_attribute(xmlTagConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
 					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
@@ -513,6 +518,10 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::intTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
+					if (currLine->isUnselectable)
+					{
+						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
+					}
 					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
 					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Min).c_str());
 					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
@@ -527,6 +536,10 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::floatTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
+					if (currLine->isUnselectable)
+					{
+						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
+					}
 					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
 					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
 					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
@@ -564,6 +577,7 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 		auto pageFindItr = pageNodeMap.find(currPage->PageName);
 		if (pageFindItr != pageNodeMap.end())
 		{
+			bool doPageReconnect = 0;
 			std::map<std::string, pugi::xml_node> lineNodeMap;
 			findLinesInPageNode(pageFindItr->second, lineNodeMap);
 
@@ -604,6 +618,11 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 									}
 								}
 							}
+							if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
+							{
+								currLine->isUnselectable = 1;
+								doPageReconnect = 1;
+							}
 							break;
 						}
 						case INTEGER_LINE:
@@ -627,6 +646,11 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 										}
 									}
 								}
+							}
+							if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
+							{
+								currLine->isUnselectable = 1;
+								doPageReconnect = 1;
 							}
 							break;
 						}
@@ -654,6 +678,11 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 									}
 								}
 							}
+							if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
+							{
+								currLine->isUnselectable = 1;
+								doPageReconnect = 1;
+							}
 							break;
 						}
 						default:
@@ -662,6 +691,10 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 						}
 					}
 				}
+			}
+			if (doPageReconnect)
+			{
+				currPage->ConnectSelectableLines();
 			}
 		}
 	}

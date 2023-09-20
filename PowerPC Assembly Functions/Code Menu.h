@@ -360,6 +360,7 @@ namespace xmlTagConstants
 	extern const std::string selectionOptionTag;
 	extern const std::string intTag;
 	extern const std::string floatTag;
+	extern const std::string lockedTag;
 }
 class Page; // Page Class Forward Decl.
 
