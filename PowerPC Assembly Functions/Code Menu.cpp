@@ -380,6 +380,8 @@ void initMenuFileStream()
 	MenuFile.open(cmnuOutputFilePath, fstream::out | fstream::binary);
 }
 
+
+
 // Options File Functions
 namespace xmlTagConstants
 {
@@ -400,8 +402,21 @@ namespace xmlTagConstants
 	const std::string floatTag = "codeMenuFloat";
 	const std::string lockedTag = "locked";
 }
-
 pugi::xml_document menuOptionsTree{};
+bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument)
+{
+	bool result = 0;
+
+	if (std::filesystem::is_regular_file(xmlPathIn))
+	{
+		if (destinationDocument.load_file(xmlPathIn.c_str()))
+		{
+			result = 1;
+		}
+	}
+
+	return result;
+}
 void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers)
 {
 	for (unsigned long i = 0; i < currBasePageIn.Lines.size(); i++)
@@ -424,22 +439,23 @@ void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPoi
 }
 void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes)
 {
-	for (pugi::xml_node_iterator menuItr = optionsTree.begin(); menuItr != optionsTree.end(); menuItr++)
+	// Request the code menu base node from the optionsTree...
+	pugi::xml_node menuNode = optionsTree.child(xmlTagConstants::codeMenuTag.c_str());
+	// ... and if it was validly returned...
+	if (menuNode)
 	{
-		if (menuItr->name() == xmlTagConstants::codeMenuTag)
+		// ... get the collection of page nodes from the menu.
+		pugi::xml_object_range pageNodes = menuNode.children(xmlTagConstants::pageTag.c_str());
+		// For each of these pages...
+		for (pugi::xml_named_node_iterator pageItr = pageNodes.begin(); pageItr != pageNodes.end(); pageItr++)
 		{
-			for (pugi::xml_node_iterator pageItr = menuItr->begin(); pageItr != menuItr->end(); pageItr++)
+			// ... request its name attribute...
+			pugi::xml_attribute pageNameAttr = pageItr->attribute(xmlTagConstants::nameTag.c_str());
+			// ... and if it's validly returned...
+			if (pageNameAttr)
 			{
-				if (pageItr->name() == xmlTagConstants::pageTag)
-				{
-					for (pugi::xml_attribute_iterator pageAttrItr = pageItr->attributes_begin(); pageAttrItr != pageItr->attributes_end(); pageAttrItr++)
-					{
-						if (pageAttrItr->name() == xmlTagConstants::nameTag)
-						{
-							collectedNodes[pageAttrItr->value()] = *pageItr;
-						}
-					}
-				}
+				// ... record the page and its name in our map.
+				collectedNodes[pageNameAttr.value()] = *pageItr;
 			}
 		}
 	}
@@ -450,15 +466,154 @@ void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, p
 	{
 		if (lineItr->name() == xmlTagConstants::selectionTag || lineItr->name() == xmlTagConstants::floatTag || lineItr->name() == xmlTagConstants::intTag)
 		{
-			for (pugi::xml_attribute_iterator lineAttrItr = lineItr->attributes_begin(); lineAttrItr != lineItr->attributes_end(); lineAttrItr++)
+			// Request the name attribute from the current node...
+			pugi::xml_attribute nameAttr = lineItr->attribute(xmlTagConstants::nameTag.c_str());
+			// ... and if the returned attribute is valid...
+			if (nameAttr)
 			{
-				if (lineAttrItr->name() == xmlTagConstants::nameTag)
-				{
-					collectedNodes[lineAttrItr->value()] = *lineItr;
-				}
+				// ... record it and the corresponding line in the output map.
+				collectedNodes[nameAttr.value()] = *lineItr;
 			}
 		}
 	}
+}
+std::vector<const char*> splitLineContentString(const std::string& joinedStringIn)
+{
+	std::vector<const char*> result{};
+
+	unsigned long currStringIndex = 0x00;
+	for (unsigned long i = 0; i < joinedStringIn.size(); i++)
+	{
+		if (joinedStringIn[i] == 0x00)
+		{
+			result.push_back(joinedStringIn.data() + currStringIndex);
+			currStringIndex = i + 1;
+		}
+	}
+	if (currStringIndex < joinedStringIn.size())
+	{
+		result.push_back(joinedStringIn.data() + currStringIndex);
+	}
+
+	return result;
+}
+void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn)
+{
+	// Get a list of all the pages in the menu, including the main page.
+	std::vector<Page*> Pages{ &mainPageIn };
+	recursivelyFindPages(mainPageIn, Pages);
+
+	// And find every page present in the XML.
+	std::map<std::string, pugi::xml_node> pageNodeMap;
+	findPagesInOptionsTree(xmlDocumentIn, pageNodeMap);
+
+	// For each of the pages we found in our actual menu structure...
+	for (Page* currPage : Pages)
+	{
+		// ... see if there was a corresponding page in the XML document.
+		auto pageFindItr = pageNodeMap.find(currPage->PageName);
+		if (pageFindItr == pageNodeMap.end()) continue;
+
+		// ... if there was, we need to apply the default values from the lines in that page node!
+		// First, record whether or not we need to reconnect this page's lines, in case we marked something locked.
+		bool doPageReconnect = 0;
+		// Additionally, get a list of all the line nodes in this page node.
+		std::map<std::string, pugi::xml_node> lineNodeMap;
+		findLinesInPageNode(pageFindItr->second, lineNodeMap);
+		// Then, for each line in the current page struct...
+		for (Line* currLine : currPage->Lines)
+		{
+			// ... check if a corresponding node is present in this page node.
+			std::vector<const char*> deconstructedText = splitLineContentString(currLine->Text);
+			auto lineFindItr = lineNodeMap.find(deconstructedText[0]);
+			if (lineFindItr == lineNodeMap.end()) continue;
+
+			// If there was, pull the default value recorded in the XML and write it into the actual line struct (based on the line type).
+			switch (currLine->type)
+			{
+				case SELECTION_LINE:
+				{
+					pugi::xml_node defaultValNode = lineFindItr->second.child(xmlTagConstants::selectionDefaultTag.c_str());
+					if (defaultValNode)
+					{
+						pugi::xml_attribute defaultIndexAttr = defaultValNode.attribute(xmlTagConstants::indexTag.c_str());
+						if (defaultIndexAttr)
+						{
+							u32 valueIn = defaultIndexAttr.as_uint(currLine->Default);
+							valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
+							currLine->Default = valueIn;
+							currLine->Value = valueIn;
+						}
+					}
+					break;
+				}
+				case INTEGER_LINE:
+				{
+					pugi::xml_node defaultValNode = lineFindItr->second.child(xmlTagConstants::valueDefaultTag.c_str());
+					if (defaultValNode)
+					{
+						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(xmlTagConstants::valueTag.c_str());
+						if (defaultValueAttr)
+						{
+							int valueIn = defaultValueAttr.as_int(currLine->Default);
+							valueIn = std::min(std::max(valueIn, (int)currLine->Min), (int)currLine->Max);
+							currLine->Default = valueIn;
+							currLine->Value = valueIn;
+						}
+					}
+					break;
+				}
+				case FLOATING_LINE:
+				{
+					pugi::xml_node defaultValNode = lineFindItr->second.child(xmlTagConstants::valueDefaultTag.c_str());
+					if (defaultValNode)
+					{
+						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(xmlTagConstants::valueTag.c_str());
+						if (defaultValueAttr)
+						{
+							float valueIn = defaultValueAttr.as_float(GetFloatFromHex(currLine->Default));
+							float maxVal = GetFloatFromHex(currLine->Max);
+							float minVal = GetFloatFromHex(currLine->Min);
+							valueIn = std::min(std::max(valueIn, minVal), maxVal);
+							currLine->Default = GetHexFromFloat(valueIn);
+							currLine->Value = currLine->Default;
+						}
+					}
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
+			// Lastly, check if the line is explicitly marked as locked...
+			if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
+			{
+				// ... and if so, mark it as unselectable, and signal that we need to do a reconnect on this page.
+				currLine->isUnselectable = 1;
+				doPageReconnect = 1;
+			}
+		}
+		// If after doing that, we need to do a reconnect...
+		if (doPageReconnect)
+		{
+			// ... do so.
+			currPage->ConnectSelectableLines();
+		}
+	}
+}
+bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn)
+{
+	bool result = 0;
+
+	pugi::xml_document tempDoc;
+	if (loadMenuOptionsTree(xmlPathIn, tempDoc))
+	{
+		result = 1;
+		applyDefaultValuesFromMenuOptionsTree(mainPageIn, tempDoc);
+	}
+
+	return result;
 }
 bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 {
@@ -478,7 +633,7 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 	std::vector<Page*> Pages{ &mainPageIn };
 	recursivelyFindPages(mainPageIn, Pages);
 
-	for (unsigned long i = 0; i < Pages.size(); i++) 
+	for (unsigned long i = 0; i < Pages.size(); i++)
 	{
 		const Page* currPage = Pages[i];
 
@@ -561,195 +716,6 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 
 	return result;
 }
-
-void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn)
-{
-	std::vector<Page*> Pages{ &mainPageIn };
-	recursivelyFindPages(mainPageIn, Pages);
-
-	std::map<std::string, pugi::xml_node> pageNodeMap;
-	findPagesInOptionsTree(xmlDocumentIn, pageNodeMap);
-
-	for (unsigned long i = 0; i < Pages.size(); i++)
-	{
-		Page* currPage = Pages[i];
-
-		auto pageFindItr = pageNodeMap.find(currPage->PageName);
-		if (pageFindItr != pageNodeMap.end())
-		{
-			bool doPageReconnect = 0;
-			std::map<std::string, pugi::xml_node> lineNodeMap;
-			findLinesInPageNode(pageFindItr->second, lineNodeMap);
-
-			for (unsigned long u = 0; u < currPage->Lines.size(); u++)
-			{
-				Line* currLine = currPage->Lines[u];
-
-				std::vector<const char*> deconstructedText = splitLineContentString(currLine->Text);
-
-				auto lineFindItr = lineNodeMap.find(deconstructedText[0]);
-				if (lineFindItr != lineNodeMap.end())
-				{
-					switch (currLine->type)
-					{
-						case SELECTION_LINE:
-						{
-							bool defaultValueFound = 0;
-							for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
-								!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
-							{
-								if (childItr->name() == xmlTagConstants::selectionDefaultTag)
-								{
-									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-										!defaultValueFound && attrItr != childItr->attributes_end(); childItr++)
-									{
-										if (attrItr->name() == xmlTagConstants::indexTag)
-										{
-											defaultValueFound = 1;
-											u32 valueIn = attrItr->as_uint(currLine->Default);
-											valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
-											if (valueIn != currLine->Default)
-											{
-												int test = 1;
-											}
-											currLine->Default = valueIn;
-											currLine->Value = valueIn;
-										}
-									}
-								}
-							}
-							if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
-							{
-								currLine->isUnselectable = 1;
-								doPageReconnect = 1;
-							}
-							break;
-						}
-						case INTEGER_LINE:
-						{
-							bool defaultValueFound = 0;
-							for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
-								!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
-							{
-								if (childItr->name() == xmlTagConstants::valueDefaultTag)
-								{
-									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-										!defaultValueFound && attrItr != childItr->attributes_end(); attrItr++)
-									{
-										if (attrItr->name() == xmlTagConstants::valueTag)
-										{
-											defaultValueFound = 1;
-											int valueIn = attrItr->as_int(currLine->Default);
-											valueIn = std::min(std::max(valueIn, (int)currLine->Min), (int)currLine->Max);
-											currLine->Default = valueIn;
-											currLine->Value = valueIn;
-										}
-									}
-								}
-							}
-							if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
-							{
-								currLine->isUnselectable = 1;
-								doPageReconnect = 1;
-							}
-							break;
-						}
-						case FLOATING_LINE:
-						{
-							bool defaultValueFound = 0;
-							for (pugi::xml_node_iterator childItr = lineFindItr->second.begin();
-								!defaultValueFound && childItr != lineFindItr->second.end(); childItr++)
-							{
-								if (childItr->name() == xmlTagConstants::valueDefaultTag)
-								{
-									for (pugi::xml_attribute_iterator attrItr = childItr->attributes_begin();
-										!defaultValueFound && attrItr != childItr->attributes_end(); attrItr++)
-									{
-										if (attrItr->name() == xmlTagConstants::valueTag)
-										{
-											defaultValueFound = 1;
-											float valueIn = attrItr->as_float(GetFloatFromHex(currLine->Default));
-											float maxVal = GetFloatFromHex(currLine->Max);
-											float minVal = GetFloatFromHex(currLine->Min);
-											valueIn = std::min(std::max(valueIn, minVal), maxVal);
-											currLine->Default = GetHexFromFloat(valueIn);
-											currLine->Value = currLine->Default;
-										}
-									}
-								}
-							}
-							if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
-							{
-								currLine->isUnselectable = 1;
-								doPageReconnect = 1;
-							}
-							break;
-						}
-						default:
-						{
-							break;
-						}
-					}
-				}
-			}
-			if (doPageReconnect)
-			{
-				currPage->ConnectSelectableLines();
-			}
-		}
-	}
-}
-bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn)
-{
-	bool result = 0;
-
-	pugi::xml_document tempDoc;
-	if (loadMenuOptionsTree(xmlPathIn, tempDoc))
-	{
-		result = 1;
-		applyDefaultValuesFromMenuOptionsTree(mainPageIn, tempDoc);
-	}
-
-	return result;
-}
-
-bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument)
-{
-	bool result = 0;
-
-	if (std::filesystem::is_regular_file(xmlPathIn))
-	{
-		if (destinationDocument.load_file(xmlPathIn.c_str()))
-		{
-			result = 1;
-		}
-	}
-
-	return result;
-}
-
-std::vector<const char*> splitLineContentString(const std::string& joinedStringIn)
-{
-	std::vector<const char*> result{};
-
-	unsigned long currStringIndex = 0x00;
-	for (unsigned long i = 0; i < joinedStringIn.size(); i++)
-	{
-		if (joinedStringIn[i] == 0x00)
-		{
-			result.push_back(joinedStringIn.data() + currStringIndex);
-			currStringIndex = i + 1;
-		}
-	}
-	if (currStringIndex < joinedStringIn.size())
-	{
-		result.push_back(joinedStringIn.data() + currStringIndex);
-	}
-
-	return result;
-}
-
-
 
 
 

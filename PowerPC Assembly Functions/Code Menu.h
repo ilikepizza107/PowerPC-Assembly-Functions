@@ -342,6 +342,8 @@ extern const std::string boostGCTName;
 extern const std::string boostGCTFile;
 extern const std::string boostGCTTextFile;
 
+
+
 // Options File Functions
 namespace xmlTagConstants
 {
@@ -363,20 +365,15 @@ namespace xmlTagConstants
 	extern const std::string lockedTag;
 }
 class Page; // Page Class Forward Decl.
-
 extern pugi::xml_document menuOptionsTree;
-
+bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument);
 void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers);
 void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes);
 void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
-bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
-
+std::vector<const char*> splitLineContentString(const std::string& joinedStringIn);
 void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn);
 bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn);
-
-bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument);
-
-std::vector<const char*> splitLineContentString(const std::string& joinedStringIn);
+bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
 
 
 
