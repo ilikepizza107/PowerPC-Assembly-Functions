@@ -60,7 +60,7 @@ namespace lava::ppc
 	{
 		return extractInstructionArg(hexIn, 0, 6);
 	}
-	std::vector<std::string> formatRawDataEmbedOutput(const std::vector<unsigned long>& hexVecIn, std::string linePrefixIn, std::string wordPrefixIn, unsigned char wordsPerLineIn, unsigned long relativeLabelLoc)
+	std::vector<std::string> formatRawDataEmbedOutput(const std::vector<unsigned long>& hexVecIn, std::string linePrefixIn, std::string wordPrefixIn, unsigned char wordsPerLineIn, unsigned long relativeLabelLocIn, std::string labelStringIn)
 	{
 		// Ensure wordsPerLine is at least 1.
 		wordsPerLineIn = (wordsPerLineIn > 0) ? wordsPerLineIn : 1;
@@ -118,7 +118,7 @@ namespace lava::ppc
 			}
 		}
 		// And lastly, on the first line of the embed, write in a comment labeling the EMBED itself.
-		result.front() = lava::ppc::getStringWithComment(result.front(), "DATA_EMBED (0x" + lava::numToHexStringWithPadding(hexVecIn.size() * 4, 0) + " bytes)", relativeLabelLoc);
+		result.front() = lava::ppc::getStringWithComment(result.front(), labelStringIn, relativeLabelLocIn);
 
 		return result;
 	}
@@ -2942,7 +2942,8 @@ namespace lava::ppc
 				// Get the relevant slice of our vector...
 				std::vector<unsigned long> embedHexVec(hexVecIn.begin() + i->first, hexVecIn.begin() + i->first + i->second);
 				// ... use it to generate the formatted output for our embed...
-				std::vector<std::string> formattedEmbedVec = formatRawDataEmbedOutput(embedHexVec, "", "word 0x", 1, 0x2C);
+				std::vector<std::string> formattedEmbedVec = formatRawDataEmbedOutput(embedHexVec, "", "word 0x", 1, 0x2C,
+					"DATA_EMBED (0x" + lava::numToHexStringWithPadding(embedHexVec.size() * 4, 0) + " bytes)");
 				// ... and write each line of it to the results vector.
 				for (std::size_t u = 0; u < i->second; u++)
 				{

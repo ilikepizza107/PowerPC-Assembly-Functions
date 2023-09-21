@@ -208,7 +208,7 @@ namespace lava::gecko
 			}
 
 			// Pass that hexVec to the embed formatting func to get our formatted output back...
-			std::vector<std::string> outputVec = lava::ppc::formatRawDataEmbedOutput(hexVec, "*", " ", 2, 0x30);
+			std::vector<std::string> outputVec = lava::ppc::formatRawDataEmbedOutput(hexVec, "*", " ", 2, 0x30, commentStr);
 			// ... and finally write each formatted line to the output!
 			for (std::size_t i = 0; i < outputVec.size(); i++)
 			{
