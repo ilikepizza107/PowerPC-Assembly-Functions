@@ -371,8 +371,8 @@ void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPoi
 void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes);
 void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
 std::vector<const char*> splitLineContentString(const std::string& joinedStringIn);
-void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn);
-bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn);
+void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn);
+bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn);
 bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
 
 
@@ -557,7 +557,7 @@ static struct
 		PURPLE,		// PURPLE
 		0xFF60C0FF,	// PINK
 		0xFFFFFF80,	// GRAY
-		0xFFFFFFB8,	// LIGHT GRAY
+		0xFFFFFFB0,	// LIGHT GRAY
 		BLACK,		// BLACK
 	};
 

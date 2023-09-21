@@ -497,7 +497,7 @@ std::vector<const char*> splitLineContentString(const std::string& joinedStringI
 
 	return result;
 }
-void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn)
+void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn)
 {
 	// Get a list of all the pages in the menu, including the main page.
 	std::vector<Page*> Pages{ &mainPageIn };
@@ -510,13 +510,13 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 	// For each of the pages we found in our actual menu structure...
 	for (Page* currPage : Pages)
 	{
-		// ... see if there was a corresponding page in the XML document.
+		// ... see if there was a corresponding page in the XML document...
 		auto pageFindItr = pageNodeMap.find(currPage->PageName);
 		if (pageFindItr == pageNodeMap.end()) continue;
 
-		// ... if there was, we need to apply the default values from the lines in that page node!
-		// First, record whether or not we need to reconnect this page's lines, in case we marked something locked.
-		bool doPageReconnect = 0;
+		
+
+		// If there was, we need to apply the default values from the lines in that page node!
 		// Additionally, get a list of all the line nodes in this page node.
 		std::map<std::string, pugi::xml_node> lineNodeMap;
 		findLinesInPageNode(pageFindItr->second, lineNodeMap);
@@ -589,20 +589,26 @@ void applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_doc
 			// Lastly, check if the line is explicitly marked as locked...
 			if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
 			{
-				// ... and if so, mark it as unselectable, and signal that we need to do a reconnect on this page.
+				// ... and if so, mark it as unselectable.
 				currLine->isUnselectable = 1;
-				doPageReconnect = 1;
 			}
 		}
-		// If after doing that, we need to do a reconnect...
-		if (doPageReconnect)
+
+		// Lastly, check if the page is explicitly marked as locked...
+		if (pageFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
 		{
-			// ... do so.
-			currPage->ConnectSelectableLines();
+			// ... and if so, mark it as unselectable.
+			currPage->CalledFromLine.isUnselectable = 1;
 		}
 	}
+	// And lastly, for each page...
+	for (Page* currPage : Pages)
+	{
+		// ... re-connect the lines in them, to ensure that anything made newly unselectable actually honors that designation.
+		currPage->ConnectSelectableLines();
+	}
 }
-bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn)
+bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn)
 {
 	bool result = 0;
 
@@ -610,7 +616,7 @@ bool applyDefaultValuesFromMenuOptionsTree(Page& mainPageIn, std::string xmlPath
 	if (loadMenuOptionsTree(xmlPathIn, tempDoc))
 	{
 		result = 1;
-		applyDefaultValuesFromMenuOptionsTree(mainPageIn, tempDoc);
+		applyLineSettingsFromMenuOptionsTree(mainPageIn, tempDoc);
 	}
 
 	return result;
@@ -640,6 +646,10 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 		pugi::xml_node pageNode = menuBaseNode.append_child(xmlTagConstants::pageTag.c_str());
 		pugi::xml_attribute pageNameAttr = pageNode.append_attribute(xmlTagConstants::nameTag.c_str());
 		pageNameAttr.set_value(currPage->PageName.c_str());
+		if (currPage->CalledFromLine.isUnselectable)
+		{
+			pageNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
+		}
 
 		for (unsigned long u = 0; u < currPage->Lines.size(); u++)
 		{
@@ -1342,7 +1352,7 @@ void ActualCodes()
 
 void CreateMenu(Page MainPage)
 {
-	applyDefaultValuesFromMenuOptionsTree(MainPage, cmnuOptionsOutputFilePath);
+	applyLineSettingsFromMenuOptionsTree(MainPage, cmnuOptionsOutputFilePath);
 	buildMenuOptionsTreeFromMenu(MainPage, cmnuOptionsOutputFilePath);
 
 	//make pages
