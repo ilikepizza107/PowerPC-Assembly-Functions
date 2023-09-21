@@ -87,8 +87,10 @@ bool ledger::closeLedgerEntry()
 	return result;
 }
 
-bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, const std::string codeNameIn, const std::string codeBlurbIn, bool codeUnattested)
+bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, const std::string codeNameIn, const std::string codeBlurbIn, bool codeUnattested, bool disableDisassembly)
 {
+	bool result = 0;
+
 	// Determine Hashtag Border Length
 	std::size_t hashtagStrLength = (codeNameIn.empty()) ? 0 : std::max((int)codeNameIn.size(), 20);
 	if (!codeBlurbIn.empty())
@@ -128,7 +130,36 @@ bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStream
 		output << std::string(hashtagStrLength, '#') << "\n";
 	}
 
-	return lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0) == expectedLength;
+	// If we're intended to do the disassembly...
+	if (!disableDisassembly)
+	{
+		// ... then pass off to the disassembler.
+		result = lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0) == expectedLength;
+	}
+	// Otherwise...
+	else
+	{
+		// ... we'll just do it in-place.
+		std::size_t consumedBytes = 0;
+		// We're effectively just writing the same base string over and over again, just with different numbers.
+		// So set up a base line to start...
+		std::string currentLine = "* XXXXXXXX XXXXXXXX\n";
+		// ... then for as long as we still have bytes to pull...
+		while (codeStreamIn.good() && consumedBytes < expectedLength)
+		{
+
+			// ... write the next 16 bytes into their rightful positions in our string.
+			lava::readNCharsFromStream(&currentLine[2], codeStreamIn, 0x8);
+			lava::readNCharsFromStream(&currentLine[11], codeStreamIn, 0x8);
+			// From there, just print it to the output stream...
+			output << currentLine;
+			// ... and increment the byte tally.
+			consumedBytes += 0x10;
+		}
+	}
+
+
+	return result;
 }
 
 branchConditionAndConditionBit::branchConditionAndConditionBit(int BranchConditionIn, int ConditionBitIn, unsigned char ConditionRegFieldIn)
@@ -230,7 +261,7 @@ void MakeGCT(string TextFilePath, string OldGCTFilePath, string NewGCTFilePath)
 	NewGCTFilePtr.close();
 }
 
-bool MakeASM(string TextFilePath, string OutputAsmPath)
+bool MakeASM(string TextFilePath, string OutputAsmPath, bool disableDisassembly)
 {
 	ifstream textFile(TextFilePath);
 	if (!textFile.is_open())
@@ -269,7 +300,7 @@ bool MakeASM(string TextFilePath, string OutputAsmPath)
 					unnamedCount++;
 				}
 				textFile.seekg(currEntry->codeStartPos);
-				ledger::writeCodeToASMStream(neoASMFile, textFile, entryLength, tempName, currEntry->codeBlurb, 0);
+				ledger::writeCodeToASMStream(neoASMFile, textFile, entryLength, tempName, currEntry->codeBlurb, 0, disableDisassembly);
 				neoASMFile << "\n";
 			}
 		}

@@ -306,7 +306,7 @@ int main(int argc, char** argv)
 		// Initialize dictionaries and variables for ASM output.
 		lava::ppc::buildInstructionDictionary();
 		lava::gecko::buildGeckoCodeDictionary();
-		if (std::filesystem::is_regular_file(symbolMapInputFileName))
+		if (!DISABLE_ASM_DISASSEMBLY && std::filesystem::is_regular_file(symbolMapInputFileName))
 		{
 			logOutput << "\nSymbol map file detected! Parsing \"" << symbolMapInputFileName << "\"... ";
 			if (lava::ppc::parseMapFile(symbolMapInputFileName))
@@ -324,7 +324,7 @@ int main(int argc, char** argv)
 		}
 		// Handle ASM output.
 		logOutput << "\nWriting ASM file... ";
-		if (MakeASM(OutputTextPath, asmOutputFilePath))
+		if (MakeASM(OutputTextPath, asmOutputFilePath, DISABLE_ASM_DISASSEMBLY))
 		{
 			logOutput << "Success!\n";
 			if (std::filesystem::is_regular_file(asmBuildLocationFilePath))

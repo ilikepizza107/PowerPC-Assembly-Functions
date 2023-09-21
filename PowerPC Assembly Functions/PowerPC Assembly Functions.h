@@ -61,6 +61,7 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 // ASM Output Formatting Settings
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
 #define OUTPUT_ASM_INSTRUCTION_DICTIONARY false
+#define DISABLE_ASM_DISASSEMBLY false
 #define ALLOW_IMPLICIT_MULLI_OPTIMIZATIONS false // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
 
 //ROTC floating offsets
@@ -321,7 +322,7 @@ namespace ledger
 	bool openLedgerEntry(std::string codeName, std::string codeBlurb = "");
 	bool closeLedgerEntry();
 
-	bool writeCodeToASMStream(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, const std::string codeNameIn = "", const std::string codeBlurbIn = "", bool codeUnattested = 0);
+	bool writeCodeToASMStream(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, const std::string codeNameIn = "", const std::string codeBlurbIn = "", bool codeUnattested = 0, bool disableDisassembly = 0);
 }
 
 // Branch Conditions, Used for JumpToLabel and BC Operations
@@ -376,7 +377,7 @@ void MakeGCT(string TextFilePath, string OldGCTFilePath, string NewGCTFilePath);
 
 // Credit to Kapedani for c++ implementation
 // Also credit to Fracture for the original ASMConvert script
-bool MakeASM(string TextFilePath, string OutputAsmPath);
+bool MakeASM(string TextFilePath, string OutputAsmPath, bool disableDisassembly = DISABLE_ASM_DISASSEMBLY);
 
 int GetHexFromFloat(float Value);
 float GetFloatFromHex(int Value);
