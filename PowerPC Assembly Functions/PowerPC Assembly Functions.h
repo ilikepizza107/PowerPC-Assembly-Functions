@@ -39,6 +39,7 @@ enum characterListVersions
 	clv_PPLUS,
 	clv_PPEX_RIDLEY,
 	clv_PPEX_WALUIGI,
+	clv_PPEX_ALLOYS,
 	clv_PPEX_DARK_SAMUS,
 	clv_PPEX_SCEPTILE,
 	__clv_Count

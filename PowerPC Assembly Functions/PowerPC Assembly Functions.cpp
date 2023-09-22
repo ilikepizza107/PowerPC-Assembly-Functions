@@ -28,6 +28,7 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 	"Project+ (Knuckles)",
 	"P+EX (Ridley)",
 	"P+EX (Waluigi)",
+	"P+EX (Alloys)",
 	"P+EX (Dark Samus)",
 	"P+EX (Sceptile)",
 };

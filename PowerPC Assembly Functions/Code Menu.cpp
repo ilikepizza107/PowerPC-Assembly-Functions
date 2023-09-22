@@ -195,6 +195,13 @@ void buildCharacterIDLists()
 	{
 		characterNameToIDMap.emplace("Waluigi", LCSI_WALUIGI);
 	}
+	if (characterListVersion >= characterListVersions::clv_PPEX_ALLOYS)
+	{
+		characterNameToIDMap.emplace("Red Alloy", LCSI_ALLOY_RED);
+		characterNameToIDMap.emplace("Blue Alloy", LCSI_ALLOY_BLUE);
+		characterNameToIDMap.emplace("Yellow Alloy", LCSI_ALLOY_YELLOW);
+		characterNameToIDMap.emplace("Green Alloy", LCSI_ALLOY_GREEN);
+	}
 	if (characterListVersion >= characterListVersions::clv_PPEX_DARK_SAMUS)
 	{
 		characterNameToIDMap.emplace("Dark Samus", LCSI_DARK_SAMUS);
@@ -276,7 +283,7 @@ std::string getThemeFileDefaultPrefix(themeConstants::themePathIndices fileIndex
 {
 	return themeConstants::filenames[fileIndex].substr(0, themeConstants::prefixLength);
 }
-vector<string> THEME_LIST;
+std::vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
 std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{};
 
