@@ -8,33 +8,15 @@ namespace lava
 	int GCTBuildOverride = INT_MAX;
 	int CloseOnFinishBypass = INT_MAX;
 
-	bool copyFile(std::string sourceFile, std::string targetFile, bool overwriteExistingFile)
+	bool copyFile(std::filesystem::path sourceFile, std::filesystem::path targetFile, bool overwriteExistingFile)
 	{
 		// Record result
 		bool result = 0;
-		if (sourceFile != targetFile)
+		// If the incoming paths don't point to the same file...
+		if (!std::filesystem::equivalent(sourceFile, targetFile))
 		{
-			// Initialize in and out streams
-			std::ifstream sourceFileStream;
-			std::ofstream targetFileStream;
-			// Open and test input stream
-			sourceFileStream.open(sourceFile, std::ios_base::in | std::ios_base::binary);
-			if (sourceFileStream.is_open())
-			{
-				if (overwriteExistingFile || !std::filesystem::is_regular_file(targetFile))
-				{
-					// If successful, open and test output stream
-					targetFileStream.open(targetFile, std::ios_base::out | std::ios_base::binary);
-					if (targetFileStream.is_open())
-					{
-						// If both streams are open and valid, copy over the file's contents and record the success in result
-						targetFileStream << sourceFileStream.rdbuf();
-						result = 1;
-					}
-					targetFileStream.close();
-				}
-			}
-			sourceFileStream.close();
+			result = std::filesystem::copy_file(sourceFile, targetFile, (overwriteExistingFile) ? 
+				std::filesystem::copy_options::overwrite_existing : std::filesystem::copy_options::skip_existing);
 		}
 		return result;
 	}
@@ -72,7 +54,13 @@ namespace lava
 				if (lava::backupFile(fileToOverwrite, ".bak", 1))
 				{
 					backupSucceeded = 1;
-					std::cout << "Success!\nCopying over \"" << fileToCopy << "\"... ";
+					std::cout << "Successfully backed up file to \"" << fileToOverwrite << ".bak\"!\n";
+					if (lava::backupFile(fileToOverwrite, ".orig", 0))
+					{
+						std::cout << "Note: Did extra backup of file's original state to \"" << fileToOverwrite << ".orig\"!\n";
+					}
+
+					std::cout << "Copying over \"" << fileToCopy << "\"... ";
 					if (lava::copyFile(fileToCopy, fileToOverwrite, 1))
 					{
 						copySucceeded = 1;
@@ -85,7 +73,7 @@ namespace lava
 				}
 				else
 				{
-					std::cerr << "Backup failed! Please ensure that " << fileToOverwrite << ".bak is able to be written to!\n";
+					std::cerr << "Backup failed! Please ensure that \"" << fileToOverwrite << ".bak\" is able to be written to!\n";
 				}
 			}
 			else

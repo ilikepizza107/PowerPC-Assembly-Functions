@@ -25,7 +25,7 @@ namespace lava
 	};
 
 	// File System Management
-	bool copyFile(std::string sourceFile, std::string targetFile, bool overwriteExistingFile = 0);
+	bool copyFile(std::filesystem::path sourceFile, std::filesystem::path targetFile, bool overwriteExistingFile = 0);
 	bool backupFile(std::string fileToBackup, std::string backupSuffix = ".bak", bool overwriteExistingBackup = 0);
 
 	// Prompts and User-Interaction
