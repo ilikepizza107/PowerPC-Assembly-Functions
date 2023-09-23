@@ -27,8 +27,7 @@
 	<codeSettings>
 		<!--To declare new themes, add new entries into this block!-->
 		<themeChanger enabled="true">
-			<!--Add new themes in the following format: -->
-			<!--
+			<!--Add new themes in the following format:
 			<menuTheme name="YOUR_NAME_HERE!">
 				<themeFile name="sc_selcharacter.pac" replacementPrefix="ex_"/>
 			</menuTheme>
