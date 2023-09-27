@@ -287,6 +287,49 @@ namespace lava
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
 	}
 
+	void fixIndentationOfChildNodes(pugi::xml_node& targetNode)
+	{
+		// Indentation string is gonna be for the children of the current node, so we include a tab to start.
+		std::string indentationString = "\n\t";
+		// Then for each level up we can go through the parents of this node...
+		for (pugi::xml_node_iterator currNode = targetNode.parent(); !currNode->parent().empty(); currNode = currNode->parent())
+		{
+			// ... add an additional tab!
+			indentationString += "\t";
+		}
+
+		// Lastly, to apply the fixed indentation string, iterate through every child node...
+		for (auto currChild : targetNode.children())
+		{
+			// ... and if we run into a pcData node...
+			if (currChild.type() == pugi::xml_node_type::node_pcdata)
+			{
+				// ... grab a copy of it's string.
+				std::string pcStr = currChild.value();
+				// Then, iterate backwards through the string to find the first non-space char...
+				auto charItr = pcStr.rbegin();
+				for (charItr; charItr != pcStr.rend(); charItr++)
+				{
+					if (!std::isspace(*charItr)) break;
+				}
+				// ... and if we wind up finding one...
+				if (charItr != pcStr.rend())
+				{
+					// ... then chop off any whitespace characters, and instead append our indentation string.
+					pcStr = std::string(pcStr.begin(), charItr.base()) + indentationString;
+				}
+				// Otherwise...
+				else
+				{
+					// ... simply overwrite the string with our indentation.
+					pcStr = indentationString;
+				}
+				// And write the result out to the pcData node!
+				currChild.set_value(pcStr.c_str());
+			}
+		}
+	}
+
 	bool addOrApplyDebugOptionInNode(pugi::xml_node& debugOptionsNode, const std::string& debugSettingString, bool& destinationBool)
 	{
 		bool result = 0;
@@ -318,6 +361,10 @@ namespace lava
 			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_implicitOptimizationsTag, CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS);
 			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_deleteASMTxtTag, CONFIG_DELETE_ASM_TXT_FILE);
 			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_disableDisassemmblerTag, CONFIG_DISABLE_ASM_DISASSEMBLY);
+		}
+		if (result)
+		{
+			fixIndentationOfChildNodes(debugOptionsNode);
 		}
 
 		return result;
@@ -421,10 +468,9 @@ namespace lava
 				{
 					// ... then flag that we've collected a plaintext entry...
 					collectedPlaintextEntry = 1;
-					// ... and replace its value with an appropriately built indentation string.
-					// Note: this removes those plaintext entries from the tree, 
-					// they'll be re-generated later so that they use proper XML syntax!
-					characterItr->set_value(getNodeIndentationPCDataReplacement(characterDeclNodeItr).c_str());
+					// ... and delete the plaintext entries!
+					characterItr->set_value("");
+					// Note: this removes those plaintext entries from the tree, they'll be re-generated later so that they use proper XML syntax!
 				}
 			}
 		}
@@ -628,10 +674,9 @@ namespace lava
 				{
 					// ... then flag that we've collected a plaintext entry...
 					collectedPlaintextEntry = 1;
-					// ... and replace its value with an appropriately built indentation string.
-					// Note: this removes those plaintext entries from the tree, 
-					// they'll be re-generated later so that they use proper XML syntax!
-					rosterItr->set_value(getNodeIndentationPCDataReplacement(rosterDeclNodeItr).c_str());
+					// ... and delete the plaintext entries!
+					rosterItr->set_value("");
+					// Note: this removes those plaintext entries from the tree, they'll be re-generated later so that they use proper XML syntax!
 				}
 			}
 		}
@@ -986,8 +1031,10 @@ namespace lava
 						// Additionally, if we pulled any entries from plaintext...
 						if (collectedPlaintextEntry)
 						{
-							// ... then we need to promote them to properly formatted entries, so regen the entries.
+							// ... then we need to promote them to properly formatted entries, so regen the entries...
 							regenEXCharacterDeclsInXML(declNodeItr, nameIDPairs);
+							// ... and fix the indentation on them!
+							fixIndentationOfChildNodes(*declNodeItr);
 							// Additionally, flag that we need to do a rebuild later.
 							doRebuild = 1;
 						}
@@ -1024,8 +1071,10 @@ namespace lava
 							// Additionally, if we pulled any entries from plaintext...
 							if (collectedPlaintextEntry)
 							{
-								// ... then we need to promote them to properly formatted entries, so regen the entries.
+								// ... then we need to promote them to properly formatted entries, so regen the entries...
 								regenRosterDeclsInXML(codeNodeItr, tempRosterList);
+								// ... and fix the indentation on them!
+								fixIndentationOfChildNodes(*codeNodeItr);
 								// Additionally, flag that we need to do a rebuild later.
 								doRebuild = 1;
 							}
