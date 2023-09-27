@@ -120,7 +120,6 @@ int main(int argc, char** argv)
 	if (std::filesystem::is_directory(outputFolder))
 	{
 		initMenuFileStream();
-		string OutputTextPath = asmTextOutputFilePath;
 
 		loadMenuOptionsTree(cmnuOptionsOutputFilePath, menuOptionsTree);
 		buildCharacterIDLists();
@@ -211,7 +210,7 @@ int main(int argc, char** argv)
 			logOutput.write("[WARNING] Failed to parse config XML! Proceeding with default settings.\n", ULONG_MAX, lava::outputSplitter::sOS_CERR);
 		}
 
-		CodeStart(OutputTextPath);
+		CodeStart(asmTextOutputFilePath);
 		logOutput << "\n";
 
 		//place all ASM code here
@@ -324,7 +323,7 @@ int main(int argc, char** argv)
 		}
 		// Handle ASM output.
 		logOutput << "\nWriting ASM file... ";
-		if (MakeASM(OutputTextPath, asmOutputFilePath, CONFIG_DISABLE_ASM_DISASSEMBLY))
+		if (MakeASM(asmTextOutputFilePath, asmOutputFilePath, CONFIG_DISABLE_ASM_DISASSEMBLY))
 		{
 			logOutput << "Success!\n";
 			if (std::filesystem::is_regular_file(asmBuildLocationFilePath))
