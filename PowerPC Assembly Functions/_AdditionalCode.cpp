@@ -13,7 +13,7 @@ namespace lava
 		// Record result
 		bool result = 0;
 		// If the incoming paths don't point to the same file...
-		if (!std::filesystem::equivalent(sourceFile, targetFile))
+		if (sourceFile != targetFile)
 		{
 			result = std::filesystem::copy_file(sourceFile, targetFile, (overwriteExistingFile) ? 
 				std::filesystem::copy_options::overwrite_existing : std::filesystem::copy_options::skip_existing);
