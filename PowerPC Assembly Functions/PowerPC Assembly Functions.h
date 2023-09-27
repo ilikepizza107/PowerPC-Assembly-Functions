@@ -63,6 +63,7 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
 #define OUTPUT_ASM_INSTRUCTION_DICTIONARY false
 #define DISABLE_ASM_DISASSEMBLY false
+#define DELETE_ASM_TXT_FILE true
 #define ALLOW_IMPLICIT_MULLI_OPTIMIZATIONS false // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
 
 //ROTC floating offsets

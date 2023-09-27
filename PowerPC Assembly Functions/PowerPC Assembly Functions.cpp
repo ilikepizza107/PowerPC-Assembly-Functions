@@ -305,6 +305,12 @@ bool MakeASM(string TextFilePath, string OutputAsmPath, bool disableDisassembly)
 				neoASMFile << "\n";
 			}
 		}
+
+		textFile.close();
+		if (DELETE_ASM_TXT_FILE)
+		{
+			std::filesystem::remove(TextFilePath);
+		}
 	}
 	else
 	{
