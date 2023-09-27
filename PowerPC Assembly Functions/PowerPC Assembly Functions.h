@@ -61,10 +61,10 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 
 // ASM Output Formatting Settings
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
-#define OUTPUT_ASM_INSTRUCTION_DICTIONARY false
-#define DISABLE_ASM_DISASSEMBLY false
-#define DELETE_ASM_TXT_FILE true
-#define ALLOW_IMPLICIT_MULLI_OPTIMIZATIONS false // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
+extern bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY;
+extern bool CONFIG_DISABLE_ASM_DISASSEMBLY;
+extern bool CONFIG_DELETE_ASM_TXT_FILE;
+extern bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS; // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
@@ -379,7 +379,7 @@ void MakeGCT(string TextFilePath, string OldGCTFilePath, string NewGCTFilePath);
 
 // Credit to Kapedani for c++ implementation
 // Also credit to Fracture for the original ASMConvert script
-bool MakeASM(string TextFilePath, string OutputAsmPath, bool disableDisassembly = DISABLE_ASM_DISASSEMBLY);
+bool MakeASM(string TextFilePath, string OutputAsmPath, bool disableDisassembly = CONFIG_DISABLE_ASM_DISASSEMBLY);
 
 int GetHexFromFloat(float Value);
 float GetFloatFromHex(int Value);

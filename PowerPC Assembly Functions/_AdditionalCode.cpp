@@ -235,6 +235,13 @@ namespace lava
 	// Config XML Parsing Constants
 	namespace configXMLConstants
 	{
+		// Debug
+		const std::string _debugOptionsTag = "debugOptions";
+		const std::string _implicitOptimizationsTag = "allowImplicitOptimizations";
+		const std::string _deleteASMTxtTag = "deleteASMTxt";
+		const std::string _asmDictTag = "makeASMDictionary";
+		const std::string _disableDisassemmblerTag = "disableDisassembler";
+
 		// General
 		const std::string menuConfigTag = "codeMenuConfig";
 		const std::string enabledTag = "enabled";
@@ -278,6 +285,42 @@ namespace lava
 
 		// Jumpsquat Override
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
+	}
+
+	bool addOrApplyDebugOptionInNode(pugi::xml_node& debugOptionsNode, const std::string& debugSettingString, bool& destinationBool)
+	{
+		bool result = 0;
+
+		if (debugOptionsNode)
+		{
+			pugi::xml_node childNode = debugOptionsNode.child(debugSettingString.c_str());
+			if (!childNode)
+			{
+				result = 1;
+				debugOptionsNode.append_child(debugSettingString.c_str()).append_attribute(configXMLConstants::enabledTag.c_str()).set_value(destinationBool);
+			}
+			else
+			{
+				destinationBool = childNode.attribute(configXMLConstants::enabledTag.c_str()).as_bool(0);
+			}
+		}
+
+		return result;
+	}
+	bool handleDebugOptions(pugi::xml_node& documentRoot)
+	{
+		bool result = 0;
+
+		pugi::xml_node debugOptionsNode = documentRoot.child(configXMLConstants::_debugOptionsTag.c_str());
+		if (debugOptionsNode)
+		{
+			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_asmDictTag, CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY);
+			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_implicitOptimizationsTag, CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS);
+			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_deleteASMTxtTag, CONFIG_DELETE_ASM_TXT_FILE);
+			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_disableDisassemmblerTag, CONFIG_DISABLE_ASM_DISASSEMBLY);
+		}
+
+		return result;
 	}
 
 	// Returns a string to be used as padding to replace the newline and indentation from replaced plaintext nodes. 
@@ -826,6 +869,9 @@ namespace lava
 		if (!configRoot) return 0;
 
 		bool doRebuild = 0;
+
+		// Check for the debug options node, apply any settings found in it, and add any settings not present.
+		doRebuild = handleDebugOptions(configRoot);
 
 		// If we've successfully reached our config root node, we can begin iterating through its child nodes!
 		for (pugi::xml_node_iterator declNodeItr = configRoot.begin(); declNodeItr != configRoot.end(); declNodeItr++)

@@ -32,6 +32,13 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 	"P+EX (Dark Samus)",
 	"P+EX (Sceptile)",
 };
+
+bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY = 0;
+bool CONFIG_DISABLE_ASM_DISASSEMBLY = 0;
+bool CONFIG_DELETE_ASM_TXT_FILE = 1;
+bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 0;
+
+
 bool setMAIN_FOLDER(std::string mainFolderIn)
 {
 	bool result = 0;
@@ -307,7 +314,7 @@ bool MakeASM(string TextFilePath, string OutputAsmPath, bool disableDisassembly)
 		}
 
 		textFile.close();
-		if (DELETE_ASM_TXT_FILE)
+		if (CONFIG_DELETE_ASM_TXT_FILE)
 		{
 			std::filesystem::remove(TextFilePath);
 		}
@@ -2546,7 +2553,7 @@ void MTXER(int TargetReg) {
 
 void MULLI(int DestReg, int SourceReg, int Immediate)
 {
-	if (ALLOW_IMPLICIT_MULLI_OPTIMIZATIONS && isPowerOf2((unsigned long)Immediate))
+	if (CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS && isPowerOf2((unsigned long)Immediate))
 	{
 		unsigned long shiftCount = bitIndexFromButtonHex(Immediate, 1);
 		RLWINM(DestReg, SourceReg, shiftCount, 0x00, 0x1F - shiftCount );
