@@ -597,7 +597,7 @@ void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_docu
 			if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
 			{
 				// ... and if so, mark it as unselectable.
-				currLine->isUnselectable = 1;
+				currLine->setIsSelectable(0);
 			}
 		}
 
@@ -605,7 +605,7 @@ void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_docu
 		if (pageFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
 		{
 			// ... and if so, mark it as unselectable.
-			currPage->CalledFromLine.isUnselectable = 1;
+			currPage->CalledFromLine.setIsSelectable(0);
 		}
 	}
 	// And lastly, for each page...
@@ -653,7 +653,7 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 		pugi::xml_node pageNode = menuBaseNode.append_child(xmlTagConstants::pageTag.c_str());
 		pugi::xml_attribute pageNameAttr = pageNode.append_attribute(xmlTagConstants::nameTag.c_str());
 		pageNameAttr.set_value(currPage->PageName.c_str());
-		if (currPage->CalledFromLine.isUnselectable)
+		if (!currPage->CalledFromLine.getIsSelectable())
 		{
 			pageNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
 		}
@@ -670,7 +670,7 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::selectionTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					if (currLine->isUnselectable)
+					if (!currLine->getIsSelectable())
 					{
 						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
 					}
@@ -690,7 +690,7 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::intTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					if (currLine->isUnselectable)
+					if (!currLine->getIsSelectable())
 					{
 						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
 					}
@@ -708,7 +708,7 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::floatTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					if (currLine->isUnselectable)
+					if (!currLine->getIsSelectable())
 					{
 						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
 					}
@@ -966,9 +966,9 @@ void CodeMenu()
 	HUDColorLines.push_back(new Integer("Yellow",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
 	HUDColorLines.push_back(new Integer("Green",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
 	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
-	HUDColorLines.back()->isUnselectable = 1;
+	HUDColorLines.back()->setIsSelectable(0);
 	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
-	HUDColorLines.back()->isUnselectable = 1;
+	HUDColorLines.back()->setIsSelectable(0);
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
 	if ((CONFIG_BACKPLATE_COLOR_MODE > 0) && (CONFIG_BACKPLATE_COLOR_MODE < backplateColorConstants::pSCL__COUNT))
 	{
@@ -2414,6 +2414,11 @@ void ExecuteAction(int ActionReg)
 
 void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3)
 {
+	int exitLabel = GetNextLabel();
+	LBZ(TempReg2, LineReg, Line::FLAGS);
+	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_RESET);
+	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
 	LBZ(TempReg2, LineReg, Line::COLOR);
 	LWZ(TempReg1, PageReg, Page::NUM_CHANGED_LINES);
 	RLWINM(TempReg3, TempReg2, 29, 31, 31);
@@ -2430,6 +2435,8 @@ void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1
 		ADD(TempReg1, TempReg1, PageReg);
 		PushOnStack(TempReg1, StackReg, TempReg2);
 	}EndIf(); EndIf();
+
+	Label(exitLabel);
 }
 
 void ResetPage(int StackReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5, int TempReg6)

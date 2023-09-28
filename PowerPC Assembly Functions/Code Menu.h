@@ -641,7 +641,15 @@ class Page;
 
 class Line
 {
+	bool isSelectable = 1;
 public:
+	// Note: The top 4 bits of the Flags Byte are line-specific flags, bottom 4 are line-agnostic flags (see Line::LINE_FLAGS_FIELDS enum)!
+	enum LINE_FLAGS_FIELDS
+	{
+		// Makes line immune to being reset to its default value!
+		LINE_FLAG_IGNORE_RESET = 0b00000001
+	};
+
 	Line() {}
 
 	Line(string Text, u16 TextOffset, u8 type, u8 flags, u8 ColorOffset, int* Index = nullptr) {
@@ -718,6 +726,7 @@ public:
 	int PageOffset;
 	u8 type;
 	u8 Color;
+	// Note: The top 4 bits of the Flags Byte are line-specific flags, bottom 4 are line-agnostic flags (see Line::LINE_FLAGS_FIELDS enum)!
 	u8 Flags = 0;
 	u16 TextOffset;
 	u16 DownOffset;
@@ -728,11 +737,11 @@ public:
 	int Padding;
 	vector<int*> args;
 
-	bool isUnselectable = 0;
 
 	//offsets
 	static const int SIZE = 0; //2
 	static const int TYPE = SIZE + 2; //1
+	// Note: The top 4 bits of the Flags Byte are line-specific flags, bottom 4 are line-agnostic flags (see Line::LINE_FLAGS_FIELDS enum)!
 	static const int FLAGS = TYPE + 1; //1
 	static const int COLOR = FLAGS + 1; //1
 	static const int TEXT_OFFSET = COLOR + 1; //2
@@ -751,6 +760,16 @@ public:
 	static const int MIN = MAX + 4; //4
 	static const int SPEED = MIN + 4; //4
 	static const int NUMBER_LINE_TEXT_START = SPEED + 4;
+
+	bool getIsSelectable() const
+	{
+		return isSelectable;
+	}
+	void setIsSelectable(bool selectableIn)
+	{
+		isSelectable = selectableIn;
+		Flags = (Flags & ~LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_RESET) | (selectableIn ? 0 : LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_RESET);
+	}
 };
 
 class Comment : public Line
@@ -980,7 +999,7 @@ public:
 	{
 		for (int i = 0; i < Lines.size(); i++) {
 			if (Lines[i]->type != COMMENT_LINE && Lines[i]->type != PRINT_LINE) {
-				if (!Lines[i]->isUnselectable)
+				if (Lines[i]->getIsSelectable())
 				{
 					SelectableLines.push_back(i);
 				}
