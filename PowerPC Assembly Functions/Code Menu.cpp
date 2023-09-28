@@ -2385,7 +2385,7 @@ void ExecuteAction(int ActionReg)
 	//reset to defaults
 	SetRegister(TempReg1, RESET_LINES_STACK_LOC);
 	If(ActionReg, EQUAL_I, RESET_LINE); {
-		ResetLine(LineReg, PageReg, TempReg1, TypeReg, TempReg2, TempReg3, TempReg4);
+		ResetLine(LineReg, PageReg, TempReg1, TypeReg, TempReg2, TempReg3, TempReg4, 0);
 	}EndIf();
 
 	If(ActionReg, EQUAL_I, RESET_PAGE); {
@@ -2412,12 +2412,15 @@ void ExecuteAction(int ActionReg)
 	}EndIf();
 }
 
-void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3)
+void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, bool isIndirectReset)
 {
 	int exitLabel = GetNextLabel();
-	LBZ(TempReg2, LineReg, Line::FLAGS);
-	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_RESET);
-	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+	if (isIndirectReset)
+	{
+		LBZ(TempReg2, LineReg, Line::FLAGS);
+		ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
+		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+	}
 
 	LBZ(TempReg2, LineReg, Line::COLOR);
 	LWZ(TempReg1, PageReg, Page::NUM_CHANGED_LINES);
@@ -2446,7 +2449,7 @@ void ResetPage(int StackReg, int TempReg1, int TempReg2, int TempReg3, int TempR
 		ADDI(TempReg2, TempReg1, Page::FIRST_LINE_OFFSET); //first line
 		While(TempReg6, NOT_EQUAL_I, 0); {
 			LBZ(TempReg3, TempReg2, Line::TYPE);
-			ResetLine(TempReg2, TempReg1, StackReg, TempReg3, TempReg4, TempReg5, TempReg6);
+			ResetLine(TempReg2, TempReg1, StackReg, TempReg3, TempReg4, TempReg5, TempReg6, 1);
 
 			LHZ(TempReg6, TempReg2, Line::SIZE);
 			ADD(TempReg2, TempReg2, TempReg6); //next line

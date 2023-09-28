@@ -647,7 +647,7 @@ public:
 	enum LINE_FLAGS_FIELDS
 	{
 		// Makes line immune to being reset to its default value!
-		LINE_FLAG_IGNORE_RESET = 0b00000001
+		LINE_FLAG_IGNORE_INDIRECT_RESET = 0b00000001
 	};
 
 	Line() {}
@@ -768,7 +768,7 @@ public:
 	void setIsSelectable(bool selectableIn)
 	{
 		isSelectable = selectableIn;
-		Flags = (Flags & ~LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_RESET) | (selectableIn ? 0 : LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_RESET);
+		Flags = (Flags & ~LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET) | (selectableIn ? 0 : LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
 	}
 };
 
@@ -1026,7 +1026,7 @@ void PrintCodeMenu();
 void PrimeCodeMenu();
 void CreateMenu(Page MainPage);
 void ExecuteAction(int ActionReg);
-void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3);
+void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, bool isIndirectReset);
 void ResetPage(int StackReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5, int TempReg6);
 void ExitMenu();
 void EnterMenu(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2);
