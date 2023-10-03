@@ -733,6 +733,16 @@ void CodeRaw(std::string name, std::string blurb, const std::vector<unsigned lon
 	ledger::closeLedgerEntry();
 }
 
+void CodeRawStart(std::string name, std::string blurb)
+{
+	ledger::openLedgerEntry(name, blurb);
+}
+
+void CodeRawEnd()
+{
+	ledger::closeLedgerEntry();
+}
+
 void Label(int LabelNum)
 {
 	if(LabelNum >= MAX_LABELS)
