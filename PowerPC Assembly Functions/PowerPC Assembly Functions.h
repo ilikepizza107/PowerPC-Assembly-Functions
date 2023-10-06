@@ -348,6 +348,19 @@ const static branchConditionAndConditionBit bCACB_OVERFLOW			=		{ BRANCH_IF_TRUE
 const static branchConditionAndConditionBit bCACB_NO_OVERFLOW		=		{ BRANCH_IF_FALSE, SO, 0 };
 const static branchConditionAndConditionBit bCACB_UNSPECIFIED		=		{ INT_MAX, INT_MAX, UCHAR_MAX };
 
+namespace labels
+{
+	struct labelJump
+	{
+		int labelNum = INT_MAX;
+		std::streampos jumpSourcePos = SIZE_MAX;
+		branchConditionAndConditionBit jumpCondition = bCACB_UNSPECIFIED;
+
+		labelJump(int labelNumIn = INT_MAX, std::streampos jumpSourcePosIn = SIZE_MAX, branchConditionAndConditionBit jumpConditionIn = bCACB_UNSPECIFIED) :
+			labelNum(labelNumIn), jumpSourcePos(jumpSourcePosIn), jumpCondition(jumpConditionIn) {};
+	};
+}
+
 ///variables start
 extern fstream WPtr;
 extern std::vector<ledger::codeLedgerEntry> codeLedger;
@@ -360,12 +373,8 @@ static int WhileConditionArray[MAX_IFS] = {};
 static int WhileCompareArray[MAX_IFS] = {};
 static int WhileIndex = 0;
 static int ASMStartAddress = 0;
-static int LabelPosArray[MAX_LABELS] = {};
-static int LabelIndex = 0;
-static int JumpLabelNumArray[MAX_JUMPS] = {};
-static int JumpFromArray[MAX_JUMPS] = {};
-static branchConditionAndConditionBit JumpFromConditionArray[MAX_JUMPS] = {};
-static int JumpIndex = 0;
+extern std::vector<std::streampos> LabelPosVec;
+extern std::vector<labels::labelJump> LabelJumpVec;
 static vector<int> FPPushRecords;
 static vector<int> CounterLoppRecords;
 static vector<int> StackIteratorRecords;

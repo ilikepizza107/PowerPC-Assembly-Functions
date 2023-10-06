@@ -194,6 +194,10 @@ branchConditionAndConditionBit branchConditionAndConditionBit::inConditionRegFie
 	return branchConditionAndConditionBit(BranchCondition, ConditionBit % 4, ConditionRegFieldIn);
 }
 
+std::vector<std::streampos> LabelPosVec{};
+std::vector<labels::labelJump> LabelJumpVec{};
+
+
 //converts char hex digit to decimal
 int HexToDec(char x)
 {
@@ -745,32 +749,24 @@ void CodeRawEnd()
 
 void Label(int LabelNum)
 {
-	if(LabelNum >= MAX_LABELS)
+	if (LabelNum >= LabelPosVec.size())
 	{
-		cout << "ERROR, too many labels\n";
+		cout << "ERROR, invalid label num!\n";
 		exit(0);
 	}
-	LabelPosArray[LabelNum] = WPtr.tellg();
+	LabelPosVec[LabelNum] = WPtr.tellg();
 }
 
 int GetNextLabel()
 {
-	LabelIndex++;
-	return (LabelIndex - 1);
+	LabelPosVec.push_back(SIZE_MAX);
+	return int(LabelPosVec.size() - 1);
 }
 
 void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn)
 {
-	if (JumpIndex >= MAX_JUMPS)
-	{
-		cout << "ERROR, too many jumps\n";
-		exit(0);
-	}
-	JumpLabelNumArray[JumpIndex] = LabelNum;
-	JumpFromArray[JumpIndex] = WPtr.tellp();
-	JumpFromConditionArray[JumpIndex] = conditionIn;
+	LabelJumpVec.push_back(labels::labelJump(LabelNum, WPtr.tellp(), conditionIn));
 	WriteIntToFile(0);
-	JumpIndex++;
 }
 void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit)
 {
@@ -780,17 +776,17 @@ void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit)
 void CompleteJumps()
 {
 	int holdPos = WPtr.tellp();
-	for(int i = 0; i < JumpIndex ; i++)
+	for(int i = 0; i < LabelJumpVec.size(); i++)
 	{
-		WPtr.seekp(JumpFromArray[i]);
-		branchConditionAndConditionBit* currEntry = &JumpFromConditionArray[i];
-		if (currEntry->BranchCondition != INT_MAX && currEntry->ConditionBit != INT_MAX)
+		labels::labelJump* currJump = &LabelJumpVec[i];
+		WPtr.seekp(currJump->jumpSourcePos);
+		if (currJump->jumpCondition.BranchCondition != INT_MAX && currJump->jumpCondition.ConditionBit != INT_MAX)
 		{
-			BC(CalcBranchOffset(JumpFromArray[i], LabelPosArray[JumpLabelNumArray[i]]), currEntry->BranchCondition, currEntry->ConditionBit);
+			BC(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]), currJump->jumpCondition.BranchCondition, currJump->jumpCondition.ConditionBit);
 		}
 		else
 		{
-			B(CalcBranchOffset(JumpFromArray[i], LabelPosArray[JumpLabelNumArray[i]]));
+			B(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]));
 		}
 	}
 	WPtr.seekp(holdPos);
