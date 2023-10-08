@@ -704,7 +704,8 @@ void AddNewCharacterBuffer()
 		if (CHARACTER_SELECT_P1_INDEX != -1) {
 			GetArrayValueFromIndex(CHARACTER_SWITCHER_ARRAY_LOC, 3, 0, 3, reg2); {
 				LBZ(reg1, reg1, 0); //get char ID
-				ADDI(reg5, reg2, Selection::SELECTION_LINE_OFFSETS_START + 3);
+				LWZ(3, reg2, Selection::SELECTION_LINE_SOURCE_SELECTION_INDEX);
+				ADDI(reg5, 3, Selection::SELECTION_LINE_OFFSETS_START + 3);
 				FindInArray(reg1, reg5, CHARACTER_ID_LIST.size(), 4, reg3, reg4);
 				STW(reg3, reg2, Line::VALUE);
 				STW(reg3, reg2, Line::DEFAULT);

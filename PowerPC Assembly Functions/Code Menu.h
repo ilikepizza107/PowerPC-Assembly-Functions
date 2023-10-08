@@ -66,6 +66,10 @@ extern int ALC_P1_INDEX;
 extern int ALC_P2_INDEX;
 extern int ALC_P3_INDEX;
 extern int ALC_P4_INDEX;
+extern int ALC_P1_FLASH_RED_INDEX;
+extern int ALC_P2_FLASH_RED_INDEX;
+extern int ALC_P3_FLASH_RED_INDEX;
+extern int ALC_P4_FLASH_RED_INDEX;
 extern int BIG_HEAD_INDEX;
 extern int RANDOM_ANGLE_INDEX;
 extern int WAR_MODE_INDEX;
@@ -117,8 +121,6 @@ extern int SHIELD_TILT_MULTIPLIER_INDEX;
 extern int KNOCKBACK_DECAY_MULTIPLIER_INDEX;
 extern int WALL_BOUNCE_KNOCKBACK_MULTIPLIER_INDEX;
 extern int STALING_TOGGLE_INDEX;
-
-extern vector<int> Defaults;
 
 #define MAX_SUBPAGE_DEPTH 20
 
@@ -633,10 +635,6 @@ static int CurrentOffset = START_OF_CODE_MENU;
 #define FRAMES_UNTIL_SLOW_MOTION 12
 #define FRAMES_WAITED_DURING_SLOW_MOTION 3
 
-static vector<int> Defaults;
-
-
-
 class Page;
 
 class Line
@@ -667,10 +665,10 @@ public:
 
 	virtual void WriteLineData()
 	{
-		WriteLineData({});
+		WriteLineData(nullptr, {});
 	}
 
-	void WriteLineData(vector<u8> SelectionOffsets)
+	void WriteLineData(int* SourceSelectionIndexPtr, vector<u8> SelectionOffsets)
 	{
 		vector<u8> output;
 		AddValueToByteArray(Size, output);
@@ -703,7 +701,11 @@ public:
 			}
 		}
 		copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
-		copy(SelectionOffsets.begin(), SelectionOffsets.end(), ostreambuf_iterator<char>(MenuFile));
+		if (type == SELECTION_LINE)
+		{
+			lava::writeRawDataToStream<int>(MenuFile, *SourceSelectionIndexPtr);
+			copy(SelectionOffsets.begin(), SelectionOffsets.end(), ostreambuf_iterator<char>(MenuFile));
+		}
 		MenuFile << Text;
 		WritePadding();
 	}
@@ -756,7 +758,8 @@ public:
 	static const int SUB_MENU_LINE_TEXT_START = SUB_MENU + 2;
 	static const int DEFAULT = DOWN + 2; //4
 	static const int MAX = DEFAULT + 4; //4
-	static const int SELECTION_LINE_OFFSETS_START = MAX + 4;
+	static const int SELECTION_LINE_SOURCE_SELECTION_INDEX = MAX + 4; // 0x4
+	static const int SELECTION_LINE_OFFSETS_START = SELECTION_LINE_SOURCE_SELECTION_INDEX + 4; // 0x4
 	static const int MIN = MAX + 4; //4
 	static const int SPEED = MIN + 4; //4
 	static const int NUMBER_LINE_TEXT_START = SPEED + 4;
@@ -834,9 +837,8 @@ public:
 		}
 		Value = Default;
 		this->Default = Default;
-		Defaults.push_back(Default);
-		Defaults.push_back(Values[Default]);
 		this->Max = Options.size() - 1;
+		this->SourceSelectionIndexPtr = this->Index;
 	}
 
 	Selection(string Text, vector<string> Options, int Default, int &Index)
@@ -867,10 +869,23 @@ public:
 
 	void WriteLineData()
 	{
-		Line::WriteLineData(OptionOffsets);
+		Line::WriteLineData(SourceSelectionIndexPtr, OptionOffsets);
 	}
 
+	int* SourceSelectionIndexPtr = nullptr;
 	vector<u8> OptionOffsets;
+};
+
+class SelectionMirror : public Selection
+{
+public:
+	SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index) 
+		: Selection(Text, {}, {}, Default, Index)
+	{
+		this->Min = SourceSelection.Min;
+		this->Max = SourceSelection.Max;
+		this->SourceSelectionIndexPtr = SourceSelection.Index;
+	}
 };
 
 class Toggle : public Selection
@@ -907,7 +922,6 @@ public:
 		this->Max = Max;
 		Value = Default;
 		this->Default = Default;
-		Defaults.push_back(Default);
 		this->Speed = Speed;
 	}
 };
@@ -922,7 +936,6 @@ public:
 		this->Max = GetHexFromFloat(Max);
 		Value = GetHexFromFloat(Default);
 		this->Default = GetHexFromFloat(Default);
-		Defaults.push_back(GetHexFromFloat(Default));
 		this->Speed = GetHexFromFloat(Speed);
 	}
 };
