@@ -504,29 +504,6 @@ static const int JUMPSQUAT_OVERRIDE_MAX_LOC = JUMPSQUAT_OVERRIDE_MIN_LOC + 4; //
 
 static const int DRAW_SETTINGS_BUFFER_LOC = JUMPSQUAT_OVERRIDE_MAX_LOC + 4; //0x200
 
-// HOOK Vtable
-// Provides a table to store HOOKS in, allowing them to be called repeatedly from different locations!
-// Registering a HOOK:
-//		1) Add a new entry to the struct, then open a HOOK using ASMStart(), passing your entry as the "BranchAddress" argument.
-//		2) Write the meat of your hook, **ENSURING THAT YOU END YOUR HOOK WITH A BLR INSTRUCTION**. This is how you'll get back afterwards!
-//		3) Close the hook using ASMEnd().
-// Calling a Registered HOOK from Your Own:
-//		0) If necessary, backup the Link Register's current value (along with any other registers you need to keep) to the stack.
-//		1) Call SetRegister(), passing your entry as the "value" argument.
-//		2) Use MCTR to load the address into the Count Register.
-//		3) Use BCTRL to branch and link to that address, from which you'll be branched into the body of the targeted HOOK. The BLR instruction
-//			at the end of that HOOK's body should then send you back to where you originally BCTRL'd from, allowing execution to continue from there!
-//		4) Pull any registers you backed up back off of the stack.
-static struct
-{
-	constexpr unsigned int table_start() { return DRAW_SETTINGS_BUFFER_LOC + 0x200; };
-
-	//const int THEME_CHANGE_APPLY_PREFIXES = table_start();
-
-	constexpr unsigned int table_size() { return (sizeof(*this) > 1) ? (sizeof(*this)) : 0; };
-	constexpr unsigned int table_end() { return table_start() + table_size(); };
-} HOOK_VTABLE;
-
 // Line Color Expansion
 static struct
 {
@@ -547,7 +524,7 @@ static struct
 		__COLOR_COUNT
 	};
 
-	constexpr unsigned int table_start() { return HOOK_VTABLE.table_end(); };
+	constexpr unsigned int table_start() { return DRAW_SETTINGS_BUFFER_LOC + 0x200; };
 
 	// See getArray() function for color value definitions!
 	std::array<unsigned int, __COLOR_COUNT> COLORS = getArray();

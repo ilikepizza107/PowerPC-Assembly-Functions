@@ -1602,11 +1602,6 @@ void CreateMenu(Page MainPage)
 		AddValueToByteArray(x, Header);
 	}
 
-	// Reserve Space for Hook VTable
-	if (HOOK_VTABLE.table_size() > 0)
-	{
-		Header.resize(Header.size() + HOOK_VTABLE.table_size(), 0);
-	}
 	if (LINE_COLOR_TABLE.table_size() > 0)
 	{
 		for (std::size_t i = 0; i < LINE_COLOR_TABLE.__COLOR_COUNT; i++)
