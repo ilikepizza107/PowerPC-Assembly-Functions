@@ -529,7 +529,7 @@ static struct
 	// See getArray() function for color value definitions!
 	std::array<unsigned int, __COLOR_COUNT> COLORS = getArray();
 
-	constexpr unsigned int table_size() { return (sizeof(*this) > 1) ? (sizeof(*this)) : 0; };
+	constexpr unsigned int table_size() { return COLORS.size() * 4; };
 	constexpr unsigned int table_end() { return table_start() + table_size(); };
 
 	constexpr unsigned int offset(enum COLORS colorIn) { return colorIn * 4; };
