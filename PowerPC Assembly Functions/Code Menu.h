@@ -122,8 +122,6 @@ extern int KNOCKBACK_DECAY_MULTIPLIER_INDEX;
 extern int WALL_BOUNCE_KNOCKBACK_MULTIPLIER_INDEX;
 extern int STALING_TOGGLE_INDEX;
 
-#define MAX_SUBPAGE_DEPTH 20
-
 //dpad same, + is start, 2 is A, 1 is B, A is Y, B is X, - is Z
 const vector<u8> CODE_MENU_WIIMOTE_CONVERSION_TABLE = { 2, 3, 1, 0, 12, 31, 31, 31, 8, 9, 10, 11, 4, 31, 31, 31 };
 //dpad same, + and - are start, A and B are A and B, C is Y, Z is start, 1 is X, 2 is Z
@@ -306,7 +304,6 @@ extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
 extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
 
 
-
 // The stream for the MenuFile.
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
@@ -345,7 +342,6 @@ extern const std::string boostGCTFile;
 extern const std::string boostGCTTextFile;
 
 
-
 // Options File Functions
 namespace xmlTagConstants
 {
@@ -379,191 +375,7 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
 
 
 
-static const int START_OF_CODE_MENU_HEADER = 0x804E0000;
-static const int CURRENT_PAGE_PTR_LOC = START_OF_CODE_MENU_HEADER; //4
-static const int MAIN_PAGE_PTR_LOC = CURRENT_PAGE_PTR_LOC + 4; //4
-static const int SALTY_RUNBACK_BUTTON_COMBO_LOC = MAIN_PAGE_PTR_LOC + 4; //4
-static const int SKIP_RESULTS_BUTTON_COMBO_LOC = SALTY_RUNBACK_BUTTON_COMBO_LOC + 4; //4
-// This is deprecated, the color array has been moved to LINE_COLOR_TABLE!
-static const int OLD_COLOR_ARRAY = SKIP_RESULTS_BUTTON_COMBO_LOC + 4; // 0x14
-static const int MOVE_FRAME_TIMER_LOC = OLD_COLOR_ARRAY + 0x14; //4
-static const int INCREMENT_FRAME_TIMER_LOC = MOVE_FRAME_TIMER_LOC + 4; //4
-static const int FRAME_ADVANCE_FRAME_TIMER = INCREMENT_FRAME_TIMER_LOC + 4; //4
-
-static const int PREV_CODE_MENU_CONTROL_FLAG = FRAME_ADVANCE_FRAME_TIMER + 4; //4
-static const int CODE_MENU_CONTROL_FLAG = PREV_CODE_MENU_CONTROL_FLAG + 4; //4
-static const int INFINITE_FRIENDLIES_FLAG_LOC = CODE_MENU_CONTROL_FLAG + 4; //4
-static const int AUTO_SAVE_REPLAY_FLAG_LOC = INFINITE_FRIENDLIES_FLAG_LOC + 4; //4
-static const int ON_GROUP_RECORDS_FLAG_LOC = AUTO_SAVE_REPLAY_FLAG_LOC + 4; //4
-
-static const int CODE_MENU_BUTTON_MASK_LOC = ON_GROUP_RECORDS_FLAG_LOC + 4; //4
-static const int BUTTON_ACTIVATOR_MASK_LOC = CODE_MENU_BUTTON_MASK_LOC + 4; //4
-static const int MAIN_BUTTON_MASK_LOC = BUTTON_ACTIVATOR_MASK_LOC + 4; //4 * 8
-
-static const int OLD_DEBUG_STATE_LOC = MAIN_BUTTON_MASK_LOC + 4 * 8; //4
-static const int OLD_CAMERA_LOCK_STATE_LOC = OLD_DEBUG_STATE_LOC + 4; //4
-
-static const int OLD_CAMERA_POS_LOC = OLD_CAMERA_LOCK_STATE_LOC + 4; //4
-
-static const int SAVE_STATE_BUFFER_PTR_LOC = OLD_CAMERA_POS_LOC + 4; //4
-static const int SAVE_STATE_ARTICLE_LIST_PTR_LOC = SAVE_STATE_BUFFER_PTR_LOC + 4; //4
-static const int SAVE_STATE_ARTICLE_ID_LIST_PTR_LOC = SAVE_STATE_ARTICLE_LIST_PTR_LOC + 4; //4
-static const int SAVE_STATE_ARTICLE_SAVED_RESOURCE_LIST_PTR_LOC = SAVE_STATE_ARTICLE_ID_LIST_PTR_LOC + 4; //4
-static const int SAVE_STATE_LOCATIONS_TO_UPDATE_PTR_LOC = SAVE_STATE_ARTICLE_SAVED_RESOURCE_LIST_PTR_LOC + 4; //4
-static const int SAVE_STATE_LOCATIONS_TO_CLEAR_PTR_LOC = SAVE_STATE_LOCATIONS_TO_UPDATE_PTR_LOC + 4; //4
-static const int SAVE_STATE_SAVED_ARTICLE_LIST_PTR_LOC = SAVE_STATE_LOCATIONS_TO_CLEAR_PTR_LOC + 4; //4
-
-static const int RESET_LINES_STACK_LOC = SAVE_STATE_SAVED_ARTICLE_LIST_PTR_LOC + 4; // 4 * MAX_SUBPAGE_DEPTH + 8
-
-static const int CHARACTER_SWITCHER_ARRAY_LOC = RESET_LINES_STACK_LOC + 4 * MAX_SUBPAGE_DEPTH + 8; //0x10
-static const int INIFINITE_SHIELDS_ARRAY_LOC = CHARACTER_SWITCHER_ARRAY_LOC + 0x10; //0x10
-static const int PERCENT_SELCTION_VALUE_ARRAY_LOC = INIFINITE_SHIELDS_ARRAY_LOC + 0x10; //0x10
-static const int PERCENT_SELCTION_ACTIVATOR_ARRAY_LOC = PERCENT_SELCTION_VALUE_ARRAY_LOC + 0x10; //0x10
-static const int DISABLE_DPAD_ACTIVATOR_ARRAY_LOC = PERCENT_SELCTION_ACTIVATOR_ARRAY_LOC + 0x10; //0x10
-
-static const int ENDLESS_ROTATION_QUEUE_LOC = DISABLE_DPAD_ACTIVATOR_ARRAY_LOC + 0x10; //8
-static const int ENDLESS_ROTATION_PLACEMENT_LIST_LOC = ENDLESS_ROTATION_QUEUE_LOC + 8; //4 * 4
-static const int ENDLESS_ROTATION_COMP_FUNC_LOC = ENDLESS_ROTATION_PLACEMENT_LIST_LOC + 4 * 4; //4 * 4
-
-static const int REPLAY_NTE_DATA_BUFFER_LOC = ENDLESS_ROTATION_COMP_FUNC_LOC + 4 * 4; //0x14
-static const int REPLAY_CREATE_SECTION_BUFFER_LOC = REPLAY_NTE_DATA_BUFFER_LOC + 0x14; //8
-static const int REPLAY_CRYPTO_BUFFER_LOC = REPLAY_CREATE_SECTION_BUFFER_LOC + 8; //0x30
-
-static const int CODE_MENU_WIIMOTE_CONVERSION_TABLE_LOC = REPLAY_CRYPTO_BUFFER_LOC + 0x30; //0x10 * 3
-
-static const int P1_TAG_HEX_LOC = CODE_MENU_WIIMOTE_CONVERSION_TABLE_LOC + 0x10 * 3; //0x18
-static const int P2_TAG_HEX_LOC = P1_TAG_HEX_LOC + 0x18; //0x18
-static const int P3_TAG_HEX_LOC = P2_TAG_HEX_LOC + 0x18; //0x18
-static const int P4_TAG_HEX_LOC = P3_TAG_HEX_LOC + 0x18; //0x18
-
-static const int P1_STOP_LOAD_FLAG_PTR_LOC = P4_TAG_HEX_LOC + 0x18; //4
-static const int P2_STOP_LOAD_FLAG_PTR_LOC = P1_STOP_LOAD_FLAG_PTR_LOC + 4; //4
-static const int P3_STOP_LOAD_FLAG_PTR_LOC = P2_STOP_LOAD_FLAG_PTR_LOC + 4; //4
-static const int P4_STOP_LOAD_FLAG_PTR_LOC = P3_STOP_LOAD_FLAG_PTR_LOC + 4; //4
-
-static const int RANDOM_ALTS_RNG = P4_STOP_LOAD_FLAG_PTR_LOC + 4; //4
-static const int RANDOM_ALTS_MATCH_START_FLAG = RANDOM_ALTS_RNG + 4; //4
-
-static const int TEAM_SETTINGS_LOC = RANDOM_ALTS_MATCH_START_FLAG + 4; //4
-static const int TAG_LOAD_FLAGS_LOC = TEAM_SETTINGS_LOC + 4; //4
-
-static const int PREV_TAG_COSTUMES_SETTING_LOC = TAG_LOAD_FLAGS_LOC + 4; //4
-
-static const int DOLPHIN_MOUNT_VF_LOC = PREV_TAG_COSTUMES_SETTING_LOC + 4; //4
-
-static const int CODE_MENU_OLD_CAMERA_MATRIX_LOC = DOLPHIN_MOUNT_VF_LOC + 4; //4 * 12 = 0x30
-static const int CODE_MENU_NEED_TO_SAVE_CAMERA_MATRIX_FLAG_LOC = CODE_MENU_OLD_CAMERA_MATRIX_LOC + 0x30; //4
-
-static const int SHOULD_DISPLAY_HUD_FLAG_LOC = CODE_MENU_NEED_TO_SAVE_CAMERA_MATRIX_FLAG_LOC + 4; //4
-
-static const int SHOULD_RESET_HITBOX_DISPLAY_FLAG_LOC = SHOULD_DISPLAY_HUD_FLAG_LOC + 4; //4
-static const int SHOULD_RESET_STAGE_COLLISIONS_FLAG_LOC = SHOULD_RESET_HITBOX_DISPLAY_FLAG_LOC + 4; //4
-
-static const int ALC_P1_LOC = SHOULD_RESET_STAGE_COLLISIONS_FLAG_LOC + 4; //4
-static const int ALC_P2_LOC = ALC_P1_LOC + 4; //4
-static const int ALC_P3_LOC = ALC_P2_LOC + 4; //4
-static const int ALC_P4_LOC = ALC_P3_LOC + 4; //4
-
-static const int BIG_HEAD_LOC = ALC_P4_LOC + 4; //4
-
-static const int RANDOM_ANGLE_LOC = BIG_HEAD_LOC + 4; //4
-
-static const int WAR_MODE_LOC = RANDOM_ANGLE_LOC + 4; //4
-
-static const int BUFFER_P1_LOC = WAR_MODE_LOC + 4; //4
-static const int BUFFER_P2_LOC = BUFFER_P1_LOC + 4; //4
-static const int BUFFER_P3_LOC = BUFFER_P2_LOC + 4; //4
-static const int BUFFER_P4_LOC = BUFFER_P3_LOC + 4; //4
-
-static const int SCALE_LOC = BUFFER_P4_LOC + 4; //4
-
-static const int SPEED_LOC = SCALE_LOC + 4; //4
-
-static const int CSS_VER_LOC = SPEED_LOC + 4; //4
-
-static const int THEME_LOC = CSS_VER_LOC + 4; //4
-
-static const int DASH_ATTACK_ITEM_GRAB_LOC = THEME_LOC + 4; //4
-
-static const int TRIP_TOGGLE_LOC = DASH_ATTACK_ITEM_GRAB_LOC + 4; //4
-static const int TRIP_RATE_MULTIPLIER_LOC = TRIP_TOGGLE_LOC + 4; //4
-static const int TRIP_INTERVAL_LOC = TRIP_RATE_MULTIPLIER_LOC + 4; //4
-
-static const int BACKPLATE_COLOR_1_LOC = TRIP_INTERVAL_LOC + 4; //4
-static const int BACKPLATE_COLOR_2_LOC = BACKPLATE_COLOR_1_LOC + 4; //4
-static const int BACKPLATE_COLOR_3_LOC = BACKPLATE_COLOR_2_LOC + 4; //4
-static const int BACKPLATE_COLOR_4_LOC = BACKPLATE_COLOR_3_LOC + 4; //4
-static const int BACKPLATE_COLOR_C_LOC = BACKPLATE_COLOR_4_LOC + 4; //4
-static const int BACKPLATE_COLOR_T_LOC = BACKPLATE_COLOR_C_LOC + 4; //4
-static const int BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC = BACKPLATE_COLOR_T_LOC + 4; //4
-
-static const int JUMPSQUAT_OVERRIDE_TOGGLE_LOC = BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC + 4; // 4
-static const int JUMPSQUAT_OVERRIDE_FRAMES_LOC = JUMPSQUAT_OVERRIDE_TOGGLE_LOC + 4; // 4
-static const int JUMPSQUAT_OVERRIDE_MIN_LOC = JUMPSQUAT_OVERRIDE_FRAMES_LOC + 4; // 4
-static const int JUMPSQUAT_OVERRIDE_MAX_LOC = JUMPSQUAT_OVERRIDE_MIN_LOC + 4; // 4
-
-static const int DRAW_SETTINGS_BUFFER_LOC = JUMPSQUAT_OVERRIDE_MAX_LOC + 4; //0x200
-
-// Line Color Expansion
-static struct
-{
-	enum COLORS
-	{
-		COLOR_WHITE,
-		COLOR_YELLOW,
-		COLOR_TEAL,
-		COLOR_BLUE,
-		COLOR_GREEN,
-		COLOR_RED,
-		COLOR_ORANGE,
-		COLOR_PURPLE,
-		COLOR_PINK,
-		COLOR_GRAY,
-		COLOR_LIGHT_GRAY,
-		COLOR_BLACK,
-		__COLOR_COUNT
-	};
-
-	constexpr unsigned int table_start() { return DRAW_SETTINGS_BUFFER_LOC + 0x200; };
-
-	// See getArray() function for color value definitions!
-	std::array<unsigned int, __COLOR_COUNT> COLORS = getArray();
-
-	constexpr unsigned int table_size() { return COLORS.size() * 4; };
-	constexpr unsigned int table_end() { return table_start() + table_size(); };
-
-	constexpr unsigned int offset(enum COLORS colorIn) { return colorIn * 4; };
-
-private:
-	constexpr std::array<unsigned int, __COLOR_COUNT> getArray()
-	{
-		std::array<unsigned int, __COLOR_COUNT> result{};
-		result[COLORS::COLOR_WHITE]			= WHITE;
-		result[COLORS::COLOR_YELLOW]		= YELLOW;
-		result[COLORS::COLOR_TEAL]			= TEAL;
-		result[COLORS::COLOR_BLUE]			= BLUE;
-		result[COLORS::COLOR_GREEN]			= GREEN;
-		result[COLORS::COLOR_RED]			= RED;
-		result[COLORS::COLOR_ORANGE]		= ORANGE;
-		result[COLORS::COLOR_PURPLE]		= PURPLE;
-		result[COLORS::COLOR_PINK]			= 0xFF60C0FF;
-		result[COLORS::COLOR_GRAY]			= 0xFFFFFF80;
-		result[COLORS::COLOR_LIGHT_GRAY]	= 0xFFFFFFB0;
-		result[COLORS::COLOR_BLACK]			= BLACK;
-		return result;
-	}
-} LINE_COLOR_TABLE;
-static const u8 NORMAL_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_WHITE);
-static const u8 HIGHLIGHTED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_YELLOW);
-static const u8 CHANGED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_TEAL);
-static const u8 CHANGED_AND_HIGHLIGHTED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_BLUE);
-static const u8 COMMENT_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_GREEN);
-static const u8 UNSELECTABLE_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_LIGHT_GRAY);
-
-
-static const int START_OF_CODE_MENU = LINE_COLOR_TABLE.table_end();
-
-
+static const int START_OF_CODE_MENU = END_OF_CODE_MENU_HEADER;
 static int CurrentOffset = START_OF_CODE_MENU;
 
 #define CODE_MENU_GECKO_IF(MenuIndex) if(MenuIndex != -1) {\

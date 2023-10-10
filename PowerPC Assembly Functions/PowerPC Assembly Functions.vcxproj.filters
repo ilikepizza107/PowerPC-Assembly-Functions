@@ -120,6 +120,9 @@
     <ClInclude Include="_JumpsquatOverride.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_CodeMenuHeaderConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">

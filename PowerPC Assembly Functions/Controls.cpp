@@ -14,7 +14,7 @@ void MenuControlCodes()
 
 	string ExtraList = { "TAUNT|||CHARGE||TILT||||" };
 	GeckoStringWrite(ExtraList.c_str(), CSTICK_TAUNT_SPECIAL_WORDS);
-	assert(ExtraList.size() == 8 * 3);
+	assert(ExtraList.size() == MEM2_CONSTANTS_END - CSTICK_TAUNT_SPECIAL_WORDS);
 
 	SetMenuOpen();
 
