@@ -1609,7 +1609,7 @@ void CreateMenu(Page MainPage)
 	}
 	if (LINE_COLOR_TABLE.table_size() > 0)
 	{
-		for (std::size_t i = 0; i < LINE_COLOR_TABLE.COLOR_COUNT; i++)
+		for (std::size_t i = 0; i < LINE_COLOR_TABLE.__COLOR_COUNT; i++)
 		{
 			AddValueToByteArray(LINE_COLOR_TABLE.COLORS[i], Header);
 		}

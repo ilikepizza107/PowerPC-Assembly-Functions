@@ -530,8 +530,6 @@ static struct
 // Line Color Expansion
 static struct
 {
-	constexpr unsigned int table_start() { return HOOK_VTABLE.table_end(); };
-
 	enum COLORS
 	{
 		COLOR_WHITE,
@@ -543,31 +541,40 @@ static struct
 		COLOR_ORANGE,
 		COLOR_PURPLE,
 		COLOR_PINK,
-		COLOR_GRAY, 
-		COLOR_LIGHT_GRAY, 
-		COLOR_BLACK, 
-		COLOR_COUNT
+		COLOR_GRAY,
+		COLOR_LIGHT_GRAY,
+		COLOR_BLACK,
+		__COLOR_COUNT
 	};
-	const unsigned int COLORS[COLOR_COUNT] = { 
-		WHITE,		// WHITE
-		YELLOW,		// YELLOW
-		TEAL,		// TEAL
-		BLUE,		// BLUE
-		GREEN,		// GREEN
-		RED,		// RED
-		ORANGE,		// ORANGE
-		PURPLE,		// PURPLE
-		0xFF60C0FF,	// PINK
-		0xFFFFFF80,	// GRAY
-		0xFFFFFFB0,	// LIGHT GRAY
-		BLACK,		// BLACK
-	};
+
+	constexpr unsigned int table_start() { return HOOK_VTABLE.table_end(); };
+
+	// See getArray() function for color value definitions!
+	std::array<unsigned int, __COLOR_COUNT> COLORS = getArray();
 
 	constexpr unsigned int table_size() { return (sizeof(*this) > 1) ? (sizeof(*this)) : 0; };
 	constexpr unsigned int table_end() { return table_start() + table_size(); };
 
 	constexpr unsigned int offset(enum COLORS colorIn) { return colorIn * 4; };
 
+private:
+	constexpr std::array<unsigned int, __COLOR_COUNT> getArray()
+	{
+		std::array<unsigned int, __COLOR_COUNT> result{};
+		result[COLORS::COLOR_WHITE]			= WHITE;
+		result[COLORS::COLOR_YELLOW]		= YELLOW;
+		result[COLORS::COLOR_TEAL]			= TEAL;
+		result[COLORS::COLOR_BLUE]			= BLUE;
+		result[COLORS::COLOR_GREEN]			= GREEN;
+		result[COLORS::COLOR_RED]			= RED;
+		result[COLORS::COLOR_ORANGE]		= ORANGE;
+		result[COLORS::COLOR_PURPLE]		= PURPLE;
+		result[COLORS::COLOR_PINK]			= 0xFF60C0FF;
+		result[COLORS::COLOR_GRAY]			= 0xFFFFFF80;
+		result[COLORS::COLOR_LIGHT_GRAY]	= 0xFFFFFFB0;
+		result[COLORS::COLOR_BLACK]			= BLACK;
+		return result;
+	}
 } LINE_COLOR_TABLE;
 static const u8 NORMAL_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_WHITE);
 static const u8 HIGHLIGHTED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_YELLOW);
