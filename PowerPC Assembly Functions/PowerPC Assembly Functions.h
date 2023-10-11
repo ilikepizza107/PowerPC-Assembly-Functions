@@ -62,6 +62,7 @@ extern bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY;
 extern bool CONFIG_DISABLE_ASM_DISASSEMBLY;
 extern bool CONFIG_DELETE_ASM_TXT_FILE;
 extern bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS; // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
+extern bool CONFIG_ALLOW_BLA_FUNCTION_CALLS; // Enables function calls via BLA! Only valid for builds that have Eon's BLA code in your build!
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
@@ -101,6 +102,7 @@ extern std::string MENU_NAME;
 #define GF_DRAW_SETUP_COORD_2D 0x8001abbc
 #define GX_DRAW_SET_VTX_COLOR_PRIM_ENVIROMENT 0x8001a5c0
 #define GET_FLOAT_WORK_MODULE 0x807acbb4 //r3 = work module ptr, r4 is variable, returns value in f1
+#define GF_GET_HEAP 0x800249cc // r3 = Heap ID
 ///Function addresses end
 
 ///addresses maintained by Brawl start
@@ -414,7 +416,7 @@ void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int el
 //StartAddressReg ends with the address of the found element, or an address after the array
 //ends when end marker is encountered
 void FindInTerminatedArray(int ValueReg, int StartAddressReg, int endMarker, int elementOffset, int ResultReg, int TempReg, int searchSize);
-void CallBrawlFunc(int Address);
+void CallBrawlFunc(int Address, int addressReg = 0);
 //r3 returns ptr
 void Allocate(int SizeReg, int Heap = 42);
 void AllocateIfNotExist(int SizeReg, int AddressReg, int EmptyVal);
@@ -497,6 +499,8 @@ void constrainFloatDynamic(int floatReg, int minFReg, int maxFReg);
 void modifyInstruction(int instructionReg, int addressReg);
 void IfInSSE(int reg1, int reg2);
 void IfNotInSSE(int reg1, int reg2);
+// Note: Overwrites r3.
+void GetHeapAddress(int heapID);
 
 void ABS(int DestReg, int SourceReg, int tempReg);
 void ADD(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);

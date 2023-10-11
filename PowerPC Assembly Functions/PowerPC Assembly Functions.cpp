@@ -37,6 +37,7 @@ bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY = 0;
 bool CONFIG_DISABLE_ASM_DISASSEMBLY = 0;
 bool CONFIG_DELETE_ASM_TXT_FILE = 1;
 bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 0;
+bool CONFIG_ALLOW_BLA_FUNCTION_CALLS = 0;
 
 
 bool setMAIN_FOLDER(std::string mainFolderIn)
@@ -994,10 +995,18 @@ void FindInTerminatedArray(int ValueReg, int StartAddressReg, int endMarker, int
 	Label(EndOfSearch);
 }
 
-void CallBrawlFunc(int Address) {
-	SetRegister(0, Address);
-	MTCTR(0);
-	BCTRL();
+void CallBrawlFunc(int Address, int addressReg) {
+	// If BLAs are enabled, and the target address can be validly represented using a BLA...
+	if (CONFIG_ALLOW_BLA_FUNCTION_CALLS && (Address >= 0x80000000) && (Address < 0x88000000) && !(Address & 0b11))
+	{
+		BLA(Address);
+	}
+	else
+	{
+		SetRegister(addressReg, Address);
+		MTCTR(addressReg);
+		BCTRL();
+	}
 }
 
 //r3 returns ptr to memory
@@ -1798,6 +1807,12 @@ void IfNotInSSE(int reg1, int reg2) {
 	LWZ(reg1, reg1, 0);
 	SetRegister(reg2, 0x80702B60);
 	If(reg1, NOT_EQUAL, reg2);
+}
+
+void GetHeapAddress(int heapID)
+{
+	ADDI(3, 0, heapID);
+	CallBrawlFunc(GF_GET_HEAP);
 }
 
 void ABS(int DestReg, int SourceReg, int tempReg)

@@ -133,7 +133,7 @@ static const int JUMPSQUAT_OVERRIDE_MAX_LOC = JUMPSQUAT_OVERRIDE_MIN_LOC + 4; //
 
 static const int DRAW_SETTINGS_BUFFER_LOC = JUMPSQUAT_OVERRIDE_MAX_LOC + 4; //0x200
 
-// Relocated Mem2 Constants
+// Relocated Mem2 Constants, Old Range was 0x935CE300 - 0x935CE584
 static const int MEM2_CONSTANTS_START = DRAW_SETTINGS_BUFFER_LOC + 0x200;
 static const int MENU_BLOCK_PTRS = MEM2_CONSTANTS_START;
 static const int MENU_BUTTON_STRING_LOC = MENU_BLOCK_PTRS + 4 * 4; // 0x60
