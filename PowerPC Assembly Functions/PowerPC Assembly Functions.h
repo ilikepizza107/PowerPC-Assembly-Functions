@@ -105,6 +105,70 @@ extern std::string MENU_NAME;
 #define GF_GET_HEAP 0x800249cc // r3 = Heap ID
 ///Function addresses end
 
+// Heap IDs, courtesy of SammiHusky
+// See: https://github.com/Sammi-Husky/BrawlHeaders/blob/main/Brawl/Include/memory.h
+namespace HeapType
+{
+    enum HeapType {
+        SystemFW = 0x1,
+        System = 0x2,
+        Effect = 0x3,
+        RenderFifo = 0x4,
+        Sound = 0x5,
+        Network = 0x6,
+        WiiPad = 0x7,
+        IteamResource = 0x8,
+        InfoResource = 0x9,
+        CommonResource = 0xa,
+        Replay = 0xb,
+        Tmp = 0xc,
+        Physics = 0xd,
+        ItemInstance = 0xe,
+        StageInstance = 0xf,
+        StageCommonResource = 0x10,
+        StageResource = 0x11,
+        Fighter1Resource = 0x12,
+        Fighter2Resource = 0x13,
+        Fighter3Resource = 0x14,
+        Fighter4Resource = 0x15,
+        Fighter1Resource2 = 0x16,
+        Fighter2Resource2 = 0x17,
+        Fighter3Resource2 = 0x18,
+        Fighter4Resource2 = 0x19,
+        FighterEffect = 0x1a,
+        Fighter1Instance = 0x1b,
+        Fighter2Instance = 0x1c,
+        Fighter3Instance = 0x1d,
+        Fighter4Instance = 0x1e,
+        FighterTechqniq = 0x1f,
+        FighterKirbyResource1 = 0x20,
+        FighterKirbyResource2 = 0x21,
+        FighterKirbyResource3 = 0x22,
+        AssistFigureResource = 0x23,
+        ItemExtraResource = 0x24,
+        EnemyInstance = 0x25,
+        PokemonResource = 0x26,
+        WeaponInstance = 0x27,
+        InfoInstance = 0x28,
+        InfoExtraResource = 0x29,
+        MenuInstance = 0x2a,
+        MenuResource = 0x2b,
+        CopyFB = 0x2c,
+        GameGlobal = 0x2d,
+        GlobalMode = 0x2e,
+        MeleeFont = 0x30,
+        OverlayCommon = 0x32,
+        OverlayStage = 0x33,
+        OverlayMenu = 0x34,
+        OverlayFighter1 = 0x35,
+        OverlayFighter2 = 0x36,
+        OverlayFighter3 = 0x37,
+        OverlayFighter4 = 0x38,
+        OverlayEnemy = 0x39,
+        Thread = 0x3a,
+    };
+}
+
 ///addresses maintained by Brawl start
 #define IS_REPLAY_LOC 0x805BBFC0 //equals 1 if in replay, 2 if in match
 #define REPLAY_BUFFER_END_ADDRESS 0x9134CA00 //end of replay buffer
@@ -129,6 +193,19 @@ extern std::string MENU_NAME;
 #define BASIC_VARIABLE_START_ADDRESS 0x901ae000
 #define BASIC_VARIABLE_BLOCK_SIZE 0x870
 ///addresses maintained by Brawl end
+
+// Replay Heap Variables
+static const int REPLAY_HEAP_VANILLA_ADDRESS = 0x91301B00;
+static const int REPLAY_HEAP_REPLAY_BUFFER_BEGIN_OFF = 0x91301c00 - REPLAY_HEAP_VANILLA_ADDRESS;
+static const int REPLAY_HEAP_REPLAY_BUFFER_END_OFF = 0x9134CA00 - REPLAY_HEAP_VANILLA_ADDRESS; // Associated accesses not converted yet!
+//half word that is used to store which alt stage was loaded
+static const int REPLAY_HEAP_ALT_STAGE_STORAGE_OFF = 0x91301f4a - REPLAY_HEAP_VANILLA_ADDRESS;
+//half word that stores current and recorded auto L-Cancel settings
+static const int REPLAY_HEAP_AUTO_L_CANCEL_SETTING_OFF = 0x91301f4e - REPLAY_HEAP_VANILLA_ADDRESS;
+//byte flag == 1 when in stage select menu
+static const int IN_STAGE_SELECT_MENU_FLAG = 0x91301f50 - REPLAY_HEAP_VANILLA_ADDRESS;
+//word that saves copy of endless rotation queue for replay
+static const int REPLAY_HEAP_ENDLESS_ROTATION_QUEUE_OFF = 0x91301f54 - REPLAY_HEAP_VANILLA_ADDRESS;
 
 ///reserved memory for storage start
 ///in replay
@@ -177,10 +254,6 @@ const int MENU_SELECTED_TAG_OFFSET = 0x164;
 ///Control code constants end
 
 
-#define REPLAY_ALT_STAGE_STORAGE_LOC 0x91301f4a //half word that is used to store which alt stage was loaded
-#define REPLAY_AUTO_L_CANCEL_SETTING 0x91301f4e //half word that stores current and recorded auto L-Cancel settings
-#define IN_STAGE_SELECT_MENU_FLAG 0x91301f50 //byte flag == 1 when in stage select menu
-#define REPLAY_ENDLESS_ROTATION_QUEUE 0x91301f54 //word that saves copy of endless rotation queue for replay
 
 ///addresses end
 
@@ -499,8 +572,13 @@ void constrainFloatDynamic(int floatReg, int minFReg, int maxFReg);
 void modifyInstruction(int instructionReg, int addressReg);
 void IfInSSE(int reg1, int reg2);
 void IfNotInSSE(int reg1, int reg2);
-// Note: Overwrites r3.
-void GetHeapAddress(int heapID);
+void GetHeapAddress(int heapID, int destinationReg, int funcAddrReg);
+void LoadWordFromHeapAddress(int heapID, int loadDestinationReg, int addressDestinationReg, int offset);
+void StoreWordToHeapAddress(int heapID, int sourceReg, int addressDestinationReg, int offset);
+void LoadHalfFromHeapAddress(int heapID, int loadDestinationReg, int addressDestinationReg, int offset);
+void StoreHalfToHeapAddress(int heapID, int sourceReg, int addressDestinationReg, int offset);
+void LoadByteFromHeapAddress(int heapID, int loadDestinationReg, int addressDestinationReg, int offset);
+void StoreByteToHeapAddress(int heapID, int sourceReg, int addressDestinationReg, int offset);
 
 void ABS(int DestReg, int SourceReg, int tempReg);
 void ADD(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);

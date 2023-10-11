@@ -115,7 +115,7 @@ void setRotationQueuePlayers() {
 
 	GetSceneNum(reg1);
 	If(reg1, EQUAL_I, 6); { //in replay
-		LoadWordToReg(reg1, REPLAY_ENDLESS_ROTATION_QUEUE);
+		LoadWordFromHeapAddress(HeapType::Replay, reg1, reg1, REPLAY_HEAP_ENDLESS_ROTATION_QUEUE_OFF);
 		SetRegister(reg2, ENDLESS_ROTATION_QUEUE_LOC);
 		STW(reg1, reg2, 0);
 	} Else(); {
@@ -180,8 +180,7 @@ void saveRotationQueueForReplay() {
 	GetSceneNum(reg1);
 	If(reg1, EQUAL_I, 0xA); { //in versus
 		LoadWordToReg(reg1, ENDLESS_ROTATION_QUEUE_LOC);
-		SetRegister(reg2, REPLAY_ENDLESS_ROTATION_QUEUE);
-		STW(reg1, reg2, 0);
+		StoreWordToHeapAddress(HeapType::Replay, reg1, reg2, REPLAY_HEAP_ENDLESS_ROTATION_QUEUE_OFF);
 	} EndIf();
 
 	ASMEnd(0x4e800020); //blr

@@ -3228,7 +3228,8 @@ void SaveReplay()
 	SetRegs(3, { REPLAY_NTE_DATA_BUFFER_LOC, 42 });
 	CallBrawlFunc(0x80152b5c); //ctnteFileReplay
 
-	SetRegister(4, REPLAY_BUFFER_BEGIN);
+	GetHeapAddress(HeapType::Replay, 4, 4);
+	ADDI(4, 4, REPLAY_HEAP_REPLAY_BUFFER_BEGIN_OFF);
 	CallBrawlFunc(0x80152c4c); //setData
 
 	SetArgumentsFromRegs(3, { SectionBufferReg, NTEBufferReg, HighTimeReg, LowTimeReg });
