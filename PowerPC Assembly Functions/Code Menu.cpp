@@ -1606,7 +1606,7 @@ void CreateMenu(Page MainPage)
 	if (MEM2_CONSTANTS_LENGTH > 0)
 	{
 		// ... reserve space for them in the CMNU!
-		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH);
+		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH, 0xCC);
 	}
 
 	if (LINE_COLOR_TABLE.table_size() > 0)
