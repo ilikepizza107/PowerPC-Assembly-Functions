@@ -1621,16 +1621,8 @@ void CreateMenu(Page MainPage)
 	{
 		// Reserve space for Address Table (just initialized to zeroes, value populated in-game).
 		Header.resize(Header.size() + HEAP_ADDRESS_TABLE.address_array_size(), 0x00);
-		// The ID Array needs to be padded for word alignment, so we'll take care of that here.
-		// Note the index where we'll be starting the ID Array, and set aside space for it in the Header.
-		std::size_t idTableStartIndex = Header.size();
-		Header.resize(Header.size() + HEAP_ADDRESS_TABLE.id_array_size(), 0x00);
-		// Then, for each actual entry in the Address Table...
-		for (std::size_t i = 0; i < HEAP_ADDRESS_TABLE.__CACHED_COUNT; i++)
-		{
-			// ... write the proper Heap ID in place.
-			Header[idTableStartIndex + i] = HEAP_ADDRESS_TABLE.idArray[i];
-		}
+		// Write ID Array to Header.
+		Header.insert(Header.end(), HEAP_ADDRESS_TABLE.idArray.cbegin(), HEAP_ADDRESS_TABLE.idArray.cend());
 	}
 
 	if (START_OF_CODE_MENU - START_OF_CODE_MENU_HEADER != Header.size()) {

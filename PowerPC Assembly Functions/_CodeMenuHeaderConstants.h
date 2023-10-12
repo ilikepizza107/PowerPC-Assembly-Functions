@@ -281,22 +281,23 @@ enum HeapType {
 };
 static struct _heapCacheTable
 {
-public:
-
 	enum CachedHeaps
 	{
 		CACHED_REPLAY_HEAP = 0,
 		__CACHED_COUNT
 	};
+private:
+	static constexpr unsigned int idArraySize = CachedHeaps::__CACHED_COUNT + (4 - CachedHeaps::__CACHED_COUNT % 4);
+public:
 
 	constexpr unsigned int table_start() { return LINE_COLOR_TABLE.table_end(); }
 
 	const std::array<int, CachedHeaps::__CACHED_COUNT> addressArray{};
-	const std::array<unsigned char, CachedHeaps::__CACHED_COUNT> idArray = getArray();
+	const std::array<unsigned char, idArraySize> idArray = getArray();
 
 	constexpr unsigned int address_array_size() { return addressArray.size() * 4; }
 	constexpr unsigned int address_array_offset() { return 0; }
-	constexpr unsigned int id_array_size() { return idArray.size() + (4 - (idArray.size() % 4)); }
+	constexpr unsigned int id_array_size() { return idArray.size(); }
 	constexpr unsigned int id_array_offset() { return address_array_size(); }
 
 	constexpr unsigned int table_size() { return address_array_size() + id_array_size(); }
@@ -306,9 +307,9 @@ public:
 	constexpr unsigned int header_relative_address_offset(unsigned int heapIn) { return table_start() + address_offset(heapIn); }
 
 private:
-	constexpr std::array<unsigned char, __CACHED_COUNT> getArray()
+	constexpr std::array<unsigned char, idArraySize> getArray()
 	{
-		std::array<unsigned char, __CACHED_COUNT> result{};
+		std::array<unsigned char, idArraySize> result{};
 		result[CachedHeaps::CACHED_REPLAY_HEAP] = HeapType::Replay;
 		return result;
 	}
