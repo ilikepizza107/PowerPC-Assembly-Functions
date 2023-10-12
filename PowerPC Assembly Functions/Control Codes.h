@@ -46,6 +46,7 @@ void DeleteCharacterBuffer();
 void ControlCodes();
 void FixPercentSelector();
 void LoadCodeMenu();
+void UpdateHeapAddressCache();
 void StartMatch();
 void EndMatch();
 void FindCharacterBuffer(int TargetReg, int ResultReg);

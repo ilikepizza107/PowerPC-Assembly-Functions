@@ -11,6 +11,8 @@ void ControlCodes()
 
 	LoadCodeMenu();
 
+	UpdateHeapAddressCache();
+
 	AddNewCharacterBuffer();
 
 	DeleteCharacterBuffer();
@@ -63,58 +65,15 @@ void FixPercentSelector() {
 
 void LoadCodeMenu()
 {
-	// 806BE080
-	ASMStart(0x8002d4f4, "[CM: Control Codes] Load Code Menu + Setup Heap Addr. Cache");
+	ASMStart(0x8002d4f4, "[CM: Control Codes] Load Code Menu");
 	SaveRegisters();
 
 	int reg1 = 31;
 	int reg2 = 30;
 
-	int heapCacheLoopStart = GetNextLabel();
-
 	LoadFile(getCMNUAbsolutePath(), START_OF_CODE_MENU_HEADER, reg1, reg2);
 
-	// If we're requesting that any Heap Addresses be 
-	if (HEAP_ADDRESS_TABLE.table_size() > 0)
-	{
-		// Setup reg1 with address to the start of the Heap Address table.
-		SetRegister(reg1, HEAP_ADDRESS_TABLE.table_start());
-		// Setup offset variable for loop.
-		// We're going to point 4 past the offset to the last entry cuz we do our subtract at the start of the loop, before the first load/store.
-		ADDI(reg2, 0, HEAP_ADDRESS_TABLE.address_array_size());
-		// If BLAs are disabled, we'd need to do the full 4-line BCTRL setup every time if we just CallBrawlFunc'd every time.
-		// Instead, if BLAs are disabled...
-		if (!CONFIG_ALLOW_BLA_FUNCTION_CALLS)
-		{
-			//... we'll setup our CTR before the loop and just BCTRL repeatedly.
-			SetRegister(12, GF_GET_HEAP);
-			MTCTR(12);
-		}
-
-		// Setup r12 with the address just past the last entry in the ID Array, for the same reason we set up reg2 like we did.
-		ADDI(12, reg1, HEAP_ADDRESS_TABLE.id_array_offset() + HEAP_ADDRESS_TABLE.__CACHED_COUNT);
-
-		// Head of loop.
-		Label(heapCacheLoopStart);
-		// Subtract 4 from our offset variable, pointing to the previous entry in the table (or the last, on the first iteration).
-		// Importantly, we have the CR update enabled here, so that once we reach offset 0x0 (the first table entry) we'll break the loop.
-		ADDIC(reg2, reg2, -4, 1);
-		// Load the Heap ID for this entry...
-		LBZU(3, 12, -1);
-		// ... and call the function using the method appropriate for our settings.
-		if (CONFIG_ALLOW_BLA_FUNCTION_CALLS)
-		{
-			BLA(GF_GET_HEAP);
-		}
-		else
-		{
-			BCTRL();
-		}
-		// Then store the retrieved address back in the table.
-		STWX(3, reg1, reg2);
-		// And if we didn't just process the first entry (at offset 0x0), head back to the beginning of the loop and continue.
-		JumpToLabel(heapCacheLoopStart, bCACB_NOT_EQUAL);
-	}
+	
 
 	/*SetRegister(reg1, STRING_BUFFER);
 
@@ -140,6 +99,62 @@ void LoadCodeMenu()
 
 	RestoreRegisters();
 	ASMEnd(0x9421ffe0); //stwu sp, sp, -0x20
+}
+
+void UpdateHeapAddressCache()
+{
+	// If we're requesting that any Heap Addresses be 
+	if (HEAP_ADDRESS_TABLE.table_size() > 0)
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+		int reg3 = 10;
+
+		int heapCacheLoopStart = GetNextLabel();
+
+		// Hooks "process/[scMemoryChange]/sc_memory_change.o", Ghidra Addresses in that function are 0x1163F4 lower than in-game
+		ASMStart(0x806BE080, "[CM: Control Codes] Update Heap Address Cache", 
+			"Updates the Code Menu's Heap Address Cache whenever a memory layout change happens.");
+		// If BLAs are disabled, we'd need to do the full 4-line BCTRL setup every time if we just CallBrawlFunc'd every time.
+		// Instead, if BLAs are disabled...
+		if (!CONFIG_ALLOW_BLA_FUNCTION_CALLS)
+		{
+			//... we'll setup our CTR before the loop and just BCTRL repeatedly.
+			SetRegister(reg1, GF_GET_HEAP);
+			MTCTR(reg1);
+		}
+		// Setup reg1 with address to the start of the Heap Address table.
+		SetRegister(reg1, HEAP_ADDRESS_TABLE.table_start());
+		// Setup offset variable for loop.
+		// We're going to point 4 past the offset to the last entry cuz we do our subtract at the start of the loop, before the first load/store.
+		ADDI(reg2, 0, HEAP_ADDRESS_TABLE.address_array_size());
+
+		// Setup r12 with the address just past the last entry in the ID Array, for the same reason we set up reg2 like we did.
+		ADDI(reg3, reg1, HEAP_ADDRESS_TABLE.id_array_offset() + HEAP_ADDRESS_TABLE.__CACHED_COUNT);
+
+		// Head of loop.
+		Label(heapCacheLoopStart);
+		// Subtract 4 from our offset variable, pointing to the previous entry in the table (or the last, on the first iteration).
+		// Importantly, we have the CR update enabled here, so that once we reach offset 0x0 (the first table entry) we'll break the loop.
+		ADDIC(reg2, reg2, -4, 1);
+		// Load the Heap ID for this entry...
+		LBZU(3, reg3, -1);
+		// ... and call the function using the method appropriate for our settings.
+		if (CONFIG_ALLOW_BLA_FUNCTION_CALLS)
+		{
+			BLA(GF_GET_HEAP);
+		}
+		else
+		{
+			BCTRL();
+		}
+		// Then store the retrieved address back in the table.
+		STWX(3, reg1, reg2);
+		// And if we didn't just process the first entry (at offset 0x0), head back to the beginning of the loop and continue.
+		JumpToLabel(heapCacheLoopStart, bCACB_NOT_EQUAL);
+		CallBrawlFunc(0x8006CAA8); // Restore Original Instruction, call "isNormalFontLoadedEx/[FontData]/ms_resfont.o"
+		ASMEnd();
+	}
 }
 
 void setRotationQueuePlayers() {
