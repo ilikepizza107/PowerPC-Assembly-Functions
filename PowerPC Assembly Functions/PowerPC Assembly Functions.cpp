@@ -1813,7 +1813,7 @@ void IfNotInSSE(int reg1, int reg2) {
 void GetHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int destinationReg)
 {
 	ADDIS(destinationReg, 0, HEAP_ADDRESS_TABLE.table_start() >> 0x10);
-	LWZ(destinationReg, destinationReg, HEAP_ADDRESS_TABLE.header_relative_offset(heapIndex));
+	LWZ(destinationReg, destinationReg, HEAP_ADDRESS_TABLE.header_relative_address_offset(heapIndex));
 }
 
 void LoadWordFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset)

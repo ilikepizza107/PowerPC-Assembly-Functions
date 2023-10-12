@@ -63,6 +63,7 @@ void FixPercentSelector() {
 
 void LoadCodeMenu()
 {
+	// 806BE080
 	ASMStart(0x8002d4f4, "[CM: Control Codes] Load Code Menu + Setup Heap Addr. Cache");
 	SaveRegisters();
 
@@ -80,7 +81,7 @@ void LoadCodeMenu()
 		SetRegister(reg1, HEAP_ADDRESS_TABLE.table_start());
 		// Setup offset variable for loop.
 		// We're going to point 4 past the offset to the last entry cuz we do our subtract at the start of the loop, before the first load/store.
-		ADDI(reg2, 0, HEAP_ADDRESS_TABLE.CacheEnumToHeapIDs.size() * 4);
+		ADDI(reg2, 0, HEAP_ADDRESS_TABLE.address_array_size());
 		// If BLAs are disabled, we'd need to do the full 4-line BCTRL setup every time if we just CallBrawlFunc'd every time.
 		// Instead, if BLAs are disabled...
 		if (!CONFIG_ALLOW_BLA_FUNCTION_CALLS)
@@ -90,13 +91,16 @@ void LoadCodeMenu()
 			MTCTR(12);
 		}
 
+		// Setup r12 with the address just past the last entry in the ID Array, for the same reason we set up reg2 like we did.
+		ADDI(12, reg1, HEAP_ADDRESS_TABLE.id_array_offset() + HEAP_ADDRESS_TABLE.__CACHED_COUNT);
+
 		// Head of loop.
 		Label(heapCacheLoopStart);
 		// Subtract 4 from our offset variable, pointing to the previous entry in the table (or the last, on the first iteration).
 		// Importantly, we have the CR update enabled here, so that once we reach offset 0x0 (the first table entry) we'll break the loop.
 		ADDIC(reg2, reg2, -4, 1);
 		// Load the Heap ID for this entry...
-		LWZX(3, reg1, reg2);
+		LBZU(3, 12, -1);
 		// ... and call the function using the method appropriate for our settings.
 		if (CONFIG_ALLOW_BLA_FUNCTION_CALLS)
 		{

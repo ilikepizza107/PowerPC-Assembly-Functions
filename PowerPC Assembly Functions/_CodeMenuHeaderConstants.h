@@ -289,21 +289,26 @@ public:
 		__CACHED_COUNT
 	};
 
-	constexpr unsigned int table_start() { return LINE_COLOR_TABLE.table_end(); };
+	constexpr unsigned int table_start() { return LINE_COLOR_TABLE.table_end(); }
 
-	// See getArray() function for color value definitions!
-	std::array<int, __CACHED_COUNT> CacheEnumToHeapIDs = getArray();
+	const std::array<int, CachedHeaps::__CACHED_COUNT> addressArray{};
+	const std::array<unsigned char, CachedHeaps::__CACHED_COUNT> idArray = getArray();
 
-	constexpr unsigned int table_size() { return CacheEnumToHeapIDs.size() * 4; };
-	constexpr unsigned int table_end() { return table_start() + table_size(); };
+	constexpr unsigned int address_array_size() { return addressArray.size() * 4; }
+	constexpr unsigned int address_array_offset() { return 0; }
+	constexpr unsigned int id_array_size() { return idArray.size() + (4 - (idArray.size() % 4)); }
+	constexpr unsigned int id_array_offset() { return address_array_size(); }
 
-	constexpr unsigned int offset(unsigned int heapIn) { return heapIn * 4; };
-	constexpr unsigned int header_relative_offset(unsigned int heapIn) { return table_start() + offset(heapIn); };
+	constexpr unsigned int table_size() { return address_array_size() + id_array_size(); }
+	constexpr unsigned int table_end() { return table_start() + table_size(); }
+
+	constexpr unsigned int address_offset(unsigned int heapIn) { return heapIn * 4; }
+	constexpr unsigned int header_relative_address_offset(unsigned int heapIn) { return table_start() + address_offset(heapIn); }
 
 private:
-	constexpr std::array<int, __CACHED_COUNT> getArray()
+	constexpr std::array<unsigned char, __CACHED_COUNT> getArray()
 	{
-		std::array<int, __CACHED_COUNT> result{};
+		std::array<unsigned char, __CACHED_COUNT> result{};
 		result[CachedHeaps::CACHED_REPLAY_HEAP] = HeapType::Replay;
 		return result;
 	}
