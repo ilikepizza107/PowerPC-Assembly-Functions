@@ -1602,6 +1602,13 @@ void CreateMenu(Page MainPage)
 		AddValueToByteArray(x, Header);
 	}
 
+	// If there are MEM2Constants...
+	if (MEM2_CONSTANTS_LENGTH > 0)
+	{
+		// ... reserve space for them in the CMNU!
+		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH);
+	}
+
 	if (LINE_COLOR_TABLE.table_size() > 0)
 	{
 		for (std::size_t i = 0; i < LINE_COLOR_TABLE.__COLOR_COUNT; i++)
