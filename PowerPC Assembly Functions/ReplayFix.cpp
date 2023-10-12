@@ -39,7 +39,7 @@ void ClearASLData()
 	int Reg2 = 30;
 
 	SetRegister(Reg2, 0);
-	StoreHalfToHeapAddress(HeapType::Replay, Reg2, Reg1, REPLAY_HEAP_ALT_STAGE_STORAGE_OFF);
+	StoreHalfToHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, Reg2, Reg1, REPLAY_HEAP_ALT_STAGE_STORAGE_OFF);
 
 	RestoreRegisters();
 	ASMEnd(0x7c7f1b78); //mr r31, r3
@@ -332,7 +332,7 @@ void AlternateStageFix()
 	SetRegister(7, ALT_STAGE_VAL_LOC);
 	LHZ(5, 7, 0); //equals 0 if in a replay
 	EndIf(); //alt stage helper not used
-	LoadHalfFromHeapAddress(HeapType::Replay, 3, 12, REPLAY_HEAP_ALT_STAGE_STORAGE_OFF); //equals 0 if in a match
+	LoadHalfFromHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, 3, 12, REPLAY_HEAP_ALT_STAGE_STORAGE_OFF); //equals 0 if in a match
 	OR(3, 3, 5);
 
 	//store alt stage value
@@ -570,7 +570,7 @@ void RecordInput()
 
 						  //save alt stage info
 	LoadWordToReg(Reg1, CURRENT_ALT_STAGE_INFO_LOC);
-	StoreHalfToHeapAddress(HeapType::Replay, Reg1, Reg2, REPLAY_HEAP_ALT_STAGE_STORAGE_OFF);
+	StoreHalfToHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, Reg1, Reg2, REPLAY_HEAP_ALT_STAGE_STORAGE_OFF);
 
 	LoadWordToReg(Reg1, SHOULD_STOP_RECORDING);
 	If(Reg1, EQUAL_I, 0); //still has memory
@@ -1143,7 +1143,7 @@ void MakeBrawlSaveWholeReplay()
 	//set size
 	LoadWordToReg(5, INPUT_BUFFER_PTR_LOC);
 	ADDI(5, 5, 0xA);
-	GetHeapAddress(HeapType::Replay, 30, 30);
+	GetHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, 30);
 	ADDI(30, 30, REPLAY_HEAP_REPLAY_BUFFER_BEGIN_OFF);
 	SUBF(5, 5, 30);
 

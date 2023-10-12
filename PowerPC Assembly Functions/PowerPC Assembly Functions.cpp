@@ -1809,64 +1809,48 @@ void IfNotInSSE(int reg1, int reg2) {
 	If(reg1, NOT_EQUAL, reg2);
 }
 
-void GetHeapAddress(int heapID, int destinationReg, int funcAddrReg)
+void GetHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int destinationReg)
 {
-	assert(funcAddrReg != 3 && ("Function Address Register Cannot be r3!"));
-	// Backup r0, r3, r4, and LR
-	if (destinationReg != 0) { STW(0, 1, -0x10); }
-	if (destinationReg != 3) { STW(3, 1, -0x14); }
-	if (destinationReg != 4) { STW(4, 1, -0x18); }
-	MFLR(0);
-	STW(0, 1, -0x1C);
-	// Setup r3 as Heap ID
-	ADDI(3, 0, heapID);
-	// Call getHeap
-	CallBrawlFunc(GF_GET_HEAP, funcAddrReg);
-	// Move r3 into destinationReg
-	MR(destinationReg, 3);
-	// Restore r0, r3, r4, and LR
-	LWZ(0, 1, -0x1C);
-	MTLR(0);
-	if (destinationReg != 0) { LWZ(0, 1, -0x10); }
-	if (destinationReg != 3) { LWZ(3, 1, -0x14); }
-	if (destinationReg != 4) { LWZ(4, 1, -0x18); }
+	ADDIS(destinationReg, 0, HEAP_ADDRESS_TABLE.table_start() >> 0x10);
+	LWZ(destinationReg, destinationReg, HEAP_ADDRESS_TABLE.header_relative_offset(heapIndex));
 }
 
-void LoadWordFromHeapAddress(int heapID, int loadDestinationReg, int addressDestinationReg, int offset)
+void LoadWordFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset)
 {
-	GetHeapAddress(heapID, addressDestinationReg, addressDestinationReg);
+	GetHeapAddress(heapIndex, addressDestinationReg);
 	LWZ(loadDestinationReg, addressDestinationReg, offset);
 }
 
-void StoreWordToHeapAddress(int heapID, int sourceReg, int addressDestinationReg, int offset)
+void StoreWordToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset)
 {
-	GetHeapAddress(heapID, addressDestinationReg, addressDestinationReg);
+	GetHeapAddress(heapIndex, addressDestinationReg);
 	STW(sourceReg, addressDestinationReg, offset);
 }
 
-void LoadHalfFromHeapAddress(int heapID, int loadDestinationReg, int addressDestinationReg, int offset)
+void LoadHalfFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset)
 {
-	GetHeapAddress(heapID, addressDestinationReg, addressDestinationReg);
+	GetHeapAddress(heapIndex, addressDestinationReg);
 	LHZ(loadDestinationReg, addressDestinationReg, offset);
 }
 
-void StoreHalfToHeapAddress(int heapID, int sourceReg, int addressDestinationReg, int offset)
+void StoreHalfToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset)
 {
-	GetHeapAddress(heapID, addressDestinationReg, addressDestinationReg);
+	GetHeapAddress(heapIndex, addressDestinationReg);
 	STH(sourceReg, addressDestinationReg, offset);
 }
 
-void LoadByteFromHeapAddress(int heapID, int loadDestinationReg, int addressDestinationReg, int offset)
+void LoadByteFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset)
 {
-	GetHeapAddress(heapID, addressDestinationReg, addressDestinationReg);
+	GetHeapAddress(heapIndex, addressDestinationReg);
 	LBZ(loadDestinationReg, addressDestinationReg, offset);
 }
 
-void StoreByteToHeapAddress(int heapID, int sourceReg, int addressDestinationReg, int offset)
+void StoreByteToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset)
 {
-	GetHeapAddress(heapID, addressDestinationReg, addressDestinationReg);
+	GetHeapAddress(heapIndex, addressDestinationReg);
 	STB(sourceReg, addressDestinationReg, offset);
 }
+
 
 void ABS(int DestReg, int SourceReg, int tempReg)
 {

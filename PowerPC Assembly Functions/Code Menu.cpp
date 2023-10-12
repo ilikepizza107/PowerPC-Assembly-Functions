@@ -1617,6 +1617,14 @@ void CreateMenu(Page MainPage)
 		}
 	}
 
+	if (HEAP_ADDRESS_TABLE.table_size() > 0)
+	{
+		for (auto i : HEAP_ADDRESS_TABLE.CacheEnumToHeapIDs)
+		{
+			AddValueToByteArray(i, Header);
+		}
+	}
+
 	if (START_OF_CODE_MENU - START_OF_CODE_MENU_HEADER != Header.size()) {
 		cout << "Messed up header\n";
 		exit(-1);
@@ -3228,7 +3236,7 @@ void SaveReplay()
 	SetRegs(3, { REPLAY_NTE_DATA_BUFFER_LOC, 42 });
 	CallBrawlFunc(0x80152b5c); //ctnteFileReplay
 
-	GetHeapAddress(HeapType::Replay, 4, 4);
+	GetHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, 4);
 	ADDI(4, 4, REPLAY_HEAP_REPLAY_BUFFER_BEGIN_OFF);
 	CallBrawlFunc(0x80152c4c); //setData
 
