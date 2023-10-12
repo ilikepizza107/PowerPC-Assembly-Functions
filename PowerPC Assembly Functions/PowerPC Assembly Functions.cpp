@@ -35,6 +35,7 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 
 bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY = 0;
 bool CONFIG_DISABLE_ASM_DISASSEMBLY = 0;
+bool CONFIG_ENABLE_ASM_HEX_COMMENTS = 0;
 bool CONFIG_DELETE_ASM_TXT_FILE = 1;
 bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 0;
 bool CONFIG_ALLOW_BLA_FUNCTION_CALLS = 0;
@@ -143,7 +144,7 @@ bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStream
 	if (!disableDisassembly)
 	{
 		// ... then pass off to the disassembler.
-		result = lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0) == expectedLength;
+		result = lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0, CONFIG_ENABLE_ASM_HEX_COMMENTS) == expectedLength;
 	}
 	// Otherwise...
 	else

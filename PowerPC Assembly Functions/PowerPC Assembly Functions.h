@@ -60,6 +60,7 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
 extern bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY;
 extern bool CONFIG_DISABLE_ASM_DISASSEMBLY;
+extern bool CONFIG_ENABLE_ASM_HEX_COMMENTS;
 extern bool CONFIG_DELETE_ASM_TXT_FILE;
 extern bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS; // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
 extern bool CONFIG_ALLOW_BLA_FUNCTION_CALLS; // Enables function calls via BLA! Only valid for builds that have Eon's BLA code in your build!
