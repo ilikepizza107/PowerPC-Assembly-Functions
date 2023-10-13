@@ -430,7 +430,7 @@ void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int el
 void FindInTerminatedArray(int ValueReg, int StartAddressReg, int endMarker, int elementOffset, int ResultReg, int TempReg, int searchSize);
 void CallBrawlFunc(int Address, int addressReg = 0);
 //r3 returns ptr
-void Allocate(int SizeReg, int Heap = 42);
+void Allocate(int SizeReg, int Heap = HeapType::MenuInstance);
 void AllocateIfNotExist(int SizeReg, int AddressReg, int EmptyVal);
 void Memmove(int DestReg, int SourceReg, int SizeReg);
 void SetRegs(int StartReg, vector<int> values);

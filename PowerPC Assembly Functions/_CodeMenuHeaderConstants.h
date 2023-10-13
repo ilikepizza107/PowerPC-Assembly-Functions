@@ -148,7 +148,19 @@ static const int WIIMOTE_CONVERSION_TABLE = WIIMOTE_CONVERTED_BUTTON_STORAGE_LOC
 static const int WIICHUCK_CONVERSION_TABLE = WIIMOTE_CONVERSION_TABLE + 16; //16
 static const int CLASSIC_CONVERSION_TABLE = WIICHUCK_CONVERSION_TABLE + 16; //16
 static const int KAPPA_ITEM_FLAG = CLASSIC_CONVERSION_TABLE + 16; //4
-static const int MAIN_BUFFER_PTR = KAPPA_ITEM_FLAG + 4; //4
+//4
+// In-Game Value currently is 0x817ae800
+// Heap 42 : MenuInstance: 0.48MB Used  0.00MB (  0%) adr S 81734d60 E 817ae860 SIZE 00079b00
+// This makes sense actually, looks like it's Allocated in SetupCharacterBuffer() and stored here for later.
+// The values at this location seem to be related to the character heaps. In a 2 player match
+// Values: 81273184, 8179f840, 812bb5e4, 8179b5c0, 813006c4, 81797340, 81356a44, 817930c0
+// Heap 27 : Fighter1Instance: 0.32MB Used  0.00MB(0 %) adr S 8123ab60 E 8128cb60 SIZE 00052000
+// Heap 28 : Fighter2Instance: 0.32MB Used  0.00MB(0 %) adr S 8128cb60 E 812deb60 SIZE 00052000
+// Heap 29 : Fighter3Instance: 0.32MB Used  0.00MB(0 %) adr S 812deb60 E 81330b60 SIZE 00052000 
+// Heap 30 : Fighter4Instance: 0.32MB Used  0.00MB(0 %) adr S 81330b60 E 81382b60 SIZE 00052000
+// Every 1st address is in one of the FighterInstance Heaps, every 2nd is in MenuInstance
+// Those MenuInstance addresses seem consistent as well, actually.
+static const int MAIN_BUFFER_PTR = KAPPA_ITEM_FLAG + 4;
 static const int STRING_BUFFER = MAIN_BUFFER_PTR + 4; //0x100
 static const int IASA_OVERLAY_MEM_PTR_LOC = STRING_BUFFER + 0x100; //4
 static const int IASA_TRIGGER_OVERLAY_COMMAND_PTR_LOC = IASA_OVERLAY_MEM_PTR_LOC + 4; //4

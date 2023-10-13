@@ -721,31 +721,52 @@ void AddNewCharacterBuffer()
 		Label(Start);
 
 		//check if already exists
+		// Loads the Character's Base Module Table?
 		LWZ(BaseModuleTableReg, 3, 0x60);
+		// Get the ptr to the Buffer Ptr Table Address in the Header...
 		LoadWordToReg(reg1, MAIN_BUFFER_PTR);
+		// ... and load it into CharacterBufferReg. CharacterBufferReg now points to Buffer Ptr Table
 		LWZ(CharacterBufferReg, reg1, 0);
+		// Then, for as long as we're looking at a non-empty slot...
 		While(CharacterBufferReg, NOT_EQUAL_I, 0); {
+			// ... check if the entry in that slot is for the entry we'd be adding right now.
 			If(CharacterBufferReg, EQUAL, BaseModuleTableReg); {
+				// If it is, then we can abord adding this entry to the buffer, jump to quit.
 				JumpToLabel(Quit);
 			}EndIf();
+			// If the existing entry didn't match the entry we're about to add, move to next entry.
 			LWZU(CharacterBufferReg, reg1, 8);
 		}EndWhile();
 
+		// Backup r3 into HeadOfFighterReg for later.
 		MR(HeadOfFighterReg, 3);
+		// If we make it through that loop without finding a matching entry, then we should continue with adding our entry.
 		LWZ(ModulePtrReg, BaseModuleTableReg, 0xD8);
 
+		// Zero out reg1...
 		SetRegister(reg1, 0);
+		// ... and look for the first entry in the table that equals 0x00.
+		// Ironically, I'm pretty sure this is unnecessary since, if the entry we're about to add isn't in the table already,
+		// the above loop breaks with reg1 pointing to the first zeroed entry. Could've just zeroed reg2 instead.
 		FindEndOfCharacterBuffers(reg1, reg2);
+		// But anyway, store our BaseModuleTableReg value into the first open spot...
 		STW(BaseModuleTableReg, reg2, 0);
+		// ... and zero out the 8-byte table entry following this one.
 		STW(reg1, reg2, 8); //clear next slot
 		STW(reg1, reg2, 0xC); //clear next slot
 
+		// Next, we need to allocate our buffer and store that pointer in our table entry.
+		// So set the size to be allocated...
 		SetRegister(reg1, CHR_BUFFER_SIZE + 0x20);
+		// ... and allocate it. Note the default HeapID argument; as of writing this it's MenuInstance.
 		Allocate(reg1);
+		// Then store the address to the allocated space in the second word of our table entry, and our entry's addresses are set up!
 		STW(3, reg2, 4);
 
+		// And copy the address to that buffer into CharacterBufferReg
 		MR(CharacterBufferReg, 3);
 
+		// And pull that r3 value we backed up early back into r3 for use again.
 		MR(3, HeadOfFighterReg);
 		CallBrawlFunc(0x8083ae38); //getInput
 		STW(3, CharacterBufferReg, CHR_BUFFER_FIGHTER_INPUT_PTR_OFFSET);
@@ -904,9 +925,13 @@ void FindCharacterBuffer(int TargetReg, int ResultReg)
 
 void FindEndOfCharacterBuffers(int TargetReg, int ResultReg)
 {
+	// Load address to the Buffer Ptr Table into ResultReg
 	LoadWordToReg(ResultReg, MAIN_BUFFER_PTR);
+	// Load its first entry into r3
 	LWZ(3, ResultReg, 0);
+	// Then, for as long as the currently loaded entry isn't equal to Target Reg...
 	While(3, NOT_EQUAL, TargetReg); {
+		// ... load the next entry into r3
 		LWZU(3, ResultReg, 8);
 	}EndWhile();
 }
