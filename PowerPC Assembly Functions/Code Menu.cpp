@@ -2189,6 +2189,19 @@ void ControlCodeMenu()
 							If(4, NOT_EQUAL, 5); { // If the New ID and Old ID don't match...
 								SetRegister(Reg1, 0);
 								STB(5, Reg2, 0); // Overwrite Old ID with New one
+								// This seems to trigger a line at 0x809463C4 in "processBegin/[stLoaderPlayer]/st_loader_player.o" (0x80954350 in Ghidra)
+								// which ultimately leads to the line:
+								//		(*(code *)this->vtable->stLoaderPlayer$$removeEntity)(this); Starting @ 0x809543d4 in Ghidra
+								// This, I assume, is the thing that kills the entity and prompts spawning the new one.
+								// There's *also*, however, 0x80946358 (Ghidra: 0x809542e4), which directly checks whether or not the Slot ID
+								// recorded in the PlayerInitStruct is different from the currently selected one, along with some other conditions.
+								// If so, then we run the following:
+								//		(*(code *)this->vtable->stLoaderPlayer$$removeEntity)(this); Starting @ 0x8095431c in Ghidra
+								// Either one of these could be the thing responsible for ultimately causing the change to happen,
+								// not sure which it is for sure.
+								// In either case, should end up calling "removeEntity/[stLoaderPlayer]" 0x80948da8 (0x80956d34 in Ghidra)
+								// Messing with the r3 value at 0x809463C4 does prompt a reload
+								// Messing with the r0 value at 0x80946358 DOES NOT! Neither in SSE, nor in VS
 
 								SetRegister(Reg3, 0x43AD8);
 								LoadWordToReg(Reg4, 0x805A00E0); // Get ptr to GameGlobal Struct
