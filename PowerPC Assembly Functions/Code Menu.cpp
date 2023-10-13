@@ -2192,8 +2192,8 @@ void ControlCodeMenu()
 
 								SetRegister(Reg3, 0x43AD8);
 								LoadWordToReg(Reg4, 0x805A00E0); // Get ptr to GameGlobal Struct
-								LWZ(Reg4, Reg4, 0x10); // Get ptr to gmSelCharData
-								ADD(Reg4, Reg4, Reg3); // Add 0x43AD8 to addr of this struct? Way beyond the listed range in Ghidra (0x901c4618?)
+								LWZ(Reg4, Reg4, 0x10); // Get ptr to gmSelCharData (0x90180b40 in testing)
+								ADD(Reg4, Reg4, Reg3); // Add 0x43AD8 to addr of this struct (901c4618)? Way beyond the listed range in Ghidra
 								LWZ(Reg3, CharacterBufferReg, CHR_BUFFER_PORT_OFFSET); // Get port for character to change...
 								MULLI(Reg3, Reg3, 0x5C); // ... and multiply it by 0x5C, probably to index into a list of entries
 								STWX(Reg1, Reg4, Reg3); // Write 0 into (&gmSelCharData + 0x43AD8 + OffsetIntoListForTargetPort), Setting to 1 gives RAlt?
