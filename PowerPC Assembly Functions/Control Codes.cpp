@@ -768,10 +768,10 @@ void AddNewCharacterBuffer()
 
 		// And pull that r3 value we backed up early back into r3 for use again.
 		MR(3, HeadOfFighterReg);
-		CallBrawlFunc(0x8083ae38); //getInput
+		CallBrawlFunc(FT_GET_INPUT); //getInput
 		STW(3, CharacterBufferReg, CHR_BUFFER_FIGHTER_INPUT_PTR_OFFSET);
-		SetRegister(3, 0x80629a00);
-		CallBrawlFunc(0x80815ad0); //get player number
+		SetRegister(3, FT_MANAGER_ADDRESS);
+		CallBrawlFunc(FT_MGR_GET_PLAYER_NO); // Get Player Number
 		STW(3, CharacterBufferReg, CHR_BUFFER_PORT_OFFSET);
 
 		STW(HeadOfFighterReg, CharacterBufferReg, CHR_BUFFER_HEAD_OF_FIGHTER_OFFSET);
@@ -782,11 +782,16 @@ void AddNewCharacterBuffer()
 		STW(reg1, CharacterBufferReg, CHR_BUFFER_INFO_PTR_OFFSET);
 
 		if (CHARACTER_SELECT_P1_INDEX != -1) {
+			// Puts address of this character's Character Switcher Line into reg2
 			GetArrayValueFromIndex(CHARACTER_SWITCHER_ARRAY_LOC, 3, 0, 3, reg2); {
 				LBZ(reg1, reg1, 0); //get char ID
+				// Load Selection Source Line INDEX, in case this Switcher line is a Selection Mirror
 				LWZ(3, reg2, Selection::SELECTION_LINE_SOURCE_SELECTION_INDEX);
+				// And in the relevant line, get the address of the lower byte of the first Slot ID in the offset list...
 				ADDI(reg5, 3, Selection::SELECTION_LINE_OFFSETS_START + 3);
+				// ... then look at every 4th byte, looking for the index for the character's Slot ID, and store the index in reg3.
 				FindInArray(reg1, reg5, CHARACTER_ID_LIST.size(), 4, reg3, reg4);
+				// Then set the Switcher Line's Value and Default to this index!
 				STW(reg3, reg2, Line::VALUE);
 				STW(reg3, reg2, Line::DEFAULT);
 			}EndIf(); EndIf();

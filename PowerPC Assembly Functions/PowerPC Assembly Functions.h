@@ -104,6 +104,8 @@ extern std::string MENU_NAME;
 #define GX_DRAW_SET_VTX_COLOR_PRIM_ENVIROMENT 0x8001a5c0
 #define GET_FLOAT_WORK_MODULE 0x807acbb4 //r3 = work module ptr, r4 is variable, returns value in f1
 #define GF_GET_HEAP 0x800249cc // r3 = Heap ID
+#define FT_GET_INPUT 0x8083ae38 // r3 = FighterPtr, RETURNS IN r3 & r4!!
+#define FT_MGR_GET_PLAYER_NO 0x80815ad0 // r3 = ftManager pointer, r4 = entryID
 ///Function addresses end
 
 
@@ -131,6 +133,7 @@ extern std::string MENU_NAME;
 #define BUTTON_CONFIG_START 0x805b7480 //start of in game custom control map
 #define BASIC_VARIABLE_START_ADDRESS 0x901ae000
 #define BASIC_VARIABLE_BLOCK_SIZE 0x870
+#define FT_MANAGER_ADDRESS 0x80629a00
 ///addresses maintained by Brawl end
 
 // Replay Heap Variables
