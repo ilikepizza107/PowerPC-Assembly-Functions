@@ -232,7 +232,7 @@ static const u8 COMMENT_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_T
 static const u8 UNSELECTABLE_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_LIGHT_GRAY);
 
 // Heap IDs, courtesy of SammiHusky
-	// See: https://github.com/Sammi-Husky/BrawlHeaders/blob/main/Brawl/Include/memory.h
+// See: https://github.com/Sammi-Husky/BrawlHeaders/blob/main/Brawl/Include/memory.h
 enum HeapType {
 	SystemFW = 0x1,
 	System = 0x2,
