@@ -14,8 +14,9 @@ static const int CURRENT_PAGE_PTR_LOC = START_OF_CODE_MENU_HEADER; //4
 static const int MAIN_PAGE_PTR_LOC = CURRENT_PAGE_PTR_LOC + 4; //4
 static const int SALTY_RUNBACK_BUTTON_COMBO_LOC = MAIN_PAGE_PTR_LOC + 4; //4
 static const int SKIP_RESULTS_BUTTON_COMBO_LOC = SALTY_RUNBACK_BUTTON_COMBO_LOC + 4; //4
-static const int OLD_COLOR_ARRAY = SKIP_RESULTS_BUTTON_COMBO_LOC + 4; // 0x14; This is deprecated, the color array has been moved to LINE_COLOR_TABLE!
-static const int MOVE_FRAME_TIMER_LOC = OLD_COLOR_ARRAY + 0x14; //4
+static const int FLOAT_CONVERSION_CONST_LOC = SKIP_RESULTS_BUTTON_COMBO_LOC + 4; // 0x8, DO NOT OVERWRITE VALUE HERE
+static const int FLOAT_CONVERSION_STAGING_LOC = FLOAT_CONVERSION_CONST_LOC + 8; // 0xC, Write the value to convert into this + 0x4; Bottom 0x8 bytes may be used for Double Staging!
+static const int MOVE_FRAME_TIMER_LOC = FLOAT_CONVERSION_STAGING_LOC + 0xC; //4
 static const int INCREMENT_FRAME_TIMER_LOC = MOVE_FRAME_TIMER_LOC + 4; //4
 static const int FRAME_ADVANCE_FRAME_TIMER = INCREMENT_FRAME_TIMER_LOC + 4; //4
 

@@ -1403,12 +1403,12 @@ void CreateMenu(Page MainPage)
 	//button combos
 	AddValueToByteArray(BUTTON_L | BUTTON_R | BUTTON_Y , Header); //salty runback
 	AddValueToByteArray(BUTTON_L | BUTTON_R | BUTTON_X, Header); //skip results
-	// Old Line Color Table
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
+	// Float Conversion Space
+	AddValueToByteArray(0x43300000, Header); // Conversion Constant
+	AddValueToByteArray(0x00000000, Header);
+	AddValueToByteArray(0x43300000, Header); // Conversion Staging Space
+	AddValueToByteArray(0x00000000, Header);
+	AddValueToByteArray(0x00000000, Header); // Extra Staging Word
 	//frame timers
 	AddValueToByteArray(0, Header); //move frame timer
 	AddValueToByteArray(0, Header); //value frame timer
