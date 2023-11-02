@@ -123,6 +123,9 @@
     <ClInclude Include="_CodeMenuHeaderConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_PlayerSlotColorChangers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">
@@ -225,6 +228,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_JumpsquatOverride.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_PlayerSlotColorChangers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
