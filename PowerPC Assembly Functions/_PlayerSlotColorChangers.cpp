@@ -43,19 +43,6 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 
 	int exitLabel = GetNextLabel();
 
-	std::vector<unsigned long> colorsTable =
-	{
-		(unsigned long)BLACK,
-		(unsigned long)RED,
-		(unsigned long)BLUE,
-		(unsigned long)YELLOW,
-		(unsigned long)GREEN,
-		(unsigned long)LINE_COLOR_TABLE.COLORS[LINE_COLOR_TABLE.COLOR_PINK],
-		(unsigned long)PURPLE,
-		(unsigned long)ORANGE,
-		(unsigned long)TEAL,
-	};
-
 	// Restore original instruction; pointing r3 to frame RGB array!
 	ADDI(frameBufferReg, frameBufferReg, 0x4);
 
@@ -92,28 +79,23 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 	CMPLI(reg3, 5, 0);
 	JumpToLabel(exitLabel, bCACB_GREATER);
 
-	// If all those checks pass, set up our Frame Buffer.
-	constexpr unsigned long frameBlendBufferLength = 2;
-	BL(frameBlendBufferLength + 1);
-	for (unsigned long i = 0; i < frameBlendBufferLength; i++)
+	std::vector<unsigned long> colorsTable =
 	{
-		WriteIntToFile(0x0);
-	}
-	// Quadruple the target frame...
-	MULLI(reg2, reg3, 0x4);
-	// ... and use it to index into the original frame array and grab the original frame's color value!
-	LWZX(reg2, frameBufferReg, reg2);
-	// And now that we've got the original value, we can point frameBufferReg at our custom blending buffer...
-	MFLR(frameBufferReg);
-	// ... and store the original frame in the custom buffers second slot!
-	STW(reg2, frameBufferReg, 0x04);
-
-	// Embedded color table!
+		0x000000FF,
+		0xFF0000FF, // Red
+		0xFFFF00FF, // Yellow
+		0x00FF00FF, // Green
+		0x00FFFFFF, // Cyan
+		0x0000FFFF, // Blue
+		0xFF00FFFF, // Magenta
+		0xFF0000FF, // Red (Again)
+	};
 	BL(colorsTable.size() + 1);
 	for (unsigned long color : colorsTable)
 	{
 		WriteIntToFile(color);
 	}
+	MFLR(frameBufferReg);
 	
 	// Load buffered Team Battle Status Offset
 	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
@@ -121,27 +103,24 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 	// Now multiply the target frame by 4 to calculate the offset to the line we want, and insert it into reg1.
 	RLWIMI(reg1, reg3, 2, 0x10, 0x1D);
 	LWZ(reg1, reg1, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
-	// Use it to load the relevant value.
+	// Use it to load the targetIndex...
 	LWZX(reg2, reg1, reg2);
-
-	// Pull Color Table address into reg2...
-	MFLR(reg1);
-	// ... multiply the desired color ID by 4 to turn it into an index...
+	// ... and multiply it by 4 to turn it into the offset to our target value.
 	MULLI(reg2, reg2, 0x4);
-	// ... load the RGB associated with that color.
-	LWZX(reg2, reg1, reg2);
-	// Then, regrab the original frame's color...
-	LWZ(reg3, frameBufferReg, 0x04);
-	// ... overwrite our custom color's Alpha with that one's...
-	RLWIMI(reg2, reg3, 0x00, 0x18, 0x1F);
-	// ... and finally store it in the first slot of our blending buffer!
-	STW(reg2, frameBufferReg, 0x00);
-
-	// Lastly, force the "currentFrame" to 0.5, to evenly blend the two frames in the blending buffer!
+	// Get source index for line.
+	LWZ(reg1, reg1, Line::SELECTION_LINE_SOURCE_SELECTION_INDEX);
+	// Move forwards to the offsets section of the line.
+	ADDI(reg1, reg1, Line::SELECTION_LINE_OFFSETS_START + 2);
+	// And pull the top-half of the float associated with this line!
+	LHZX(reg2, reg1, reg2);
+	// Stage the associated float in our staging spot...
 	ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-	ADDIS(reg2, 0, 0x3F00);
-	STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+	STH(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+	// And load it! We've now got the relevant float loaded in f1!
 	LFS(frameFloatReg, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+	// Then load the constant float for 1.
+	LFS(safeFloatReg, 2, -0x6138);
+	FADD(frameFloatReg, frameFloatReg, safeFloatReg);
 
 	Label(exitLabel);
 
