@@ -6,9 +6,11 @@ const std::string codeSuffix = " [QuickLava]";
 
 void playerSlotColorChangersV3(unsigned char codeLevel)
 {
+	int CLR0PtrReg = 6;
+	int frameBufferReg = 3;
 	int reg1 = 11;
 	int reg2 = 12;
-	int reg3 = 6; // Gets overwritten by original instruction
+	int reg3 = 10; // Gets overwritten by original instruction
 
 	int frameFloatReg = 1;
 	int safeFloatReg = 13;
@@ -27,7 +29,7 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 	bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
 	CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
 	// Hooks "GetAnmResult/[nw4r3g3d9ResAnmClrCFPQ34nw4r3g3d12]/g3d_res".
-	ASMStart(0x801933e8, codePrefix + "CSS, In-game, and Results HUD Color Changer" + codeSuffix,
+	ASMStart(0x801934f4, codePrefix + "CSS, In-game, and Results HUD Color Changer" + codeSuffix,
 		"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and"
 		"\nredirects them according to the appropriate Code Menu lines. Intended for use with:"
 		"\n\tIn sc_selcharacter.pac:"
@@ -54,8 +56,17 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		(unsigned long)TEAL,
 	};
 
-	// Grab 0x2C past the pointer in r3, and we've got the original CLR0 data now.
-	LWZ(reg1, 3, 0x00);
+	// Restore original instruction; pointing r3 to frame RGB array!
+	ADDI(frameBufferReg, frameBufferReg, 0x4);
+
+	ADDIS(reg1, 0, 0x8000);
+	CMPL(CLR0PtrReg, reg1, 0);
+	BC(2, bCACB_GREATER);
+	NOP();
+	JumpToLabel(exitLabel, bCACB_LESSER_OR_EQ);
+
+	// Grab the pointer to the CLR0 from r6.
+	MR(reg1, CLR0PtrReg);
 
 	// Grab the offset for the "Original Path" Value
 	LWZ(reg2, reg1, 0x18);
@@ -69,13 +80,7 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 	// ... and exit if they're not equal.
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
-	BL(colorsTable.size() + 1);
-	for (unsigned long color : colorsTable)
-	{
-		WriteIntToFile(color);
-	}
-	
-	// Convert target frame to an integer, and copy it into reg1
+	// Convert target frame to an integer, and copy it into reg3
 	FCTIWZ(safeFloatReg, frameFloatReg);
 	ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
 	STFD(safeFloatReg, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 0x4);
@@ -87,51 +92,60 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 	CMPLI(reg3, 5, 0);
 	JumpToLabel(exitLabel, bCACB_GREATER);
 
+	// If all those checks pass, set up our Frame Buffer.
+	constexpr unsigned long frameBlendBufferLength = 2;
+	BL(frameBlendBufferLength + 1);
+	for (unsigned long i = 0; i < frameBlendBufferLength; i++)
+	{
+		WriteIntToFile(0x0);
+	}
+	// Quadruple the target frame...
+	MULLI(reg2, reg3, 0x4);
+	// ... and use it to index into the original frame array and grab the original frame's color value!
+	LWZX(reg2, frameBufferReg, reg2);
+	// And now that we've got the original value, we can point frameBufferReg at our custom blending buffer...
+	MFLR(frameBufferReg);
+	// ... and store the original frame in the custom buffers second slot!
+	STW(reg2, frameBufferReg, 0x04);
+
+	// Embedded color table!
+	BL(colorsTable.size() + 1);
+	for (unsigned long color : colorsTable)
+	{
+		WriteIntToFile(color);
+	}
+	
 	// Load buffered Team Battle Status Offset
-	//ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
 	LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 	// Now multiply the target frame by 4 to calculate the offset to the line we want, and insert it into reg1.
 	RLWIMI(reg1, reg3, 2, 0x10, 0x1D);
 	LWZ(reg1, reg1, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
 	// Use it to load the relevant value.
 	LWZX(reg2, reg1, reg2);
-	
-	// Get CLR0 Pointer Back
-	LWZ(reg1, 3, 0x00);
 
-	// Get Length of ResourceGroup, and scoot reg1 up to beginning of Group
-	LWZU(reg3, reg1, 0x24);
-	// Add the length of the ResourceGroup to reg1 to get address of first CLR0Mat
-	ADD(reg1, reg1, reg3);
-	// Look forwards into the first MatEntry in the Mat to get its Data Offset...
-	LWZU(reg3, reg1, 0xC);
-	// ... and add that to reg1 to get to its frames!
-	ADD(reg1, reg1, reg3);
-
-	// Quadruple our desired color index by 4 to index into color table
-	MULLI(reg3, reg2, 0x4);
-
-	// Reacquire original target frame.
-	ADDIS(reg2, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-	LWZ(reg2, reg2, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 0x8);
-	// Multiply it by 4 and add it to reg1 to point to the target frame!
+	// Pull Color Table address into reg2...
+	MFLR(reg1);
+	// ... multiply the desired color ID by 4 to turn it into an index...
 	MULLI(reg2, reg2, 0x4);
-	ADD(reg1, reg1, reg2);
+	// ... load the RGB associated with that color.
+	LWZX(reg2, reg1, reg2);
+	// Then, regrab the original frame's color...
+	LWZ(reg3, frameBufferReg, 0x04);
+	// ... overwrite our custom color's Alpha with that one's...
+	RLWIMI(reg2, reg3, 0x00, 0x18, 0x1F);
+	// ... and finally store it in the first slot of our blending buffer!
+	STW(reg2, frameBufferReg, 0x00);
 
-	// Get Color Table Pointer
-	MFLR(reg2);
-	// Get RGB for target color
-	LWZUX(reg3, reg2, reg3);
-	// Load the frame's current color...
-	LWZ(reg2, reg1, 0x00);
-	// ... and write its alpha over ours.
-	RLWIMI(reg3, reg2, 0x00, 0x18, 0x1F);
-	// Then store that over the relevant frame in the CLR0!
-	STW(reg3, reg1, 0x00);
+	// Lastly, force the "currentFrame" to 0.5, to evenly blend the two frames in the blending buffer!
+	ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
+	ADDIS(reg2, 0, 0x3F00);
+	STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+	LFS(frameFloatReg, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
 
 	Label(exitLabel);
 
-	ASMEnd(0x80c30000); // Restore original instruction: lwz r6, 0 (r3)
+	ASMEnd();
 
 	CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = backupMulliOptSetting;
 }
