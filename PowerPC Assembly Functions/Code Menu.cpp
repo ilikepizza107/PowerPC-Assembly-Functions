@@ -964,30 +964,13 @@ void CodeMenu()
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
 	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	std::vector<std::string> HUDColorNames =
-	{ 
-		"Color 0",
-		"Color 1", "Color 2", "Color 3",
-		"Color 4", "Color 5", "Color 6",
-		"Color 7", "Color 8", "Color 9",
-	};
-	std::vector<unsigned short> HUDColorFloatHighHalves = 
-	{
-		// -1 = Black,
-		// 0 = Red, 1 = Yellow, 2 = Green, 3 = Cyan, 4 = Blue, 5 = Magenta
-		0xbf80, // -1
-		0x0000, 0x4080, 0x3f80, // 0, 4, 1
-		0x4000, 0x40a0, 0x4090, // 2, 5, 4.5
-		0x3f00, 0x4040, 0xbf80, // 0.5, 3, -1
-	};
-	Selection* RedColorSelect = new Selection("Red", HUDColorNames, HUDColorFloatHighHalves, 1, BACKPLATE_COLOR_1_INDEX);
-	HUDColorLines.push_back(RedColorSelect);
-	HUDColorLines.push_back(new SelectionMirror(*RedColorSelect, "Blue", 2, BACKPLATE_COLOR_2_INDEX));
-	HUDColorLines.push_back(new SelectionMirror(*RedColorSelect, "Yellow", 3, BACKPLATE_COLOR_3_INDEX));
-	HUDColorLines.push_back(new SelectionMirror(*RedColorSelect, "Green", 4, BACKPLATE_COLOR_4_INDEX));
-	HUDColorLines.push_back(new SelectionMirror(*RedColorSelect, "Gray", 9, BACKPLATE_COLOR_C_INDEX));
+	HUDColorLines.push_back(new Integer("Red",      0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
+	HUDColorLines.push_back(new Integer("Blue",     0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
+	HUDColorLines.push_back(new Integer("Yellow",   0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
+	HUDColorLines.push_back(new Integer("Green",    0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
+	HUDColorLines.push_back(new Integer("Gray",     9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
 	HUDColorLines.back()->setIsSelectable(0);
-	HUDColorLines.push_back(new SelectionMirror(*RedColorSelect, "Clear", 0, BACKPLATE_COLOR_T_INDEX));
+	HUDColorLines.push_back(new Integer("Clear",    0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
 	HUDColorLines.back()->setIsSelectable(0);
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
 	if ((CONFIG_BACKPLATE_COLOR_MODE > 0) && (CONFIG_BACKPLATE_COLOR_MODE < backplateColorConstants::pSCL__COUNT))
