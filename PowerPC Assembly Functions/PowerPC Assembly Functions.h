@@ -566,6 +566,7 @@ void FCTIW(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FCTIWZ(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FDIV(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
 void FDIVS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
+void FMADD(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg = 0);
 void FMR(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FMUL(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void FMULS(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);

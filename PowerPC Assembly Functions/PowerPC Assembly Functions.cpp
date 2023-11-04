@@ -2213,6 +2213,18 @@ void FDIVS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionR
 	WriteIntToFile(OpHex);
 }
 
+void FMADD(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg)
+{
+	OpHex = GetOpSegment(63, 6, 5);
+	OpHex |= GetOpSegment(FPDestReg, 5, 10);
+	OpHex |= GetOpSegment(FPSourceReg1, 5, 15);
+	OpHex |= GetOpSegment(FPSourceReg2, 5, 20);
+	OpHex |= GetOpSegment(FPSourceReg3, 5, 25);
+	OpHex |= GetOpSegment(29, 5, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
 void FMR(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
