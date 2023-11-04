@@ -153,6 +153,7 @@ namespace lava::ppc
 
 		if (crField == 0)
 		{
+			// If decrementing CTR is disabled, parse for the full set of simplified mnemonics.
 			if (BOIn & 0b00100)
 			{
 				// This is the always branch condition, mostly used for blr and bctr
@@ -226,17 +227,29 @@ namespace lava::ppc
 
 					}
 				}
-
-				// If we've written to result / if a mnemonic was found.
-				if (result.tellp() != 0)
+			}
+			// If it isn't disabled though...
+			else
+			{
+				// ... then we can only offer a mnemonic for the always branch case.
+				if (BOIn & 0b10000)
 				{
-					result << suffixIn;
-					// Check y-bit of BO; if set...
-					if ((BOIn & 0b1) != 0)
-					{
-						// ... append positive branch prediction mark.
-						result << "+";
-					}
+					// Assign mnem based on == 0 bit (0b00010)
+					if (BOIn & 0b00010) { result << "bdz"; }
+					else { result << "bdnz"; }
+				}
+			}
+
+			// If we've written to result (if a mnemonic was found)...
+			if (result.tellp() != 0)
+			{
+				// ... attach the provided extra suffix to the end.
+				result << suffixIn;
+				// Additionally, check y-bit of BO; if set...
+				if ((BOIn & 0b1) != 0)
+				{
+					// ... append positive branch prediction mark.
+					result << "+";
 				}
 			}
 		}

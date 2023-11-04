@@ -195,6 +195,11 @@ branchConditionAndConditionBit branchConditionAndConditionBit::inConditionRegFie
 {
 	return branchConditionAndConditionBit(BranchCondition, ConditionBit % 4, ConditionRegFieldIn);
 }
+branchConditionAndConditionBit branchConditionAndConditionBit::andDecrementCTR(bool branchIfCTRIsZero) const
+{
+	return branchConditionAndConditionBit((BranchCondition & 0b11001) | (branchIfCTRIsZero ? 0b00010 : 0b00000), ConditionBit);
+}
+
 
 std::vector<std::streampos> LabelPosVec{};
 std::vector<labels::labelJump> LabelJumpVec{};

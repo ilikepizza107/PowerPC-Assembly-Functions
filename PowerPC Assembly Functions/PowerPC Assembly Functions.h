@@ -258,6 +258,8 @@ constexpr unsigned long bitIndexFromButtonHex(unsigned long buttonHex, bool doIn
 #define BRANCH_IF_TRUE 0b01100
 #define BRANCH_IF_FALSE 0b00100
 #define BRANCH_ALWAYS 0b10100
+#define BRANCH_IF_DZ 0b10010
+#define BRANCH_IF_DNZ 0b10000
 #define MAX_IFS 15
 #define MAX_LABELS 50
 #define MAX_JUMPS 50
@@ -325,6 +327,7 @@ struct branchConditionAndConditionBit
 
 	// Returns a copy of this bCACB, with the ConditionRegField set to the specified value!
 	branchConditionAndConditionBit inConditionRegField(unsigned char ConditionRegFieldIn) const;
+	branchConditionAndConditionBit andDecrementCTR(bool branchIfCTRIsZero) const;
 };
 const static branchConditionAndConditionBit bCACB_EQUAL				=		{ BRANCH_IF_TRUE, EQ, 0 };
 const static branchConditionAndConditionBit bCACB_NOT_EQUAL			=		{ BRANCH_IF_FALSE, EQ, 0 };
@@ -334,6 +337,8 @@ const static branchConditionAndConditionBit bCACB_LESSER			=		{ BRANCH_IF_TRUE, 
 const static branchConditionAndConditionBit bCACB_LESSER_OR_EQ		=		{ BRANCH_IF_FALSE, GT, 0 };
 const static branchConditionAndConditionBit bCACB_OVERFLOW			=		{ BRANCH_IF_TRUE, SO, 0 };
 const static branchConditionAndConditionBit bCACB_NO_OVERFLOW		=		{ BRANCH_IF_FALSE, SO, 0 };
+const static branchConditionAndConditionBit bCACB_DZ				=		{ BRANCH_IF_DZ, 0, 0 };
+const static branchConditionAndConditionBit bCACB_DNZ				=		{ BRANCH_IF_DNZ, 0, 0 };
 const static branchConditionAndConditionBit bCACB_UNSPECIFIED		=		{ INT_MAX, INT_MAX, UCHAR_MAX };
 
 namespace labels
