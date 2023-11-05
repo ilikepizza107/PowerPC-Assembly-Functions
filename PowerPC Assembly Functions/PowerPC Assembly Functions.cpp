@@ -770,14 +770,14 @@ int GetNextLabel()
 	return int(LabelPosVec.size() - 1);
 }
 
-void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn)
+void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn, bool setLinkRegister)
 {
-	LabelJumpVec.push_back(labels::labelJump(LabelNum, WPtr.tellp(), conditionIn));
+	LabelJumpVec.push_back(labels::labelJump(LabelNum, WPtr.tellp(), conditionIn, setLinkRegister));
 	WriteIntToFile(0);
 }
-void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit)
+void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit, bool setLinkRegister)
 {
-	JumpToLabel(LabelNum, { BranchCondition, ConditionBit });
+	JumpToLabel(LabelNum, { BranchCondition, ConditionBit }, setLinkRegister);
 }
 
 void CompleteJumps()
@@ -789,11 +789,18 @@ void CompleteJumps()
 		WPtr.seekp(currJump->jumpSourcePos);
 		if (currJump->jumpCondition.BranchCondition != INT_MAX && currJump->jumpCondition.ConditionBit != INT_MAX)
 		{
-			BC(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]), currJump->jumpCondition.BranchCondition, currJump->jumpCondition.ConditionBit);
+			BC(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]), currJump->jumpCondition.BranchCondition, currJump->jumpCondition.ConditionBit, currJump->setLR);
 		}
 		else
 		{
-			B(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]));
+			if (currJump->setLR)
+			{
+				BL(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]));
+			}
+			else
+			{
+				B(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]));
+			}
 		}
 	}
 	WPtr.seekp(holdPos);
@@ -1971,12 +1978,12 @@ void BA(int Address)
 	WriteIntToFile(OpHex);
 }
 
-void BC(int JumpDist, branchConditionAndConditionBit conditionIn)
+void BC(int JumpDist, branchConditionAndConditionBit conditionIn, bool setLinkRegister)
 {
-	BC(JumpDist, conditionIn.BranchCondition, conditionIn.ConditionBit);
+	BC(JumpDist, conditionIn.BranchCondition, conditionIn.ConditionBit, setLinkRegister);
 }
 //distance/4, branch if true/false, bit to check
-void BC(int JumpDist, int BranchCondition, int ConditionBit)
+void BC(int JumpDist, int BranchCondition, int ConditionBit, bool setLinkRegister)
 {
 	// If we're jumping backwards...
 	if (JumpDist < 0)
@@ -1989,6 +1996,7 @@ void BC(int JumpDist, int BranchCondition, int ConditionBit)
 	OpHex |= GetOpSegment(BranchCondition, 5, 10);
 	OpHex |= GetOpSegment(ConditionBit, 5, 15);
 	OpHex |= GetOpSegment(JumpDist, 14, 29);
+	OpHex |= GetOpSegment(setLinkRegister, 1, 31);
 	WriteIntToFile(OpHex);
 }
 

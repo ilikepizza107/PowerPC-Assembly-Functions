@@ -348,9 +348,10 @@ namespace labels
 		int labelNum = INT_MAX;
 		std::streampos jumpSourcePos = SIZE_MAX;
 		branchConditionAndConditionBit jumpCondition = bCACB_UNSPECIFIED;
+		bool setLR = 0;
 
-		labelJump(int labelNumIn = INT_MAX, std::streampos jumpSourcePosIn = SIZE_MAX, branchConditionAndConditionBit jumpConditionIn = bCACB_UNSPECIFIED) :
-			labelNum(labelNumIn), jumpSourcePos(jumpSourcePosIn), jumpCondition(jumpConditionIn) {};
+		labelJump(int labelNumIn = INT_MAX, std::streampos jumpSourcePosIn = SIZE_MAX, branchConditionAndConditionBit jumpConditionIn = bCACB_UNSPECIFIED, bool setLRIn = 0) :
+			labelNum(labelNumIn), jumpSourcePos(jumpSourcePosIn), jumpCondition(jumpConditionIn), setLR(setLRIn) {};
 	};
 }
 
@@ -414,8 +415,8 @@ void CodeRawStart(std::string name, std::string blurb);
 void CodeRawEnd();
 void Label(int LabelNum);
 int GetNextLabel();
-void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn = bCACB_UNSPECIFIED);
-void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit);
+void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn = bCACB_UNSPECIFIED, bool setLinkRegister = 0);
+void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit, bool setLinkRegister = 0);
 void CompleteJumps();
 int CalcBranchOffset(int Location, int Target);
 void StrCpy(int Destination, int Source, int Temp);
@@ -539,8 +540,8 @@ void ANDI(int DestReg, int SourceReg, int Immediate);
 void ANDIS(int DestReg, int SourceReg, int Immediate);
 void B(int JumpDist);
 void BA(int Address);
-void BC(int JumpDist, branchConditionAndConditionBit conditionIn);
-void BC(int JumpDist, int BranchCondition, int ConditionBit);
+void BC(int JumpDist, branchConditionAndConditionBit conditionIn, bool setLinkRegister = 0);
+void BC(int JumpDist, int BranchCondition, int ConditionBit, bool setLinkRegister = 0);
 void BCTR();
 void BCTRL();
 void BL(int JumpDist);
