@@ -26,22 +26,60 @@ unsigned long safeStackWordOff2 = 0x14; // Stores pointer to the CLR0!
 
 void psccSetupCode()
 {
-	int reg1 = 12;
+	int reg1 = 11;
+	int reg2 = 12;
+	int reg3 = 28; // Holds Mode!
+
+	int mode0Label = GetNextLabel();
+	int mode1Label = GetNextLabel();
+	int exitLabel = GetNextLabel();
+
 	ASMStart(0x801934ac, codePrefix + "Prep Code" + codeSuffix);
-	MR(28, 30); // Restore Original Instruction!
-	LWZ(reg1, 6, 0x18);
-	LWZX(reg1, 6, reg1);
-	ADDIS(reg1, reg1, -activatorStringHiHalf); // Used to check that the activator is there *and* get the code operation version!
-	ADDI(reg1, reg1, -activatorStringLowHalf);
-	CMPLI(reg1, 0x9, 0);
-	BC(2, bCACB_LESSER_OR_EQ);
-	ORC(reg1, reg1, reg1);
+	// Attempt to grab first 4 bytes of the CLR0's "Original Address" value.
+	LWZ(reg3, 6, 0x18);
+	LWZX(reg3, 6, reg3);
+	// If this fails, the register'll be "CLR0", otherwise it should be the specified value.
+	// Do some subtractions to check that the activator is there *and* get the code operation version!
+	ADDIS(reg3, reg3, -activatorStringHiHalf);
+	ADDI(reg3, reg3, -activatorStringLowHalf);
+	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
+	// If we're in Mode0...
+	CMPLI(reg3, 0x0, 0);
+	// ... jump to the code for that.
+	JumpToLabel(mode0Label, bCACB_EQUAL);
+	// Same for Mode1...
+	CMPLI(reg3, 0x1, 0);
+	// ... jump to relevant code.
+	JumpToLabel(mode1Label, bCACB_EQUAL);
+	// If the detected Mode doesn't correspond to a supported case, force the mode to 0xFFFFFFFF and exit!
+	ORC(reg3, reg3, reg3);
+	JumpToLabel(exitLabel);
+
+	Label(mode0Label);
+	// Get the address of the CLR0's name string...
+	LWZ(reg1, 6, 0x14);
+	ADD(reg1, reg1, 6);
+	// ... and load its length (also pushing reg1 backwards by 4 bytes).
+	LWZU(reg2, reg1, -0x4);
+	// Now LWZ using the length as an offset (causing us to load the last 4 bytes of the name, since we moved back 4 before).
+	LWZX(reg2, reg1, reg2);
+	// Isolate just the final nibble of those bytes, which'll (for our purposes) convert the number at the end to an integer.
+	RLWINM(reg2, reg2, 0, 0x1C, 0x1F);
+	// Add 1 to that number...
+	ADDI(reg2, reg2, 1);
+	// ... and store it to reference as our target port!
+	STW(reg2, 1, safeStackWordOff1 + 0x4);
+	JumpToLabel(exitLabel);
+
+	Label(mode1Label);
 	// Get current frame as an integer, and store it as the second word of our safe space.
 	FCTIWZ(13, 31);
 	STFD(13, 1, safeStackWordOff1);
+
+	Label(exitLabel);
 	// And store our Code Mode as the first word (overwriting the junk word from the above STFD)!
-	STW(reg1, 1, safeStackWordOff1);
-	ASMEnd();
+	STW(reg3, 1, safeStackWordOff1);
+	ASMEnd(0x7fdcf378); // Restore Original Instruction: mr r28, r30
 }
 
 void psccEmbedFloatTable()
@@ -140,10 +178,8 @@ void psccMainCode(unsigned char codeLevel)
 	Label(endOfSubroutines);
 
 	// Mode 1
-	CMPLI(reg2, 0x1, 0);
-	JumpToLabel(skipMode1, bCACB_NOT_EQUAL);
 	{
-		// Load current frame from safe space!
+		// Load the target port from safe space!
 		LWZ(reg0, 1, safeStackWordOff1 + 0x4);
 		// If the target frame doesn't correspond to one of the code menu lines, we'll skip execution.
 		CMPLI(reg0, 1, 0);
