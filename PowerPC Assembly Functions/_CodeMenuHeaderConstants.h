@@ -176,6 +176,9 @@ static const int CSTICK_TAUNT_SPECIAL_WORDS = (COSTUME_PATH_ADDRESS_RESULT + 4);
 static const int MEM2_CONSTANTS_END = CSTICK_TAUNT_SPECIAL_WORDS + 0x18;
 static const int MEM2_CONSTANTS_LENGTH = MEM2_CONSTANTS_END - MEM2_CONSTANTS_START;
 
+// Player Slot Color Float Table Address
+static const int PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE = MEM2_CONSTANTS_END; // 0x04;
+
 // Line Color Expansion
 static struct
 {
@@ -196,7 +199,7 @@ static struct
 		__COLOR_COUNT
 	};
 
-	constexpr unsigned int table_start() { return MEM2_CONSTANTS_END; };
+	constexpr unsigned int table_start() { return PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE + 0x4; };
 
 	// See getArray() function for color value definitions!
 	std::array<int, __COLOR_COUNT> COLORS = getArray();

@@ -1609,6 +1609,9 @@ void CreateMenu(Page MainPage)
 		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH, 0xCC);
 	}
 
+	// Player Slot Color Float Table Address
+	AddValueToByteArray(0, Header);
+
 	if (LINE_COLOR_TABLE.table_size() > 0)
 	{
 		for (std::size_t i = 0; i < LINE_COLOR_TABLE.__COLOR_COUNT; i++)

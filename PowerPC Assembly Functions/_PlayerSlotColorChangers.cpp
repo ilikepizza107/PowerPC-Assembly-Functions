@@ -4,189 +4,89 @@
 const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.0.0] ";
 const std::string codeSuffix = " [QuickLava]";
 
-//void playerSlotColorChangersV3(unsigned char codeLevel)
-//{
-//	int CLR0PtrReg = 6;
-//	int frameBufferReg = 3;
-//	int reg1 = 11;
-//	int reg2 = 12;
-//	int reg3 = 10; // Gets overwritten by original instruction
-//
-//	int frameFloatReg = 1;
-//	int safeFloatReg = 13;
-//
-//	// New approach:
-//	// - Verify that incoming CLR0 is asking for override
-//	// - Determine the index of the frame they're asking for
-//	// - Determine that it's in our range
-//	// - Get the index for the color being requested by the relevant code menu line
-//	// - Grab the RGB for that color
-//	// - Write that over the requested frame in the CLR0
-//	// - Profit
-//
-//
-//	const std::string activatorString = "lBC1";
-//	bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
-//	CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
-//	// Hooks "GetAnmResult/[nw4r3g3d9ResAnmClrCFPQ34nw4r3g3d12]/g3d_res".
-//	ASMStart(0x801934f4, codePrefix + "CSS, In-game, and Results HUD Color Changer" + codeSuffix,
-//		"\nIntercepts the setFrameMatCol calls used to color certain Menu elements by player slot, and"
-//		"\nredirects them according to the appropriate Code Menu lines. Intended for use with:"
-//		"\n\tIn sc_selcharacter.pac:"
-//		"\n\t\t- MenSelchrCbase4_TopN__0\n\t\t- MenSelchrCmark4_TopN__0\n\t\t- MenSelchrCursorA_TopN__0"
-//		"\n\tIn info.pac (and its variants, eg. info_training.pac):"
-//		"\n\t\t- InfArrow_TopN__0\n\t\t- InfFace_TopN__0\n\t\t- InfLoupe0_TopN__0\n\t\t- InfMark_TopN__0\n\t\t- InfPlynm_TopN__0"
-//		"\n\tIn stgresult.pac:"
-//		"\n\t\t- InfResultRank#_TopN__0\n\t\t- InfResultMark##_TopN"
-//		"\nTo trigger this code on a given CLR0, set its \"OriginalPath\" field to \"" + activatorString + "\" in BrawlBox!"
-//	);
-//
-//	int exitLabel = GetNextLabel();
-//
-//	// Restore original instruction; pointing r3 to frame RGB array!
-//	ADDI(frameBufferReg, frameBufferReg, 0x4);
-//
-//	ADDIS(reg1, 0, 0x8000);
-//	CMPL(CLR0PtrReg, reg1, 0);
-//	BC(2, bCACB_GREATER);
-//	NOP();
-//	JumpToLabel(exitLabel, bCACB_LESSER_OR_EQ);
-//
-//	// Grab the pointer to the CLR0 from r6.
-//	MR(reg1, CLR0PtrReg);
-//
-//	// Grab the offset for the "Original Path" Value
-//	LWZ(reg2, reg1, 0x18);
-//
-//	// Grab the first 4 bytes of the Orig Path
-//	LWZX(reg2, reg2, reg1);
-//	// Set reg1 to our Activation String
-//	SetRegister(reg1, activatorString);
-//	// Compare the 4 bytes we loaded to the target string...
-//	CMPL(reg2, reg1, 0);
-//	// ... and exit if they're not equal.
-//	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
-//
-//	// Convert target frame to an integer, and copy it into reg3
-//	FCTIWZ(safeFloatReg, frameFloatReg);
-//	ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-//	STFD(safeFloatReg, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 0x4);
-//	LWZ(reg3, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 0x8);
-//
-//	// If the target frame doesn't correspond to one of the code menu lines, we'll skip execution.
-//	CMPLI(reg3, 1, 0);
-//	JumpToLabel(exitLabel, bCACB_LESSER);
-//	CMPLI(reg3, 5, 0);
-//	JumpToLabel(exitLabel, bCACB_GREATER);
-//
-//	std::vector<unsigned long> colorsTable =
-//	{
-//		0x000000FF,
-//		0xFF0000FF, // Red
-//		0xFFFF00FF, // Yellow
-//		0x00FF00FF, // Green
-//		0x00FFFFFF, // Cyan
-//		0x0000FFFF, // Blue
-//		0xFF00FFFF, // Magenta
-//		0xFF0000FF, // Red (Again)
-//	};
-//	BL(colorsTable.size() + 1);
-//	for (unsigned long color : colorsTable)
-//	{
-//		WriteIntToFile(color);
-//	}
-//	MFLR(frameBufferReg);
-//	
-//	// Load buffered Team Battle Status Offset
-//	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-//	LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-//	// Now multiply the target frame by 4 to calculate the offset to the line we want, and insert it into reg1.
-//	RLWIMI(reg1, reg3, 2, 0x10, 0x1D);
-//	LWZ(reg1, reg1, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
-//	// Use it to load the targetIndex...
-//	LWZX(reg2, reg1, reg2);
-//	// ... and multiply it by 4 to turn it into the offset to our target value.
-//	MULLI(reg2, reg2, 0x4);
-//	// Get source index for line.
-//	LWZ(reg1, reg1, Line::SELECTION_LINE_SOURCE_SELECTION_INDEX);
-//	// Move forwards to the offsets section of the line.
-//	ADDI(reg1, reg1, Line::SELECTION_LINE_OFFSETS_START + 2);
-//	// And pull the top-half of the float associated with this line!
-//	LHZX(reg2, reg1, reg2);
-//	// Stage the associated float in our staging spot...
-//	ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-//	STH(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-//	// And load it! We've now got the relevant float loaded in f1!
-//	LFS(frameFloatReg, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-//	// Then load the constant float for 1.
-//	LFS(safeFloatReg, 2, -0x6138);
-//	FADD(frameFloatReg, frameFloatReg, safeFloatReg);
-//
-//	Label(exitLabel);
-//
-//	ASMEnd();
-//
-//	CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = backupMulliOptSetting;
-//}
+// New approach:
+// - Verify that incoming CLR0 is asking for override
+// - Determine the index of the frame they're asking for
+// - Determine that it's in our range
+// - Get the index for the color being requested by the relevant code menu line
+// - Grab the stored "RGBA" for that frame; not actually RGBA, it's the following
+//     0x00 = Signed 8 - bit Hue Shift(Fixed Point)
+//     0x01 = Unsigned 8 - bit Saturation(Fixed Point)
+//     0x02 = Unsigned 8 - bit Luminence(Fixed Point)
+//     0x03 = Unsigned 8 - bit Alpha
+// - Convert the above to floats; adding the hueshift to our code line's hue
+// - Follow the rest of the HSL -> RGB conversion process to get new RGB
+// - Write that into r3 to make that the result color.
+// - Profit
+const std::string activatorStringBase = "lBC0";
+signed short activatorStringHiHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data());
+signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data() + 2);
+unsigned long safeStackWordOff1 = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
+unsigned long safeStackWordOff2 = 0x14; // Stores pointer to the CLR0!
 
-void playerSlotColorChangersV3(unsigned char codeLevel)
+void psccSetupCode()
 {
-	// New approach:
-	// - Verify that incoming CLR0 is asking for override
-	// - Determine the index of the frame they're asking for
-	// - Determine that it's in our range
-	// - Get the index for the color being requested by the relevant code menu line
-	// - Grab the stored "RGBA" for that frame; not actually RGBA, it's the following
-	//     0x00 = Signed 8 - bit Hue Shift(Fixed Point)
-	//     0x01 = Unsigned 8 - bit Saturation(Fixed Point)
-	//     0x02 = Unsigned 8 - bit Luminence(Fixed Point)
-	//     0x03 = Unsigned 8 - bit Alpha
-	// - Convert the above to floats; adding the hueshift to our code line's hue
-	// - Follow the rest of the HSL -> RGB conversion process to get new RGB
-	// - Write that into r3 to make that the result color.
-	// - Profit
-
-	bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
-	CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
-
-	int reg0 = 0;
-	int reg1 = 11;
-	int reg2 = 12;
-	int reg3 = 10;
-
-	// Under normal circumstances, these are used for float conversions.
-	// At the points we're hooking though; they're done being used, so we're free to use them!
-	int safeStackWordOff1 = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
-	int safeStackWordOff2 = 0x14; // Stores pointer to the CLR0!
-	int stackFltConvOffset = 0x08; // This is a second float conversion spot, which we can mostly guarantee will be set up (unlike the previous one).
-
-	const std::string activatorStringBase = "lBC0";
-	signed short activatorStringHiHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data());
-	signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data() + 2);
-
+	int reg1 = 12;
 	ASMStart(0x801934ac, codePrefix + "Prep Code" + codeSuffix);
 	MR(28, 30); // Restore Original Instruction!
-	LWZ(reg2, 6, 0x18);
-	LWZX(reg2, 6, reg2);
-	ADDIS(reg2, reg2, -activatorStringHiHalf); // Used to check that the activator is there *and* get the code operation version!
-	ADDI(reg2, reg2, -activatorStringLowHalf);
-	CMPLI(reg2, 0x9, 0);
+	LWZ(reg1, 6, 0x18);
+	LWZX(reg1, 6, reg1);
+	ADDIS(reg1, reg1, -activatorStringHiHalf); // Used to check that the activator is there *and* get the code operation version!
+	ADDI(reg1, reg1, -activatorStringLowHalf);
+	CMPLI(reg1, 0x9, 0);
 	BC(2, bCACB_LESSER_OR_EQ);
-	ORC(reg2, reg2, reg2);
+	ORC(reg1, reg1, reg1);
 	// Get current frame as an integer, and store it as the second word of our safe space.
 	FCTIWZ(13, 31);
 	STFD(13, 1, safeStackWordOff1);
 	// And store our Code Mode as the first word (overwriting the junk word from the above STFD)!
-	STW(reg2, 1, safeStackWordOff1);
+	STW(reg1, 1, safeStackWordOff1);
 	ASMEnd();
+}
 
+void psccEmbedFloatTable()
+{
+	// Setup Color Float Triple Table
+	std::vector<std::array<float, 3>> colorFloats =
+	{
+		{0.0f, 0.0f, 0.0f}, // Color 0
+		{0.0f, 1.0f, 1.0f}, // Color 1
+		{4.0f, 1.0f, 0.9f}, // Color 2
+		{1.0f, 1.0f, 1.0f}, // Color 3
+		{2.0f, 1.0f, 1.0f}, // Color 4
+		{5.2f, 1.0f, 1.0f}, // Color 5
+		{4.666f, 1.5f, 1.0f}, // Color 6
+		{0.5f, 1.5f, 1.0f}, // Color 7
+		{3.0f, 1.5f, 1.0f}, // Color 8
+		{0.0f, 0.0f, 2.0f}, // Color 9
+	};
+	// Initialize Converted Float Table (Ensuring it's aligned to 0x10 bytes)
+	std::vector<unsigned long> convertedTable(colorFloats.size() * 3, 0x00);
+	std::size_t idx = 0;
+	for (std::size_t i = 0; i < colorFloats.size(); i++)
+	{
+		auto currTriple = &colorFloats[i];
+		for (std::size_t u = 0; u < 3; u++)
+		{
+			convertedTable[idx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>((*currTriple)[u]).data());
+		}
+	}
+	CodeRawStart(codePrefix + "Embed Color Float Table" + codeSuffix, "");
+	GeckoDataEmbed(convertedTable, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE);
+	CodeRawEnd();
+}
+
+void psccMainCode(unsigned char codeLevel)
+{
+	int reg0 = 0;
+	int reg1 = 11;
+	int reg2 = 12;
 	int RGBAResultReg = 3;
 
-	int floatCalcRegisters[2] = {7, 8};
-	int floatTempRegisters[2] = {9, 10};
-	int floatHSLRegisters[3] = {11, 12, 13};
+	int floatCalcRegisters[2] = { 7, 8 };
+	int floatTempRegisters[2] = { 9, 10 };
+	int floatHSLRegisters[3] = { 11, 12, 13 };
 	int floatCurrFrameReg = 31;
-
 
 	int endOfSubroutines = GetNextLabel();
 	int skipMode1 = GetNextLabel();
@@ -237,7 +137,6 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		Label(satModEndLabel);
 		BLR();
 	}
-
 	Label(endOfSubroutines);
 
 	// Mode 1
@@ -251,31 +150,6 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		JumpToLabel(exitLabel, bCACB_LESSER);
 		CMPLI(reg0, 5, 0);
 		JumpToLabel(exitLabel, bCACB_GREATER);
-
-		// Setup Color Float Triple Table
-		std::vector<std::array<float, 3>> colorFloats =
-		{
-			{0.0f, 0.0f, 0.0f}, // Color 0
-			{0.0f, 1.0f, 1.0f}, // Color 1
-			{4.0f, 1.0f, 0.9f}, // Color 2
-			{1.0f, 1.0f, 1.0f}, // Color 3
-			{2.0f, 1.0f, 1.0f}, // Color 4
-			{5.2f, 1.0f, 1.0f}, // Color 5
-			{4.666f, 1.5f, 1.0f}, // Color 6
-			{0.5f, 1.5f, 1.0f}, // Color 7
-			{3.0f, 1.5f, 1.0f}, // Color 8
-			{0.0f, 0.0f, 2.0f}, // Color 9
-		};
-		BL(1 + (colorFloats.size() * 0x3));
-		for (std::size_t i = 0; i < colorFloats.size(); i++)
-		{
-			auto currTriple = &colorFloats[i];
-			for (std::size_t u = 0; u < 3; u++)
-			{
-				unsigned long floatConv = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>((*currTriple)[u]).data());
-				WriteIntToFile(floatConv);
-			}
-		}
 
 		// Set up our conversion float in TempReg1
 		ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
@@ -312,7 +186,8 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		// ... and multiply it by 0xC to turn it into the offset to our target float triple.
 		MULLI(reg0, reg2, 0xC);
 		// Grab the pointer to our Float Hue Table
-		MFLR(reg1);
+		ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE >> 0x10);
+		LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE & 0xFFFF);
 		// Load the associated float (and point reg1 to our floatTriple)...
 		LFSUX(floatTempRegisters[0], reg1, reg0);
 		// ... and add it to our Hue float!
@@ -438,6 +313,19 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 
 	Label(exitLabel);
 	ASMEnd(0x907c0004); // Restore Original Instruction: stw r3, 0x0004 (r28)
+}
 
-	CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = backupMulliOptSetting;
+void playerSlotColorChangersV3(unsigned char codeLevel)
+{
+	if (codeLevel > 0)
+	{
+		bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
+		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
+
+		psccSetupCode();
+		psccEmbedFloatTable();
+		psccMainCode(codeLevel);
+
+		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = backupMulliOptSetting;
+	}
 }
