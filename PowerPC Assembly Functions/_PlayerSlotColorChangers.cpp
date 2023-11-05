@@ -98,16 +98,16 @@ void psccEmbedFloatTable()
 	// Setup Color Float Triple Table
 	std::vector<std::array<float, 3>> colorFloats =
 	{
-		{0.0f, 0.0f, 0.0f}, // Color 0
-		{0.0f, 1.0f, 1.0f}, // Color 1
-		{4.0f, 1.0f, 0.9f}, // Color 2
-		{1.0f, 1.0f, 1.0f}, // Color 3
-		{2.0f, 1.0f, 1.0f}, // Color 4
-		{5.2f, 1.0f, 1.0f}, // Color 5
-		{4.666f, 1.5f, 1.0f}, // Color 6
-		{0.5f, 1.5f, 1.0f}, // Color 7
-		{3.0f, 1.5f, 1.0f}, // Color 8
-		{0.0f, 0.0f, 2.0f}, // Color 9
+		{0.0f,	0.0f,	0.0f},	// Color 0
+		{0.0f,	1.0f,	1.0f},	// Color 1
+		{4.0f,	0.85f,	1.0f},	// Color 2
+		{0.85f,	1.1f,	1.0f},	// Color 3
+		{2.15f,	0.85f,	0.95f},	// Color 4
+		{5.2f,	1.35f,	1.0f},	// Color 5
+		{4.67f,	1.35f,	1.0f},	// Color 6
+		{0.5f,	1.35f,	1.0f},	// Color 7
+		{3.0f,	1.35f,	1.0f},	// Color 8
+		{0.0f,	0.0f,	1.0f},	// Color 9
 	};
 	// Initialize Converted Float Table (Ensuring it's aligned to 0x10 bytes)
 	std::vector<unsigned long> convertedTable(colorFloats.size() * 3, 0x00);
