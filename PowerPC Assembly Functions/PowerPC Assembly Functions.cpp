@@ -956,6 +956,24 @@ void GeckoEndIf() {
 	WriteIntToFile(0x80008000);
 }
 
+void GeckoDataEmbed(const std::vector<unsigned long> &Content, u32 AddressStoreLocation)
+{
+	unsigned long gotoSignature = 0x66200000;
+	unsigned long distanceImm = (Content.size() + (Content.size() % 2)) / 2;
+	WriteIntToFile(0x46000010); WriteIntToFile(0x00);
+	WriteIntToFile(0x44000000); WriteIntToFile(AddressStoreLocation & 0x00FFFFFF);
+	WriteIntToFile(gotoSignature | distanceImm); WriteIntToFile(0x00);
+	for (std::size_t i = 0; i < Content.size(); i++)
+	{
+		WriteIntToFile(Content[i]);
+	}
+	if (Content.size() % 2)
+	{
+		WriteIntToFile(0);
+	}
+	WriteIntToFile(0xE0000000); WriteIntToFile(0x80008000);
+}
+
 void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int elementOffset, int ResultReg, int TempReg)
 {
 	int EndOfSearch = GetNextLabel();

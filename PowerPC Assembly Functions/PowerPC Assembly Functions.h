@@ -430,6 +430,7 @@ void LoadIntoGeckoRegister(int Address, int Reg, int size);
 void StoreGeckoRegisterAt(int Address, int Reg, int size, int repeats = 0);
 void GeckoIf(u32 Address, int Comparison, int Value);
 void GeckoEndIf();
+void GeckoDataEmbed(const std::vector<unsigned long> &Content, u32 AddressStoreLocation);
 //searches for byte, elementOffset is distance between elements, ResultReg returns index if found, else -1
 //StartAddressReg ends with the address of the found element, or an address after the array
 void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int elementOffset, int ResultReg, int TempReg);
