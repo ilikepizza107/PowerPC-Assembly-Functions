@@ -32,6 +32,7 @@ void psccSetupCode()
 
 	int mode0Label = GetNextLabel();
 	int mode1Label = GetNextLabel();
+	int mode2Label = GetNextLabel();
 	int exitLabel = GetNextLabel();
 
 	ASMStart(0x801934ac, codePrefix + "Prep Code" + codeSuffix);
@@ -47,10 +48,16 @@ void psccSetupCode()
 	CMPLI(reg3, 0x0, 0);
 	// ... jump to the code for that.
 	JumpToLabel(mode0Label, bCACB_EQUAL);
-	// Same for Mode1...
+	// The remaining two modes deal with the frame float, so make a mutable copy of that...
+	FMR(13, 31);
+	// ... and proceed to check for modes. If Mode 1...
 	CMPLI(reg3, 0x1, 0);
 	// ... jump to relevant code.
 	JumpToLabel(mode1Label, bCACB_EQUAL);
+	// Same for Mode2...
+	CMPLI(reg3, 0x2, 0);
+	// ... jump to relevant code.
+	JumpToLabel(mode2Label, bCACB_EQUAL);
 	// If the detected Mode doesn't correspond to a supported case, force the mode to 0xFFFFFFFF and exit!
 	ORC(reg3, reg3, reg3);
 	JumpToLabel(exitLabel);
@@ -71,9 +78,13 @@ void psccSetupCode()
 	STW(reg2, 1, safeStackWordOff1 + 0x4);
 	JumpToLabel(exitLabel);
 
+	// This is the same as Mode1, only we add 1 to the frame first; so we can just make it an add-on for Mode1.
+	Label(mode2Label);
+	LFS(12, 2, -0x6170); 
+	FADD(13, 13, 12);
+	// Store frame as an integer, and store it as the second word of our safe space.
 	Label(mode1Label);
-	// Get current frame as an integer, and store it as the second word of our safe space.
-	FCTIWZ(13, 31);
+	FCTIWZ(13, 13);
 	STFD(13, 1, safeStackWordOff1);
 
 	Label(exitLabel);
