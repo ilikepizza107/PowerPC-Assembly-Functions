@@ -188,6 +188,7 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 	int floatCurrFrameReg = 31;
 
 
+	int endOfSubroutines = GetNextLabel();
 	int skipMode1 = GetNextLabel();
 	int exitLabel = GetNextLabel();
 	// Hooks "GetAnmResult/[nw4r3g3d9ResAnmClrCFPQ34nw4r3g3d12]/g3d_res".
@@ -198,6 +199,46 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 	NOR(reg0, reg2, reg2, 1);
 	// ... this'll branch us to the exit if the mode was invalid!
 	JumpToLabel(exitLabel, bCACB_EQUAL);
+	// Otherwise, jump past our subroutines to the code body!
+	JumpToLabel(endOfSubroutines);
+
+	// Apply Multiplier Subroutine
+	// Arguments:
+	//		CalcReg0 = Multiplier
+	//		CalcReg1 = Value
+	// Requires:
+	//		TempReg0 = 1.0f
+	//		TempReg1 = 2.0f
+	// Returns:
+	//		Scaled Value via CalcReg0
+	// Description:
+	// Takes in a Multiplier between 0.0f and 2.0f, and a Value between 0.0f and 1.0f, and:
+	// - For Multiplier values below or equal to 1.0f, scales Value down towards 0.0f
+	// - For Multiplier values above 1.0f, scales Value up towards 1.0f
+	int applyMultiplierSubroutineLabel = GetNextLabel();
+	{
+		Label(applyMultiplierSubroutineLabel);
+		// Argument
+		int satModUpLabel = GetNextLabel();
+		int satModEndLabel = GetNextLabel();
+		FCMPU(floatCalcRegisters[0], floatTempRegisters[1], 1);							// Compare Multiplier with 2.0f...
+		JumpToLabel(satModEndLabel, bCACB_GREATER.inConditionRegField(1));				// ... and skip our multiplier if it's too large!
+		FCMPU(floatCalcRegisters[0], floatTempRegisters[0], 1);							// Compare Multiplier with 1.0f
+		JumpToLabel(satModUpLabel, bCACB_GREATER.inConditionRegField(1));
+		// Modifier <= 1.0f Case:
+		FMUL(floatCalcRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);		// Simply scale Value by our Multiplier...
+		JumpToLabel(satModEndLabel);													// ... and jump to end!
+		// Modifier > 1.0f case!
+		Label(satModUpLabel);															// Otherwise, we'll scale the *rest* of the distance!
+		FSUB(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// Mul = Mul - 1.0f  
+		FSUB(floatTempRegisters[1], floatTempRegisters[0], floatCalcRegisters[1]);		// Temp = 1.0f - Value
+		FMADD(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[1], floatCalcRegisters[1]);		// Value = (Mul * Temp) + Value
+		FADD(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);		// Restore the 2.0f float, since we overwrote it earlier!
+		Label(satModEndLabel);
+		BLR();
+	}
+
+	Label(endOfSubroutines);
 
 	// Mode 1
 	CMPLI(reg2, 0x1, 0);
@@ -211,19 +252,29 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		CMPLI(reg0, 5, 0);
 		JumpToLabel(exitLabel, bCACB_GREATER);
 
-		// Setup Color Float Table
-		std::vector<float> colorFloats =
+		// Setup Color Float Triple Table
+		std::vector<std::array<float, 3>> colorFloats =
 		{
-			0.0f, // Color 0
-			0.0f, 4.0f, 1.0f, // Color 1, Color 2, Color 3
-			2.0f, 5.0f, 4.5f, // Color 4, Color 5, Color 6
-			0.5f, 3.0f, 6.0f, // Color 7, Color 8, Color 9
+			{0.0f, 0.0f, 0.0f}, // Color 0
+			{0.0f, 1.0f, 1.0f}, // Color 1
+			{4.0f, 1.0f, 0.9f}, // Color 2
+			{1.0f, 1.0f, 1.0f}, // Color 3
+			{2.0f, 1.0f, 1.0f}, // Color 4
+			{5.2f, 1.0f, 1.0f}, // Color 5
+			{4.666f, 1.5f, 1.0f}, // Color 6
+			{0.5f, 1.5f, 1.0f}, // Color 7
+			{3.0f, 1.5f, 1.0f}, // Color 8
+			{0.0f, 0.0f, 2.0f}, // Color 9
 		};
-		BL(1 + colorFloats.size());
+		BL(1 + (colorFloats.size() * 0x3));
 		for (std::size_t i = 0; i < colorFloats.size(); i++)
 		{
-			unsigned long floatConv = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(colorFloats[i]).data());
-			WriteIntToFile(floatConv);
+			auto currTriple = &colorFloats[i];
+			for (std::size_t u = 0; u < 3; u++)
+			{
+				unsigned long floatConv = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>((*currTriple)[u]).data());
+				WriteIntToFile(floatConv);
+			}
 		}
 
 		// Set up our conversion float in TempReg1
@@ -258,12 +309,12 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		LWZ(reg1, reg1, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
 		// Use it to load the targetIndex...
 		LWZX(reg2, reg1, reg2);
-		// ... and multiply it by 4 to turn it into the offset to our target float.
-		MULLI(reg0, reg2, 0x4);
+		// ... and multiply it by 0xC to turn it into the offset to our target float triple.
+		MULLI(reg0, reg2, 0xC);
 		// Grab the pointer to our Float Hue Table
-		MFLR(reg2);
-		// Load the associated float...
-		LFSX(floatTempRegisters[0], reg2, reg0);
+		MFLR(reg1);
+		// Load the associated float (and point reg1 to our floatTriple)...
+		LFSUX(floatTempRegisters[0], reg1, reg0);
 		// ... and add it to our Hue float!
 		FADD(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
 
@@ -279,6 +330,20 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		FSUB(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[1]);		//
 		FCMPU(floatHSLRegisters[0], floatCalcRegisters[1], 1);							//
 		BC(-2, bCACB_GREATER_OR_EQ.inConditionRegField(1));								//
+
+		// Apply Saturation Multiplier
+		LFS(floatCalcRegisters[0], reg1, 0x4);											// Load Absolute Saturation Mul to CalcReg0 from the triple...
+		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// ... and ensure its value is positive.
+		FMR(floatCalcRegisters[1], floatHSLRegisters[1]);								// Copy Saturation into CalcReg1
+		JumpToLabel(applyMultiplierSubroutineLabel, bCACB_UNSPECIFIED, 1);
+		FMR(floatHSLRegisters[1], floatCalcRegisters[0]);
+
+		// Apply Luminence Multiplier
+		LFS(floatCalcRegisters[0], reg1, 0x8);											// Load Absolute Luminence Mul to CalcReg0 from the triple...
+		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// ... and ensure its value is positive.
+		FMR(floatCalcRegisters[1], floatHSLRegisters[2]);								// Copy Luminences into CalcReg1
+		JumpToLabel(applyMultiplierSubroutineLabel, bCACB_UNSPECIFIED, 1);
+		FMR(floatHSLRegisters[2], floatCalcRegisters[0]);
 
 		// Calculate Chroma
 		FADD(floatCalcRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);		// C = Luminence * 2.0f
@@ -369,9 +434,8 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 			RLWIMI(RGBAResultReg, reg2, 0x18 - (i * 0x8), 0x00 + (i * 0x08), 0x07 + (i * 0x8));
 		}
 	}
-	JumpToLabel(exitLabel);
 	Label(skipMode1);
-	
+
 	Label(exitLabel);
 	ASMEnd(0x907c0004); // Restore Original Instruction: stw r3, 0x0004 (r28)
 
