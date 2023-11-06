@@ -1652,6 +1652,45 @@ void constantOverride() {
 		STW(reg1, reg2, 0);
 	}
 
+	int menuNotLoadedLabel = GetNextLabel();
+	ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+	LWZ(reg2, reg1, (START_OF_CODE_MENU_HEADER & 0xFFFF) + 4);
+	// Add the bottom half of START_OF_CODE_MENU to Reg1, so Reg1 should *also* now be START_OF_CODE_MENU.
+	ADDI(reg1, reg1, START_OF_CODE_MENU & 0xFFFF);
+	// Compare the two as unsigned integers.
+	CMPL(reg1, reg2, EQUAL_L);
+	// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
+	JumpToLabel(menuNotLoadedLabel, bCACB_NOT_EQUAL);
+
+	ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC >> 0x10);
+	LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC & 0xFFFF);
+	LFS(13, reg1, 0);
+
+	ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
+	LFD(11, reg1, FLOAT_CONVERSION_CONST_LOC & 0xFFFF);
+
+	ADDI(reg2, 0, 180);
+	STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+	LFD(12, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
+	FSUB(12, 12, 11);
+
+	FRES(12, 12);
+	FADDS(13, 13, 12);
+
+	ADDI(reg2, 0, 6);
+	STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+	LFD(12, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
+	FSUB(12, 12, 11);
+
+	FCMPU(13, 12, 1);
+	BC(2, bCACB_LESSER.inConditionRegField(1));
+	FSUB(13, 13, 13);
+
+	ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC >> 0x10);
+	LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC & 0xFFFF);
+	STFS(13, reg1, 0);
+	Label(menuNotLoadedLabel);
+
 	ASMEnd(0x2c000000); //cmpwi, r0, 0
 }
 

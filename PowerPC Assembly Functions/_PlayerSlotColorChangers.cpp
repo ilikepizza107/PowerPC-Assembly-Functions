@@ -98,7 +98,7 @@ void psccEmbedFloatTable()
 	// Setup Color Float Triple Table
 	std::vector<std::array<float, 3>> colorFloats =
 	{
-		{0.0f,	0.0f,	0.0f},	// Color 0
+		{0.0f,	1.0f,	1.0f},	// Color 0
 		{0.0f,	1.0f,	1.0f},	// Color 1
 		{4.0f,	0.85f,	1.0f},	// Color 2
 		{0.85f,	1.1f,	1.0f},	// Color 3
@@ -121,7 +121,7 @@ void psccEmbedFloatTable()
 		}
 	}
 	CodeRawStart(codePrefix + "Embed Color Float Table" + codeSuffix, "");
-	GeckoDataEmbed(convertedTable, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE);
+	GeckoDataEmbed(convertedTable, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC);
 	CodeRawEnd();
 }
 
@@ -233,8 +233,8 @@ void psccMainCode(unsigned char codeLevel)
 		// ... and multiply it by 0xC to turn it into the offset to our target float triple.
 		MULLI(reg0, reg2, 0xC);
 		// Grab the pointer to our Float Hue Table
-		ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE >> 0x10);
-		LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE & 0xFFFF);
+		ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC >> 0x10);
+		LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC & 0xFFFF);
 		// Load the associated float (and point reg1 to our floatTriple)...
 		LFSUX(floatTempRegisters[0], reg1, reg0);
 		// ... and add it to our Hue float!
