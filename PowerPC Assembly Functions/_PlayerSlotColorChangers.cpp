@@ -18,11 +18,59 @@ const std::string codeSuffix = " [QuickLava]";
 // - Follow the rest of the HSL -> RGB conversion process to get new RGB
 // - Write that into r3 to make that the result color.
 // - Profit
-const std::string activatorStringBase = "lBC0";
+const std::string activatorStringBase = "LBC0";
 signed short activatorStringHiHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data());
 signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data() + 2);
+signed short externalActivatorStringHiHalf = (unsigned short)activatorStringHiHalf + 0x2000;
 unsigned long safeStackWordOff1 = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
 unsigned long safeStackWordOff2 = 0x14; // Stores pointer to the CLR0!
+
+void psccCLR0V4InstallCode()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int reg3 = 8;
+
+	int v4PatchExit = GetNextLabel();
+	ASMStart(0x80197dc4, codePrefix + "Bootleg CLR0 v4 Support Patch" + codeSuffix, 
+		"Fakes CLR0 v4 support by rearranging the contents of the v4 header such that they match the orientation\n"
+		"found in v3 files, just with the UserData pointer stuck to the end. This ensures that we maintain compatibility\n"
+		"with the game's assumptions about where the struct's fields should be, while keeping access to UserData!\n"
+	);
+	LWZ(reg1, 5, 0x00);
+	// Check CLR0 Version
+	LWZ(reg2, reg1, 0x8);
+	CMPLI(reg2, 0x4, 0);
+	JumpToLabel(v4PatchExit, bCACB_NOT_EQUAL);
+
+	// Attempt to Load the "Original Path" Value
+	LWZ(reg3, reg1, 0x1C);
+	LWZUX(reg2, reg3, reg1);
+	// If this fails, the register'll be "CLR0", otherwise it should be the specified value.
+	// Do some subtractions to check that the activator is there *and* get the code operation version!
+	ADDIS(reg2, reg2, -externalActivatorStringHiHalf);
+	ADDI(reg2, reg2, -activatorStringLowHalf);
+	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
+	// If it failed to (ie. the reg > 9), we'll skip.
+	CMPLI(reg2, 0x9, 0);
+	JumpToLabel(v4PatchExit, bCACB_GREATER);
+
+	// If we're looking at one of our CLR0s, we're gonna rotate its header up to match its order to v3's!
+	LMW(28, reg1, 0x18);
+	LWZ(reg2, reg1, 0x14);
+	STMW(28, reg1, 0x14);
+	STW(reg2, reg1, 0x24);
+
+	LHZ(reg2, reg3, 0x02);
+	ADDIS(reg2, reg2, activatorStringHiHalf);
+	STW(reg2, reg3, 0x00);
+
+	ADDI(reg2, 0, 3);
+	STW(reg2, reg1, 0x08);
+
+	Label(v4PatchExit);
+	ASMEnd(0x81050000); // Restore Original Instruction: lwz r8, 0 (r5)
+}
 
 void psccSetupCode()
 {
@@ -369,6 +417,7 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
 
+		psccCLR0V4InstallCode();
 		psccSetupCode();
 		psccEmbedFloatTable();
 		psccMainCode(codeLevel);
