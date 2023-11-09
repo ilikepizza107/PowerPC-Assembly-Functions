@@ -18,12 +18,11 @@ const std::string codeSuffix = " [QuickLava]";
 // - Follow the rest of the HSL -> RGB conversion process to get new RGB
 // - Write that into r3 to make that the result color.
 // - Profit
-const std::string activatorStringBase = "LBC0";
+const std::string activatorStringBase = "lBC0";
 signed short activatorStringHiHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data());
 signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data() + 2);
-signed short externalActivatorStringHiHalf = (unsigned short)activatorStringHiHalf + 0x2000;
-unsigned long safeStackWordOff1 = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
-unsigned long safeStackWordOff2 = 0x14; // Stores pointer to the CLR0!
+//signed short externalActivatorStringHiHalf = (unsigned short)activatorStringHiHalf + 0x2000;
+unsigned long safeStackWordOff = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
 
 void psccCLR0V4InstallCode()
 {
@@ -48,7 +47,7 @@ void psccCLR0V4InstallCode()
 	LWZUX(reg2, reg3, reg1);
 	// If this fails, the register'll be "CLR0", otherwise it should be the specified value.
 	// Do some subtractions to check that the activator is there *and* get the code operation version!
-	ADDIS(reg2, reg2, -externalActivatorStringHiHalf);
+	ADDIS(reg2, reg2, -activatorStringHiHalf);
 	ADDI(reg2, reg2, -activatorStringLowHalf);
 	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
 	// If it failed to (ie. the reg > 9), we'll skip.
@@ -61,15 +60,27 @@ void psccCLR0V4InstallCode()
 	STMW(28, reg1, 0x14);
 	STW(reg2, reg1, 0x24);
 
-	LHZ(reg2, reg3, 0x02);
-	ADDIS(reg2, reg2, activatorStringHiHalf);
-	STW(reg2, reg3, 0x00);
+	// LHZ(reg2, reg3, 0x02);
+	// ADDIS(reg2, reg2, activatorStringHiHalf);
+	// STW(reg2, reg3, 0x00);
 
 	ADDI(reg2, 0, 3);
 	STW(reg2, reg1, 0x08);
 
 	Label(v4PatchExit);
 	ASMEnd(0x81050000); // Restore Original Instruction: lwz r8, 0 (r5)
+}
+
+void psccProtectStackCode()
+{
+	CodeRawStart(codePrefix + "Borrow Stack Space" + codeSuffix, 
+		"Consolidates two stack locations the game uses for float conversions into just one,\n"
+		"allowing us to use the newly freed one as storage for some of the variables we'll need!"
+	);
+	WriteIntToFile(0x04193494); STW(3, 1, 0xC);
+	WriteIntToFile(0x04193498); STW(0, 1, 0x8);
+	WriteIntToFile(0x0419349C); LFD(0, 1, 0x8);
+	CodeRawEnd();
 }
 
 void psccSetupCode()
@@ -81,9 +92,10 @@ void psccSetupCode()
 	int mode0Label = GetNextLabel();
 	int mode1Label = GetNextLabel();
 	int mode2Label = GetNextLabel();
+	int getUserDataLabel = GetNextLabel();
 	int exitLabel = GetNextLabel();
 
-	ASMStart(0x801934ac, codePrefix + "Prep Code" + codeSuffix);
+	ASMStart(0x80193410, codePrefix + "Prep Code" + codeSuffix);
 	// Attempt to grab first 4 bytes of the CLR0's "Original Address" value.
 	LWZ(reg3, 6, 0x18);
 	LWZX(reg3, 6, reg3);
@@ -97,7 +109,7 @@ void psccSetupCode()
 	// ... jump to the code for that.
 	JumpToLabel(mode0Label, bCACB_EQUAL);
 	// The remaining two modes deal with the frame float, so make a mutable copy of that...
-	FMR(13, 31);
+	FMR(13, 1);
 	// ... and proceed to check for modes. If Mode 1...
 	CMPLI(reg3, 0x1, 0);
 	// ... jump to relevant code.
@@ -123,8 +135,8 @@ void psccSetupCode()
 	// Add 1 to that number...
 	ADDI(reg2, reg2, 1);
 	// ... and store it to reference as our target port!
-	STW(reg2, 1, safeStackWordOff1 + 0x4);
-	JumpToLabel(exitLabel);
+	STW(reg2, 1, safeStackWordOff + 0x4);
+	JumpToLabel(getUserDataLabel);
 
 	// This is the same as Mode1, only we add 1 to the frame first; so we can just make it an add-on for Mode1.
 	Label(mode2Label);
@@ -133,12 +145,45 @@ void psccSetupCode()
 	// Store frame as an integer, and store it as the second word of our safe space.
 	Label(mode1Label);
 	FCTIWZ(13, 13);
-	STFD(13, 1, safeStackWordOff1);
+	STFD(13, 1, safeStackWordOff);
+
+	Label(getUserDataLabel);
+	// Initialize the Mask slot to 0.
+	ADDI(reg2, 0, 0x0);
+	STW(reg2, 1, safeStackWordOff);
+	// Load the UserData offset from the CLR0
+	LWZ(reg1, 6, 0x24);
+	// IF that value was 0 (ie. the CLR0 doesn't have any UserData defined) we'll just leave the 0 and exit.
+	CMPLI(reg1, 0x0, 0);
+	JumpToLabel(exitLabel, bCACB_EQUAL);
+
+	// Otherwise though, we'll grab the relevant material mask!
+	// Get the address to the UserData struct...
+	ADD(reg1, 6, reg1);
+	// ... then get the address for the first UserData entry's Data (which we require is the masks).
+	LWZU(reg2, reg1, 0x4);
+	ADD(reg1, reg1, reg2);
+	// Next, check that there is an entry for our current Material.
+	// Grab the number of entries in the array here...
+	LWZ(reg2, reg1, 0x8);
+	// ... compare it with the current Material's index...
+	CMPL(5, reg2, 0);
+	// ... and if it's too high, skip grabbing the mask (the 0 already in its place will leave the code enabled!)
+	JumpToLabel(exitLabel, bCACB_GREATER_OR_EQ);
+	// Otherwise though, if there is a mask to grab, jump forwards to the mask array.
+	LWZ(reg2, reg1, 0x4);
+	ADD(reg1, reg1, reg2);
+	// Then multiply the requested Material ID to index into our list and load the appropiate value...
+	MULLI(reg2, 5, 0x4);
+	LWZX(reg2, reg1, reg2);
+	// ... and finally store the value in our stack space!
+	STW(reg2, 1, safeStackWordOff);
 
 	Label(exitLabel);
-	// And store our Code Mode as the first word (overwriting the junk word from the above STFD)!
-	STW(reg3, 1, safeStackWordOff1);
-	ASMEnd(0x7fdcf378); // Restore Original Instruction: mr r28, r30
+	// And store our Code Mode as the top half of the second st!
+	STH(reg3, 1, safeStackWordOff + 0x4);
+	ADDI(5, 5, 0x1); // Restore Original Instruction
+	ASMEnd();
 }
 
 void psccEmbedFloatTable()
@@ -190,12 +235,23 @@ void psccMainCode(unsigned char codeLevel)
 	int exitLabel = GetNextLabel();
 	// Hooks "GetAnmResult/[nw4r3g3d9ResAnmClrCFPQ34nw4r3g3d12]/g3d_res".
 	ASMStart(0x801934fc, codePrefix + "Main Code" + codeSuffix, "");
-	// Load the code mode word...
-	LWZ(reg2, 1, safeStackWordOff1);
+	// Load the code mode short...
+	LHZ(reg2, 1, safeStackWordOff + 0x4);
 	// ... and write its complement to r0. If the mode was invalid reg0 should now be 0, and since we have Rc enabled...
-	NOR(reg0, reg2, reg2, 1);
+	CMPLI(reg2, 0xFFFF, 0);
 	// ... this'll branch us to the exit if the mode was invalid!
 	JumpToLabel(exitLabel, bCACB_EQUAL);
+
+	// Otherwise, check if the code is disabled for the current material!
+	// Get the mask from the safe space...
+	LWZ(reg2, 1, safeStackWordOff);
+	// ... calculate how many bytes to shift by based on what iteration of the loop we're in...
+	SUBFIC(reg0, 26, 0x20);
+	// ... and rotate the relevant bit into the bottom of reg0.
+	RLWNM(reg0, reg2, reg0, 0x1F, 0x1F, 1);
+	// If the bit wasn't 0 (ie. if the code is disabled for this material-target), skip to exit!
+	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
 	// Otherwise, jump past our subroutines to the code body!
 	JumpToLabel(endOfSubroutines);
 
@@ -239,8 +295,8 @@ void psccMainCode(unsigned char codeLevel)
 	// Mode 1
 	{
 		// Load the target port from safe space!
-		LWZ(reg0, 1, safeStackWordOff1 + 0x4);
-		// If the target frame doesn't correspond to one of the code menu lines, we'll skip execution.
+		LHZ(reg0, 1, safeStackWordOff + 0x6);
+		// If the target port doesn't correspond to one of the code menu lines, we'll skip execution.
 		CMPLI(reg0, 1, 0);
 		JumpToLabel(exitLabel, bCACB_LESSER);
 		CMPLI(reg0, 5, 0);
@@ -273,7 +329,7 @@ void psccMainCode(unsigned char codeLevel)
 
 		// Load buffered Team Battle Status Offset
 		LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-		// Now multiply the target frame by 4 to calculate the offset to the line we want, and insert it into reg1.
+		// Now multiply the target port by 4 to calculate the offset to the line we want, and insert it into reg1.
 		RLWIMI(reg1, reg0, 2, 0x10, 0x1D);
 		LWZ(reg1, reg1, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
 		// Use it to load the targetIndex...
@@ -418,8 +474,9 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
 
 		psccCLR0V4InstallCode();
-		psccSetupCode();
+		psccProtectStackCode();
 		psccEmbedFloatTable();
+		psccSetupCode();
 		psccMainCode(codeLevel);
 
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = backupMulliOptSetting;
