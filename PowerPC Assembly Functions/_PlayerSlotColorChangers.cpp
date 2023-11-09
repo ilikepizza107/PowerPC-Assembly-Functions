@@ -89,6 +89,11 @@ void psccSetupCode()
 	int reg2 = 12;
 	int reg3 = 28; // Holds Mode!
 
+	// Mode0 = Port via Name Suffix
+	// Mode1 = Mode0 - 1
+	// Mode2 = Port via Frame
+	// Mode3 = Mode2 + 1
+
 	int mode0Label = GetNextLabel();
 	int mode1Label = GetNextLabel();
 	int mode2Label = GetNextLabel();
@@ -104,19 +109,19 @@ void psccSetupCode()
 	ADDIS(reg3, reg3, -activatorStringHiHalf);
 	ADDI(reg3, reg3, -activatorStringLowHalf);
 	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
-	// If we're in Mode0...
+	// Do the check for Mode 3 in CF7, so that we can use whether we're in it again later to toggle the final port number subtraction!
+	CMPLI(reg3, 0x3, 0x7);
+	JumpToLabel(mode0Label, bCACB_EQUAL.inConditionRegField(0x7));
+	// If Mode 0...
 	CMPLI(reg3, 0x0, 0);
-	// ... jump to the code for that.
 	JumpToLabel(mode0Label, bCACB_EQUAL);
 	// The remaining two modes deal with the frame float, so make a mutable copy of that...
 	FMR(13, 1);
-	// ... and proceed to check for modes. If Mode 1...
+	// If Mode 1...
 	CMPLI(reg3, 0x1, 0);
-	// ... jump to relevant code.
 	JumpToLabel(mode1Label, bCACB_EQUAL);
-	// Same for Mode2...
+	// If Mode 2...
 	CMPLI(reg3, 0x2, 0);
-	// ... jump to relevant code.
 	JumpToLabel(mode2Label, bCACB_EQUAL);
 	// If the detected Mode doesn't correspond to a supported case, force the mode to 0xFFFFFFFF and exit!
 	ORC(reg3, reg3, reg3);
@@ -132,6 +137,7 @@ void psccSetupCode()
 	LWZX(reg2, reg1, reg2);
 	// Isolate just the final nibble of those bytes, which'll (for our purposes) convert the number at the end to an integer.
 	RLWINM(reg2, reg2, 0, 0x1C, 0x1F);
+	BC(2, bCACB_EQUAL.inConditionRegField(0x7));
 	// Add 1 to that number...
 	ADDI(reg2, reg2, 1);
 	// ... and store it to reference as our target port!
