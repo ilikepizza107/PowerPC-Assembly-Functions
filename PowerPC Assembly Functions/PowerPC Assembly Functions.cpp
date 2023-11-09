@@ -2981,6 +2981,15 @@ void SUBF(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg)
 	WriteIntToFile(OpHex);
 }
 
+void SUBFIC(int DestReg, int SourceReg, int Immediate)
+{
+	OpHex = GetOpSegment(8, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
 void SYNC() {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(598, 10, 30);

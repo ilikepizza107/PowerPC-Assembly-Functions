@@ -651,6 +651,7 @@ void STWUX(int SourceReg, int AddressReg1, int AddressReg2);
 void STWX(int SourceReg, int AddressReg1, int AddressReg2);
 //DestReg = SourceReg1 - SourceReg2
 void SUBF(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
+void SUBFIC(int DestReg, int SourceReg, int Immediate);
 void SYNC();
 void XOR(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void XORI(int DestReg, int SourceReg, int Immediate);
