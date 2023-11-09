@@ -24,6 +24,52 @@ signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((un
 //signed short externalActivatorStringHiHalf = (unsigned short)activatorStringHiHalf + 0x2000;
 unsigned long safeStackWordOff = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
 
+void psccStoreTeamBattleStatusBody(int statusReg)
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	MULLI(reg2, statusReg, Line::DEFAULT - Line::VALUE);
+	ADDI(reg2, reg2, Line::VALUE);
+	// Store team battle status in our buffer word.
+	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	STB(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+}
+void psccStoreTeamBattleStatus()
+{
+	// Hooks "initDispSelect/[muSelCharPlayerArea]/mu_selchar_player_ar"
+	ASMStart(0x806945e8, codePrefix + "Reset Cached SelChar Team Battle Status on Init" + codeSuffix);
+	psccStoreTeamBattleStatusBody(3);
+	ASMEnd(0x7c651b78); // Restore original instruction: mr	r5, r3
+
+	// Hooks "setMeleeKind/[muSelCharTask]/mu_selchar_obj.o"
+	ASMStart(0x8068eda8, codePrefix + "Cache SelChar Team Battle Status" + codeSuffix);
+	psccStoreTeamBattleStatusBody(4);
+	ASMEnd(0x7c7c1b78); // Restore original instruction: mr	r28, r3
+
+	// Hooks "appear/[IfPlayer]/if_player.o"
+	ASMStart(0x800e0a44, codePrefix + "Cache In-game Mode Team Battle Status" + codeSuffix);
+	psccStoreTeamBattleStatusBody(0);
+	ASMEnd(0x2c000000); // Restore Original Instruction: cmpwi	r0, 0
+
+	// Hooks "setAdventureCondition/[sqSingleBoss]/sq_single_boss.o"
+	ASMStart(0x806e5f08, codePrefix + "Only 2P Stadium Boss Battles Are Considered Team Battles" + codeSuffix);
+	// Where we're hooking, we're in a loop being used to initialize player slots for Stadium Boss Battles.
+	// Here, r23 is the iterator register (starts at 0, increments once per cycle), and r30 is a pointer to the GameModeMelee struct.
+	// This specific line we're hooking is in a block which indicates that the given player slot is active, so on the first run
+	// through we guarantee set the Team Mode byte to '0', and *if* a second player exists, we'll set it to '1' on the second run through.
+	STB(23, 30, 0x13);
+	ASMEnd(0x9bf90099); // Restore Original Instruction: stb	r31, 0x0099 (r25)
+}
+
+void psccMiscAdjustments()
+{
+	CodeRaw(codePrefix + "Disable Franchise Icon Color 10-Frame Offset in Results Screen" + codeSuffix, "",
+		{
+			0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
+			0xC60ebde4, 0x800ebe00, // Branch Past Third Mark Color Set
+		});
+}
+
 void psccCLR0V4InstallCode()
 {
 	int reg1 = 11;
@@ -199,8 +245,8 @@ void psccEmbedFloatTable()
 	{
 		{0.0f,	1.0f,	1.0f},	// Color 0
 		{0.0f,	1.0f,	1.0f},	// Color 1
-		{4.0f,	0.85f,	1.0f},	// Color 2
-		{0.85f,	1.1f,	1.0f},	// Color 3
+		{3.85f,	0.85f,	1.0f},	// Color 2
+		{0.90f,	1.0f,	1.0f},	// Color 3
 		{2.15f,	0.85f,	0.95f},	// Color 4
 		{5.2f,	1.35f,	1.0f},	// Color 5
 		{4.67f,	1.35f,	1.0f},	// Color 6
@@ -479,6 +525,8 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
 
+		psccStoreTeamBattleStatus();
+		psccMiscAdjustments();
 		psccCLR0V4InstallCode();
 		psccProtectStackCode();
 		psccEmbedFloatTable();
