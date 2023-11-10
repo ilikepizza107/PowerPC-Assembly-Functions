@@ -24,6 +24,88 @@ signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((un
 //signed short externalActivatorStringHiHalf = (unsigned short)activatorStringHiHalf + 0x2000;
 unsigned long safeStackWordOff = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
 
+void psccIncrementOnButtonPress()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int reg3 = 30; // Safe to use, overwritten by the instruction following our hook.
+	int padReg = 0; // Note, we can use this reg after using the pad data from it
+	int padPtrReg = 25;
+
+	int applyChangesLabel = GetNextLabel();
+	int exitLabel = GetNextLabel();
+
+	ASMStart(0x8068b168, codePrefix + "Incr and Decr Slot Color with L/R, Reset with Z on Player Kind Button" + codeSuffix);
+
+	// If we're hovering over the player status button.
+	CMPI(26, 0x1D, 0);
+	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
+	// Disable input if we're in team mode (also set up reg1 with top half of Code Menu Addr).
+	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
+	LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	CMPI(reg2, Line::DEFAULT, 0);
+	JumpToLabel(exitLabel, bCACB_EQUAL);
+
+	// Multiply slot value by 4, move it into reg1
+	RLWIMI(reg1, 29, 2, 0x10, 0x1D);
+	// And use that to grab the relevant line's INDEX Value
+	LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+
+	// If Z Button is pressed...
+	RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_Z) + 1, 31, 31, 1);
+	// ... reset the slot's color value.
+	LWZ(reg3, reg1, Line::DEFAULT);
+	JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
+
+	// Setup incr/decrement value
+	// Shift down BUTTON_R bit to use it as a bool, reg2 is 1 if set, 0 if not
+	RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_R) + 1, 31, 31);
+	// Shift down BUTTON_L bit to use it as a bool, reg3 is 1 if set, 0 if not
+	RLWINM(reg3, padReg, bitIndexFromButtonHex(BUTTON_L) + 1, 31, 31);
+	// Subtract reg3 from reg2! So if L was pressed, and R was not, reg2 = -1. L not pressed, R pressed, reg2 = 1.
+	// Additionally, set the condition bit, and if the result of this subtraction was 0 (ie. either both pressed or neither pressed) we skip.
+	SUBF(reg2, reg2, reg3, 1);
+	JumpToLabel(exitLabel, bCACB_EQUAL);
+
+	// Load the line's current option into reg3...
+	LWZ(reg3, reg1, Line::VALUE);
+	// ... and add our modification value to it.
+	ADD(reg3, reg3, reg2);
+
+	// If modified value is greater than the max...
+	CMPI(reg3, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 0);
+	// ... roll its value around to the min.
+	BC(2, bCACB_LESSER_OR_EQ);
+	ADDI(reg3, 0, 0);
+
+	// If modified value is less than the min...
+	CMPI(reg3, 0, 0);
+	// ... roll its value around to the max.
+	BC(2, bCACB_GREATER_OR_EQ);
+	ADDI(reg3, 0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1);
+
+	// Store our modified value back in place.
+	Label(applyChangesLabel);
+	STW(reg3, reg1, Line::VALUE);
+
+	// Use value in r4 to grab current player status
+	LWZ(reg1, 4, 0x44);
+	LWZ(reg2, reg1, 0x1B4);
+	// Subtract 1 from it.
+	ADDI(reg2, reg2, -1);
+	// Put it back.
+	STW(reg2, reg1, 0x1B4);
+
+	// Set padReg to A button press to piggyback off the setPlayerKind call to update our colors.
+	ADDI(padReg, 0, BUTTON_A);
+
+	Label(exitLabel);
+
+	ASMEnd(0x540005ef); // Restore Original Instruction: rlwinm.	r0, r0, 0, 23, 23 (00000100)
+}
+
+
 void psccStoreTeamBattleStatusBody(int statusReg)
 {
 	int reg1 = 11;
@@ -247,11 +329,11 @@ void psccEmbedFloatTable()
 		{0.0f,	1.0f,	1.0f},	// Color 1
 		{3.85f,	0.85f,	1.0f},	// Color 2
 		{0.90f,	1.0f,	1.0f},	// Color 3
-		{2.15f,	0.85f,	0.95f},	// Color 4
-		{5.2f,	1.35f,	1.0f},	// Color 5
-		{4.67f,	1.35f,	1.0f},	// Color 6
-		{0.5f,	1.35f,	1.0f},	// Color 7
-		{3.0f,	1.35f,	1.0f},	// Color 8
+		{2.00f,	0.85f,	0.95f},	// Color 4
+		{5.25f,	1.00f,	1.0f},	// Color 5
+		{4.67f,	0.95f,	0.95f},	// Color 6
+		{0.45f,	2.00f,	0.9f},	// Color 7
+		{2.85f,	1.00f,	0.95f},	// Color 8
 		{0.0f,	0.0f,	1.0f},	// Color 9
 	};
 	// Initialize Converted Float Table (Ensuring it's aligned to 0x10 bytes)
@@ -525,6 +607,7 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
 
+		psccIncrementOnButtonPress();
 		psccStoreTeamBattleStatus();
 		psccMiscAdjustments();
 		psccCLR0V4InstallCode();
