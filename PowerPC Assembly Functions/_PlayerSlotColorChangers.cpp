@@ -325,16 +325,16 @@ void psccEmbedFloatTable()
 	// Setup Color Float Triple Table
 	std::vector<std::array<float, 3>> colorFloats =
 	{
-		{0.0f,	1.0f,	1.0f},	// Color 0
-		{0.0f,	1.0f,	1.0f},	// Color 1
-		{3.85f,	0.85f,	1.0f},	// Color 2
-		{0.90f,	1.0f,	1.0f},	// Color 3
-		{2.00f,	0.85f,	0.95f},	// Color 4
-		{5.25f,	1.00f,	1.0f},	// Color 5
-		{4.67f,	0.95f,	0.95f},	// Color 6
-		{0.45f,	2.00f,	0.9f},	// Color 7
-		{2.85f,	1.00f,	0.95f},	// Color 8
-		{0.0f,	0.0f,	1.0f},	// Color 9
+		{0.0f,	1.00f,	0.5f},	// Color 0
+		{0.0f,	1.00f,	0.5f},	// Color 1
+		{3.9f,	1.00f,	0.5f},	// Color 2
+		{0.85f,	1.00f,	0.55f},	// Color 3
+		{2.10f,	0.65f,	0.4f},	// Color 4
+		{5.25f,	1.00f,	0.5f},	// Color 5
+		{4.67f,	0.95f,	0.5f},	// Color 6
+		{0.45f,	1.00f,	0.5f},	// Color 7
+		{2.85f,	1.00f,	0.5f},	// Color 8
+		{0.0f,	0.00f,	0.5f},	// Color 9
 	};
 	// Initialize Converted Float Table (Ensuring it's aligned to 0x10 bytes)
 	std::vector<unsigned long> convertedTable(colorFloats.size() * 3, 0x00);
@@ -426,7 +426,7 @@ void psccMainCode(unsigned char codeLevel)
 	}
 	Label(endOfSubroutines);
 
-	// Mode 1
+	// Main Algorithm!
 	{
 		// Load the target port from safe space!
 		LHZ(reg0, 1, safeStackWordOff + 0x6);
@@ -454,6 +454,11 @@ void psccMainCode(unsigned char codeLevel)
 			{
 				// Multiply hue specifically by 6, since hue rotation spans 0.0f -> 6.0f.
 				MULLI(reg2, reg2, 0x6);
+			}
+			else
+			{
+				// For the other two values, just multiply by 2, since these will act as our modifiers.
+				MULLI(reg2, reg2, 0x2);
 			}
 			STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 0x4);
 			LFD(floatHSLRegisters[i], reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
@@ -492,16 +497,14 @@ void psccMainCode(unsigned char codeLevel)
 		BC(-2, bCACB_GREATER_OR_EQ.inConditionRegField(1));								//
 
 		// Apply Saturation Multiplier
-		LFS(floatCalcRegisters[0], reg1, 0x4);											// Load Absolute Saturation Mul to CalcReg0 from the triple...
-		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// ... and ensure its value is positive.
-		FMR(floatCalcRegisters[1], floatHSLRegisters[1]);								// Copy Saturation into CalcReg1
+		FMR(floatCalcRegisters[0], floatHSLRegisters[1]);								// Copy Saturation Multiplier into CalcReg0...
+		LFS(floatCalcRegisters[1], reg1, 0x4);											// ... and load Absolute Saturation into CalcReg1 from the triple.
 		JumpToLabel(applyMultiplierSubroutineLabel, bCACB_UNSPECIFIED, 1);
 		FMR(floatHSLRegisters[1], floatCalcRegisters[0]);
 
 		// Apply Luminence Multiplier
-		LFS(floatCalcRegisters[0], reg1, 0x8);											// Load Absolute Luminence Mul to CalcReg0 from the triple...
-		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// ... and ensure its value is positive.
-		FMR(floatCalcRegisters[1], floatHSLRegisters[2]);								// Copy Luminences into CalcReg1
+		FMR(floatCalcRegisters[0], floatHSLRegisters[2]);								// Copy Luminence Multiplier into CalcReg0...
+		LFS(floatCalcRegisters[1], reg1, 0x8);											// ... and load Absolute Luminence into CalcReg1 from the triple.
 		JumpToLabel(applyMultiplierSubroutineLabel, bCACB_UNSPECIFIED, 1);
 		FMR(floatHSLRegisters[2], floatCalcRegisters[0]);
 
