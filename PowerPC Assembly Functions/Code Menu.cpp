@@ -1650,21 +1650,42 @@ void constantOverride() {
 
 	int reg1 = 4;
 	int reg2 = 5;
+	int reg3 = 11;
 
+	unsigned short prevIndexHiHalf = 0xFFFF;
+	unsigned short prevDestHiHalf = 0xFFFF;
 	for(auto& x : constantOverrides) {
-		LoadWordToReg(reg1, *x.index + Line::VALUE);
-		SetRegister(reg2, x.address);
-		STW(reg1, reg2, 0);
+
+		unsigned short indexHiHalf = *x.index >> 0x10;
+		unsigned short indexLoHalf = (*x.index & 0xFFFF) + Line::VALUE;
+		indexHiHalf += bool(indexLoHalf >= 0x8000);
+		if (indexHiHalf != prevIndexHiHalf)
+		{
+			ADDIS(reg1, 0, indexHiHalf);
+		}
+		LWZ(reg3, reg1, indexLoHalf);
+		prevIndexHiHalf = indexHiHalf;
+
+		unsigned short destHiHalf = x.address >> 0x10;
+		unsigned short destLoHalf = x.address & 0xFFFF;
+		destHiHalf += bool(destLoHalf >= 0x8000);
+		if (destHiHalf != prevDestHiHalf)
+		{
+			ADDIS(reg2, 0, destHiHalf);
+		}
+		STW(reg3, reg2, destLoHalf);
+		prevDestHiHalf = destHiHalf;
 	}
 
 	if (CONFIG_BACKPLATE_COLOR_MODE)
 	{
-		int reg3 = 11;
-		int reg4 = 12;
-
 		int menuNotLoadedLabel = GetNextLabel();
-		// Setup top half of reg1 as code menu address base!
-		ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+		// If reg1 isn't already loaded with the top half of START_OF_CODE_MENU_HEADER...
+		if (prevIndexHiHalf != unsigned short(START_OF_CODE_MENU_HEADER >> 0x10))
+		{
+			// ... set up its value!
+			ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+		}
 		// Try to load START_OF_CODE_MENU from the header.
 		LWZ(reg2, reg1, (START_OF_CODE_MENU_HEADER & 0xFFFF) + 4);
 		// Use reg1 to store the full START_OF_CODE_MENU value into reg3...
