@@ -652,6 +652,47 @@ void LoadByteToReg(int DestReg, int Reg, int Address)
 	}
 }
 
+
+void StoreWordAtAddr(int SourceReg, int AddrReg, int Address)
+{
+	if ((Address & 0xFFFF) < 0x8000)
+	{
+		ADDIS(AddrReg, 0, (Address & 0xFFFF0000) >> 16);
+		STW(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+	else
+	{
+		ADDIS(AddrReg, 0, ((Address & 0xFFFF0000) >> 16) + 1);
+		STW(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+}
+void StoreHalfAtAddr(int SourceReg, int AddrReg, int Address)
+{
+	if ((Address & 0xFFFF) < 0x8000)
+	{
+		ADDIS(AddrReg, 0, (Address & 0xFFFF0000) >> 16);
+		STH(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+	else
+	{
+		ADDIS(AddrReg, 0, ((Address & 0xFFFF0000) >> 16) + 1);
+		STH(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+}
+void StoreByteAtAddr(int SourceReg, int AddrReg, int Address)
+{
+	if ((Address & 0xFFFF) < 0x8000)
+	{
+		ADDIS(AddrReg, 0, (Address & 0xFFFF0000) >> 16);
+		STB(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+	else
+	{
+		ADDIS(AddrReg, 0, ((Address & 0xFFFF0000) >> 16) + 1);
+		STB(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+}
+
 //takes an integer value from SourceReg and converts it into a 32 bit float that is stored in ResultReg
 //the values of SourceReg and TempReg are overwritten
 void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg)
