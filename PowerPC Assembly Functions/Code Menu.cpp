@@ -1581,6 +1581,8 @@ void CreateMenu(Page MainPage)
 	// Used to store some temp values related to the color changer!
 	// First byte is an offset used to lbzx to either VALUE or DEFAULT quickly (init to VALUE).
 	AddValueToByteArray(Line::VALUE << 0x18, Header);
+	// Player Slot Color Float Table Address
+	AddValueToByteArray(0, Header);
 
 	// Jumpsquat Override
 	AddValueToByteArray(JUMPSQUAT_OVERRIDE_TOGGLE_INDEX, Header);
@@ -1609,8 +1611,7 @@ void CreateMenu(Page MainPage)
 		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH, 0xCC);
 	}
 
-	// Player Slot Color Float Table Address
-	AddValueToByteArray(0, Header);
+	
 	// PSCC Quick Font Loc
 	AddValueToByteArray(0xFF, Header);
 	AddValueToByteArray(0xFF, Header);
