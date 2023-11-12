@@ -1611,6 +1611,11 @@ void CreateMenu(Page MainPage)
 
 	// Player Slot Color Float Table Address
 	AddValueToByteArray(0, Header);
+	// PSCC Quick Font Loc
+	AddValueToByteArray(0xFF, Header);
+	AddValueToByteArray(0xFF, Header);
+	AddValueToByteArray(0xFF, Header);
+	AddValueToByteArray(0xA8, Header);
 
 	if (LINE_COLOR_TABLE.table_size() > 0)
 	{
@@ -1662,8 +1667,8 @@ void constantOverride() {
 	// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
 	JumpToLabel(menuNotLoadedLabel, bCACB_NOT_EQUAL);
 
-	ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC >> 0x10);
-	LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC & 0xFFFF);
+	ADDIS(reg1, 0, PSCC_FLOAT_TABLE_LOC >> 0x10);
+	LWZ(reg1, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
 	LFS(13, reg1, 0);
 
 	ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
@@ -1686,8 +1691,8 @@ void constantOverride() {
 	BC(2, bCACB_LESSER.inConditionRegField(1));
 	FSUB(13, 13, 13);
 
-	ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC >> 0x10);
-	LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC & 0xFFFF);
+	ADDIS(reg1, 0, PSCC_FLOAT_TABLE_LOC >> 0x10);
+	LWZ(reg1, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
 	STFS(13, reg1, 0);
 	Label(menuNotLoadedLabel);
 

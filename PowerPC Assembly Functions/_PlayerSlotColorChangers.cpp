@@ -105,6 +105,51 @@ void psccIncrementOnButtonPress()
 	ASMEnd(0x540005ef); // Restore Original Instruction: rlwinm.	r0, r0, 0, 23, 23 (00000100)
 }
 
+void psccTransparentCSSandResultsScreenNames()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+
+	CodeRawStart(codePrefix + "Results Screen Player Names are Transparent" + codeSuffix, "");
+	// Overwrite a branch we *don't* want by setting up reg1 with the top half of the FontLoc!
+	// Since we're ADDISing from r0 as well, we guarantee that the bottom half
+	// of reg1 is zeroed out; which we're going to take advantage of in the STBX in the following HOOK!
+	WriteIntToFile(0x040ea724); ADDIS(reg1, 0, PSCC_FONT_CONSTS_LOC >> 0x10);
+	CodeRawEnd();
+	ASMStart(0x800ea73c, ""); // Hooks "initMdlData/[ifVsResultTask]/if_vsresult.o".
+	// Load Message Array Addr
+	LWZ(5, 3, 0x0C);
+	// Get offset to target message...
+	MULLI(reg2, 4, 0x48);
+	// ... and store the bottom 8 bits of reg1 (zeroed by the above OP@) over the formatting bit, disabling Stroke.
+	STBX(reg1, 5, reg2);
+	// Then, put the *rest* of the FontLoc in the bottom of reg1...
+	ADDI(reg1, reg1, PSCC_FONT_CONSTS_LOC & 0xFFFF);
+	// ... and load all 4 values for r5-r8 at once!!
+	LSWI(5, reg1, 0x10);
+	ASMEnd();
+
+	ASMStart(0x800ea8c0); // Hooks same as above.
+	// Load Message Array Addr
+	LWZ(5, 3, 0x0C);
+	// Get offset to target message...
+	MULLI(reg2, 4, 0x48);
+	// Same trick as above, zero bottom of reg1 by loading top half of FontLoc...
+	ADDIS(reg1, 0, PSCC_FONT_CONSTS_LOC >> 0x10);
+	// ... and store the bottom 8 bits of it over the formatting bit.
+	STBX(reg1, 5, reg2);
+	// Then, put the *rest* of the FontLoc in the bottom of reg1...
+	ADDI(reg1, reg1, PSCC_FONT_CONSTS_LOC & 0xFFFF);
+	// ... and load all 4 values for r5-r8 at once!!
+	LSWI(5, reg1, 0x10);
+	ASMEnd();
+
+	ASMStart(0x8069b268, codePrefix + "CSS Player Names are Transparent" + codeSuffix); // Hooks "dispName/[muSelCharPlayerArea]/mu_selchar_player_area_obj".
+	ADDIS(reg1, 0, PSCC_FONT_CONSTS_LOC >> 0x10);
+	ADDI(reg1, reg1, PSCC_FONT_CONSTS_LOC & 0xFFFF);
+	LSWI(5, reg1, 0x10);
+	ASMEnd();
+}
 
 void psccStoreTeamBattleStatusBody(int statusReg)
 {
@@ -150,6 +195,13 @@ void psccMiscAdjustments()
 			0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
 			0xC60ebde4, 0x800ebe00, // Branch Past Third Mark Color Set
 		});
+	CodeRawStart(codePrefix + "Hand Color Fix" + codeSuffix, 
+		"Fixes a conflict with Eon's Roster-Size-Based Hand Resizing code, which could"
+		"\nin some cases cause CSS hands to wind up the wrong color."
+		);
+	WriteIntToFile(0x0469CA2C); LFS(0, 3, 0x1014);
+	//WriteIntToFile(0x8069CAE0); LFS(0, 3, 0x1014);
+	CodeRawEnd();
 }
 
 void psccCLR0V4InstallCode()
@@ -348,7 +400,7 @@ void psccEmbedFloatTable()
 		}
 	}
 	CodeRawStart(codePrefix + "Embed Color Float Table" + codeSuffix, "");
-	GeckoDataEmbed(convertedTable, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC);
+	GeckoDataEmbed(convertedTable, PSCC_FLOAT_TABLE_LOC);
 	CodeRawEnd();
 }
 
@@ -476,8 +528,8 @@ void psccMainCode(unsigned char codeLevel)
 		// ... and multiply it by 0xC to turn it into the offset to our target float triple.
 		MULLI(reg0, reg2, 0xC);
 		// Grab the pointer to our Float Hue Table
-		ADDIS(reg1, 0, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC >> 0x10);
-		LWZ(reg1, reg1, PLAYER_SLOT_COLOR_CHANGER_FLOAT_TABLE_LOC & 0xFFFF);
+		ADDIS(reg1, 0, PSCC_FLOAT_TABLE_LOC >> 0x10);
+		LWZ(reg1, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
 		// Load the associated float (and point reg1 to our floatTriple)...
 		LFSUX(floatTempRegisters[0], reg1, reg0);
 		// ... and add it to our Hue float!
@@ -611,6 +663,7 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
 
 		psccIncrementOnButtonPress();
+		psccTransparentCSSandResultsScreenNames();
 		psccStoreTeamBattleStatus();
 		psccMiscAdjustments();
 		psccCLR0V4InstallCode();
