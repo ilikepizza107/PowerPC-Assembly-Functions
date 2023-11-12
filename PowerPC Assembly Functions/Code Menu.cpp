@@ -1646,7 +1646,7 @@ void CreateMenu(Page MainPage)
 }
 
 void constantOverride() {
-	ASMStart(0x80023d60, "[CM: Code Menu] Constant Overrides");
+	ASMStart(0x80023d60, std::string("[CM: Code Menu] Constant Overrides") + std::string((CONFIG_BACKPLATE_COLOR_MODE) ? " + Incr. PSCC RGB Strobe Float" : ""));
 
 	int reg1 = 4;
 	int reg2 = 5;
@@ -1657,45 +1657,53 @@ void constantOverride() {
 		STW(reg1, reg2, 0);
 	}
 
-	int menuNotLoadedLabel = GetNextLabel();
-	ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
-	LWZ(reg2, reg1, (START_OF_CODE_MENU_HEADER & 0xFFFF) + 4);
-	// Add the bottom half of START_OF_CODE_MENU to Reg1, so Reg1 should *also* now be START_OF_CODE_MENU.
-	ADDI(reg1, reg1, START_OF_CODE_MENU & 0xFFFF);
-	// Compare the two as unsigned integers.
-	CMPL(reg1, reg2, EQUAL_L);
-	// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
-	JumpToLabel(menuNotLoadedLabel, bCACB_NOT_EQUAL);
+	if (CONFIG_BACKPLATE_COLOR_MODE)
+	{
+		int reg3 = 11;
+		int reg4 = 12;
 
-	ADDIS(reg1, 0, PSCC_FLOAT_TABLE_LOC >> 0x10);
-	LWZ(reg1, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
-	LFS(13, reg1, 0);
+		int menuNotLoadedLabel = GetNextLabel();
+		// Setup top half of reg1 as code menu address base!
+		ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+		// Try to load START_OF_CODE_MENU from the header.
+		LWZ(reg2, reg1, (START_OF_CODE_MENU_HEADER & 0xFFFF) + 4);
+		// Use reg1 to store the full START_OF_CODE_MENU value into reg3...
+		ADDI(reg3, reg1, START_OF_CODE_MENU & 0xFFFF);
+		// ... then compare the two: the loaded value vs the expected value.
+		CMPL(reg3, reg2, EQUAL_L);
+		// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
+		JumpToLabel(menuNotLoadedLabel, bCACB_NOT_EQUAL);
 
-	ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
-	LFD(11, reg1, FLOAT_CONVERSION_CONST_LOC & 0xFFFF);
+		
+		// Load the Float Table address into reg3!
+		LWZ(reg3, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
+		// Load the hue value for color 0 (ie. the first float in the table)
+		LFS(13, reg3, 0);
 
-	ADDI(reg2, 0, 90);
-	STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-	LFD(12, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
-	FSUB(12, 12, 11);
+		// Calculate the constant for our incrementing value, load it into fr12...
+		float conversionConstant = 1.0f/90.0f;
+		unsigned short conversionHex = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(conversionConstant).data()) >> 0x10;
+		ADDIS(reg2, 0, conversionHex);
+		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		LFS(12, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		// ... and add it to f13 to increment the hue! 
+		FADDS(13, 13, 12);
 
-	FRES(12, 12);
-	FADDS(13, 13, 12);
+		// Load 6.0f into fr12...
+		ADDIS(reg2, 0, 0x40c0);
+		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		LFS(12, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		// ... and if our incremented hue is above 6.0f...
+		FCMPU(13, 12, 1);
+		BC(2, bCACB_LESSER.inConditionRegField(1));
+		// ... set it back to 0.0f (subtract it from itself)!
+		FSUB(13, 13, 13);
 
-	ADDI(reg2, 0, 6);
-	STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-	LFD(12, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
-	FSUB(12, 12, 11);
-
-	FCMPU(13, 12, 1);
-	BC(2, bCACB_LESSER.inConditionRegField(1));
-	FSUB(13, 13, 13);
-
-	ADDIS(reg1, 0, PSCC_FLOAT_TABLE_LOC >> 0x10);
-	LWZ(reg1, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
-	STFS(13, reg1, 0);
-	Label(menuNotLoadedLabel);
-
+		// Finally, store the incremented hue back in the float table!
+		STFS(13, reg3, 0);
+		Label(menuNotLoadedLabel);
+	}
+	
 	ASMEnd(0x2c000000); //cmpwi, r0, 0
 }
 
