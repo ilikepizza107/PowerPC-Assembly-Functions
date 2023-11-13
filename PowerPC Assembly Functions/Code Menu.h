@@ -85,12 +85,10 @@ extern int DASH_ATTACK_ITEM_GRAB_INDEX;
 extern int TRIP_TOGGLE_INDEX;
 extern int TRIP_RATE_MULTIPLIER_INDEX;
 extern int TRIP_INTERVAL_INDEX;
-extern int BACKPLATE_COLOR_1_INDEX;
-extern int BACKPLATE_COLOR_2_INDEX;
-extern int BACKPLATE_COLOR_3_INDEX;
-extern int BACKPLATE_COLOR_4_INDEX;
-extern int BACKPLATE_COLOR_C_INDEX;
-extern int BACKPLATE_COLOR_T_INDEX;
+extern int PSCC_COLOR_1_INDEX;
+extern int PSCC_COLOR_2_INDEX;
+extern int PSCC_COLOR_3_INDEX;
+extern int PSCC_COLOR_4_INDEX;
 extern int JUMPSQUAT_OVERRIDE_TOGGLE_INDEX;
 extern int JUMPSQUAT_OVERRIDE_FRAMES_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MIN_INDEX;
@@ -278,28 +276,29 @@ extern std::vector<menuTheme> THEME_SPEC_LIST;
 // Used to determine whether or not we actually need to output the hook for a given theme-able file.
 extern std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX;
 
-namespace backplateColorConstants
+namespace pscc
 {
-	enum playerSlotColorLevel
+	struct color
 	{
-		pSCL_NONE = 0,
-		pSCL_SHIELDS_AND_PLUMES_ONLY,
-		pSCL_SHIELDS_PLUMES_AND_IN_GAME_HUD,
-		pSCL_MENUS_AND_IN_GAME_WITHOUT_CSS_INPUT,
-		pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT,
-		pSCL__COUNT
+		std::string name;
+		float hue;
+		float saturation;
+		float luminance;
+
+		color(std::string nameIn = "", float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f) :
+			name(nameIn), hue(hueIn), saturation(satIn), luminance(lumIn) {};
+		bool colorValid();
 	};
-	extern const std::array<std::string, playerSlotColorLevel::pSCL__COUNT> modeNames;
+
+	extern std::size_t rgbColorIndex;
+	extern std::vector<color> colorTable;
+	static constexpr std::size_t colorTableEntrySize = 0xC;
 }
-// Denotes the total number colors available to the HUD Color Switcher.
-// Used to ensure that if we add a mechanism for adding additional colors, they'll be accounted for, both
-// in the actual generated ASM in _BackplateColors, and by the actual code menu lines themselves.
-extern const unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT;
 
 // Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)
 extern std::vector<std::string> CONFIG_INCOMING_COMMENTS;
 extern bool CONFIG_DELETE_CONTROLS_COMMENTS;
-extern unsigned char CONFIG_BACKPLATE_COLOR_MODE;
+extern bool CONFIG_PSCC_ENABLED;
 extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
 extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
 

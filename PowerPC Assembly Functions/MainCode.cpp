@@ -20,7 +20,6 @@
 #include "_ThemeChange.h"
 #include "_DashAttackItemGrab.h"
 #include "_TripRateModifier.h"
-#include "_BackplateColors.h"
 #include "_PlayerSlotColorChangers.h"
 #include "_JumpsquatOverride.h"
 //#include "FPS Display.h"
@@ -244,7 +243,7 @@ int main(int argc, char** argv)
 
 		//playerSlotColorChangers(CONFIG_BACKPLATE_COLOR_MODE);
 
-		playerSlotColorChangersV3(CONFIG_BACKPLATE_COLOR_MODE);
+		playerSlotColorChangersV3(CONFIG_PSCC_ENABLED);
 
 		dashAttackItemGrab(CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED);
 

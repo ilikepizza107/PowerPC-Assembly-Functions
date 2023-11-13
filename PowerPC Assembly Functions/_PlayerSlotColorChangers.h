@@ -4,6 +4,6 @@
 #include "stdafx.h"
 #include "_AdditionalCode.h"
 
-void playerSlotColorChangersV3(unsigned char codeLevel = backplateColorConstants::pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT);
+void playerSlotColorChangersV3(bool enabled = CONFIG_PSCC_ENABLED);
 
 #endif

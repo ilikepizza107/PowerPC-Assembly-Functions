@@ -80,12 +80,10 @@ int DASH_ATTACK_ITEM_GRAB_INDEX = -1;
 int TRIP_TOGGLE_INDEX = -1;
 int TRIP_RATE_MULTIPLIER_INDEX = -1;
 int TRIP_INTERVAL_INDEX = -1;
-int BACKPLATE_COLOR_1_INDEX = -1;
-int BACKPLATE_COLOR_2_INDEX = -1;
-int BACKPLATE_COLOR_3_INDEX = -1;
-int BACKPLATE_COLOR_4_INDEX = -1;
-int BACKPLATE_COLOR_C_INDEX = -1;
-int BACKPLATE_COLOR_T_INDEX = -1;
+int PSCC_COLOR_1_INDEX = -1;
+int PSCC_COLOR_2_INDEX = -1;
+int PSCC_COLOR_3_INDEX = -1;
+int PSCC_COLOR_4_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_TOGGLE_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_FRAMES_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_MIN_INDEX = -1;
@@ -291,23 +289,26 @@ std::vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
 std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{};
 
-namespace backplateColorConstants
+namespace pscc
 {
-	const std::array<std::string, playerSlotColorLevel::pSCL__COUNT> modeNames =
+	bool color::colorValid()
 	{
-		"Disabled",
-		"Shields & Death Plumes",
-		"Shields, Death Plumes, & In-Game HUD",
-		"All In-Game Elements, CSS, & Results Screen",
-		"All Elements & CSS Color Change Input",
+		return (hue != FLT_MAX) && (saturation != FLT_MAX) && (luminance != FLT_MAX);
+	}
+	std::size_t rgbColorIndex = SIZE_MAX;
+	std::vector<color> colorTable =
+	{
+		{"Red",		0.00f,	1.00f,	0.50f},
+		{"Blue",	3.90f,	1.00f,	0.50f},
+		{"Yellow",	0.85f,	1.00f,	0.55f},
+		{"Green",	2.10f,	0.65f,	0.40f},
 	};
 }
-const unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
 
 // Incoming Configuration XML Variables
 std::vector<std::string> CONFIG_INCOMING_COMMENTS{};
 bool CONFIG_DELETE_CONTROLS_COMMENTS = false;
-unsigned char CONFIG_BACKPLATE_COLOR_MODE = backplateColorConstants::pSCL_NONE;
+bool CONFIG_PSCC_ENABLED = false;
 bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED = 1;
 bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED = 1;
 
@@ -964,16 +965,18 @@ void CodeMenu()
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
 	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	HUDColorLines.push_back(new Integer("Red",      0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Blue",     0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Yellow",   0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Green",    0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Gray",     9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
-	HUDColorLines.back()->setIsSelectable(0);
-	HUDColorLines.push_back(new Integer("Clear",    0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
-	HUDColorLines.back()->setIsSelectable(0);
+	std::vector<std::string> colorNames(pscc::colorTable.size(), "");
+	for (std::size_t i = 0; i < pscc::colorTable.size(); i++)
+	{
+		colorNames[i] = pscc::colorTable[i].name;
+	}
+	Selection* P1ColorLine = new Selection("Player 1", colorNames, 0, PSCC_COLOR_1_INDEX);
+	HUDColorLines.push_back(P1ColorLine);
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 2", 1, PSCC_COLOR_2_INDEX));
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 3", 2, PSCC_COLOR_3_INDEX));
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 4", 3, PSCC_COLOR_4_INDEX));
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
-	if ((CONFIG_BACKPLATE_COLOR_MODE > 0) && (CONFIG_BACKPLATE_COLOR_MODE < backplateColorConstants::pSCL__COUNT))
+	if (CONFIG_PSCC_ENABLED && (pscc::colorTable.size() >= 4))
 	{
 		MainLines.push_back(&HUDColorsPage.CalledFromLine);
 	}
@@ -1570,15 +1573,12 @@ void CreateMenu(Page MainPage)
 	// Tripping Cooldown Toggle
 	AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
 
-	// Backplate Settings
-	AddValueToByteArray(BACKPLATE_COLOR_1_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_2_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_3_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_4_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
-	//BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC
-	// Used to store some temp values related to the color changer!
+	// PSCC Settings
+	AddValueToByteArray(PSCC_COLOR_1_INDEX, Header);
+	AddValueToByteArray(PSCC_COLOR_2_INDEX, Header);
+	AddValueToByteArray(PSCC_COLOR_3_INDEX, Header);
+	AddValueToByteArray(PSCC_COLOR_4_INDEX, Header);
+	//PSCC_TEAM_BATTLE_STORE_LOC
 	// First byte is an offset used to lbzx to either VALUE or DEFAULT quickly (init to VALUE).
 	AddValueToByteArray(Line::VALUE << 0x18, Header);
 	// Player Slot Color Float Table Address
@@ -1647,7 +1647,8 @@ void CreateMenu(Page MainPage)
 }
 
 void constantOverride() {
-	ASMStart(0x80023d60, std::string("[CM: Code Menu] Constant Overrides") + std::string((CONFIG_BACKPLATE_COLOR_MODE) ? " + Incr. PSCC RGB Strobe Float" : ""));
+	ASMStart(0x80023d60, std::string("[CM: Code Menu] Constant Overrides") + 
+		std::string((CONFIG_PSCC_ENABLED && pscc::rgbColorIndex != SIZE_MAX) ? " + Incr. PSCC RGB Strobe Float" : ""));
 
 	int reg1 = 4;
 	int reg2 = 5;
@@ -1678,7 +1679,7 @@ void constantOverride() {
 		prevDestHiHalf = destHiHalf;
 	}
 
-	if (CONFIG_BACKPLATE_COLOR_MODE)
+	if ((CONFIG_PSCC_ENABLED && pscc::rgbColorIndex != SIZE_MAX))
 	{
 		int menuNotLoadedLabel = GetNextLabel();
 		// If reg1 isn't already loaded with the top half of START_OF_CODE_MENU_HEADER...
@@ -1700,7 +1701,7 @@ void constantOverride() {
 		// Load the Float Table address into reg3!
 		LWZ(reg3, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
 		// Load the hue value for color 0 (ie. the first float in the table)
-		LFS(13, reg3, 0);
+		LFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySize);
 
 		// Calculate the constant for our incrementing value, load it into fr12...
 		float conversionConstant = 1.0f/90.0f;
@@ -1722,7 +1723,7 @@ void constantOverride() {
 		FSUB(13, 13, 13);
 
 		// Finally, store the incremented hue back in the float table!
-		STFS(13, reg3, 0);
+		STFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySize);
 		Label(menuNotLoadedLabel);
 	}
 	
@@ -3414,3 +3415,4 @@ void RunIfPortToggle(int ARRAY_LOC, int PortReg) {
 		}
 	}
 }
+

@@ -284,6 +284,15 @@ namespace lava
 
 		// Colors
 		const std::string slotColorDeclsTag = "slotColorChanger";
+		const std::string colorTag = "color";
+		const std::string colorP1Tag = "colorP1";
+		const std::string colorP2Tag = "colorP2";
+		const std::string colorP3Tag = "colorP3";
+		const std::string colorP4Tag = "colorP4";
+		const std::string colorRGBTag = "colorRGB";
+		const std::string colorHueTag = "hue";
+		const std::string colorSatTag = "saturation";
+		const std::string colorLumTag = "luminance";
 
 		// Jumpsquat Override
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
@@ -826,6 +835,74 @@ namespace lava
 		}
 	}
 
+	// Color Handling
+	std::array<pscc::color, 5> collectSpecificColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
+	{
+		std::array<pscc::color, 5> result{};
+		result.fill({ "", FLT_MAX, FLT_MAX, FLT_MAX });
+
+		for (std::size_t i = 0; i < 5; i++)
+		{
+			pugi::xml_node targetNode{};
+			switch (i)
+			{
+			case 0: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP1Tag.c_str()); break; }
+			case 1: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP2Tag.c_str()); break; }
+			case 2: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP3Tag.c_str()); break; }
+			case 3: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP4Tag.c_str()); break; }
+			case 4: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorRGBTag.c_str()); break; }
+			default: { break; }
+			}
+
+			if (targetNode)
+			{
+				result[i].name = targetNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				result[i].hue = targetNode.attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
+				if (result[i].hue != FLT_MAX)
+				{
+					result[i].hue /= 60.0f;
+				}
+				result[i].saturation = targetNode.attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
+				result[i].luminance = targetNode.attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
+
+				// If we're recording the RGB Line, signal its index!
+				if (i == 4)
+				{
+					pscc::rgbColorIndex = i;
+				}
+			}
+		}
+
+		return result;
+	}
+	std::vector<pscc::color> collectExtraColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
+	{
+		std::vector<pscc::color> result{};
+
+		for (pugi::xml_node_iterator colorItr = colorDeclNodeItr->begin(); colorItr != colorDeclNodeItr->end(); colorItr++)
+		{
+			if (colorItr->name() == configXMLConstants::colorTag)
+			{
+				pscc::color tempColor;
+				tempColor.name = colorItr->attribute(configXMLConstants::nameTag.c_str()).as_string(tempColor.name);
+				// If the entry has no name, skip to next node.
+				if (tempColor.name.empty()) continue;
+
+				tempColor.hue = colorItr->attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
+				if (tempColor.hue != FLT_MAX)
+				{
+					tempColor.hue /= 60.0f;
+				}
+				tempColor.saturation = colorItr->attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
+				tempColor.luminance = colorItr->attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
+
+				result.push_back(tempColor);
+			}
+		}
+
+		return result;
+	}
+
 	// Generic Code Handling
 	// Reads in the requested code version from the from the incoming node, and (if it's less than the mode count passed in) stores it in the storage var.
 	// Returns the applied mode value, or UCHAR_MAX (0xFF) if either no mode was specified or the requested value was invalid.
@@ -1128,9 +1205,47 @@ namespace lava
 					// If we're looking at the Slot Colors block...
 					else if (codeNodeItr->name() == configXMLConstants::slotColorDeclsTag)
 					{
-						logOutput << "\nSetting Player Slot Color Changer mode... \n";
-						// ... handle setting its mode. 
-						setCodeModeFromXML(codeNodeItr, CONFIG_BACKPLATE_COLOR_MODE, backplateColorConstants::playerSlotColorLevel::pSCL__COUNT, logOutput);
+						logOutput << "\nSetting Player Slot Color Changer status... \n";
+						// ... handle enabling/disabling it.
+						// And if we end up enabling it...
+						if (setCodeEnabledFromXML(codeNodeItr, CONFIG_PSCC_ENABLED, logOutput))
+						{
+							// ... first load any specific colors from the node!
+							std::array<pscc::color, 5> specificColors = collectSpecificColorsFromXML(codeNodeItr);
+							for (std::size_t i = 0; i < 4; i++)
+							{
+								if (!specificColors[i].name.empty() && specificColors[i].colorValid())
+								{
+									logOutput << "[CHANGED] P" << +(i+1) << " Color is now \"" << specificColors[i].name << "\"!\n";
+									pscc::colorTable[i] = specificColors[i];
+								}
+								else
+								{
+									logOutput << "[ERROR] P" << +(i + 1) << " Color replacement is invalid!\n";
+								}
+							}
+
+							// ... load any added colors.
+							std::vector<pscc::color> extraColors = collectExtraColorsFromXML(codeNodeItr);
+							for (std::size_t i = 0; i < extraColors.size(); i++)
+							{
+								if (!extraColors[i].name.empty() && extraColors[i].colorValid())
+								{
+									logOutput << "[ADDED] \"" << extraColors[i].name << "\"!\n";
+									pscc::colorTable.push_back(extraColors[i]);
+								}
+								else
+								{
+									logOutput << "[ERROR] Color \"" << extraColors[i].name << "\" invalid!\n";
+								}
+							}
+
+							if (!specificColors[4].name.empty() && specificColors[4].colorValid())
+							{
+								logOutput << "[ADDED] \"" << specificColors[4].name << "\"!\n";
+								pscc::colorTable.push_back(specificColors[4]);
+							}
+						}
 					}
 				}
 			}

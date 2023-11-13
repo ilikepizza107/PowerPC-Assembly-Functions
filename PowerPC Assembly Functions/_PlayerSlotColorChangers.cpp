@@ -42,15 +42,15 @@ void psccIncrementOnButtonPress()
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
 	// Disable input if we're in team mode (also set up reg1 with top half of Code Menu Addr).
-	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-	LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	ADDIS(reg1, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
+	LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 	CMPI(reg2, Line::DEFAULT, 0);
 	JumpToLabel(exitLabel, bCACB_EQUAL);
 
 	// Multiply slot value by 4, move it into reg1
 	RLWIMI(reg1, 29, 2, 0x10, 0x1D);
 	// And use that to grab the relevant line's INDEX Value
-	LWZ(reg1, reg1, BACKPLATE_COLOR_1_LOC & 0xFFFF);
+	LWZ(reg1, reg1, PSCC_COLOR_1_LOC & 0xFFFF);
 
 	// If Z Button is pressed...
 	RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_Z) + 1, 31, 31, 1);
@@ -74,7 +74,7 @@ void psccIncrementOnButtonPress()
 	ADD(reg3, reg3, reg2);
 
 	// If modified value is greater than the max...
-	CMPI(reg3, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 0);
+	CMPI(reg3, pscc::colorTable.size() - 1, 0);
 	// ... roll its value around to the min.
 	BC(2, bCACB_LESSER_OR_EQ);
 	ADDI(reg3, 0, 0);
@@ -83,7 +83,7 @@ void psccIncrementOnButtonPress()
 	CMPI(reg3, 0, 0);
 	// ... roll its value around to the max.
 	BC(2, bCACB_GREATER_OR_EQ);
-	ADDI(reg3, 0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1);
+	ADDI(reg3, 0, pscc::colorTable.size() - 1);
 
 	// Store our modified value back in place.
 	Label(applyChangesLabel);
@@ -158,8 +158,8 @@ void psccStoreTeamBattleStatusBody(int statusReg)
 	MULLI(reg2, statusReg, Line::DEFAULT - Line::VALUE);
 	ADDI(reg2, reg2, Line::VALUE);
 	// Store team battle status in our buffer word.
-	ADDIS(reg1, 0, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC >> 0x10);
-	STB(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	ADDIS(reg1, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
+	STB(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 }
 void psccStoreTeamBattleStatus()
 {
@@ -374,37 +374,21 @@ void psccSetupCode()
 
 void psccEmbedFloatTable()
 {
-	// Setup Color Float Triple Table
-	std::vector<std::array<float, 3>> colorFloats =
+	// Setup Converted Float Triple Table
+	std::vector<unsigned long> convertedTable(pscc::colorTable.size() * 3, 0x00);
+	for (std::size_t i = 0, fltIdx = 0; i < pscc::colorTable.size(); i++)
 	{
-		{0.0f,	1.00f,	0.5f},	// Color 0
-		{0.0f,	1.00f,	0.5f},	// Color 1
-		{3.9f,	1.00f,	0.5f},	// Color 2
-		{0.85f,	1.00f,	0.55f},	// Color 3
-		{2.10f,	0.65f,	0.4f},	// Color 4
-		{5.25f,	1.00f,	0.5f},	// Color 5
-		{4.67f,	0.95f,	0.5f},	// Color 6
-		{0.45f,	1.00f,	0.5f},	// Color 7
-		{2.85f,	1.00f,	0.5f},	// Color 8
-		{0.0f,	0.00f,	0.5f},	// Color 9
-	};
-	// Initialize Converted Float Table (Ensuring it's aligned to 0x10 bytes)
-	std::vector<unsigned long> convertedTable(colorFloats.size() * 3, 0x00);
-	std::size_t idx = 0;
-	for (std::size_t i = 0; i < colorFloats.size(); i++)
-	{
-		auto currTriple = &colorFloats[i];
-		for (std::size_t u = 0; u < 3; u++)
-		{
-			convertedTable[idx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>((*currTriple)[u]).data());
-		}
+		pscc::color* currColor = &pscc::colorTable[i];
+		convertedTable[fltIdx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(currColor->hue).data());
+		convertedTable[fltIdx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(currColor->saturation).data());
+		convertedTable[fltIdx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(currColor->luminance).data());
 	}
 	CodeRawStart(codePrefix + "Embed Color Float Table" + codeSuffix, "");
 	GeckoDataEmbed(convertedTable, PSCC_FLOAT_TABLE_LOC);
 	CodeRawEnd();
 }
 
-void psccMainCode(unsigned char codeLevel)
+void psccMainCode()
 {
 	int reg0 = 0;
 	int reg1 = 11;
@@ -485,7 +469,7 @@ void psccMainCode(unsigned char codeLevel)
 		// If the target port doesn't correspond to one of the code menu lines, we'll skip execution.
 		CMPLI(reg0, 1, 0);
 		JumpToLabel(exitLabel, bCACB_LESSER);
-		CMPLI(reg0, 5, 0);
+		CMPLI(reg0, 4, 0);
 		JumpToLabel(exitLabel, bCACB_GREATER);
 
 		// Set up our conversion float in TempReg1
@@ -519,10 +503,10 @@ void psccMainCode(unsigned char codeLevel)
 		}
 
 		// Load buffered Team Battle Status Offset
-		LBZ(reg2, reg1, BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+		LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 		// Now multiply the target port by 4 to calculate the offset to the line we want, and insert it into reg1.
 		RLWIMI(reg1, reg0, 2, 0x10, 0x1D);
-		LWZ(reg1, reg1, (BACKPLATE_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
+		LWZ(reg1, reg1, (PSCC_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
 		// Use it to load the targetIndex...
 		LWZX(reg2, reg1, reg2);
 		// ... and multiply it by 0xC to turn it into the offset to our target float triple.
@@ -655,9 +639,9 @@ void psccMainCode(unsigned char codeLevel)
 	ASMEnd(0x907c0004); // Restore Original Instruction: stw r3, 0x0004 (r28)
 }
 
-void playerSlotColorChangersV3(unsigned char codeLevel)
+void playerSlotColorChangersV3(bool enabled)
 {
-	if (codeLevel > 0)
+	if (enabled)
 	{
 		bool backupMulliOptSetting = CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 1;
@@ -670,7 +654,7 @@ void playerSlotColorChangersV3(unsigned char codeLevel)
 		psccProtectStackCode();
 		psccEmbedFloatTable();
 		psccSetupCode();
-		psccMainCode(codeLevel);
+		psccMainCode();
 
 		CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = backupMulliOptSetting;
 	}
