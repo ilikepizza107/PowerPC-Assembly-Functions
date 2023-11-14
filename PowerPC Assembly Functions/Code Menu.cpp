@@ -295,7 +295,7 @@ namespace pscc
 	{
 		return (hue != FLT_MAX) && (saturation != FLT_MAX) && (luminance != FLT_MAX);
 	}
-	std::size_t rgbColorIndex = SIZE_MAX;
+	bool rgbColorIncluded = 0;
 	std::vector<color> colorTable =
 	{
 		{"Red",		0.00f,	1.00f,	0.50f},
@@ -1648,7 +1648,7 @@ void CreateMenu(Page MainPage)
 
 void constantOverride() {
 	ASMStart(0x80023d60, std::string("[CM: Code Menu] Constant Overrides") + 
-		std::string((CONFIG_PSCC_ENABLED && pscc::rgbColorIndex != SIZE_MAX) ? " + Incr. PSCC RGB Strobe Float" : ""));
+		std::string((CONFIG_PSCC_ENABLED && pscc::rgbColorIncluded) ? " + Incr. PSCC RGB Strobe Float" : ""));
 
 	int reg1 = 4;
 	int reg2 = 5;
@@ -1679,7 +1679,7 @@ void constantOverride() {
 		prevDestHiHalf = destHiHalf;
 	}
 
-	if ((CONFIG_PSCC_ENABLED && pscc::rgbColorIndex != SIZE_MAX))
+	if ((CONFIG_PSCC_ENABLED && pscc::rgbColorIncluded))
 	{
 		int menuNotLoadedLabel = GetNextLabel();
 		// If reg1 isn't already loaded with the top half of START_OF_CODE_MENU_HEADER...

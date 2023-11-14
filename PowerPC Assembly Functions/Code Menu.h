@@ -290,7 +290,7 @@ namespace pscc
 		bool colorValid() const;
 	};
 
-	extern std::size_t rgbColorIndex;
+	extern bool rgbColorIncluded;
 	extern std::vector<color> colorTable;
 	static constexpr std::size_t colorTableEntrySize = 0xC;
 }

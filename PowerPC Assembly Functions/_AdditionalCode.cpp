@@ -865,11 +865,8 @@ namespace lava
 				result[i].saturation = targetNode.attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
 				result[i].luminance = targetNode.attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
 
-				// If we're recording the RGB Line, signal its index!
-				if (i == 4)
-				{
-					pscc::rgbColorIndex = i;
-				}
+				// If we're recording the RGB Line, signal that it's been included!
+				pscc::rgbColorIncluded |= (i == 4);
 			}
 		}
 
@@ -1266,6 +1263,10 @@ namespace lava
 								case 2: { logOutput << "[P3]"; break; }
 								case 3: { logOutput << "[P4 + Green Team]"; break; }
 								default: { break; }
+								}
+								if (i == (pscc::colorTable.size() - 1))
+								{
+									logOutput << "[RGB Strobe]";
 								}
 								logOutput << "\n";
 							}
