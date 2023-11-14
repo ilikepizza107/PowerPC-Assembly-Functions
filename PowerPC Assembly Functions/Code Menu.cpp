@@ -291,7 +291,7 @@ std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{}
 
 namespace pscc
 {
-	bool color::colorValid()
+	bool color::colorValid() const
 	{
 		return (hue != FLT_MAX) && (saturation != FLT_MAX) && (luminance != FLT_MAX);
 	}

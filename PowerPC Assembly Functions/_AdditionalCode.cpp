@@ -839,7 +839,7 @@ namespace lava
 	std::array<pscc::color, 5> collectSpecificColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
 	{
 		std::array<pscc::color, 5> result{};
-		result.fill({ "", FLT_MAX, FLT_MAX, FLT_MAX });
+		result.fill({ "", FLT_MIN, FLT_MIN, FLT_MIN});
 
 		for (std::size_t i = 0; i < 5; i++)
 		{
@@ -901,6 +901,43 @@ namespace lava
 		}
 
 		return result;
+	}
+	void addCollectedColorsToMenuLists(const std::array<pscc::color, 5>& specificColors, const std::vector<pscc::color>& extraColors, lava::outputSplitter& logOutput)
+	{
+		for (std::size_t i = 0; i < 4; i++)
+		{
+			const pscc::color* currColor = &specificColors[i];
+			if (currColor->hue == FLT_MIN) continue;
+			if (!currColor->name.empty() && currColor->colorValid())
+			{
+				logOutput << "[CHANGED] P" << +(i + 1) << " Color is now \"" << currColor->name << "\"!\n";
+				pscc::colorTable[i] = *currColor;
+			}
+			else
+			{
+				logOutput << "[ERROR] P" << +(i + 1) << " Color replacement is invalid!\n";
+			}
+		}
+
+		for (std::size_t i = 0; i < extraColors.size(); i++)
+		{
+			const pscc::color* currColor = &extraColors[i];
+			if (!currColor->name.empty() && currColor->colorValid())
+			{
+				logOutput << "[ADDED] \"" << currColor->name << "\"!\n";
+				pscc::colorTable.push_back(*currColor);
+			}
+			else
+			{
+				logOutput << "[ERROR] Color \"" << currColor->name << "\" invalid!\n";
+			}
+		}
+
+		if (!specificColors[4].name.empty() && specificColors[4].colorValid())
+		{
+			logOutput << "[ADDED] \"" << specificColors[4].name << "\"!\n";
+			pscc::colorTable.push_back(specificColors[4]);
+		}
 	}
 
 	// Generic Code Handling
@@ -1210,40 +1247,29 @@ namespace lava
 						// And if we end up enabling it...
 						if (setCodeEnabledFromXML(codeNodeItr, CONFIG_PSCC_ENABLED, logOutput))
 						{
-							// ... first load any specific colors from the node!
+							// ... collect any color definitions from the file...
 							std::array<pscc::color, 5> specificColors = collectSpecificColorsFromXML(codeNodeItr);
-							for (std::size_t i = 0; i < 4; i++)
-							{
-								if (!specificColors[i].name.empty() && specificColors[i].colorValid())
-								{
-									logOutput << "[CHANGED] P" << +(i+1) << " Color is now \"" << specificColors[i].name << "\"!\n";
-									pscc::colorTable[i] = specificColors[i];
-								}
-								else
-								{
-									logOutput << "[ERROR] P" << +(i + 1) << " Color replacement is invalid!\n";
-								}
-							}
-
-							// ... load any added colors.
 							std::vector<pscc::color> extraColors = collectExtraColorsFromXML(codeNodeItr);
-							for (std::size_t i = 0; i < extraColors.size(); i++)
+							// ... and pass the results off to be added to the final lists!
+							addCollectedColorsToMenuLists(specificColors, extraColors, logOutput);
+							//Do final color list summary.
+							logOutput << "\nFinal Color List:\n";
+							for (std::size_t i = 0; i < pscc::colorTable.size(); i++)
 							{
-								if (!extraColors[i].name.empty() && extraColors[i].colorValid())
+								const pscc::color* currColor = &pscc::colorTable[i];
+								logOutput << std::setw(0x10) << ("\"" + currColor->name + "\"") << " ("
+									<< "H:" << lava::floatToStringWithPadding(currColor->hue * 60.0f, 6, 2) << ", "
+									<< "S:" << lava::floatToStringWithPadding(currColor->saturation, 0, 2) << ", "
+									<< "L:" << lava::floatToStringWithPadding(currColor->luminance, 0, 2) << ") ";
+								switch (i)
 								{
-									logOutput << "[ADDED] \"" << extraColors[i].name << "\"!\n";
-									pscc::colorTable.push_back(extraColors[i]);
+								case 0: { logOutput << "[P1 + Red Team]"; break; }
+								case 1: { logOutput << "[P2 + Blue Team]"; break; }
+								case 2: { logOutput << "[P3]"; break; }
+								case 3: { logOutput << "[P4 + Green Team]"; break; }
+								default: { break; }
 								}
-								else
-								{
-									logOutput << "[ERROR] Color \"" << extraColors[i].name << "\" invalid!\n";
-								}
-							}
-
-							if (!specificColors[4].name.empty() && specificColors[4].colorValid())
-							{
-								logOutput << "[ADDED] \"" << specificColors[4].name << "\"!\n";
-								pscc::colorTable.push_back(specificColors[4]);
+								logOutput << "\n";
 							}
 						}
 					}

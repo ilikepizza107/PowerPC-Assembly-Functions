@@ -287,7 +287,7 @@ namespace pscc
 
 		color(std::string nameIn = "", float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f) :
 			name(nameIn), hue(hueIn), saturation(satIn), luminance(lumIn) {};
-		bool colorValid();
+		bool colorValid() const;
 	};
 
 	extern std::size_t rgbColorIndex;
