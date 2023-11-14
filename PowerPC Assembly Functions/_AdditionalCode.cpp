@@ -987,13 +987,13 @@ namespace lava
 		{
 			// ... interpret its value as a bool, and note the success.
 			enabledStorageVariable = modeAttrObj.as_bool(enabledStorageVariable);
-			logOutput << "[SUCCESS] Option is now " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
+			logOutput << "[SET] Feature is now " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
 		}
 		// Otherwise...
 		else
 		{
 			// ... we leave the value as is and note the lack of a mode specification.
-			logOutput << "[WARNING] No value specified! Option is still " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
+			logOutput << "[WARNING] No value specified! Feature is still " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
 		}
 
 		return enabledStorageVariable;
@@ -1107,6 +1107,10 @@ namespace lava
 							}
 						}
 					}
+					else
+					{
+						logOutput << "[WARNING] Comment Declaration block parsed, but no valid entries were found!\n";
+					}
 				}
 			}
 
@@ -1130,7 +1134,6 @@ namespace lava
 					{
 						logOutput << "[WARNING] Invalid list requested! Using \"" << characterListVersionNames[characterListVersion] << "\" list instead!\n";
 					}
-					logOutput << "\n";
 				}
 
 				// If we're set to additionally collect externally defined EX Characters...
@@ -1160,7 +1163,7 @@ namespace lava
 				}
 
 				//Do final character list summary.
-				logOutput << "\nFinal Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
+				logOutput << "Final Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
 				for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
 				{
 					logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
@@ -1181,25 +1184,20 @@ namespace lava
 						bool collectedPlaintextEntry = 0;
 						// Populate our entry list...
 						std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(codeNodeItr, collectedPlaintextEntry);
-						// ... and if that list doesn't end up empty...
-						if (!tempRosterList.empty())
+						addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
+						// Additionally, if we pulled any entries from plaintext...
+						if (collectedPlaintextEntry)
 						{
-							// ... then we'll add those to the menu lists proper.
-							addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
-							// Additionally, if we pulled any entries from plaintext...
-							if (collectedPlaintextEntry)
-							{
-								// ... then we need to promote them to properly formatted entries, so regen the entries...
-								regenRosterDeclsInXML(codeNodeItr, tempRosterList);
-								// ... and fix the indentation on them!
-								fixIndentationOfChildNodes(*codeNodeItr);
-								// Additionally, flag that we need to do a rebuild later.
-								doRebuild = 1;
-							}
+							// ... then we need to promote them to properly formatted entries, so regen the entries...
+							regenRosterDeclsInXML(codeNodeItr, tempRosterList);
+							// ... and fix the indentation on them!
+							fixIndentationOfChildNodes(*codeNodeItr);
+							// Additionally, flag that we need to do a rebuild later.
+							doRebuild = 1;
 						}
 
 						//Do final roster list summary.
-						logOutput << "\nFinal Roster List:\n";
+						logOutput << "Final Roster List:\n";
 						for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
 						{
 							logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
@@ -1215,7 +1213,7 @@ namespace lava
 						addCollectedThemesToMenuLists(tempThemeList, logOutput);
 
 						// Do final theme list summary.
-						logOutput << "\nFinal Theme List:\n";
+						logOutput << "Final Theme List:\n";
 						for (std::size_t i = 0; i < THEME_LIST.size(); i++)
 						{
 							logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
@@ -1253,7 +1251,7 @@ namespace lava
 							// ... and pass the results off to be added to the final lists!
 							addCollectedColorsToMenuLists(specificColors, extraColors, logOutput);
 							//Do final color list summary.
-							logOutput << "\nFinal Color List:\n";
+							logOutput << "Final Color List:\n";
 							for (std::size_t i = 0; i < pscc::colorTable.size(); i++)
 							{
 								const pscc::color* currColor = &pscc::colorTable[i];
