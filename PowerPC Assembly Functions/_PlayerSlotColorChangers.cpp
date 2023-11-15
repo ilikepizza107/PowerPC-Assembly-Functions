@@ -278,9 +278,15 @@ void psccSetupCode()
 	int mode1Label = GetNextLabel();
 	int mode2Label = GetNextLabel();
 	int getUserDataLabel = GetNextLabel();
+	int badExitLabel = GetNextLabel();
 	int exitLabel = GetNextLabel();
 
 	ASMStart(0x80193410, codePrefix + "Prep Code" + codeSuffix);
+	// Grab the Data Offset in this CLR0; if it's not 0x28, we're not looking at one of our CLR0s, and we can skip to bad exit!
+	LWZ(reg3, 6, 0x10);
+	CMPLI(reg3, 0x28, 0);
+	JumpToLabel(badExitLabel, bCACB_NOT_EQUAL);
+
 	// Attempt to grab first 4 bytes of the CLR0's "Original Address" value.
 	LWZ(reg3, 6, 0x18);
 	LWZX(reg3, 6, reg3);
@@ -289,8 +295,12 @@ void psccSetupCode()
 	ADDIS(reg3, reg3, -activatorStringHiHalf);
 	ADDI(reg3, reg3, -activatorStringLowHalf);
 	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
-	// Do the check for Mode 3 in CF7, so that we can use whether we're in it again later to toggle the final port number subtraction!
-	CMPLI(reg3, 0x3, 0x7);
+	// If we're still above 3, then we're not looking at a valid CLR0; skip to the exit!
+	CMPLI(reg3, 0x3, 7);
+	JumpToLabel(badExitLabel, bCACB_GREATER);
+
+	// Reuse the check from the last line to branch for Mode 3!
+	// Note, we did this check in CF7 so that we can use whether we're in it again later to toggle the final port number subtraction!
 	JumpToLabel(mode0Label, bCACB_EQUAL.inConditionRegField(0x7));
 	// If Mode 0...
 	CMPLI(reg3, 0x0, 0);
@@ -300,12 +310,16 @@ void psccSetupCode()
 	// If Mode 1...
 	CMPLI(reg3, 0x1, 0);
 	JumpToLabel(mode1Label, bCACB_EQUAL);
-	// If Mode 2...
-	CMPLI(reg3, 0x2, 0);
-	JumpToLabel(mode2Label, bCACB_EQUAL);
-	// If the detected Mode doesn't correspond to a supported case, force the mode to 0xFFFFFFFF and exit!
-	ORC(reg3, reg3, reg3);
-	JumpToLabel(exitLabel);
+	// Mode2 is the only option left, and it's the same as Mode1, only we add 1 to the frame first; so we can just make it an add-on for Mode1.
+
+	Label(mode2Label);
+	LFS(12, 2, -0x6170);
+	FADD(13, 13, 12);
+	// Store frame as an integer, and store it as the second word of our safe space.
+	Label(mode1Label);
+	FCTIWZ(13, 13);
+	STFD(13, 1, safeStackWordOff);
+	JumpToLabel(getUserDataLabel);
 
 	Label(mode0Label);
 	// Get the address of the CLR0's name string...
@@ -322,17 +336,8 @@ void psccSetupCode()
 	ADDI(reg2, reg2, 1);
 	// ... and store it to reference as our target port!
 	STW(reg2, 1, safeStackWordOff + 0x4);
-	JumpToLabel(getUserDataLabel);
 
-	// This is the same as Mode1, only we add 1 to the frame first; so we can just make it an add-on for Mode1.
-	Label(mode2Label);
-	LFS(12, 2, -0x6170); 
-	FADD(13, 13, 12);
-	// Store frame as an integer, and store it as the second word of our safe space.
-	Label(mode1Label);
-	FCTIWZ(13, 13);
-	STFD(13, 1, safeStackWordOff);
-
+	// Next, we need to try to get the CLR0's UserData and the accompanying mask data.
 	Label(getUserDataLabel);
 	// Initialize the Mask slot to 0.
 	ADDI(reg2, 0, 0x0);
@@ -364,6 +369,12 @@ void psccSetupCode()
 	LWZX(reg2, reg1, reg2);
 	// ... and finally store the value in our stack space!
 	STW(reg2, 1, safeStackWordOff);
+	// Then jump down to the exit, skipping the bad exit bit!
+	JumpToLabel(exitLabel);
+
+	Label(badExitLabel);
+	// If the detected Mode doesn't correspond to a supported case, force the mode to 0xFFFFFFFF and exit!
+	ORC(reg3, reg3, reg3);
 
 	Label(exitLabel);
 	// And store our Code Mode as the top half of the second st!
