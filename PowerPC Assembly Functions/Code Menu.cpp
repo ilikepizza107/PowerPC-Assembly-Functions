@@ -299,9 +299,9 @@ namespace pscc
 	std::vector<color> colorTable =
 	{
 		{"Red",		0.00f,	1.00f,	0.50f},
-		{"Blue",	3.90f,	1.00f,	0.50f},
-		{"Yellow",	0.85f,	1.00f,	0.55f},
-		{"Green",	2.10f,	0.65f,	0.40f},
+		{"Blue",	3.90f,	0.70f,	0.50f},
+		{"Yellow",	0.85f,	1.00f,	0.50f},
+		{"Green",	2.10f,	0.80f,	0.375f},
 	};
 }
 
