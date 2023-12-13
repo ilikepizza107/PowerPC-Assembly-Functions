@@ -291,18 +291,132 @@ std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{}
 
 namespace pscc
 {
+	namespace psccConstants
+	{
+		const std::string predefStr = "pd_";
+		const std::string menuSuffStr = "_m";
+		const std::string ingameSuffStr = "_ig";
+
+		const std::string SchemeNameP1 = "P1";
+		const std::string SchemeNameP2 = "P2";
+		const std::string SchemeNameP3 = "P3";
+		const std::string SchemeNameP4 = "P4";
+
+		const std::string ColNameP1_M = predefStr + SchemeNameP1 + menuSuffStr;
+		const std::string ColNameP1_IG = predefStr + SchemeNameP1 + ingameSuffStr;
+		const std::string ColNameP2_M = predefStr + SchemeNameP2 + menuSuffStr;
+		const std::string ColNameP2_IG = predefStr + SchemeNameP2 + ingameSuffStr;
+		const std::string ColNameP3_M = predefStr + SchemeNameP3 + menuSuffStr;
+		const std::string ColNameP3_IG = predefStr + SchemeNameP3 + ingameSuffStr;
+		const std::string ColNameP4_M = predefStr + SchemeNameP4 + menuSuffStr;
+		const std::string ColNameP4_IG = predefStr + SchemeNameP4 + ingameSuffStr;
+	}
+
 	bool color::colorValid() const
 	{
 		return (hue != FLT_MAX) && (saturation != FLT_MAX) && (luminance != FLT_MAX);
 	}
-	bool rgbColorIncluded = 0;
-	std::vector<color> colorTable =
+
+	std::map<std::string, color> colorTable =
 	{
-		{"Red",		0.00f,	1.00f,	0.50f},
-		{"Blue",	3.90f,	0.70f,	0.50f},
-		{"Yellow",	0.85f,	1.00f,	0.50f},
-		{"Green",	2.10f,	0.80f,	0.375f},
+		{psccConstants::ColNameP1_M,	{0.00f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP2_M,	{3.90f,	0.70f,	0.50f}},
+		{psccConstants::ColNameP2_IG,	{3.90f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP3_M,	{0.85f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP3_IG,	{1.00f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP4_M,	{2.10f,	0.80f,	0.375f}},
 	};
+	std::size_t getColorTableSizeInBytes()
+	{
+		return (colorTable.size() * colorTableEntrySizeInBytes);
+	}
+
+	bool rgbColorIncluded = 0;
+
+	colorScheme::colorScheme(std::string nameIn)
+	{
+		name = nameIn;
+		colors.fill("");
+	}
+	void colorScheme::downfillEmptySlots()
+	{
+		if (!colors[colorSchemeColorSlots::cscs_MENU1].empty())
+		{
+			std::string defaultColor = colors[colorSchemeColorSlots::cscs_MENU1];
+			for (std::size_t i = colorSchemeColorSlots::cscs_MENU1 + 1; i < colorSchemeColorSlots::cscs__COUNT; i++)
+			{
+				if (colors[i].empty())
+				{
+					colors[i] = defaultColor;
+				}
+				else
+				{
+					defaultColor = colors[i];
+				}
+			}
+		}
+	}
+	bool colorScheme::schemeValid() const
+	{
+		bool result = 1;
+
+		for (auto i : colors)
+		{
+			result &= (pscc::colorTable.find(i) != pscc::colorTable.end());
+		}
+
+		return result;
+	}
+	colorSchemeTable::colorSchemeTable()
+	{
+		entries.resize(schemePredefIDs::spi__COUNT, colorScheme());
+		colorScheme* currCol = nullptr;
+
+		currCol = &entries[schemePredefIDs::spi_P1];
+		currCol->name = psccConstants::SchemeNameP1;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP1_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP1_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP1_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP1_M;
+
+		currCol = &entries[schemePredefIDs::spi_P2];
+		currCol->name = psccConstants::SchemeNameP2;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP2_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP2_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP2_IG;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP2_IG;
+
+		currCol = &entries[schemePredefIDs::spi_P3];
+		currCol->name = psccConstants::SchemeNameP3;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP3_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP3_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP3_IG;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP3_IG;
+
+		currCol = &entries[schemePredefIDs::spi_P4];
+		currCol->name = psccConstants::SchemeNameP4;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP4_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP4_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP4_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP4_M;
+	}
+	std::size_t colorSchemeTable::tableSizeInBytes() const
+	{
+		return (entries.size() * schemeTableEntrySizeInBytes);
+	}
+	std::vector<unsigned char> colorSchemeTable::tableToByteVec() const
+	{
+		std::vector<unsigned char> result(tableSizeInBytes(), 0x00);
+		for (std::size_t i = 0, writeIdx = 0; i < entries.size(); i++)
+		{
+			for (auto u : entries[i].colors)
+			{
+				result[writeIdx++] = std::distance(colorTable.begin(), colorTable.find(u));
+			}
+		}
+		return result;
+	}
+	colorSchemeTable schemeTable;
 }
 
 // Incoming Configuration XML Variables
@@ -965,18 +1079,18 @@ void CodeMenu()
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
 	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	std::vector<std::string> colorNames(pscc::colorTable.size(), "");
-	for (std::size_t i = 0; i < pscc::colorTable.size(); i++)
+	std::vector<std::string> schemeNames(pscc::schemeTable.entries.size(), "");
+	for (std::size_t i = 0; i < pscc::schemeTable.entries.size(); i++)
 	{
-		colorNames[i] = pscc::colorTable[i].name;
+		schemeNames[i] = pscc::schemeTable.entries[i].name;
 	}
-	Selection* P1ColorLine = new Selection("Player 1", colorNames, 0, PSCC_COLOR_1_INDEX);
+	Selection* P1ColorLine = new Selection("Player 1", schemeNames, pscc::schemePredefIDs::spi_P1, PSCC_COLOR_1_INDEX);
 	HUDColorLines.push_back(P1ColorLine);
-	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 2", 1, PSCC_COLOR_2_INDEX));
-	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 3", 2, PSCC_COLOR_3_INDEX));
-	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 4", 3, PSCC_COLOR_4_INDEX));
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 2", pscc::schemePredefIDs::spi_P2, PSCC_COLOR_2_INDEX));
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 3", pscc::schemePredefIDs::spi_P3, PSCC_COLOR_3_INDEX));
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 4", pscc::schemePredefIDs::spi_P4, PSCC_COLOR_4_INDEX));
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
-	if (CONFIG_PSCC_ENABLED && (pscc::colorTable.size() >= 4))
+	if (CONFIG_PSCC_ENABLED && (pscc::schemeTable.entries.size() >= 4))
 	{
 		MainLines.push_back(&HUDColorsPage.CalledFromLine);
 	}
@@ -1701,7 +1815,7 @@ void constantOverride() {
 		// Load the Float Table address into reg3!
 		LWZ(reg3, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
 		// Load the hue value for color 0 (ie. the first float in the table)
-		LFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySize);
+		LFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySizeInBytes);
 
 		// Calculate the constant for our incrementing value, load it into fr12...
 		float conversionConstant = 1.0f/90.0f;
@@ -1723,7 +1837,7 @@ void constantOverride() {
 		FSUB(13, 13, 13);
 
 		// Finally, store the incremented hue back in the float table!
-		STFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySize);
+		STFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySizeInBytes);
 		Label(menuNotLoadedLabel);
 	}
 	

@@ -283,9 +283,10 @@ namespace lava
 		// Dash Attack Item Grab
 		const std::string dashAttackItemGrabTag = "dashAttackItemGrab";
 
-		// Colors
+		// PSCC
 		const std::string slotColorDeclsTag = "slotColorChanger";
 		const std::string colorTag = "color";
+		const std::string colorDefsTag = "colorDefinitions";
 		const std::string colorP1Tag = "colorP1";
 		const std::string colorP2Tag = "colorP2";
 		const std::string colorP3Tag = "colorP3";
@@ -294,6 +295,12 @@ namespace lava
 		const std::string colorHueTag = "hue";
 		const std::string colorSatTag = "saturation";
 		const std::string colorLumTag = "luminance";
+		const std::string colorSchemeTag = "scheme";
+		const std::string colorSchemeDefsTag = "schemeDefinitions";
+		const std::string colorSchemeMenu1Tag = "menuColor1";
+		const std::string colorSchemeMenu2Tag = "menuColor2";
+		const std::string colorSchemeIngame1Tag = "ingameColor1";
+		const std::string colorSchemeIngame2Tag = "ingameColor2";
 
 		// Jumpsquat Override
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
@@ -837,10 +844,11 @@ namespace lava
 	}
 
 	// Color Handling
+	/*
 	std::array<pscc::color, 5> collectSpecificColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
 	{
 		std::array<pscc::color, 5> result{};
-		result.fill({ "", FLT_MIN, FLT_MIN, FLT_MIN});
+		result.fill({FLT_MIN, FLT_MIN, FLT_MIN});
 
 		for (std::size_t i = 0; i < 5; i++)
 		{
@@ -857,7 +865,6 @@ namespace lava
 
 			if (targetNode)
 			{
-				result[i].name = targetNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 				result[i].hue = targetNode.attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
 				if (result[i].hue != FLT_MAX)
 				{
@@ -873,18 +880,19 @@ namespace lava
 
 		return result;
 	}
-	std::vector<pscc::color> collectExtraColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
+	*/
+	std::vector<std::pair<std::string, pscc::color>> collectColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
 	{
-		std::vector<pscc::color> result{};
+		std::vector<std::pair<std::string, pscc::color>> result;
 
 		for (pugi::xml_node_iterator colorItr = colorDeclNodeItr->begin(); colorItr != colorDeclNodeItr->end(); colorItr++)
 		{
 			if (colorItr->name() == configXMLConstants::colorTag)
 			{
 				pscc::color tempColor;
-				tempColor.name = colorItr->attribute(configXMLConstants::nameTag.c_str()).as_string(tempColor.name);
+				std::string colorName = colorItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
 				// If the entry has no name, skip to next node.
-				if (tempColor.name.empty()) continue;
+				if (colorName.empty()) continue;
 
 				tempColor.hue = colorItr->attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
 				if (tempColor.hue != FLT_MAX)
@@ -894,47 +902,101 @@ namespace lava
 				tempColor.saturation = colorItr->attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
 				tempColor.luminance = colorItr->attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
 
-				result.push_back(tempColor);
+				result.push_back(std::make_pair(colorName, tempColor));
 			}
 		}
 
 		return result;
 	}
-	void addCollectedColorsToMenuLists(const std::array<pscc::color, 5>& specificColors, const std::vector<pscc::color>& extraColors, lava::outputSplitter& logOutput)
+	void addCollectedColorsToMenuLists(const std::vector<std::pair<std::string, pscc::color>>& extraColors, lava::outputSplitter& logOutput)
 	{
-		for (std::size_t i = 0; i < 4; i++)
-		{
-			const pscc::color* currColor = &specificColors[i];
-			if (currColor->hue == FLT_MIN) continue;
-			if (!currColor->name.empty() && currColor->colorValid())
-			{
-				logOutput << "[CHANGED] P" << +(i + 1) << " Color is now \"" << currColor->name << "\"!\n";
-				pscc::colorTable[i] = *currColor;
-			}
-			else
-			{
-				logOutput << "[ERROR] P" << +(i + 1) << " Color replacement is invalid!\n";
-			}
-		}
-
 		for (std::size_t i = 0; i < extraColors.size(); i++)
 		{
-			const pscc::color* currColor = &extraColors[i];
-			if (!currColor->name.empty() && currColor->colorValid())
+			const std::string* currColorName = &extraColors[i].first;
+			const pscc::color* currColor = &extraColors[i].second;
+
+			if (currColorName->empty())
 			{
-				logOutput << "[ADDED] \"" << currColor->name << "\"!\n";
-				pscc::colorTable.push_back(*currColor);
+				logOutput << "[ERROR] XML Color Definition #" << i << " provided no name! Skipping color!\n";
+				continue;
+			}
+			if (!currColor->colorValid())
+			{
+				logOutput << "[ERROR] Color \"" << *currColorName << "\" invalid! Skipping color!\n";
+				continue;
+			}
+
+			if (pscc::colorTable.find(*currColorName) != pscc::colorTable.end())
+			{
+				logOutput << "[CHANGED] \"" << *currColorName << "\"!\n";
 			}
 			else
 			{
-				logOutput << "[ERROR] Color \"" << currColor->name << "\" invalid!\n";
+				logOutput << "[ADDED] \"" << *currColorName << "\"!\n";
+			}
+			pscc::colorTable[*currColorName] = *currColor;
+		}
+	}
+	std::vector<pscc::colorScheme> collectSchemesFromXML(const pugi::xml_node_iterator& schemeDeclNodeItr)
+	{
+		std::vector<pscc::colorScheme> result;
+
+		for (pugi::xml_node_iterator schemeItr = schemeDeclNodeItr->begin(); schemeItr != schemeDeclNodeItr->end(); schemeItr++)
+		{
+			if (schemeItr->name() == configXMLConstants::colorSchemeTag)
+			{
+				pscc::colorScheme tempScheme;
+				tempScheme.name = schemeItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				// If the entry has no name, skip to next node.
+				if (tempScheme.name.empty()) continue;
+
+				tempScheme.colors[pscc::cscs_MENU1] = schemeItr->attribute(configXMLConstants::colorSchemeMenu1Tag.c_str()).as_string("");
+				tempScheme.colors[pscc::cscs_MENU2] = schemeItr->attribute(configXMLConstants::colorSchemeMenu2Tag.c_str()).as_string("");
+				tempScheme.colors[pscc::cscs_INGAME1] = schemeItr->attribute(configXMLConstants::colorSchemeIngame1Tag.c_str()).as_string("");
+				tempScheme.colors[pscc::cscs_INGAME2] = schemeItr->attribute(configXMLConstants::colorSchemeIngame2Tag.c_str()).as_string("");
+				tempScheme.downfillEmptySlots();
+
+				result.push_back(tempScheme);
 			}
 		}
 
-		if (!specificColors[4].name.empty() && specificColors[4].colorValid())
+		return result;
+	}
+	void addCollectedSchemesToMenuLists(const std::vector<pscc::colorScheme> collectedSchemes, lava::outputSplitter& logOutput)
+	{
+		std::map<std::string, std::size_t> tempSchemeList{};
+		for (std::size_t i = 0; i < pscc::schemeTable.entries.size(); i++)
 		{
-			logOutput << "[ADDED] \"" << specificColors[4].name << "\"!\n";
-			pscc::colorTable.push_back(specificColors[4]);
+			tempSchemeList[pscc::schemeTable.entries[i].name] = i;
+		}
+
+		for (std::size_t i = 0; i < collectedSchemes.size(); i++)
+		{
+			const pscc::colorScheme* currScheme = &collectedSchemes[i];
+
+			if (currScheme->name.empty())
+			{
+				logOutput << "[ERROR] XML Color Scheme Definition #" << i << " provided no name! Skipping color!\n";
+				continue;
+			}
+			if (!currScheme->schemeValid())
+			{
+				logOutput << "[ERROR] Color Scheme \"" << currScheme->name << "\" invalid! Skipping color!\n";
+				continue;
+			}
+			auto findRes = tempSchemeList.find(currScheme->name);
+			if (findRes != tempSchemeList.end())
+			{
+				logOutput << "[CHANGED]";
+				pscc::schemeTable.entries[findRes->second] = *currScheme;
+			}
+			else
+			{
+				logOutput << "[ADDED]";
+				tempSchemeList[currScheme->name] = pscc::schemeTable.entries.size();
+				pscc::schemeTable.entries.push_back(*currScheme);
+			}
+			logOutput << " \"" << currScheme->name << "\"!\n";
 		}
 	}
 
@@ -1243,34 +1305,54 @@ namespace lava
 						// And if we end up enabling it...
 						if (setCodeEnabledFromXML(codeNodeItr, CONFIG_PSCC_ENABLED, logOutput))
 						{
-							// ... collect any color definitions from the file...
-							std::array<pscc::color, 5> specificColors = collectSpecificColorsFromXML(codeNodeItr);
-							std::vector<pscc::color> extraColors = collectExtraColorsFromXML(codeNodeItr);
-							// ... and pass the results off to be added to the final lists!
-							addCollectedColorsToMenuLists(specificColors, extraColors, logOutput);
-							//Do final color list summary.
-							logOutput << "Final Color List:\n";
-							for (std::size_t i = 0; i < pscc::colorTable.size(); i++)
+							pugi::xml_node_iterator targetNode = codeNodeItr->child(configXMLConstants::colorDefsTag.c_str());
+							if (*targetNode)
 							{
-								const pscc::color* currColor = &pscc::colorTable[i];
-								logOutput << std::setw(0x10) << ("\"" + currColor->name + "\"") << " ("
-									<< "H:" << lava::floatToStringWithPadding(currColor->hue * 60.0f, 6, 2) << ", "
-									<< "S:" << lava::floatToStringWithPadding(currColor->saturation, 0, 2) << ", "
-									<< "L:" << lava::floatToStringWithPadding(currColor->luminance, 0, 2) << ") ";
+								logOutput << "Parsing Color Definitions... \n";
+								std::vector<std::pair<std::string, pscc::color>> extraColors = collectColorsFromXML(targetNode);
+								if (!extraColors.empty())
+								{
+									addCollectedColorsToMenuLists(extraColors, logOutput);
+								}
+								else
+								{
+									logOutput << "[WARNING] Color Definition Block parsed, but no valid entries found!\n";
+								}
+							}
+
+							targetNode = codeNodeItr->child(configXMLConstants::colorSchemeDefsTag.c_str());
+							if (*targetNode)
+							{
+								logOutput << "Parsing Color Scheme Definitions... \n";
+								std::vector<pscc::colorScheme> extraSchemes = collectSchemesFromXML(targetNode);
+								if (!extraSchemes.empty())
+								{
+									addCollectedSchemesToMenuLists(extraSchemes, logOutput);
+								}
+								else
+								{
+									logOutput << "[WARNING] Scheme Definition Block parsed, but no valid entries found!\n";
+								}
+							}
+
+							//Do final scheme list summary.
+							logOutput << "Final Color Scheme List:\n";
+							for (std::size_t i = 0; i < pscc::schemeTable.entries.size(); i++)
+							{
+								const pscc::colorScheme* currScheme = &pscc::schemeTable.entries[i];
+								logOutput << std::setw(0x10) << ("\"" + currScheme->name + "\" ");
 								switch (i)
 								{
-								case 0: { logOutput << "[P1 + Red Team]"; break; }
-								case 1: { logOutput << "[P2 + Blue Team]"; break; }
-								case 2: { logOutput << "[P3]"; break; }
-								case 3: { logOutput << "[P4 + Green Team]"; break; }
+								case pscc::schemePredefIDs::spi_P1: { logOutput << "[P1 + Red Team]"; break; }
+								case pscc::schemePredefIDs::spi_P2: { logOutput << "[P2 + Blue Team]"; break; }
+								case pscc::schemePredefIDs::spi_P3: { logOutput << "[P3]"; break; }
+								case pscc::schemePredefIDs::spi_P4: { logOutput << "[P4 + Green Team]"; break; }
 								default: { break; }
-								}
-								if (i == (pscc::colorTable.size() - 1))
-								{
-									logOutput << "[RGB Strobe]";
 								}
 								logOutput << "\n";
 							}
+
+							pscc::schemeTable.tableToByteVec();
 						}
 					}
 				}

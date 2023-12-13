@@ -280,19 +280,54 @@ namespace pscc
 {
 	struct color
 	{
-		std::string name;
 		float hue;
 		float saturation;
 		float luminance;
 
-		color(std::string nameIn = "", float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f) :
-			name(nameIn), hue(hueIn), saturation(satIn), luminance(lumIn) {};
+		color(float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f) :
+			hue(hueIn), saturation(satIn), luminance(lumIn) {};
 		bool colorValid() const;
 	};
-
+	extern std::map<std::string, color> colorTable;
+	static constexpr std::size_t colorTableEntrySizeInBytes = 0xC;
+	std::size_t getColorTableSizeInBytes();
 	extern bool rgbColorIncluded;
-	extern std::vector<color> colorTable;
-	static constexpr std::size_t colorTableEntrySize = 0xC;
+
+	enum schemePredefIDs
+	{
+		spi_P1 = 0,
+		spi_P2,
+		spi_P3,
+		spi_P4,
+		spi__COUNT
+	};
+	enum colorSchemeColorSlots
+	{
+		cscs_MENU1 = 0,
+		cscs_MENU2,
+		cscs_INGAME1,
+		cscs_INGAME2,
+		cscs__COUNT
+	};
+	struct colorScheme
+	{
+		std::string name;
+		std::array<std::string, cscs__COUNT> colors;
+		colorScheme(std::string nameIn = "");
+		void downfillEmptySlots();
+		bool schemeValid() const;
+	};
+	struct colorSchemeTable
+	{
+		std::vector<colorScheme> entries;
+		colorSchemeTable();
+		static constexpr std::size_t schemeTableEntrySizeInBytes = colorSchemeColorSlots::cscs__COUNT;
+		std::size_t tableSizeInBytes() const;
+		std::vector<unsigned char> tableToByteVec() const;
+	};
+	extern colorSchemeTable schemeTable;
+	
+	std::size_t getFullEmbedSizeInWords();
 }
 
 // Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)

@@ -18,6 +18,21 @@ const std::string codeSuffix = " [QuickLava]";
 // - Follow the rest of the HSL -> RGB conversion process to get new RGB
 // - Write that into r3 to make that the result color.
 // - Profit
+// Idea: Separate Color Definitions from Scheme Definitions
+// Colors: Define the HSL for an actual color itself, collect these into a Color Table
+//         Probs get 0x10 bytes each, 0xC for the HSL, 0x4 for config? Or perhaps 0x4 for Callback?
+// Palettes: These are what players are actually picking from! Specify some set of Colors to be used by the game!
+//           Probs get 0x8 bytes each? 0x4 for 4 Color IDs, 0x4 for any per-scheme configuration stuff.
+// Another Idea: Callback System?
+// Approach 1: Each color entry has a word to designate the address of a callback function, once per frame we run each func on each color?
+//	Pros: Clean, can easily just lwz-mtctr-bctrl to run it
+//  Cons: Takes 4 bytes, and I don't want entries to exceed 0x20 bytes per, so if we allow a word for flags or something too we only get 1.
+// Approach 2: Each color has a flags word, and each flag corresponds to a request to call or not call a given stock function.
+//  Pros: Can potentially chain together long sequences of effects to achieve interesting results, and even 8 function requests is 1 byte.
+//  Cons: Makes externally defining new functions to expand functionality more complicated? Every additional function requires +1 bit.
+//
+
+
 const std::string activatorStringBase = "lBC0";
 signed short activatorStringHiHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data());
 signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data() + 2);
@@ -74,7 +89,7 @@ void psccIncrementOnButtonPress()
 	ADD(reg3, reg3, reg2);
 
 	// If modified value is greater than the max...
-	CMPI(reg3, pscc::colorTable.size() - 1, 0);
+	CMPI(reg3, pscc::schemeTable.entries.size() - 1, 0);
 	// ... roll its value around to the min.
 	BC(2, bCACB_LESSER_OR_EQ);
 	ADDI(reg3, 0, 0);
@@ -83,7 +98,7 @@ void psccIncrementOnButtonPress()
 	CMPI(reg3, 0, 0);
 	// ... roll its value around to the max.
 	BC(2, bCACB_GREATER_OR_EQ);
-	ADDI(reg3, 0, pscc::colorTable.size() - 1);
+	ADDI(reg3, 0, pscc::schemeTable.entries.size() - 1);
 
 	// Store our modified value back in place.
 	Label(applyChangesLabel);
@@ -385,17 +400,21 @@ void psccSetupCode()
 
 void psccEmbedFloatTable()
 {
-	// Setup Converted Float Triple Table
-	std::vector<unsigned long> convertedTable(pscc::colorTable.size() * 3, 0x00);
-	for (std::size_t i = 0, fltIdx = 0; i < pscc::colorTable.size(); i++)
+	CodeRawStart(codePrefix + "Embed Color and Scheme Tables" + codeSuffix, "");
+	GeckoDataEmbedStart();
+	for (auto i = pscc::colorTable.cbegin(); i != pscc::colorTable.cend(); i++)
 	{
-		pscc::color* currColor = &pscc::colorTable[i];
-		convertedTable[fltIdx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(currColor->hue).data());
-		convertedTable[fltIdx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(currColor->saturation).data());
-		convertedTable[fltIdx++] = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(currColor->luminance).data());
+		WriteIntToFile(lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(i->second.hue).data()));
+		WriteIntToFile(lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(i->second.saturation).data()));
+		WriteIntToFile(lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(i->second.luminance).data()));
 	}
-	CodeRawStart(codePrefix + "Embed Color Float Table" + codeSuffix, "");
-	GeckoDataEmbed(convertedTable, PSCC_FLOAT_TABLE_LOC);
+
+	std::vector<unsigned char> schemeVec = pscc::schemeTable.tableToByteVec();
+	for (auto i : schemeVec)
+	{
+		WPtr << lava::numToHexStringWithPadding(i, 2);
+	}
+	GeckoDataEmbedEnd(PSCC_FLOAT_TABLE_LOC);
 	CodeRawEnd();
 }
 
@@ -418,9 +437,9 @@ void psccMainCode()
 	ASMStart(0x801934fc, codePrefix + "Main Code" + codeSuffix, "");
 	// Load the code mode short...
 	LHZ(reg2, 1, safeStackWordOff + 0x4);
-	// ... and write its complement to r0. If the mode was invalid reg0 should now be 0, and since we have Rc enabled...
+	// ... and if it's null...
 	CMPLI(reg2, 0xFFFF, 0);
-	// ... this'll branch us to the exit if the mode was invalid!
+	// ... exit the code!
 	JumpToLabel(exitLabel, bCACB_EQUAL);
 
 	// Otherwise, check if the code is disabled for the current material!
@@ -520,11 +539,24 @@ void psccMainCode()
 		LWZ(reg1, reg1, (PSCC_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
 		// Use it to load the targetIndex...
 		LWZX(reg2, reg1, reg2);
-		// ... and multiply it by 0xC to turn it into the offset to our target float triple.
-		MULLI(reg0, reg2, 0xC);
+
+		// Multiply that by 4 to use it as an index...
+		RLWINM(reg2, reg2, 2, 0, 0x1D);
+		// ... add the length of the color table to it, so we're indexing now into the schemes table.
+		ADDI(reg2, reg2, pscc::getColorTableSizeInBytes());
+		// Load the scheme slot ID this Material-Target uses...
+		LBZ(reg0, 1, safeStackWordOff + 1);
+		// ... and add it to reg2, finalizing the offset to the Color ID we want!
+		ADD(reg2, reg2, reg0);
+
 		// Grab the pointer to our Float Hue Table
 		ADDIS(reg1, 0, PSCC_FLOAT_TABLE_LOC >> 0x10);
 		LWZ(reg1, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
+
+		// Grab the appropriate Color Index
+		LBZX(reg2, reg1, reg2);
+		MULLI(reg0, reg2, 0xC);
+
 		// Load the associated float (and point reg1 to our floatTriple)...
 		LFSUX(floatTempRegisters[0], reg1, reg0);
 		// ... and add it to our Hue float!
