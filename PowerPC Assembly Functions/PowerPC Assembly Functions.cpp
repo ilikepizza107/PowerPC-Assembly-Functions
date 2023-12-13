@@ -203,7 +203,7 @@ branchConditionAndConditionBit branchConditionAndConditionBit::andDecrementCTR(b
 
 std::vector<std::streampos> LabelPosVec{};
 std::vector<labels::labelJump> LabelJumpVec{};
-
+std::streampos currentGeckoEmbedStartPos = SIZE_MAX;
 
 //converts char hex digit to decimal
 int HexToDec(char x)
@@ -997,22 +997,77 @@ void GeckoEndIf() {
 	WriteIntToFile(0x80008000);
 }
 
-void GeckoDataEmbed(const std::vector<unsigned long> &Content, u32 AddressStoreLocation)
+bool GeckoDataEmbedStart()
 {
-	unsigned long gotoSignature = 0x66200000;
-	unsigned long distanceImm = (Content.size() + (Content.size() % 2)) / 2;
-	WriteIntToFile(0x46000010); WriteIntToFile(0x00);
-	WriteIntToFile(0x44000000); WriteIntToFile(AddressStoreLocation & 0x00FFFFFF);
-	WriteIntToFile(gotoSignature | distanceImm); WriteIntToFile(0x00);
-	for (std::size_t i = 0; i < Content.size(); i++)
+	bool result = 0;
+
+	if (currentGeckoEmbedStartPos == SIZE_MAX)
 	{
-		WriteIntToFile(Content[i]);
+		// Point PO to the next Instruction + 0x08 bytes, which'll be the Embed itself...
+		WriteIntToFile(0x4E000008); WriteIntToFile(0x00);
+		currentGeckoEmbedStartPos = WPtr.tellp();
+		// .. then write an unconditional Gecko GOTO, the distance for which we'll come back to write later.
+		WriteIntToFile(0x66200000); WriteIntToFile(0x00);
+		result = 1;
 	}
-	if (Content.size() % 2)
+	else
 	{
-		WriteIntToFile(0);
+		std::cerr << "[ERROR] Failed to open Gecko Embed, previous embed isn't closed!\n";
 	}
-	WriteIntToFile(0xE0000000); WriteIntToFile(0x80008000);
+
+	return result;
+}
+bool GeckoDataEmbedEnd(u32 AddressStoreLocation, bool skipBAPOReset)
+{
+	bool result = 0;
+
+	if (currentGeckoEmbedStartPos != SIZE_MAX)
+	{
+		// Grab the current stream position, to record the end of our embed!
+		std::streampos currPos = WPtr.tellp(); 
+
+		// Write in the length of the Embed!
+		std::streamoff embedLength = currPos - (currentGeckoEmbedStartPos + std::streamoff(0x10));
+		// If the embed's length isn't a multiple of 0x10 (that's string characters, 0x8 bytes for the actual data)...
+		std::size_t necessaryPadding = 0x10 - (embedLength % 0x10);
+		if (necessaryPadding < 0x10 && necessaryPadding > 0x00)
+		{
+			// ... provide the necessary padding...
+			WPtr << std::string(necessaryPadding, '0');
+			// ... and update the embed's length!
+			embedLength += necessaryPadding;
+			currPos = WPtr.tellp();
+		}
+		// Then, seek back to the immediate portion of this Embed's GOTO Statement...
+		WPtr.seekp(currentGeckoEmbedStartPos + std::streamoff(0x4));
+		// ... and write in the length of our Embed!
+		WPtr.write(lava::numToHexStringWithPadding(embedLength / 0x10, 0x4).data(), 0x4);
+		// And seek back to our original position, with that taken care of.
+		WPtr.seekp(currPos);
+
+		// If we've provided a Location to Store this Embed's Address...
+		if (AddressStoreLocation != SIZE_MAX)
+		{
+			// ... use a Gecko PO Store Instruction to write the embed to the designated location.
+			WriteIntToFile(0x4C000000); WriteIntToFile(AddressStoreLocation & 0x00FFFFFF);
+		}
+		// Lastly, if we haven't asked to skip it...
+		if (!skipBAPOReset)
+		{
+			// ... reset BA and PO.
+			WriteIntToFile(0xE0000000); WriteIntToFile(0x80008000);
+		}
+		
+		// Null out the start position to signal that the embed has been closed!
+		currentGeckoEmbedStartPos = SIZE_MAX;
+		result = 1;
+	}
+	else
+	{
+		std::cerr << "[ERROR] Failed to close Gecko Embed, no embed is currently open!\n";
+	}
+
+	return result;
 }
 
 void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int elementOffset, int ResultReg, int TempReg)

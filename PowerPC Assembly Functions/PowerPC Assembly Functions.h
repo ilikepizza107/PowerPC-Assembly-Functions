@@ -369,6 +369,7 @@ static int WhileIndex = 0;
 static int ASMStartAddress = 0;
 extern std::vector<std::streampos> LabelPosVec;
 extern std::vector<labels::labelJump> LabelJumpVec;
+extern std::streampos currentGeckoEmbedStartPos;  // Used for opening and closing Gecko Embeds!
 static vector<int> FPPushRecords;
 static vector<int> CounterLoppRecords;
 static vector<int> StackIteratorRecords;
@@ -433,7 +434,12 @@ void LoadIntoGeckoRegister(int Address, int Reg, int size);
 void StoreGeckoRegisterAt(int Address, int Reg, int size, int repeats = 0);
 void GeckoIf(u32 Address, int Comparison, int Value);
 void GeckoEndIf();
-void GeckoDataEmbed(const std::vector<unsigned long> &Content, u32 AddressStoreLocation);
+// Opens a Gecko Embed. Note: Writes Embed address into PO!
+bool GeckoDataEmbedStart();
+// Closes the active Gecko Embed, padding for alingment to 0x8 bytes as necessary.
+// If AddressStoreLocation is provided, will additional write Embed Address to that location.
+// Also does a BAPO reset by default, which can be skipped using the provided argument.
+bool GeckoDataEmbedEnd(u32 AddressStoreLocation = ULONG_MAX, bool skipBAPOReset = 0);
 //searches for byte, elementOffset is distance between elements, ResultReg returns index if found, else -1
 //StartAddressReg ends with the address of the found element, or an address after the array
 void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int elementOffset, int ResultReg, int TempReg);
