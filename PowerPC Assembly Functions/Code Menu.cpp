@@ -906,10 +906,13 @@ void CodeMenu()
 	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
 	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
-	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
-	SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
-	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
-	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	if (PROJECT_PLUS_EX_BUILD)
+	{
+		SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
+		SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
+		SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
+		SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	}
 	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
 	Page SpecialModePage("Special Modes", SpecialModeLines);
 
