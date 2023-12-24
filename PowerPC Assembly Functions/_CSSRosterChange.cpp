@@ -11,6 +11,8 @@ void cssRosterChange() // Adapted from CSS Roster Change via Code Menu [QuickLav
 		int reg1 = 6;
 		int reg2 = 5;
 
+		// Note, the address here is based on where the associated constant in common3.pac(sora_menu_sel_char Section[5]@0xE40) lands.
+		// This should remain constant for the foreseeable future I think, though if it ever changes this code will also need to be adjusted!
 		constexpr unsigned long CSSRosterPathAddress = 0x806a1f20; // Location of Roster File Path
 		constexpr unsigned long CSSRosterFolderPortionLength = 0x9; // Used to move past the "/BrawlEx/" portion of the Roster File Path
 

@@ -60,8 +60,10 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 #define ALLOW_BLANK_CODE_NAMES_IN_ASM true
 extern bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY;
 extern bool CONFIG_DISABLE_ASM_DISASSEMBLY;
+extern bool CONFIG_ENABLE_ASM_HEX_COMMENTS;
 extern bool CONFIG_DELETE_ASM_TXT_FILE;
 extern bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS; // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
+extern bool CONFIG_ALLOW_BLA_FUNCTION_CALLS; // Enables function calls via BLA! Only valid for builds that have Eon's BLA code in your build!
 
 //ROTC floating offsets
 #define FS_20_0 -0x7920
@@ -101,7 +103,12 @@ extern std::string MENU_NAME;
 #define GF_DRAW_SETUP_COORD_2D 0x8001abbc
 #define GX_DRAW_SET_VTX_COLOR_PRIM_ENVIROMENT 0x8001a5c0
 #define GET_FLOAT_WORK_MODULE 0x807acbb4 //r3 = work module ptr, r4 is variable, returns value in f1
+#define GF_GET_HEAP 0x800249cc // r3 = Heap ID
+#define FT_GET_INPUT 0x8083ae38 // r3 = FighterPtr, RETURNS IN r3 & r4!!
+#define FT_MGR_GET_PLAYER_NO 0x80815ad0 // r3 = ftManager pointer, r4 = entryID
 ///Function addresses end
+
+
 
 ///addresses maintained by Brawl start
 #define IS_REPLAY_LOC 0x805BBFC0 //equals 1 if in replay, 2 if in match
@@ -126,7 +133,21 @@ extern std::string MENU_NAME;
 #define BUTTON_CONFIG_START 0x805b7480 //start of in game custom control map
 #define BASIC_VARIABLE_START_ADDRESS 0x901ae000
 #define BASIC_VARIABLE_BLOCK_SIZE 0x870
+#define FT_MANAGER_ADDRESS 0x80629a00
 ///addresses maintained by Brawl end
+
+// Replay Heap Variables
+static const int REPLAY_HEAP_VANILLA_ADDRESS = 0x91301B00;
+static const int REPLAY_HEAP_REPLAY_BUFFER_BEGIN_OFF = 0x91301c00 - REPLAY_HEAP_VANILLA_ADDRESS;
+static const int REPLAY_HEAP_REPLAY_BUFFER_END_OFF = 0x9134CA00 - REPLAY_HEAP_VANILLA_ADDRESS; // Associated accesses not converted yet!
+//half word that is used to store which alt stage was loaded
+static const int REPLAY_HEAP_ALT_STAGE_STORAGE_OFF = 0x91301f4a - REPLAY_HEAP_VANILLA_ADDRESS;
+//half word that stores current and recorded auto L-Cancel settings
+static const int REPLAY_HEAP_AUTO_L_CANCEL_SETTING_OFF = 0x91301f4e - REPLAY_HEAP_VANILLA_ADDRESS;
+//byte flag == 1 when in stage select menu
+static const int IN_STAGE_SELECT_MENU_FLAG = 0x91301f50 - REPLAY_HEAP_VANILLA_ADDRESS;
+//word that saves copy of endless rotation queue for replay
+static const int REPLAY_HEAP_ENDLESS_ROTATION_QUEUE_OFF = 0x91301f54 - REPLAY_HEAP_VANILLA_ADDRESS;
 
 ///reserved memory for storage start
 ///in replay
@@ -175,10 +196,6 @@ const int MENU_SELECTED_TAG_OFFSET = 0x164;
 ///Control code constants end
 
 
-#define REPLAY_ALT_STAGE_STORAGE_LOC 0x91301f4a //half word that is used to store which alt stage was loaded
-#define REPLAY_AUTO_L_CANCEL_SETTING 0x91301f4e //half word that stores current and recorded auto L-Cancel settings
-#define IN_STAGE_SELECT_MENU_FLAG 0x91301f50 //byte flag == 1 when in stage select menu
-#define REPLAY_ENDLESS_ROTATION_QUEUE 0x91301f54 //word that saves copy of endless rotation queue for replay
 
 ///addresses end
 
@@ -414,9 +431,9 @@ void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int el
 //StartAddressReg ends with the address of the found element, or an address after the array
 //ends when end marker is encountered
 void FindInTerminatedArray(int ValueReg, int StartAddressReg, int endMarker, int elementOffset, int ResultReg, int TempReg, int searchSize);
-void CallBrawlFunc(int Address);
+void CallBrawlFunc(int Address, int addressReg = 0);
 //r3 returns ptr
-void Allocate(int SizeReg, int Heap = 42);
+void Allocate(int SizeReg, int Heap = HeapType::MenuInstance);
 void AllocateIfNotExist(int SizeReg, int AddressReg, int EmptyVal);
 void Memmove(int DestReg, int SourceReg, int SizeReg);
 void SetRegs(int StartReg, vector<int> values);
@@ -497,6 +514,13 @@ void constrainFloatDynamic(int floatReg, int minFReg, int maxFReg);
 void modifyInstruction(int instructionReg, int addressReg);
 void IfInSSE(int reg1, int reg2);
 void IfNotInSSE(int reg1, int reg2);
+void GetHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int destinationReg);
+void LoadWordFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset);
+void StoreWordToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset);
+void LoadHalfFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset);
+void StoreHalfToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset);
+void LoadByteFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset);
+void StoreByteToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset);
 
 void ABS(int DestReg, int SourceReg, int tempReg);
 void ADD(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);

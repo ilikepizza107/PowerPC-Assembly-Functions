@@ -11,6 +11,8 @@ void ControlCodes()
 
 	LoadCodeMenu();
 
+	UpdateHeapAddressCache();
+
 	AddNewCharacterBuffer();
 
 	DeleteCharacterBuffer();
@@ -71,6 +73,8 @@ void LoadCodeMenu()
 
 	LoadFile(getCMNUAbsolutePath(), START_OF_CODE_MENU_HEADER, reg1, reg2);
 
+	
+
 	/*SetRegister(reg1, STRING_BUFFER);
 
 	SetRegister(reg2, STRING_BUFFER + 0x18);
@@ -97,6 +101,62 @@ void LoadCodeMenu()
 	ASMEnd(0x9421ffe0); //stwu sp, sp, -0x20
 }
 
+void UpdateHeapAddressCache()
+{
+	// If we're requesting that any Heap Addresses be 
+	if (HEAP_ADDRESS_TABLE.table_size() > 0)
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+		int reg3 = 10;
+
+		int heapCacheLoopStart = GetNextLabel();
+
+		// Hooks "process/[scMemoryChange]/sc_memory_change.o", Ghidra Addresses in that function are 0x1163F4 lower than in-game
+		ASMStart(0x806BE080, "[CM: Control Codes] Update Heap Address Cache", 
+			"Updates the Code Menu's Heap Address Cache whenever a memory layout change happens.");
+		// If BLAs are disabled, we'd need to do the full 4-line BCTRL setup every time if we just CallBrawlFunc'd every time.
+		// Instead, if BLAs are disabled...
+		if (!CONFIG_ALLOW_BLA_FUNCTION_CALLS)
+		{
+			//... we'll setup our CTR before the loop and just BCTRL repeatedly.
+			SetRegister(reg1, GF_GET_HEAP);
+			MTCTR(reg1);
+		}
+		// Setup reg1 with address to the start of the Heap Address table.
+		SetRegister(reg1, HEAP_ADDRESS_TABLE.table_start());
+		// Setup offset variable for loop.
+		// We're going to point 4 past the offset to the last entry cuz we do our subtract at the start of the loop, before the first load/store.
+		ADDI(reg2, 0, HEAP_ADDRESS_TABLE.address_array_size());
+
+		// Setup r12 with the address just past the last entry in the ID Array, for the same reason we set up reg2 like we did.
+		ADDI(reg3, reg1, HEAP_ADDRESS_TABLE.id_array_offset() + HEAP_ADDRESS_TABLE.__CACHED_COUNT);
+
+		// Head of loop.
+		Label(heapCacheLoopStart);
+		// Subtract 4 from our offset variable, pointing to the previous entry in the table (or the last, on the first iteration).
+		// Importantly, we have the CR update enabled here, so that once we reach offset 0x0 (the first table entry) we'll break the loop.
+		ADDIC(reg2, reg2, -4, 1);
+		// Load the Heap ID for this entry...
+		LBZU(3, reg3, -1);
+		// ... and call the function using the method appropriate for our settings.
+		if (CONFIG_ALLOW_BLA_FUNCTION_CALLS)
+		{
+			BLA(GF_GET_HEAP);
+		}
+		else
+		{
+			BCTRL();
+		}
+		// Then store the retrieved address back in the table.
+		STWX(3, reg1, reg2);
+		// And if we didn't just process the first entry (at offset 0x0), head back to the beginning of the loop and continue.
+		JumpToLabel(heapCacheLoopStart, bCACB_NOT_EQUAL);
+		CallBrawlFunc(0x8006CAA8); // Restore Original Instruction, call "isNormalFontLoadedEx/[FontData]/ms_resfont.o"
+		ASMEnd();
+	}
+}
+
 void setRotationQueuePlayers() {
 	//1[0x90180fb8 + 4 + 0x5C * port] = 0 if not active
 	//number seems to indicate what type of match it is
@@ -115,7 +175,7 @@ void setRotationQueuePlayers() {
 
 	GetSceneNum(reg1);
 	If(reg1, EQUAL_I, 6); { //in replay
-		LoadWordToReg(reg1, REPLAY_ENDLESS_ROTATION_QUEUE);
+		LoadWordFromHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, reg1, reg1, REPLAY_HEAP_ENDLESS_ROTATION_QUEUE_OFF);
 		SetRegister(reg2, ENDLESS_ROTATION_QUEUE_LOC);
 		STW(reg1, reg2, 0);
 	} Else(); {
@@ -180,8 +240,7 @@ void saveRotationQueueForReplay() {
 	GetSceneNum(reg1);
 	If(reg1, EQUAL_I, 0xA); { //in versus
 		LoadWordToReg(reg1, ENDLESS_ROTATION_QUEUE_LOC);
-		SetRegister(reg2, REPLAY_ENDLESS_ROTATION_QUEUE);
-		STW(reg1, reg2, 0);
+		StoreWordToHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, reg1, reg2, REPLAY_HEAP_ENDLESS_ROTATION_QUEUE_OFF);
 	} EndIf();
 
 	ASMEnd(0x4e800020); //blr
@@ -662,36 +721,57 @@ void AddNewCharacterBuffer()
 		Label(Start);
 
 		//check if already exists
+		// Loads the Character's Base Module Table?
 		LWZ(BaseModuleTableReg, 3, 0x60);
+		// Get the ptr to the Buffer Ptr Table Address in the Header...
 		LoadWordToReg(reg1, MAIN_BUFFER_PTR);
+		// ... and load it into CharacterBufferReg. CharacterBufferReg now points to Buffer Ptr Table
 		LWZ(CharacterBufferReg, reg1, 0);
+		// Then, for as long as we're looking at a non-empty slot...
 		While(CharacterBufferReg, NOT_EQUAL_I, 0); {
+			// ... check if the entry in that slot is for the entry we'd be adding right now.
 			If(CharacterBufferReg, EQUAL, BaseModuleTableReg); {
+				// If it is, then we can abord adding this entry to the buffer, jump to quit.
 				JumpToLabel(Quit);
 			}EndIf();
+			// If the existing entry didn't match the entry we're about to add, move to next entry.
 			LWZU(CharacterBufferReg, reg1, 8);
 		}EndWhile();
 
+		// Backup r3 into HeadOfFighterReg for later.
 		MR(HeadOfFighterReg, 3);
+		// If we make it through that loop without finding a matching entry, then we should continue with adding our entry.
 		LWZ(ModulePtrReg, BaseModuleTableReg, 0xD8);
 
+		// Zero out reg1...
 		SetRegister(reg1, 0);
+		// ... and look for the first entry in the table that equals 0x00.
+		// Ironically, I'm pretty sure this is unnecessary since, if the entry we're about to add isn't in the table already,
+		// the above loop breaks with reg1 pointing to the first zeroed entry. Could've just zeroed reg2 instead.
 		FindEndOfCharacterBuffers(reg1, reg2);
+		// But anyway, store our BaseModuleTableReg value into the first open spot...
 		STW(BaseModuleTableReg, reg2, 0);
+		// ... and zero out the 8-byte table entry following this one.
 		STW(reg1, reg2, 8); //clear next slot
 		STW(reg1, reg2, 0xC); //clear next slot
 
+		// Next, we need to allocate our buffer and store that pointer in our table entry.
+		// So set the size to be allocated...
 		SetRegister(reg1, CHR_BUFFER_SIZE + 0x20);
+		// ... and allocate it. Note the default HeapID argument; as of writing this it's MenuInstance.
 		Allocate(reg1);
+		// Then store the address to the allocated space in the second word of our table entry, and our entry's addresses are set up!
 		STW(3, reg2, 4);
 
+		// And copy the address to that buffer into CharacterBufferReg
 		MR(CharacterBufferReg, 3);
 
+		// And pull that r3 value we backed up early back into r3 for use again.
 		MR(3, HeadOfFighterReg);
-		CallBrawlFunc(0x8083ae38); //getInput
+		CallBrawlFunc(FT_GET_INPUT); //getInput
 		STW(3, CharacterBufferReg, CHR_BUFFER_FIGHTER_INPUT_PTR_OFFSET);
-		SetRegister(3, 0x80629a00);
-		CallBrawlFunc(0x80815ad0); //get player number
+		SetRegister(3, FT_MANAGER_ADDRESS);
+		CallBrawlFunc(FT_MGR_GET_PLAYER_NO); // Get Player Number
 		STW(3, CharacterBufferReg, CHR_BUFFER_PORT_OFFSET);
 
 		STW(HeadOfFighterReg, CharacterBufferReg, CHR_BUFFER_HEAD_OF_FIGHTER_OFFSET);
@@ -702,11 +782,16 @@ void AddNewCharacterBuffer()
 		STW(reg1, CharacterBufferReg, CHR_BUFFER_INFO_PTR_OFFSET);
 
 		if (CHARACTER_SELECT_P1_INDEX != -1) {
+			// Puts address of this character's Character Switcher Line into reg2
 			GetArrayValueFromIndex(CHARACTER_SWITCHER_ARRAY_LOC, 3, 0, 3, reg2); {
 				LBZ(reg1, reg1, 0); //get char ID
+				// Load Selection Source Line INDEX, in case this Switcher line is a Selection Mirror
 				LWZ(3, reg2, Selection::SELECTION_LINE_SOURCE_SELECTION_INDEX);
+				// And in the relevant line, get the address of the lower byte of the first Slot ID in the offset list...
 				ADDI(reg5, 3, Selection::SELECTION_LINE_OFFSETS_START + 3);
+				// ... then look at every 4th byte, looking for the index for the character's Slot ID, and store the index in reg3.
 				FindInArray(reg1, reg5, CHARACTER_ID_LIST.size(), 4, reg3, reg4);
+				// Then set the Switcher Line's Value and Default to this index!
 				STW(reg3, reg2, Line::VALUE);
 				STW(reg3, reg2, Line::DEFAULT);
 			}EndIf(); EndIf();
@@ -845,9 +930,13 @@ void FindCharacterBuffer(int TargetReg, int ResultReg)
 
 void FindEndOfCharacterBuffers(int TargetReg, int ResultReg)
 {
+	// Load address to the Buffer Ptr Table into ResultReg
 	LoadWordToReg(ResultReg, MAIN_BUFFER_PTR);
+	// Load its first entry into r3
 	LWZ(3, ResultReg, 0);
+	// Then, for as long as the currently loaded entry isn't equal to Target Reg...
 	While(3, NOT_EQUAL, TargetReg); {
+		// ... load the next entry into r3
 		LWZU(3, ResultReg, 8);
 	}EndWhile();
 }

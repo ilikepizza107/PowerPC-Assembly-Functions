@@ -21,6 +21,9 @@ const int CHR_BUFFER_XPOS_OFFSET = CHR_BUFFER_YVEL_OFFSET + 4;
 const int CHR_BUFFER_YPOS_OFFSET = CHR_BUFFER_XPOS_OFFSET + 4;
 const int CHR_BUFFER_GRAVITY_OFFSET = CHR_BUFFER_YPOS_OFFSET + 4;
 const int CHR_BUFFER_MFS_OFFSET = CHR_BUFFER_GRAVITY_OFFSET + 4;
+// This value is populated by the AddNewCharacterBuffer() function.
+// It ends up being CHARACTER_INFO_START_ADDRESS + (PortID * 0x5C), landing in the GameGlobal Heap
+// Which means this is a pointer to a given player's gmPlayerInitData in gmGlobalModeMelee!
 const int CHR_BUFFER_INFO_PTR_OFFSET = CHR_BUFFER_MFS_OFFSET + 4;
 const int CHR_BUFFER_PORT_OFFSET = CHR_BUFFER_INFO_PTR_OFFSET + 4;
 const int CHR_BUFFER_HEAD_OF_FIGHTER_OFFSET = CHR_BUFFER_PORT_OFFSET + 4;
@@ -36,6 +39,9 @@ const int CHR_BUFFER_SIZE = CHR_BUFFER_DI_BUFFER_PTR_OFFSET + 4;
 const vector<int> COLOR_ID = { CHR_BUFFER_INFO_PTR_OFFSET, 5, 1 };
 const vector<int> CHARACTER_ID = { CHR_BUFFER_INFO_PTR_OFFSET, 0, 1 };
 
+// Appears to land in GameGlobal Heap.
+// Specifically, it's 0x98 bytes into gmGlobalModeMelee, under standard conditions
+// That itself appears to point to the first gmPlayerInitData!
 static const int CHARACTER_INFO_START_ADDRESS = 0x90180FB8;
 
 void Draw();
@@ -46,6 +52,7 @@ void DeleteCharacterBuffer();
 void ControlCodes();
 void FixPercentSelector();
 void LoadCodeMenu();
+void UpdateHeapAddressCache();
 void StartMatch();
 void EndMatch();
 void FindCharacterBuffer(int TargetReg, int ResultReg);

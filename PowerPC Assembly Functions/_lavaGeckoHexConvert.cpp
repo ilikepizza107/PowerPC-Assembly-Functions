@@ -130,6 +130,9 @@ namespace lava::gecko
 		}
 	}
 
+	// Misc Settings
+	bool doPPCHexEncodingComments = 1;
+
 
 	// Utility
 	unsigned long getAddressFromCodeSignature(unsigned long codeSignatureIn)
@@ -1689,7 +1692,7 @@ namespace lava::gecko
 					hexVec.push_back(lava::stringToNum<unsigned long>(hexWord, 0, ULONG_MAX, 1));
 				}
 
-				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 1, 1);
+				std::vector<std::string> convertedHexVec = lava::ppc::convertInstructionHexBlockToStrings(hexVec, disallowedMnemonics, 1, doPPCHexEncodingComments);
 				outputStreamIn << "{\n";
 				// Do indented output, accounting for newline characters!
 				for (unsigned long i = 0; i < convertedHexVec.size(); i++)
@@ -2149,7 +2152,7 @@ namespace lava::gecko
 
 		return result;
 	}
-	std::size_t parseGeckoCode(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, bool resetDynamicValues, bool resetTrackingValues)
+	std::size_t parseGeckoCode(std::ostream& output, std::istream& codeStreamIn, std::size_t expectedLength, bool resetDynamicValues, bool resetTrackingValues, bool doPPCHexComments)
 	{
 		std::size_t result = SIZE_MAX;
 
@@ -2169,6 +2172,7 @@ namespace lava::gecko
 			{
 				resetParserTrackingValues();
 			}
+			doPPCHexEncodingComments = doPPCHexComments;
 
 			std::string codeTypeStr("");
 			geckoCodeType* targetedGeckoCodeType = nullptr;

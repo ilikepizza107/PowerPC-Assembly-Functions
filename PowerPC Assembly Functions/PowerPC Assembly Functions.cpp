@@ -35,8 +35,10 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 
 bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY = 0;
 bool CONFIG_DISABLE_ASM_DISASSEMBLY = 0;
+bool CONFIG_ENABLE_ASM_HEX_COMMENTS = 0;
 bool CONFIG_DELETE_ASM_TXT_FILE = 1;
 bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 0;
+bool CONFIG_ALLOW_BLA_FUNCTION_CALLS = 0;
 
 
 bool setMAIN_FOLDER(std::string mainFolderIn)
@@ -142,7 +144,7 @@ bool ledger::writeCodeToASMStream(std::ostream& output, std::istream& codeStream
 	if (!disableDisassembly)
 	{
 		// ... then pass off to the disassembler.
-		result = lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0) == expectedLength;
+		result = lava::gecko::parseGeckoCode(output, codeStreamIn, expectedLength, 0, 0, CONFIG_ENABLE_ASM_HEX_COMMENTS) == expectedLength;
 	}
 	// Otherwise...
 	else
@@ -994,10 +996,18 @@ void FindInTerminatedArray(int ValueReg, int StartAddressReg, int endMarker, int
 	Label(EndOfSearch);
 }
 
-void CallBrawlFunc(int Address) {
-	SetRegister(0, Address);
-	MTCTR(0);
-	BCTRL();
+void CallBrawlFunc(int Address, int addressReg) {
+	// If BLAs are enabled, and the target address can be validly represented using a BLA...
+	if (CONFIG_ALLOW_BLA_FUNCTION_CALLS && (Address >= 0x80000000) && (Address < 0x88000000) && !(Address & 0b11))
+	{
+		BLA(Address);
+	}
+	else
+	{
+		SetRegister(addressReg, Address);
+		MTCTR(addressReg);
+		BCTRL();
+	}
 }
 
 //r3 returns ptr to memory
@@ -1799,6 +1809,49 @@ void IfNotInSSE(int reg1, int reg2) {
 	SetRegister(reg2, 0x80702B60);
 	If(reg1, NOT_EQUAL, reg2);
 }
+
+void GetHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int destinationReg)
+{
+	ADDIS(destinationReg, 0, HEAP_ADDRESS_TABLE.table_start() >> 0x10);
+	LWZ(destinationReg, destinationReg, HEAP_ADDRESS_TABLE.header_relative_address_offset(heapIndex));
+}
+
+void LoadWordFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset)
+{
+	GetHeapAddress(heapIndex, addressDestinationReg);
+	LWZ(loadDestinationReg, addressDestinationReg, offset);
+}
+
+void StoreWordToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset)
+{
+	GetHeapAddress(heapIndex, addressDestinationReg);
+	STW(sourceReg, addressDestinationReg, offset);
+}
+
+void LoadHalfFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset)
+{
+	GetHeapAddress(heapIndex, addressDestinationReg);
+	LHZ(loadDestinationReg, addressDestinationReg, offset);
+}
+
+void StoreHalfToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset)
+{
+	GetHeapAddress(heapIndex, addressDestinationReg);
+	STH(sourceReg, addressDestinationReg, offset);
+}
+
+void LoadByteFromHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int loadDestinationReg, int addressDestinationReg, int offset)
+{
+	GetHeapAddress(heapIndex, addressDestinationReg);
+	LBZ(loadDestinationReg, addressDestinationReg, offset);
+}
+
+void StoreByteToHeapAddress(_heapCacheTable::CachedHeaps heapIndex, int sourceReg, int addressDestinationReg, int offset)
+{
+	GetHeapAddress(heapIndex, addressDestinationReg);
+	STB(sourceReg, addressDestinationReg, offset);
+}
+
 
 void ABS(int DestReg, int SourceReg, int tempReg)
 {

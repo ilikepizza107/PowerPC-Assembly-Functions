@@ -238,9 +238,11 @@ namespace lava
 		// Debug
 		const std::string _debugOptionsTag = "debugOptions";
 		const std::string _implicitOptimizationsTag = "allowImplicitOptimizations";
+		const std::string _allowBLAFuncCalls = "allowBLAFuncCalls";
 		const std::string _deleteASMTxtTag = "deleteASMTxt";
 		const std::string _asmDictTag = "makeASMDictionary";
 		const std::string _disableDisassemmblerTag = "disableDisassembler";
+		const std::string _enableASMHexCommentsTag = "enableASMHexComments";
 
 		// General
 		const std::string menuConfigTag = "codeMenuConfig";
@@ -359,8 +361,10 @@ namespace lava
 		{
 			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_asmDictTag, CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY);
 			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_implicitOptimizationsTag, CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS);
+			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_allowBLAFuncCalls, CONFIG_ALLOW_BLA_FUNCTION_CALLS);
 			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_deleteASMTxtTag, CONFIG_DELETE_ASM_TXT_FILE);
 			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_disableDisassemmblerTag, CONFIG_DISABLE_ASM_DISASSEMBLY);
+			result |= addOrApplyDebugOptionInNode(debugOptionsNode, configXMLConstants::_enableASMHexCommentsTag, CONFIG_ENABLE_ASM_HEX_COMMENTS);
 		}
 		if (result)
 		{

@@ -906,10 +906,13 @@ void CodeMenu()
 	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
 	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
-	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
-	SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
-	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
-	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	if (PROJECT_PLUS_EX_BUILD)
+	{
+		SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
+		SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
+		SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
+		SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	}
 	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
 	Page SpecialModePage("Special Modes", SpecialModeLines);
 
@@ -1606,7 +1609,7 @@ void CreateMenu(Page MainPage)
 	if (MEM2_CONSTANTS_LENGTH > 0)
 	{
 		// ... reserve space for them in the CMNU!
-		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH);
+		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH, 0xCC);
 	}
 
 	if (LINE_COLOR_TABLE.table_size() > 0)
@@ -1615,6 +1618,14 @@ void CreateMenu(Page MainPage)
 		{
 			AddValueToByteArray(LINE_COLOR_TABLE.COLORS[i], Header);
 		}
+	}
+
+	if (HEAP_ADDRESS_TABLE.table_size() > 0)
+	{
+		// Reserve space for Address Table (just initialized to zeroes, value populated in-game).
+		Header.resize(Header.size() + HEAP_ADDRESS_TABLE.address_array_size(), 0x00);
+		// Write ID Array to Header.
+		Header.insert(Header.end(), HEAP_ADDRESS_TABLE.idArray.cbegin(), HEAP_ADDRESS_TABLE.idArray.cend());
 	}
 
 	if (START_OF_CODE_MENU - START_OF_CODE_MENU_HEADER != Header.size()) {
@@ -2181,11 +2192,24 @@ void ControlCodeMenu()
 							If(4, NOT_EQUAL, 5); { // If the New ID and Old ID don't match...
 								SetRegister(Reg1, 0);
 								STB(5, Reg2, 0); // Overwrite Old ID with New one
+								// This seems to trigger a line at 0x809463C4 in "processBegin/[stLoaderPlayer]/st_loader_player.o" (0x80954350 in Ghidra)
+								// which ultimately leads to the line:
+								//		(*(code *)this->vtable->stLoaderPlayer$$removeEntity)(this); Starting @ 0x809543d4 in Ghidra
+								// This, I assume, is the thing that kills the entity and prompts spawning the new one.
+								// There's *also*, however, 0x80946358 (Ghidra: 0x809542e4), which directly checks whether or not the Slot ID
+								// recorded in the PlayerInitStruct is different from the currently selected one, along with some other conditions.
+								// If so, then we run the following:
+								//		(*(code *)this->vtable->stLoaderPlayer$$removeEntity)(this); Starting @ 0x8095431c in Ghidra
+								// Either one of these could be the thing responsible for ultimately causing the change to happen,
+								// not sure which it is for sure.
+								// In either case, should end up calling "removeEntity/[stLoaderPlayer]" 0x80948da8 (0x80956d34 in Ghidra)
+								// Messing with the r3 value at 0x809463C4 does prompt a reload
+								// Messing with the r0 value at 0x80946358 DOES NOT! Neither in SSE, nor in VS
 
 								SetRegister(Reg3, 0x43AD8);
 								LoadWordToReg(Reg4, 0x805A00E0); // Get ptr to GameGlobal Struct
-								LWZ(Reg4, Reg4, 0x10); // Get ptr to gmSelCharData
-								ADD(Reg4, Reg4, Reg3); // Add 0x43AD8 to addr of this struct? Way beyond the listed range in Ghidra (0x901c4618?)
+								LWZ(Reg4, Reg4, 0x10); // Get ptr to gmSelCharData (0x90180b40 in testing)
+								ADD(Reg4, Reg4, Reg3); // Add 0x43AD8 to addr of this struct (901c4618)? Way beyond the listed range in Ghidra
 								LWZ(Reg3, CharacterBufferReg, CHR_BUFFER_PORT_OFFSET); // Get port for character to change...
 								MULLI(Reg3, Reg3, 0x5C); // ... and multiply it by 0x5C, probably to index into a list of entries
 								STWX(Reg1, Reg4, Reg3); // Write 0 into (&gmSelCharData + 0x43AD8 + OffsetIntoListForTargetPort), Setting to 1 gives RAlt?
@@ -3228,7 +3252,8 @@ void SaveReplay()
 	SetRegs(3, { REPLAY_NTE_DATA_BUFFER_LOC, 42 });
 	CallBrawlFunc(0x80152b5c); //ctnteFileReplay
 
-	SetRegister(4, REPLAY_BUFFER_BEGIN);
+	GetHeapAddress(HEAP_ADDRESS_TABLE.CACHED_REPLAY_HEAP, 4);
+	ADDI(4, 4, REPLAY_HEAP_REPLAY_BUFFER_BEGIN_OFF);
 	CallBrawlFunc(0x80152c4c); //setData
 
 	SetArgumentsFromRegs(3, { SectionBufferReg, NTEBufferReg, HighTimeReg, LowTimeReg });
