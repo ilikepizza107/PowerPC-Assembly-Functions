@@ -879,7 +879,10 @@ void CodeMenu()
 	P1Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P1_INDEX, "%.0f%%"));
 	P1Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P1_INDEX));
 	P1Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P1_INDEX));
-	P1Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P1_INDEX));
+	if (PROJECT_PLUS_EX_BUILD)
+	{
+		P1Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P1_INDEX));
+	}
 	P1Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P1_INDEX));
 	P1Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P1Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P1_FLASH_RED_INDEX));
@@ -898,7 +901,10 @@ void CodeMenu()
 	P2Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P2_INDEX, "%.0f%%"));
 	P2Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P2_INDEX));
 	P2Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P2_INDEX));
-	P2Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P2_INDEX));
+	if (PROJECT_PLUS_EX_BUILD)
+	{
+		P2Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P2_INDEX));
+	}
 	P2Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P2_INDEX));
 	P2Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P2Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P2_FLASH_RED_INDEX));
@@ -913,7 +919,10 @@ void CodeMenu()
 	P3Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P3_INDEX, "%.0f%%"));
 	P3Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P3_INDEX));
 	P3Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P3_INDEX));
-	P3Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P3_INDEX));
+	if (PROJECT_PLUS_EX_BUILD)
+	{
+		P3Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P3_INDEX));
+	}
 	P3Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P3_INDEX));
 	P3Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P3Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P3_FLASH_RED_INDEX));
@@ -928,7 +937,10 @@ void CodeMenu()
 	P4Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P4_INDEX, "%.0f%%"));
 	P4Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P4_INDEX));
 	P4Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P4_INDEX));
-	P4Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P4_INDEX));
+	if (PROJECT_PLUS_EX_BUILD)
+	{
+		P4Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P4_INDEX));
+	}
 	P4Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P4_INDEX));
 	P4Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	P4Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P4_FLASH_RED_INDEX));
@@ -1021,10 +1033,13 @@ void CodeMenu()
 	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
 	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
-	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
-	SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
-	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
-	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	if (PROJECT_PLUS_EX_BUILD)
+	{
+		SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
+		SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
+		SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
+		SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	}
 	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
 	Page SpecialModePage("Special Modes", SpecialModeLines);
 
