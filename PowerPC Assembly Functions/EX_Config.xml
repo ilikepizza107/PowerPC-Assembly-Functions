@@ -53,7 +53,7 @@
         <jumpsquatModifier enabled="true" />
         
         <!--Controls the behavior of the Player Slot Color Changer Code!-->
-        <slotColorChanger enabled="true">
+        <slotColorChanger enabled="false">
             <colorDefinitions>
                 <color      name="Pink"     hue="315.0"  saturation="1.00"   luminance="0.50" />
                 <color      name="Purple"   hue="280.0"  saturation="1.00"   luminance="0.50" />
