@@ -527,6 +527,8 @@ namespace xmlTagConstants
 	const std::string intTag = "codeMenuInt";
 	const std::string floatTag = "codeMenuFloat";
 	const std::string lockedTag = "locked";
+	const std::string hiddenTag = "hidden";
+	const std::string stickyTag = "sticky";
 }
 pugi::xml_document menuOptionsTree{};
 bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument)
@@ -712,26 +714,64 @@ void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_docu
 					break;
 				}
 			}
-			// Lastly, check if the line is explicitly marked as locked...
-			if (lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
+			// Check if the line is explicitly marked as hidden...
+			pugi::xml_attribute tempAttr = lineFindItr->second.attribute(xmlTagConstants::hiddenTag.c_str());
+			if (tempAttr)
 			{
-				// ... and if so, mark it as unselectable.
-				currLine->setIsSelectable(0);
+				// ... and if so, mark it as such...
+				currLine->behaviorFlags[Line::lbf_HIDDEN].value = tempAttr.as_bool();
+				// ... and force enable XML output for the flag!
+				currLine->behaviorFlags[Line::lbf_HIDDEN].forceXMLOutput = 1;
+			}
+			// Check if the line is explicitly marked as locked...
+			if (tempAttr = lineFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()), tempAttr)
+			{
+				// ... and if so, mark it as such...
+				currLine->behaviorFlags[Line::lbf_UNSELECTABLE].value = tempAttr.as_bool();
+				// ... and force enable XML output for the flag!
+				currLine->behaviorFlags[Line::lbf_UNSELECTABLE].forceXMLOutput = 1;
+			}
+			// Check if the line is explicitly marked as sticky...
+			if (tempAttr = lineFindItr->second.attribute(xmlTagConstants::stickyTag.c_str()), tempAttr)
+			{
+				// ... and if so, mark it as such...
+				currLine->behaviorFlags[Line::lbf_STICKY].value = tempAttr.as_bool();
+				// ... and force enable XML output for the flag!
+				currLine->behaviorFlags[Line::lbf_STICKY].forceXMLOutput = 1;
 			}
 		}
 
-		// Lastly, check if the page is explicitly marked as locked...
-		if (pageFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()).as_bool(0))
+		// Check if the page is explicitly marked as hidden...
+		pugi::xml_attribute tempAttr = pageFindItr->second.attribute(xmlTagConstants::hiddenTag.c_str());
+		if (tempAttr)
 		{
-			// ... and if so, mark it as unselectable.
-			currPage->CalledFromLine.setIsSelectable(0);
+			// ... and if so, mark it as such...
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_HIDDEN].value = tempAttr.as_bool();
+			// ... and force enable XML output for the flag!
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_HIDDEN].forceXMLOutput = 1;
+		}
+		// Check if the page is explicitly marked as locked...
+		if (tempAttr = pageFindItr->second.attribute(xmlTagConstants::lockedTag.c_str()), tempAttr)
+		{
+			// ... and if so, mark it as such...
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_UNSELECTABLE].value = tempAttr.as_bool();
+			// ... and force enable XML output for the flag!
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_UNSELECTABLE].forceXMLOutput = 1;
+		}
+		// Check if the page is explicitly marked as sticky...
+		if (tempAttr = pageFindItr->second.attribute(xmlTagConstants::stickyTag.c_str()), tempAttr)
+		{
+			// ... and if so, mark it as such...
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_STICKY].value = tempAttr.as_bool();
+			// ... and force enable XML output for the flag!
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_STICKY].forceXMLOutput = 1;
 		}
 	}
 	// And lastly, for each page...
 	for (Page* currPage : Pages)
 	{
-		// ... re-connect the lines in them, to ensure that anything made newly unselectable actually honors that designation.
-		currPage->ConnectSelectableLines();
+		// ... re-prepare the lines in them, to ensure that anything with changed visibility actually honors that designation.
+		currPage->PrepareLines();
 	}
 }
 bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn)
@@ -772,9 +812,20 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 		pugi::xml_node pageNode = menuBaseNode.append_child(xmlTagConstants::pageTag.c_str());
 		pugi::xml_attribute pageNameAttr = pageNode.append_attribute(xmlTagConstants::nameTag.c_str());
 		pageNameAttr.set_value(currPage->PageName.c_str());
-		if (!currPage->CalledFromLine.getIsSelectable())
+		Line::LineBehaviorFlagSetting pageFlagSetting = currPage->CalledFromLine.behaviorFlags[Line::lbf_HIDDEN];
+		if (pageFlagSetting || pageFlagSetting.forceXMLOutput)
 		{
-			pageNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
+			pageNode.append_attribute(xmlTagConstants::hiddenTag.c_str()).set_value(pageFlagSetting);
+		}
+		pageFlagSetting = currPage->CalledFromLine.behaviorFlags[Line::lbf_UNSELECTABLE];
+		if (pageFlagSetting || pageFlagSetting.forceXMLOutput)
+		{
+			pageNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value(pageFlagSetting);
+		}
+		pageFlagSetting = currPage->CalledFromLine.behaviorFlags[Line::lbf_STICKY];
+		if (pageFlagSetting || pageFlagSetting.forceXMLOutput)
+		{
+			pageNode.append_attribute(xmlTagConstants::stickyTag.c_str()).set_value(pageFlagSetting);
 		}
 
 		for (unsigned long u = 0; u < currPage->Lines.size(); u++)
@@ -782,17 +833,14 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 			const Line* currLine = currPage->Lines[u];
 
 			std::vector<const char*> deconstructedText = splitLineContentString(currLine->Text);
+			pugi::xml_node lineNode{};
 			switch (currLine->type)
 			{
 				case SELECTION_LINE:
 				{
-					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::selectionTag.c_str());
+					lineNode = pageNode.append_child(xmlTagConstants::selectionTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					if (!currLine->getIsSelectable())
-					{
-						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
-					}
 					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::selectionDefaultTag.c_str());
 					defaultValNode.append_attribute(xmlTagConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
 					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
@@ -806,13 +854,9 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 				}
 				case INTEGER_LINE:
 				{
-					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::intTag.c_str());
+					lineNode = pageNode.append_child(xmlTagConstants::intTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					if (!currLine->getIsSelectable())
-					{
-						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
-					}
 					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
 					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Min).c_str());
 					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
@@ -824,13 +868,9 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 				}
 				case FLOATING_LINE:
 				{
-					pugi::xml_node lineNode = pageNode.append_child(xmlTagConstants::floatTag.c_str());
+					lineNode = pageNode.append_child(xmlTagConstants::floatTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0]);
-					if (!currLine->getIsSelectable())
-					{
-						lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value("true");
-					}
 					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
 					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
 					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
@@ -843,6 +883,24 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 				default:
 				{
 					break;
+				}
+			}
+			if (lineNode)
+			{
+				Line::LineBehaviorFlagSetting lineFlagSetting = currLine->behaviorFlags[Line::lbf_HIDDEN];
+				if (lineFlagSetting || lineFlagSetting.forceXMLOutput)
+				{
+					lineNode.append_attribute(xmlTagConstants::hiddenTag.c_str()).set_value(lineFlagSetting);
+				}
+				lineFlagSetting = currLine->behaviorFlags[Line::lbf_UNSELECTABLE];
+				if (lineFlagSetting || lineFlagSetting.forceXMLOutput)
+				{
+					lineNode.append_attribute(xmlTagConstants::lockedTag.c_str()).set_value(lineFlagSetting);
+				}
+				lineFlagSetting = currLine->behaviorFlags[Line::lbf_STICKY];
+				if (lineFlagSetting || lineFlagSetting.forceXMLOutput)
+				{
+					lineNode.append_attribute(xmlTagConstants::stickyTag.c_str()).set_value(lineFlagSetting);
 				}
 			}
 		}
@@ -2686,7 +2744,7 @@ void ResetPage(int StackReg, int TempReg1, int TempReg2, int TempReg3, int TempR
 			ResetLine(TempReg2, TempReg1, StackReg, TempReg3, TempReg4, TempReg5, TempReg6, 1);
 
 			LHZ(TempReg6, TempReg2, Line::SIZE);
-			ADD(TempReg2, TempReg2, TempReg6); //next line
+			LHZUX(TempReg6, TempReg2, TempReg6); //next line
 		}EndWhile();
 	}IterateStackEnd();
 }

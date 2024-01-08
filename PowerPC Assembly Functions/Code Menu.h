@@ -469,8 +469,25 @@ class Page;
 
 class Line
 {
-	bool isSelectable = 1;
 public:
+	enum LineBehaviorFlags
+	{
+		lbf_UNSELECTABLE = 0,
+		lbf_HIDDEN,
+		lbf_STICKY,
+		lbf__COUNT
+	};
+	struct LineBehaviorFlagSetting
+	{
+		bool forceXMLOutput = 0;
+		bool value = 0;
+		operator bool() const
+		{
+			return value;
+		}
+	};
+	std::array<LineBehaviorFlagSetting, LineBehaviorFlags::lbf__COUNT> behaviorFlags{};
+
 	// Note: The top 4 bits of the Flags Byte are line-specific flags, bottom 4 are line-agnostic flags (see Line::LINE_FLAGS_FIELDS enum)!
 	enum LINE_FLAGS_FIELDS
 	{
@@ -500,6 +517,20 @@ public:
 
 	void WriteLineData(int* SourceSelectionIndexPtr, vector<u8> SelectionOffsets)
 	{
+		if (behaviorFlags[Line::lbf_HIDDEN])
+		{
+			Color = HIDDEN_LINE_COLOR_OFFSET;
+		}
+		else if (behaviorFlags[Line::lbf_UNSELECTABLE].value)
+		{
+			Color = UNSELECTABLE_LINE_COLOR_OFFSET;
+		}
+		Flags &= ~Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
+		if (behaviorFlags[Line::lbf_STICKY])
+		{
+			Flags |= Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
+		}
+
 		vector<u8> output;
 		AddValueToByteArray(Size, output);
 		if (Size == 0) {
@@ -593,16 +624,6 @@ public:
 	static const int MIN = MAX + 4; //4
 	static const int SPEED = MIN + 4; //4
 	static const int NUMBER_LINE_TEXT_START = SPEED + 4;
-
-	bool getIsSelectable() const
-	{
-		return isSelectable;
-	}
-	void setIsSelectable(bool selectableIn)
-	{
-		isSelectable = selectableIn;
-		Flags = (Flags & ~LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET) | (selectableIn ? 0 : LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
-	}
 };
 
 class Comment : public Line
@@ -791,19 +812,57 @@ public:
 	Page(string Name, vector<Line*> Lines) {
 		CalledFromLine = SubMenu(Name, this);
 		PageName = Name;
-		this->Lines = Lines;
+		PrepareLines(Lines);
+	}
+	void PrepareLines()
+	{
+		PrepareLines(this->Lines);
+	}
+	void PrepareLines(const std::vector<Line*> LinesIn)
+	{
 		Size = NUM_WORD_ELEMS * 4;
-		for (auto x : Lines) {
-			x->PageOffset = Size;
-			Size += x->Size;
+		this->Lines.clear();
+		std::vector<Line*> hiddenLockedLines{};
+		std::vector<Line*> hiddenUnlockedLines{};
+		for (Line* currLine : LinesIn)
+		{
+			// If the current line is marked as hidden...
+			if (currLine->behaviorFlags[Line::lbf_HIDDEN])
+			{
+				// ... and unselectable...
+				if (currLine->behaviorFlags[Line::lbf_UNSELECTABLE])
+				{
+					// ... add it to the hiddenLocked list.
+					hiddenLockedLines.push_back(currLine);
+				}
+				// Otherwise...
+				else
+				{
+					// ... add it to the hiddenUnlocked list.
+					hiddenUnlockedLines.push_back(currLine);
+				}
+			}
+			// Otherwise...
+			else
+			{
+				// ... add the line to the page's list!
+				this->Lines.push_back(currLine);
+			}
 		}
-		for(int i = 0; i < Lines.size(); i++) {
-			Lines[i]->lineNum = i;
+		// Then, add all hidden lines to the end of the final list, placing unlocked ones before locked ones!
+		this->Lines.insert(this->Lines.end(), hiddenUnlockedLines.begin(), hiddenUnlockedLines.end());
+		this->Lines.insert(this->Lines.end(), hiddenLockedLines.begin(), hiddenLockedLines.end());
+
+		// Do some final line attribute assignment stuff...
+		for (std::size_t i = 0; i < this->Lines.size(); i++)
+		{
+			this->Lines[i]->lineNum = i;
+			this->Lines[i]->PageOffset = Size;
+			Size += this->Lines[i]->Size;
 		}
-		//Lines.back()->Size = 0;
+		// ... and connect the lines accordingly!
 		ConnectSelectableLines();
 	}
-	
 	void WritePage()
 	{
 		vector<u8> output;
@@ -821,11 +880,13 @@ public:
 	{
 		vector<int> SelectableLines;
 		GetSelectableLines(SelectableLines);
-		if (SelectableLines.size() > 0) {
+		if (SelectableLines.size() > 0) 
+		{
 			SelectableLines.insert(SelectableLines.begin(), SelectableLines.back());
 			SelectableLines.push_back(SelectableLines[1]);
 
-			for (int i = 1; i < SelectableLines.size() - 1; i++) {
+			for (int i = 1; i < SelectableLines.size() - 1; i++) 
+			{
 				Lines[SelectableLines[i]]->UpOffset = Lines[SelectableLines[i - 1]]->PageOffset;
 				Lines[SelectableLines[i]]->DownOffset = Lines[SelectableLines[i + 1]]->PageOffset;
 			}
@@ -833,22 +894,21 @@ public:
 			CurrentLineOffset = Lines[SelectableLines[1]]->PageOffset;
 			Lines[SelectableLines[1]]->Color = HIGHLIGHTED_LINE_COLOR_OFFSET;
 		}
-		else {
+		else 
+		{
 			CurrentLineOffset = NUM_WORD_ELEMS * 4;
 		}
 	}
 
 	void GetSelectableLines(vector<int> &SelectableLines)
 	{
-		for (int i = 0; i < Lines.size(); i++) {
-			if (Lines[i]->type != COMMENT_LINE && Lines[i]->type != PRINT_LINE) {
-				if (Lines[i]->getIsSelectable())
+		for (int i = 0; i < Lines.size(); i++) 
+		{
+			if (Lines[i]->type != COMMENT_LINE && Lines[i]->type != PRINT_LINE) 
+			{
+				if (!Lines[i]->behaviorFlags[Line::lbf_UNSELECTABLE])
 				{
 					SelectableLines.push_back(i);
-				}
-				else
-				{
-					Lines[i]->Color = UNSELECTABLE_LINE_COLOR_OFFSET;
 				}
 			}
 		}
