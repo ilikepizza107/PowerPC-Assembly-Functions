@@ -296,6 +296,7 @@ namespace pscc
 		const std::string predefStr = "pd_";
 		const std::string menuSuffStr = "_m";
 		const std::string ingameSuffStr = "_ig";
+		const std::string secSuffStr = "_2";
 
 		const std::string SchemeNameP1 = "P1";
 		const std::string SchemeNameP2 = "P2";
@@ -303,13 +304,21 @@ namespace pscc
 		const std::string SchemeNameP4 = "P4";
 
 		const std::string ColNameP1_M = predefStr + SchemeNameP1 + menuSuffStr;
+		const std::string ColNameP1_M2 = predefStr + SchemeNameP1 + menuSuffStr + secSuffStr;
 		const std::string ColNameP1_IG = predefStr + SchemeNameP1 + ingameSuffStr;
+		const std::string ColNameP1_IG2 = predefStr + SchemeNameP1 + ingameSuffStr + secSuffStr;
 		const std::string ColNameP2_M = predefStr + SchemeNameP2 + menuSuffStr;
+		const std::string ColNameP2_M2 = predefStr + SchemeNameP2 + menuSuffStr + secSuffStr;
 		const std::string ColNameP2_IG = predefStr + SchemeNameP2 + ingameSuffStr;
+		const std::string ColNameP2_IG2 = predefStr + SchemeNameP2 + ingameSuffStr + secSuffStr;
 		const std::string ColNameP3_M = predefStr + SchemeNameP3 + menuSuffStr;
+		const std::string ColNameP3_M2 = predefStr + SchemeNameP3 + menuSuffStr + secSuffStr;
 		const std::string ColNameP3_IG = predefStr + SchemeNameP3 + ingameSuffStr;
+		const std::string ColNameP3_IG2 = predefStr + SchemeNameP3 + ingameSuffStr + secSuffStr;
 		const std::string ColNameP4_M = predefStr + SchemeNameP4 + menuSuffStr;
+		const std::string ColNameP4_M2 = predefStr + SchemeNameP4 + menuSuffStr + secSuffStr;
 		const std::string ColNameP4_IG = predefStr + SchemeNameP4 + ingameSuffStr;
+		const std::string ColNameP4_IG2 = predefStr + SchemeNameP4 + ingameSuffStr + secSuffStr;
 	}
 
 	bool color::colorValid() const
@@ -320,10 +329,11 @@ namespace pscc
 	std::map<std::string, color> colorTable =
 	{
 		{psccConstants::ColNameP1_M,	{0.00f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP1_IG2,	{5.80f,	1.00f,	0.50f}},
 		{psccConstants::ColNameP2_M,	{3.90f,	0.70f,	0.50f}},
-		{psccConstants::ColNameP2_IG,	{3.90f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP2_IG,	{3.60f,	1.00f,	0.50f}},
 		{psccConstants::ColNameP3_M,	{0.85f,	1.00f,	0.50f}},
-		{psccConstants::ColNameP3_IG,	{1.00f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP3_IG,	{1.05f,	0.80f,	0.55f}},
 		{psccConstants::ColNameP4_M,	{2.10f,	0.80f,	0.375f}},
 	};
 	std::size_t getColorTableSizeInBytes()
@@ -377,7 +387,7 @@ namespace pscc
 		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP1_M;
 		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP1_M;
 		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP1_M;
-		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP1_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP1_IG2;
 
 		currCol = &entries[schemePredefIDs::spi_P2];
 		currCol->name = psccConstants::SchemeNameP2;
@@ -1158,6 +1168,7 @@ void CodeMenu()
 		schemeNames[i] = pscc::schemeTable.entries[i].name;
 	}
 	Selection* P1ColorLine = new Selection("Player 1", schemeNames, pscc::schemePredefIDs::spi_P1, PSCC_COLOR_1_INDEX);
+	P1ColorLine->Flags |= Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
 	HUDColorLines.push_back(P1ColorLine);
 	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 2", pscc::schemePredefIDs::spi_P2, PSCC_COLOR_2_INDEX));
 	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 3", pscc::schemePredefIDs::spi_P3, PSCC_COLOR_3_INDEX));

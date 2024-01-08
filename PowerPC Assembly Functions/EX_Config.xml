@@ -70,7 +70,7 @@
                 <scheme     name="Cyan"     menuColor1="Cyan"   ingameColor1="Cyan"     />
                 <scheme     name="Gray"     menuColor1="Gray"   ingameColor1="Gray"     />
                 <scheme     name="Black"    menuColor1="Black"  ingameColor1="Black"    menuColor2="White"  ingameColor2="White"/>
-                <scheme     name="White"    menuColor1="White"  ingameColor1="White"    menuColor2="Black"  ingameColor2="Black"/>
+                <scheme     name="White"    menuColor1="White"  ingameColor1="White"    ingameColor2="Black"/>
             </schemeDefinitions>
         </slotColorChanger>
     </codeSettings>
