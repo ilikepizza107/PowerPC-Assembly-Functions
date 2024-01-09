@@ -3218,6 +3218,11 @@ void PrintPage(int PageReg, int SettingsPtrReg, int Reg1, int Reg2, int Reg3, in
 
 void PrintCodeMenuLine(int LinePtrReg, int SettingsPtrReg, int ColorArrayPtrReg, int TempReg1, int TempReg2)
 {
+	int skipPrintingLabel = GetNextLabel();
+	LBZ(TempReg2, LinePtrReg, Line::FLAGS);
+	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_SKIP_PRINTING);
+	JumpToLabel(skipPrintingLabel, bCACB_NOT_EQUAL);
+
 	LBZ(TempReg2, LinePtrReg, Line::TYPE);
 
 	LBZ(TempReg1, LinePtrReg, Line::COLOR);
@@ -3259,6 +3264,8 @@ void PrintCodeMenuLine(int LinePtrReg, int SettingsPtrReg, int ColorArrayPtrReg,
 	PrintString(TempReg1, TempReg2, SettingsPtrReg);
 
 	NewLine(SettingsPtrReg);
+
+	Label(skipPrintingLabel);
 }
 
 //requires 2 endifs
