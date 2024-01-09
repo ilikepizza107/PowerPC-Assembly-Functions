@@ -492,7 +492,8 @@ public:
 	enum LINE_FLAGS_FIELDS
 	{
 		// Makes line immune to being reset to its default value!
-		LINE_FLAG_IGNORE_INDIRECT_RESET = 0b00000001
+		LINE_FLAG_IGNORE_INDIRECT_RESET = 0b00000001,
+		LINE_FLAG_SKIP_PRINTING         = 0b00000010
 	};
 
 	Line() {}
@@ -517,13 +518,14 @@ public:
 
 	void WriteLineData(int* SourceSelectionIndexPtr, vector<u8> SelectionOffsets)
 	{
-		if (behaviorFlags[Line::lbf_HIDDEN])
-		{
-			Color = HIDDEN_LINE_COLOR_OFFSET;
-		}
-		else if (behaviorFlags[Line::lbf_UNSELECTABLE].value)
+		if (behaviorFlags[Line::lbf_UNSELECTABLE].value)
 		{
 			Color = UNSELECTABLE_LINE_COLOR_OFFSET;
+		}
+		Flags &= ~Line::LINE_FLAG_SKIP_PRINTING;
+		if (behaviorFlags[Line::lbf_HIDDEN])
+		{
+			Flags |= Line::LINE_FLAG_SKIP_PRINTING;
 		}
 		Flags &= ~Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
 		if (behaviorFlags[Line::lbf_STICKY])
@@ -820,39 +822,9 @@ public:
 	}
 	void PrepareLines(const std::vector<Line*> LinesIn)
 	{
+		// Reset page size, will be re-tallied in the following loop.
 		Size = NUM_WORD_ELEMS * 4;
-		this->Lines.clear();
-		std::vector<Line*> hiddenLockedLines{};
-		std::vector<Line*> hiddenUnlockedLines{};
-		for (Line* currLine : LinesIn)
-		{
-			// If the current line is marked as hidden...
-			if (currLine->behaviorFlags[Line::lbf_HIDDEN])
-			{
-				// ... and unselectable...
-				if (currLine->behaviorFlags[Line::lbf_UNSELECTABLE])
-				{
-					// ... add it to the hiddenLocked list.
-					hiddenLockedLines.push_back(currLine);
-				}
-				// Otherwise...
-				else
-				{
-					// ... add it to the hiddenUnlocked list.
-					hiddenUnlockedLines.push_back(currLine);
-				}
-			}
-			// Otherwise...
-			else
-			{
-				// ... add the line to the page's list!
-				this->Lines.push_back(currLine);
-			}
-		}
-		// Then, add all hidden lines to the end of the final list, placing unlocked ones before locked ones!
-		this->Lines.insert(this->Lines.end(), hiddenUnlockedLines.begin(), hiddenUnlockedLines.end());
-		this->Lines.insert(this->Lines.end(), hiddenLockedLines.begin(), hiddenLockedLines.end());
-
+		this->Lines = LinesIn;
 		// Do some final line attribute assignment stuff...
 		for (std::size_t i = 0; i < this->Lines.size(); i++)
 		{
@@ -906,7 +878,7 @@ public:
 		{
 			if (Lines[i]->type != COMMENT_LINE && Lines[i]->type != PRINT_LINE) 
 			{
-				if (!Lines[i]->behaviorFlags[Line::lbf_UNSELECTABLE])
+				if (!Lines[i]->behaviorFlags[Line::lbf_UNSELECTABLE] && !Lines[i]->behaviorFlags[Line::lbf_HIDDEN])
 				{
 					SelectableLines.push_back(i);
 				}
