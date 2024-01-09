@@ -215,8 +215,14 @@ void psccMiscAdjustments()
 		"\nin some cases cause CSS hands to wind up the wrong color."
 		);
 	WriteIntToFile(0x0469CA2C); LFS(0, 3, 0x1014);
-	//WriteIntToFile(0x8069CAE0); LFS(0, 3, 0x1014);
 	CodeRawEnd();
+
+	ASMStart(0x80697558, codePrefix + "CSS Random Always Uses P1 CSP" + codeSuffix, "");
+	// Restore Original Instruction
+	SetRegister(24, 0);
+	// Force Number for Portrait Texture Name to 501 (for P1 Random)
+	SetRegister(25, 501);
+	ASMEnd();
 }
 
 void psccCLR0V4InstallCode()
