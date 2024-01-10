@@ -738,6 +738,7 @@ public:
 		this->Min = SourceSelection.Min;
 		this->Max = SourceSelection.Max;
 		this->SourceSelectionIndexPtr = SourceSelection.Index;
+		this->behaviorFlags = SourceSelection.behaviorFlags;
 	}
 };
 

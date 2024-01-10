@@ -1168,7 +1168,7 @@ void CodeMenu()
 		schemeNames[i] = pscc::schemeTable.entries[i].name;
 	}
 	Selection* P1ColorLine = new Selection("Player 1", schemeNames, pscc::schemePredefIDs::spi_P1, PSCC_COLOR_1_INDEX);
-	P1ColorLine->Flags |= Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
+	P1ColorLine->behaviorFlags[Line::lbf_STICKY].value = 1;
 	HUDColorLines.push_back(P1ColorLine);
 	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 2", pscc::schemePredefIDs::spi_P2, PSCC_COLOR_2_INDEX));
 	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 3", pscc::schemePredefIDs::spi_P3, PSCC_COLOR_3_INDEX));
