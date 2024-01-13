@@ -302,6 +302,7 @@ namespace pscc
 		const std::string SchemeNameP2 = "P2";
 		const std::string SchemeNameP3 = "P3";
 		const std::string SchemeNameP4 = "P4";
+		const std::string SchemeNameRGB = "RGB";
 
 		const std::string ColNameP1_M = predefStr + SchemeNameP1 + menuSuffStr;
 		const std::string ColNameP1_M2 = predefStr + SchemeNameP1 + menuSuffStr + secSuffStr;
@@ -319,6 +320,7 @@ namespace pscc
 		const std::string ColNameP4_M2 = predefStr + SchemeNameP4 + menuSuffStr + secSuffStr;
 		const std::string ColNameP4_IG = predefStr + SchemeNameP4 + ingameSuffStr;
 		const std::string ColNameP4_IG2 = predefStr + SchemeNameP4 + ingameSuffStr + secSuffStr;
+		const std::string ColNameRGB = predefStr + SchemeNameRGB;
 	}
 
 	bool color::colorValid() const
@@ -335,13 +337,12 @@ namespace pscc
 		{psccConstants::ColNameP3_M,	{0.85f,	1.00f,	0.50f}},
 		{psccConstants::ColNameP3_IG,	{1.05f,	0.80f,	0.55f}},
 		{psccConstants::ColNameP4_M,	{2.10f,	0.80f,	0.375f}},
+		{psccConstants::ColNameRGB,     {0.00f, 1.00f,  0.50f}},
 	};
 	std::size_t getColorTableSizeInBytes()
 	{
 		return (colorTable.size() * colorTableEntrySizeInBytes);
 	}
-
-	bool rgbColorIncluded = 0;
 
 	colorScheme::colorScheme(std::string nameIn)
 	{
@@ -426,6 +427,19 @@ namespace pscc
 		}
 		return result;
 	}
+	std::size_t getColorTableOffsetToColor(std::string colorName)
+	{
+		std::size_t result = SIZE_MAX;
+
+		auto findRes = colorTable.find(colorName);
+		if (findRes != colorTable.end())
+		{
+			result = std::distance(colorTable.begin(), findRes) * colorTableEntrySizeInBytes;
+		}
+
+		return result;
+	}
+
 	colorSchemeTable schemeTable;
 }
 
@@ -1845,8 +1859,10 @@ void CreateMenu(Page MainPage)
 }
 
 void constantOverride() {
+	std::size_t rgbColorTableOffset = pscc::getColorTableOffsetToColor(pscc::psccConstants::ColNameRGB);
+
 	ASMStart(0x80023d60, std::string("[CM: Code Menu] Constant Overrides") + 
-		std::string((CONFIG_PSCC_ENABLED && pscc::rgbColorIncluded) ? " + Incr. PSCC RGB Strobe Float" : ""));
+		std::string((CONFIG_PSCC_ENABLED && (rgbColorTableOffset != SIZE_MAX)) ? " + Incr. PSCC RGB Strobe Float" : ""));
 
 	int reg1 = 4;
 	int reg2 = 5;
@@ -1877,7 +1893,7 @@ void constantOverride() {
 		prevDestHiHalf = destHiHalf;
 	}
 
-	if ((CONFIG_PSCC_ENABLED && pscc::rgbColorIncluded))
+	if (CONFIG_PSCC_ENABLED && (rgbColorTableOffset != SIZE_MAX))
 	{
 		int menuNotLoadedLabel = GetNextLabel();
 		// If reg1 isn't already loaded with the top half of START_OF_CODE_MENU_HEADER...
@@ -1899,7 +1915,7 @@ void constantOverride() {
 		// Load the Float Table address into reg3!
 		LWZ(reg3, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
 		// Load the hue value for color 0 (ie. the first float in the table)
-		LFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySizeInBytes);
+		LFS(13, reg3, rgbColorTableOffset);
 
 		// Calculate the constant for our incrementing value, load it into fr12...
 		float conversionConstant = 1.0f/90.0f;
@@ -1921,7 +1937,7 @@ void constantOverride() {
 		FSUB(13, 13, 13);
 
 		// Finally, store the incremented hue back in the float table!
-		STFS(13, reg3, (pscc::colorTable.size() - 1) * pscc::colorTableEntrySizeInBytes);
+		STFS(13, reg3, rgbColorTableOffset);
 		Label(menuNotLoadedLabel);
 	}
 	

@@ -318,7 +318,7 @@ void psccSetupCode()
 	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
 	// If we're still above 3, then we're not looking at a valid CLR0; skip to the exit!
 	CMPLI(reg3, 0x3, 7);
-	JumpToLabel(badExitLabel, bCACB_GREATER);
+	JumpToLabel(badExitLabel, bCACB_GREATER.inConditionRegField(0x7));
 
 	// Reuse the check from the last line to branch for Mode 3!
 	// Note, we did this check in CF7 so that we can use whether we're in it again later to toggle the final port number subtraction!

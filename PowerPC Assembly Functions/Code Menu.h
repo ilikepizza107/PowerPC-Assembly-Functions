@@ -291,7 +291,8 @@ namespace pscc
 	extern std::map<std::string, color> colorTable;
 	static constexpr std::size_t colorTableEntrySizeInBytes = 0xC;
 	std::size_t getColorTableSizeInBytes();
-	extern bool rgbColorIncluded;
+	std::size_t getColorTableOffsetToColor(std::string colorName);
+
 
 	enum schemePredefIDs
 	{
