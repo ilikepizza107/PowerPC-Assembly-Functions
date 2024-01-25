@@ -223,6 +223,22 @@ void psccMiscAdjustments()
 	// Force Number for Portrait Texture Name to 501 (for P1 Random)
 	SetRegister(25, 501);
 	ASMEnd();
+
+	int colorResetExitLabel = GetNextLabel();
+	ASMStart(0x8068BE94, codePrefix + "Color Choice Resets on Setting PlayerKind to None" + codeSuffix, 
+		"Ensures that colors are reset when players unplug their controllers,\n"
+		"while also providing an easy way of resetting without the use of the added controls."
+	);
+	CMPLI(5, 0, 0);
+	JumpToLabel(colorResetExitLabel, bCACB_NOT_EQUAL);
+	// Get the pointer to the relevant line
+	ORIS(11, 0, PSCC_COLOR_1_LOC >> 0x10);
+	LWZ(11, 11, PSCC_COLOR_1_LOC & 0xFFFF);
+	LWZ(12, 11, Line::DEFAULT);
+	STW(12, 11, Line::VALUE);
+	Label(colorResetExitLabel);
+	MR(27, 5); // Restore Original Instruction
+	ASMEnd();
 }
 
 void psccCLR0V4InstallCode()
