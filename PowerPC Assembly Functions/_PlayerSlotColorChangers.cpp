@@ -230,12 +230,16 @@ void psccMiscAdjustments()
 		"Ensures that colors are reset when players unplug their controllers,\n"
 		"while also providing an easy way of resetting without the use of the added controls."
 	);
+	// If the PlayerKind we're switching to isn't "None" (ie. 0)...
 	CMPLI(5, 0, 0);
+	// ... then we'll skip this code, exit early.
 	JumpToLabel(colorResetExitLabel, bCACB_NOT_EQUAL);
-	// Get the pointer to the relevant line
+	// Otherwise, get the pointer to the relevant line (note: r0 already holds port# * 4)...
 	ORIS(11, 0, PSCC_COLOR_1_LOC >> 0x10);
 	LWZ(11, 11, PSCC_COLOR_1_LOC & 0xFFFF);
+	// ... load the line's default value...
 	LWZ(12, 11, Line::DEFAULT);
+	// ... and write that over the current value.
 	STW(12, 11, Line::VALUE);
 	Label(colorResetExitLabel);
 	MR(27, 5); // Restore Original Instruction
