@@ -962,10 +962,12 @@ void CodeMenu()
 	P1Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P1_INDEX, "%.0f%%"));
 	P1Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P1_INDEX));
 	P1Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P1_INDEX));
+	Selection* P1InputBuffer = new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P1_INDEX);
+	Selection* P1ALC = new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P1_INDEX);
 	if (PROJECT_PLUS_EX_BUILD)
 	{
-		P1Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P1_INDEX));
-		P1Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P1_INDEX));
+		P1Lines.push_back(P1InputBuffer);
+		P1Lines.push_back(P1ALC);
 		P1Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 		P1Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P1_FLASH_RED_INDEX));
 	}
@@ -986,8 +988,8 @@ void CodeMenu()
 	P2Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P2_INDEX));
 	if (PROJECT_PLUS_EX_BUILD)
 	{
-		P2Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P2_INDEX));
-		P2Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P2_INDEX));
+		P2Lines.push_back(new SelectionMirror(*P1InputBuffer, "Input Buffer", 0, BUFFER_P2_INDEX));
+		P2Lines.push_back(new SelectionMirror(*P1ALC, "Automatic L-Cancelling", 0, ALC_P2_INDEX));
 		P2Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 		P2Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P2_FLASH_RED_INDEX));
 	}
@@ -1004,8 +1006,8 @@ void CodeMenu()
 	P3Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P3_INDEX));
 	if (PROJECT_PLUS_EX_BUILD)
 	{
-		P3Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P3_INDEX));
-		P3Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P3_INDEX));
+		P3Lines.push_back(new SelectionMirror(*P1InputBuffer, "Input Buffer", 0, BUFFER_P3_INDEX));
+		P3Lines.push_back(new SelectionMirror(*P1ALC, "Automatic L-Cancelling", 0, ALC_P3_INDEX));
 		P3Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 		P3Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P3_FLASH_RED_INDEX));
 	}
@@ -1022,8 +1024,8 @@ void CodeMenu()
 	P4Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P4_INDEX));
 	if (PROJECT_PLUS_EX_BUILD)
 	{
-		P4Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P4_INDEX));
-		P4Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P4_INDEX));
+		P4Lines.push_back(new SelectionMirror(*P1InputBuffer, "Input Buffer", 0, BUFFER_P4_INDEX));
+		P4Lines.push_back(new SelectionMirror(*P1ALC, "Automatic L-Cancelling", 0, ALC_P4_INDEX));
 		P4Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
 		P4Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P4_FLASH_RED_INDEX));
 	}
