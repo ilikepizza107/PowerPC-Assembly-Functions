@@ -94,6 +94,8 @@ extern int JUMPSQUAT_OVERRIDE_FRAMES_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MIN_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MAX_INDEX;
 
+// utility
+extern int TOGGLE_BASE_LINE_INDEX;
 
 struct ConstantPair {
 	int address;
@@ -747,7 +749,12 @@ class Toggle : public Selection
 {
 public:
 	Toggle(string Text, bool Default, int &Index)
-		: Selection(Text,  { "OFF", "ON" }, Default, Index) {}
+		: Selection(Text, {}, {}, Default, Index)
+	{
+		this->Min = 0;
+		this->Max = 1;
+		this->SourceSelectionIndexPtr = &TOGGLE_BASE_LINE_INDEX;
+	}
 };
 
 class SubMenu : public Line

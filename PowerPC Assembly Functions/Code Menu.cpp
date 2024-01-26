@@ -89,6 +89,7 @@ int JUMPSQUAT_OVERRIDE_FRAMES_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_MIN_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_MAX_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
+int TOGGLE_BASE_LINE_INDEX = -1;
 
 //constant overrides
 vector<ConstantPair> constantOverrides;
@@ -1083,7 +1084,7 @@ void CodeMenu()
 	ConstantsLines.push_back(new Selection("Staling Toggle", { "Default", "ON", "OFF" }, 0, STALING_TOGGLE_INDEX));
 	if (CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED)
 	{
-		ConstantsLines.push_back(new Selection("Aerial & Dash Attack Item Grab Toggle", { "OFF", "ON" }, 0, DASH_ATTACK_ITEM_GRAB_INDEX));
+		ConstantsLines.push_back(new Toggle("Aerial & Dash Attack Item Grab Toggle", 0, DASH_ATTACK_ITEM_GRAB_INDEX));
 	}
 	//ConstantsLines.push_back(new Selection("Tripping Toggle", { "OFF", "ON" }, 0, TRIP_TOGGLE_INDEX));
 	//ConstantsLines.push_back(new Floating("Tripping Rate", 0, 100, 1.0, 1.0, TRIP_RATE_MULTIPLIER_INDEX, "%.2f%"));
@@ -1229,8 +1230,9 @@ void CodeMenu()
 	MainLines.push_back(new Integer("P1 4th Shield Blue", 0, 0xFF, 0, 1, SHIELD_BLUE_4));
 	MainLines.push_back(new Integer("P1 4th Shield Alpha", 0, 0xFF, 0, 1, SHIELD_ALPHA_4));*/
 
-
-
+	MainLines.push_back(new Selection("_", { "OFF", "ON"}, 0, TOGGLE_BASE_LINE_INDEX));
+	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_HIDDEN].value = 1;
+	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_UNSELECTABLE].value = 1;
 	Page Main("Main", MainLines);
 	
 	//Unclepunch fps code
