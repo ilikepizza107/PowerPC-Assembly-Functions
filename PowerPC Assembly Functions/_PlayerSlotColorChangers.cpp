@@ -56,6 +56,12 @@ void psccIncrementOnButtonPress()
 	CMPI(26, 0x1D, 0);
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
+	// Disable input if the port kind isn't currently set to Human
+	LWZ(reg2, 4, 0x44);
+	LWZ(reg2, reg2, 0x1B4);
+	CMPLI(reg2, 0x1, 0);
+	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
 	// Disable input if we're in team mode (also set up reg1 with top half of Code Menu Addr).
 	ADDIS(reg1, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
 	LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
@@ -178,11 +184,6 @@ void psccStoreTeamBattleStatusBody(int statusReg)
 }
 void psccStoreTeamBattleStatus()
 {
-	// Hooks "initDispSelect/[muSelCharPlayerArea]/mu_selchar_player_ar"
-	ASMStart(0x806945e8, codePrefix + "Reset Cached SelChar Team Battle Status on Init" + codeSuffix);
-	psccStoreTeamBattleStatusBody(3);
-	ASMEnd(0x7c651b78); // Restore original instruction: mr	r5, r3
-
 	// Hooks "setMeleeKind/[muSelCharTask]/mu_selchar_obj.o"
 	ASMStart(0x8068eda8, codePrefix + "Cache SelChar Team Battle Status" + codeSuffix);
 	psccStoreTeamBattleStatusBody(4);
@@ -276,10 +277,6 @@ void psccCLR0V4InstallCode()
 	LWZ(reg2, reg1, 0x14);
 	STMW(28, reg1, 0x14);
 	STW(reg2, reg1, 0x24);
-
-	// LHZ(reg2, reg3, 0x02);
-	// ADDIS(reg2, reg2, activatorStringHiHalf);
-	// STW(reg2, reg3, 0x00);
 
 	ADDI(reg2, 0, 3);
 	STW(reg2, reg1, 0x08);
