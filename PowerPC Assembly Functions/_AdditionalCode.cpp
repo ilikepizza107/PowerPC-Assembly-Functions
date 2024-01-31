@@ -115,7 +115,7 @@ namespace lava
 
 		return copySucceeded;
 	}
-	bool handleAutoGCTRMProcess(std::ostream& logOutput, int decisionOverride)
+	bool handleAutoGCTRMProcess(std::ostream& logOutput)
 	{
 		bool result = 0;
 
@@ -131,7 +131,7 @@ namespace lava
 			bool boostGCTBackupResolved = !boostGCTBackupNeeded;
 
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
-			if ((decisionOverride == INT_MAX && yesNoDecision('y', 'n')) || (decisionOverride != INT_MAX && decisionOverride != 0))
+			if ((lava::GCTBuildOverride == INT_MAX && yesNoDecision('y', 'n')) || (lava::GCTBuildOverride != INT_MAX && lava::GCTBuildOverride != 0))
 			{
 				if (mainGCTBackupNeeded || boostGCTBackupNeeded)
 				{
@@ -184,6 +184,42 @@ namespace lava
 				std::cout << "Skipping GCTRM.\n";
 			}
 		}
+		return result;
+	}
+	bool placeASMInBuild(std::ostream& logOutput)
+	{
+		bool result = 0;
+
+		std::size_t pathIndex = SIZE_MAX;
+		for (std::size_t i = 0; pathIndex == SIZE_MAX && i < asmBuildLocationDirectories.size(); i++)
+		{
+			if (std::filesystem::is_directory(buildFolder + asmBuildLocationDirectories[i]))
+			{
+				pathIndex = i;
+			}
+		}
+
+		if (pathIndex != SIZE_MAX)
+		{
+			std::string asmBuildLocationFilePath = buildFolder + asmBuildLocationDirectories[pathIndex] + asmFileName;
+			if (std::filesystem::is_regular_file(asmBuildLocationFilePath))
+			{
+				result = lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride);
+				if (result)
+				{
+					logOutput << "Note: Backed up \"" << asmBuildLocationFilePath << "\" and overwrote it with the newly built ASM.\n";
+				}
+			}
+			else
+			{
+				result = lava::offerCopy(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride);
+				if (result)
+				{
+					logOutput << "Note: Copied newly built ASM to \"" << asmBuildLocationFilePath << "\".\n";
+				}
+			}
+		}
+
 		return result;
 	}
 

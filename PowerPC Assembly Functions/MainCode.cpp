@@ -328,24 +328,13 @@ int main(int argc, char** argv)
 		if (MakeASM(asmTextOutputFilePath, asmOutputFilePath, CONFIG_DISABLE_ASM_DISASSEMBLY))
 		{
 			logOutput << "Success!\n";
-			if (std::filesystem::is_regular_file(asmBuildLocationFilePath))
+			if (lava::placeASMInBuild(*soloLogFileOutput))
 			{
-				if (lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride))
+				if (lava::handleAutoGCTRMProcess(*soloLogFileOutput) && BUILD_NETPLAY_FILES)
 				{
-					logOutput << "Note: Backed up \"" << asmBuildLocationFilePath << "\" and overwrote it with the newly built ASM.\n";
+					logOutput << "Note: The built GCTs are configured for use in Dolphin Netplay only, and ARE NOT COMPATIBLE with consoles!\n";
+					logOutput << "Attempting to use them on console can (and likely will) damage your system.\n\n";
 				}
-			}
-			else if (std::filesystem::is_directory(buildFolder + asmBuildLocationDirectory))
-			{
-				if (lava::offerCopy(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride))
-				{
-					logOutput << "Note: Copied newly built ASM to \"" << asmBuildLocationFilePath << "\".\n";
-				}
-			}
-			if (lava::handleAutoGCTRMProcess(*soloLogFileOutput, lava::GCTBuildOverride) && BUILD_NETPLAY_FILES)
-			{
-				logOutput << "Note: The built GCTs are configured for use in Dolphin Netplay only, and ARE NOT COMPATIBLE with consoles!\n";
-				logOutput << "Attempting to use them on console can (and likely will) damage your system.\n\n";
 			}
 		}
 		else

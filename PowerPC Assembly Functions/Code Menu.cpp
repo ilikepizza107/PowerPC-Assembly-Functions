@@ -479,7 +479,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 	const std::string asmFileName = "Net-CodeMenu.asm";
 	const std::string asmTextFileName = "Net-CodeMenu.txt";
 	const std::string cmnuFileName = "dnet.cmnu";
-	const std::string asmBuildLocationDirectory = "Source/Netplay/";
+	const std::vector<std::string> asmBuildLocationDirectories = { "Source/Netplay/" };
 	const std::string cmnuBuildLocationDirectory = "pf/menu3/";
 	#elif BUILD_NETPLAY_FILES == false
 	const std::string changelogFileName = "Code_Menu_Changelog.txt";
@@ -489,7 +489,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 	const std::string asmFileName = "CodeMenu.asm";
 	const std::string asmTextFileName = "CodeMenu.txt";
 	const std::string cmnuFileName = "data.cmnu";
-	const std::string asmBuildLocationDirectory = "Source/Project+/";
+	const std::vector<std::string> asmBuildLocationDirectories = { "Source/CodeMenu/", "Source/Project+/" };
 	const std::string cmnuBuildLocationDirectory = "pf/menu3/";
 	#endif
 #else
@@ -499,7 +499,6 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 //		- boostGCTName
 //		- asmFileName
 //		- asmTextFileName
-//		- asmBuildLocationDirectory
 const std::string changelogFileName = "Code_Menu_Changelog.txt";
 const std::string optionsFilename = "Code_Menu_Options.xml";
 const std::string mainGCTName = "RSBE01";
@@ -507,7 +506,7 @@ const std::string boostGCTName = "";
 const std::string asmFileName = "";
 const std::string asmTextFileName = "";
 const std::string cmnuFileName = "cm.bin";
-const std::string asmBuildLocationDirectory = "";
+const std::vector<std::string> asmBuildLocationDirectories = {};
 const std::string cmnuBuildLocationDirectory = "./";
 #endif
 
@@ -519,7 +518,6 @@ const std::string asmOutputFilePath = outputFolder + asmFileName;
 const std::string asmTextOutputFilePath = outputFolder + asmTextFileName;
 const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
 const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
-const std::string asmBuildLocationFilePath = buildFolder + asmBuildLocationDirectory + asmFileName;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
 std::string getCMNUAbsolutePath()
 {
