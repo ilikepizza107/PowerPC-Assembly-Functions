@@ -459,24 +459,13 @@ namespace lava::ppc
 			// If embeds *aren't* disabled, use the catalogue of branch events to detect any data embeds.
 			for (auto i = relativeBranchEventsMap.begin(); !disableDataEmbedOutput && i != relativeBranchEventsMap.end(); i++)
 			{
-				// If there is no embed open, and this event is a unconditional forward branch...
-				if ((currentEmbedStart == SIZE_MAX) && (i->second.outgoingBranchIsUnconditional && !i->second.outgoingBranchGoesBackwards))
+				// If we've got an embed open, and we've reached a destination event...
+				if ((currentEmbedStart != SIZE_MAX) && (!i->second.incomingBranchStartIndices.empty()))
 				{
-					// ... and this instruction branches over at least 1 instruction/word of data (ie. our embed length > 0)...
-					if ((i->first + 1) < i->second.outgoingBranchDestIndex)
+					// ... and we've branched over at least 1 instruction/word of data (ie. our embed length > 0)...
+					if ((currentEmbedStart + 1) < i->first)
 					{
-						// ... note the instruction immediately following it as the prospective start of an embed...
-						currentEmbedStart = i->first + 1;
-						// ... and the targeted instruction as the prospective end.
-						currentEmbedExpectedEnd = i->second.outgoingBranchDestIndex;
-					}
-				}
-				// Alternatively, if we've got an embed open, and we've reached a destination event...
-				else if ((currentEmbedStart != SIZE_MAX) && (!i->second.incomingBranchStartIndices.empty()))
-				{
-					// ... and this location is the expected end of our embed, that's a valid embed!
-					if (i->first == currentEmbedExpectedEnd)
-					{
+						
 						// ... record it.
 						dataEmbedStartsToLengths[currentEmbedStart] = i->first - currentEmbedStart;
 						// Additionally, set its label condition appropriately!
@@ -488,6 +477,18 @@ namespace lava::ppc
 
 					// In any case, close the open embed.
 					currentEmbedStart = SIZE_MAX;
+				}
+				// If there is no embed open, and this event is a unconditional forward branch...
+				if ((currentEmbedStart == SIZE_MAX) && (i->second.outgoingBranchIsUnconditional && !i->second.outgoingBranchGoesBackwards))
+				{
+					// ... and this instruction branches over at least 1 instruction/word of data (ie. our embed length > 0)...
+					if ((i->first + 1) < i->second.outgoingBranchDestIndex)
+					{
+						// ... note the instruction immediately following it as the prospective start of an embed...
+						currentEmbedStart = i->first + 1;
+						// ... and the targeted instruction as the prospective end.
+						currentEmbedExpectedEnd = i->second.outgoingBranchDestIndex;
+					}
 				}
 			}
 		}
@@ -3135,19 +3136,20 @@ namespace lava::ppc
 
 		if (!mapSymbolStartsToStructs.empty())
 		{
-			// Get the first symbol that starts after the address we're looking for.
+			// Get the first symbol that starts either at or after the address we're looking for.
 			auto nextHighestItr = mapSymbolStartsToStructs.lower_bound(addressIn);
-			// If there's a symbol *before* that one...
-			if (nextHighestItr != mapSymbolStartsToStructs.begin())
+			// If we find a symbol, and that symbol starts *after* our address, and there's a symbol before this one...
+			if ((nextHighestItr != mapSymbolStartsToStructs.end()) && 
+				(nextHighestItr->first > addressIn) &&
+				(nextHighestItr != mapSymbolStartsToStructs.begin()))
 			{
-				// ... move back one symbol...
+				// ... then move backwards to the previous symbol.
 				nextHighestItr--;
-				// ... and see if our address lies within that symbol.
-				if (nextHighestItr->second.positionWithinSymbol(addressIn) != ULONG_MAX)
-				{
-					// If so, that's our result.
-					result = &nextHighestItr->second;
-				}
+			}
+			if ((nextHighestItr != mapSymbolStartsToStructs.end()) && (nextHighestItr->second.positionWithinSymbol(addressIn) != ULONG_MAX))
+			{
+				// If so, that's our result.
+				result = &nextHighestItr->second;
 			}
 		}
 
