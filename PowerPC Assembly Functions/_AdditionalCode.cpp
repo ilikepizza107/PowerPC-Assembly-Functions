@@ -880,43 +880,6 @@ namespace lava
 	}
 
 	// Color Handling
-	/*
-	std::array<pscc::color, 5> collectSpecificColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
-	{
-		std::array<pscc::color, 5> result{};
-		result.fill({FLT_MIN, FLT_MIN, FLT_MIN});
-
-		for (std::size_t i = 0; i < 5; i++)
-		{
-			pugi::xml_node targetNode{};
-			switch (i)
-			{
-			case 0: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP1Tag.c_str()); break; }
-			case 1: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP2Tag.c_str()); break; }
-			case 2: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP3Tag.c_str()); break; }
-			case 3: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorP4Tag.c_str()); break; }
-			case 4: { targetNode = colorDeclNodeItr->child(configXMLConstants::colorRGBTag.c_str()); break; }
-			default: { break; }
-			}
-
-			if (targetNode)
-			{
-				result[i].hue = targetNode.attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
-				if (result[i].hue != FLT_MAX)
-				{
-					result[i].hue /= 60.0f;
-				}
-				result[i].saturation = targetNode.attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
-				result[i].luminance = targetNode.attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
-
-				// If we're recording the RGB Line, signal that it's been included!
-				pscc::rgbColorIncluded |= (i == 4);
-			}
-		}
-
-		return result;
-	}
-	*/
 	std::vector<std::pair<std::string, pscc::color>> collectColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
 	{
 		std::vector<std::pair<std::string, pscc::color>> result;
