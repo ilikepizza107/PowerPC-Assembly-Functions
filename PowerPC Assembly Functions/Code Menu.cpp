@@ -552,6 +552,7 @@ namespace xmlTagConstants
 	const std::string lockedTag = "locked";
 	const std::string hiddenTag = "hidden";
 	const std::string stickyTag = "sticky";
+	const std::string excludedTag = "excluded";
 }
 pugi::xml_document menuOptionsTree{};
 bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument)
@@ -762,6 +763,14 @@ void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_docu
 				// ... and force enable XML output for the flag!
 				currLine->behaviorFlags[Line::lbf_STICKY].forceXMLOutput = 1;
 			}
+			// Check if the line is explicitly marked as removed...
+			if (tempAttr = lineFindItr->second.attribute(xmlTagConstants::excludedTag.c_str()), tempAttr)
+			{
+				// ... and if so, mark it as such...
+				currLine->behaviorFlags[Line::lbf_REMOVED].value = tempAttr.as_bool();
+				// ... and force enable XML output for the flag!
+				currLine->behaviorFlags[Line::lbf_REMOVED].forceXMLOutput = 1;
+			}
 		}
 
 		// Check if the page is explicitly marked as hidden...
@@ -789,6 +798,15 @@ void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_docu
 			// ... and force enable XML output for the flag!
 			currPage->CalledFromLine.behaviorFlags[Line::lbf_STICKY].forceXMLOutput = 1;
 		}
+		// Check if the page is explicitly marked as removed...
+		if (tempAttr = pageFindItr->second.attribute(xmlTagConstants::excludedTag.c_str()), tempAttr)
+		{
+			// ... and if so, mark it as such...
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_REMOVED].value = tempAttr.as_bool();
+			// ... and force enable XML output for the flag!
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_REMOVED].forceXMLOutput = 1;
+		}
+
 	}
 	// And lastly, for each page...
 	for (Page* currPage : Pages)
@@ -849,6 +867,11 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 		if (pageFlagSetting || pageFlagSetting.forceXMLOutput)
 		{
 			pageNode.append_attribute(xmlTagConstants::stickyTag.c_str()).set_value(pageFlagSetting);
+		}
+		pageFlagSetting = currPage->CalledFromLine.behaviorFlags[Line::lbf_REMOVED];
+		if (pageFlagSetting || pageFlagSetting.forceXMLOutput)
+		{
+			pageNode.append_attribute(xmlTagConstants::excludedTag.c_str()).set_value(pageFlagSetting);
 		}
 
 		for (unsigned long u = 0; u < currPage->Lines.size(); u++)
@@ -924,6 +947,11 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 				if (lineFlagSetting || lineFlagSetting.forceXMLOutput)
 				{
 					lineNode.append_attribute(xmlTagConstants::stickyTag.c_str()).set_value(lineFlagSetting);
+				}
+				lineFlagSetting = currLine->behaviorFlags[Line::lbf_REMOVED];
+				if (lineFlagSetting || lineFlagSetting.forceXMLOutput)
+				{
+					lineNode.append_attribute(xmlTagConstants::excludedTag.c_str()).set_value(lineFlagSetting);
 				}
 			}
 		}
@@ -1590,6 +1618,7 @@ void CreateMenu(Page MainPage)
 	for (int i = 0; i < Pages.size(); i++) {
 		CurrentOffset += Page::NUM_WORD_ELEMS * 4;
 		for (Line* &x : Pages[i]->Lines) {
+			if (x->behaviorFlags[Line::lbf_REMOVED]) continue; // If the line is explicitly marked as removed, skip it!
 			if (x->Index != nullptr) {
 				*(x->Index) = CurrentOffset;
 			}

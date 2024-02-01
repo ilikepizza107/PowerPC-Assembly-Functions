@@ -477,6 +477,7 @@ public:
 		lbf_UNSELECTABLE = 0,
 		lbf_HIDDEN,
 		lbf_STICKY,
+		lbf_REMOVED,
 		lbf__COUNT
 	};
 	struct LineBehaviorFlagSetting
@@ -520,7 +521,9 @@ public:
 
 	void WriteLineData(int* SourceSelectionIndexPtr, vector<u8> SelectionOffsets)
 	{
-		if (behaviorFlags[Line::lbf_UNSELECTABLE].value)
+		if (behaviorFlags[Line::lbf_REMOVED]) return; // If the line is explicitly marked as removed, skip it!
+
+		if (behaviorFlags[Line::lbf_UNSELECTABLE])
 		{
 			Color = UNSELECTABLE_LINE_COLOR_OFFSET;
 		}
@@ -596,8 +599,8 @@ public:
 	// Note: The top 4 bits of the Flags Byte are line-specific flags, bottom 4 are line-agnostic flags (see Line::LINE_FLAGS_FIELDS enum)!
 	u8 Flags = 0;
 	u16 TextOffset;
-	u16 DownOffset;
-	u16 UpOffset;
+	u16 DownOffset = 0;
+	u16 UpOffset = 0;
 	string Text;
 	u16 Size;
 	u8 lineNum;
@@ -833,10 +836,20 @@ public:
 		// Reset page size, will be re-tallied in the following loop.
 		Size = NUM_WORD_ELEMS * 4;
 		this->Lines = LinesIn;
+		std::size_t excludedLines = 0;
 		// Do some final line attribute assignment stuff...
 		for (std::size_t i = 0; i < this->Lines.size(); i++)
 		{
-			this->Lines[i]->lineNum = i;
+			// If the line is explicitly marked as removed...
+			if (this->Lines[i]->behaviorFlags[Line::lbf_REMOVED])
+			{
+				// ... increment the counter...
+				excludedLines++;
+				// ... and skip it!
+				continue;
+			}
+			// Subtract the number of excluded lines from i, to ensure excluded lines aren't counted!
+			this->Lines[i]->lineNum = i - excludedLines;
 			this->Lines[i]->PageOffset = Size;
 			Size += this->Lines[i]->Size;
 		}
@@ -858,7 +871,7 @@ public:
 
 	void ConnectSelectableLines()
 	{
-		vector<int> SelectableLines;
+		vector<int> SelectableLines{};
 		GetSelectableLines(SelectableLines);
 		if (SelectableLines.size() > 0) 
 		{
@@ -884,9 +897,12 @@ public:
 	{
 		for (int i = 0; i < Lines.size(); i++) 
 		{
-			if (Lines[i]->type != COMMENT_LINE && Lines[i]->type != PRINT_LINE) 
+			Line* currLine = Lines[i];
+			if (currLine->type != COMMENT_LINE && currLine->type != PRINT_LINE)
 			{
-				if (!Lines[i]->behaviorFlags[Line::lbf_UNSELECTABLE] && !Lines[i]->behaviorFlags[Line::lbf_HIDDEN])
+				if (!currLine->behaviorFlags[Line::lbf_UNSELECTABLE] && 
+					!currLine->behaviorFlags[Line::lbf_HIDDEN] && 
+					!currLine->behaviorFlags[Line::lbf_REMOVED])
 				{
 					SelectableLines.push_back(i);
 				}
