@@ -737,13 +737,16 @@ public:
 class SelectionMirror : public Selection
 {
 public:
-	SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index) 
+	SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index, bool inheritFlags = 1) 
 		: Selection(Text, {}, {}, Default, Index)
 	{
 		this->Min = SourceSelection.Min;
 		this->Max = SourceSelection.Max;
 		this->SourceSelectionIndexPtr = SourceSelection.Index;
-		this->behaviorFlags = SourceSelection.behaviorFlags;
+		if (inheritFlags)
+		{
+			this->behaviorFlags = SourceSelection.behaviorFlags;
+		}
 	}
 };
 
