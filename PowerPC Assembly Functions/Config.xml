@@ -34,8 +34,8 @@
             -->
         </themeChanger>
         
-        <!--Adds a toggle for enabling/disabling grabbing items with dash attack to the "Gameplay Modifiers" menu!-->
-        <dashAttackItemGrab enabled="true" />
+        <!--Adds a toggle for enabling/disabling grabbing items with aerials and dash attacks to the "Gameplay Modifiers" menu!-->
+        <vBrawlItemGrab enabled="true" />
         
         <!--Adds lines for manipulating how many frames of jumpsquat characters go through to the "Gameplay Modifiers" menu!-->
         <jumpsquatModifier enabled="true" />

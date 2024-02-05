@@ -317,7 +317,7 @@ namespace lava
 		const std::string prefixTag = "replacementPrefix";
 
 		// Dash Attack Item Grab
-		const std::string dashAttackItemGrabTag = "dashAttackItemGrab";
+		const std::string dashAttackItemGrabTag = "vBrawlItemGrab";
 
 		// PSCC
 		const std::string slotColorDeclsTag = "slotColorChanger";
