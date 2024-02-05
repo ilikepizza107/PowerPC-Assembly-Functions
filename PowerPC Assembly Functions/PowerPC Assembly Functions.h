@@ -47,7 +47,7 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 #define PROJECT_PLUS_EX_BUILD (true && (BUILD_TYPE == PROJECT_PLUS))
 // Controls whether or not externally defined character, rosters, and themes are loaded into their respective lists.
 // Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
-#define COLLECT_EXTERNAL_EX_CHARACTERS (true && PROJECT_PLUS_EX_BUILD)
+#define COLLECT_EXTERNAL_EX_CHARACTERS (true)
 #define COLLECT_EXTERNAL_ROSTERS (true && PROJECT_PLUS_EX_BUILD)
 #define COLLECT_EXTERNAL_THEMES (true) // Note, this isn't locked to P+Ex builds, actually. Should work on any build with a Code Menu!
 

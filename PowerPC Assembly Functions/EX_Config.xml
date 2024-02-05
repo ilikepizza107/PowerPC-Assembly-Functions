@@ -20,7 +20,7 @@
         </menuComments>
     </menuProperties>
     
-    <!--To add characters to the code menu, add entries for them into this block! Valid for EX builds only!-->
+    <!--To add characters to the code menu, add entries for them into this block!-->
     <!--Note: the "baseListVersion" field determines the base character list your declarations will be added to!-->
     <!--0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+, 4: P+EX 1.0, 5: P+EX 1.2-->
     <characterList baseListVersion="5">

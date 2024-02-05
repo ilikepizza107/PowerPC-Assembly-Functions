@@ -631,7 +631,7 @@ namespace lava
 		}
 		else
 		{
-			logOutput << "[WARNING] EX Character Declaration block parsed, but no valid entries were found!\n";
+			logOutput << "[WARNING] Character Declaration block parsed, but no valid entries were found!\n";
 		}
 	}
 	void regenEXCharacterDeclsInXML(pugi::xml_node_iterator& characterDeclNodeItr, const std::vector<std::pair<std::string, u16>>& nameIDPairs)
@@ -1195,18 +1195,19 @@ namespace lava
 					}
 				}
 
-				// If we're set to additionally collect externally defined EX Characters...
+				// If we're set to additionally collect externally defined Characters...
 				if (COLLECT_EXTERNAL_EX_CHARACTERS)
 				{
 					// ... collect character entries from the XML, then add them to the menu.
-					logOutput << "Adding EX Characters to Character List...\n";
 					bool collectedPlaintextEntry = 0;
 					// Populate our entry list...
 					std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr, collectedPlaintextEntry);
 					// ... and if that list doesn't end up empty...
 					if (!nameIDPairs.empty())
 					{
-						// ... then we'll add those to the menu lists proper.
+						// ... then we'll note that we're adding characters...
+						logOutput << "Adding Characters to Character List...\n";
+						// ... and add those to the menu lists proper.
 						addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
 						// Additionally, if we pulled any entries from plaintext...
 						if (collectedPlaintextEntry)
