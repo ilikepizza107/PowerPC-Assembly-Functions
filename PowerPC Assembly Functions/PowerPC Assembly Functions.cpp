@@ -195,10 +195,15 @@ branchConditionAndConditionBit branchConditionAndConditionBit::inConditionRegFie
 {
 	return branchConditionAndConditionBit(BranchCondition, ConditionBit % 4, ConditionRegFieldIn);
 }
+branchConditionAndConditionBit branchConditionAndConditionBit::andDecrementCTR(bool branchIfCTRIsZero) const
+{
+	return branchConditionAndConditionBit((BranchCondition & 0b11001) | (branchIfCTRIsZero ? 0b00010 : 0b00000), ConditionBit);
+}
+
 
 std::vector<std::streampos> LabelPosVec{};
 std::vector<labels::labelJump> LabelJumpVec{};
-
+std::streampos currentGeckoEmbedStartPos = SIZE_MAX;
 
 //converts char hex digit to decimal
 int HexToDec(char x)
@@ -647,6 +652,47 @@ void LoadByteToReg(int DestReg, int Reg, int Address)
 	}
 }
 
+
+void StoreWordAtAddr(int SourceReg, int AddrReg, int Address)
+{
+	if ((Address & 0xFFFF) < 0x8000)
+	{
+		ADDIS(AddrReg, 0, (Address & 0xFFFF0000) >> 16);
+		STW(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+	else
+	{
+		ADDIS(AddrReg, 0, ((Address & 0xFFFF0000) >> 16) + 1);
+		STW(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+}
+void StoreHalfAtAddr(int SourceReg, int AddrReg, int Address)
+{
+	if ((Address & 0xFFFF) < 0x8000)
+	{
+		ADDIS(AddrReg, 0, (Address & 0xFFFF0000) >> 16);
+		STH(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+	else
+	{
+		ADDIS(AddrReg, 0, ((Address & 0xFFFF0000) >> 16) + 1);
+		STH(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+}
+void StoreByteAtAddr(int SourceReg, int AddrReg, int Address)
+{
+	if ((Address & 0xFFFF) < 0x8000)
+	{
+		ADDIS(AddrReg, 0, (Address & 0xFFFF0000) >> 16);
+		STB(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+	else
+	{
+		ADDIS(AddrReg, 0, ((Address & 0xFFFF0000) >> 16) + 1);
+		STB(SourceReg, SourceReg, (Address & 0xFFFF));
+	}
+}
+
 //takes an integer value from SourceReg and converts it into a 32 bit float that is stored in ResultReg
 //the values of SourceReg and TempReg are overwritten
 void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg)
@@ -765,14 +811,14 @@ int GetNextLabel()
 	return int(LabelPosVec.size() - 1);
 }
 
-void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn)
+void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn, bool setLinkRegister)
 {
-	LabelJumpVec.push_back(labels::labelJump(LabelNum, WPtr.tellp(), conditionIn));
+	LabelJumpVec.push_back(labels::labelJump(LabelNum, WPtr.tellp(), conditionIn, setLinkRegister));
 	WriteIntToFile(0);
 }
-void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit)
+void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit, bool setLinkRegister)
 {
-	JumpToLabel(LabelNum, { BranchCondition, ConditionBit });
+	JumpToLabel(LabelNum, { BranchCondition, ConditionBit }, setLinkRegister);
 }
 
 void CompleteJumps()
@@ -784,11 +830,18 @@ void CompleteJumps()
 		WPtr.seekp(currJump->jumpSourcePos);
 		if (currJump->jumpCondition.BranchCondition != INT_MAX && currJump->jumpCondition.ConditionBit != INT_MAX)
 		{
-			BC(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]), currJump->jumpCondition.BranchCondition, currJump->jumpCondition.ConditionBit);
+			BC(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]), currJump->jumpCondition.BranchCondition, currJump->jumpCondition.ConditionBit, currJump->setLR);
 		}
 		else
 		{
-			B(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]));
+			if (currJump->setLR)
+			{
+				BL(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]));
+			}
+			else
+			{
+				B(CalcBranchOffset(currJump->jumpSourcePos, LabelPosVec[currJump->labelNum]));
+			}
 		}
 	}
 	WPtr.seekp(holdPos);
@@ -942,6 +995,79 @@ void GeckoIf(u32 Address, int Comparison, int Value)
 void GeckoEndIf() {
 	WriteIntToFile(0xE0000000);
 	WriteIntToFile(0x80008000);
+}
+
+bool GeckoDataEmbedStart()
+{
+	bool result = 0;
+
+	if (currentGeckoEmbedStartPos == SIZE_MAX)
+	{
+		// Point PO to the next Instruction + 0x08 bytes, which'll be the Embed itself...
+		WriteIntToFile(0x4E000008); WriteIntToFile(0x00);
+		currentGeckoEmbedStartPos = WPtr.tellp();
+		// .. then write an unconditional Gecko GOTO, the distance for which we'll come back to write later.
+		WriteIntToFile(0x66200000); WriteIntToFile(0x00);
+		result = 1;
+	}
+	else
+	{
+		std::cerr << "[ERROR] Failed to open Gecko Embed, previous embed isn't closed!\n";
+	}
+
+	return result;
+}
+bool GeckoDataEmbedEnd(u32 AddressStoreLocation, bool skipBAPOReset)
+{
+	bool result = 0;
+
+	if (currentGeckoEmbedStartPos != SIZE_MAX)
+	{
+		// Grab the current stream position, to record the end of our embed!
+		std::streampos currPos = WPtr.tellp(); 
+
+		// Write in the length of the Embed!
+		std::streamoff embedLength = currPos - (currentGeckoEmbedStartPos + std::streamoff(0x10));
+		// If the embed's length isn't a multiple of 0x10 (that's string characters, 0x8 bytes for the actual data)...
+		std::size_t necessaryPadding = 0x10 - (embedLength % 0x10);
+		if (necessaryPadding < 0x10 && necessaryPadding > 0x00)
+		{
+			// ... provide the necessary padding...
+			WPtr << std::string(necessaryPadding, '0');
+			// ... and update the embed's length!
+			embedLength += necessaryPadding;
+			currPos = WPtr.tellp();
+		}
+		// Then, seek back to the immediate portion of this Embed's GOTO Statement...
+		WPtr.seekp(currentGeckoEmbedStartPos + std::streamoff(0x4));
+		// ... and write in the length of our Embed!
+		WPtr.write(lava::numToHexStringWithPadding(embedLength / 0x10, 0x4).data(), 0x4);
+		// And seek back to our original position, with that taken care of.
+		WPtr.seekp(currPos);
+
+		// If we've provided a Location to Store this Embed's Address...
+		if (AddressStoreLocation != SIZE_MAX)
+		{
+			// ... use a Gecko PO Store Instruction to write the embed to the designated location.
+			WriteIntToFile(0x4C000000); WriteIntToFile(AddressStoreLocation & 0x00FFFFFF);
+		}
+		// Lastly, if we haven't asked to skip it...
+		if (!skipBAPOReset)
+		{
+			// ... reset BA and PO.
+			WriteIntToFile(0xE0000000); WriteIntToFile(0x80008000);
+		}
+		
+		// Null out the start position to signal that the embed has been closed!
+		currentGeckoEmbedStartPos = SIZE_MAX;
+		result = 1;
+	}
+	else
+	{
+		std::cerr << "[ERROR] Failed to close Gecko Embed, no embed is currently open!\n";
+	}
+
+	return result;
 }
 
 void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int elementOffset, int ResultReg, int TempReg)
@@ -1966,12 +2092,12 @@ void BA(int Address)
 	WriteIntToFile(OpHex);
 }
 
-void BC(int JumpDist, branchConditionAndConditionBit conditionIn)
+void BC(int JumpDist, branchConditionAndConditionBit conditionIn, bool setLinkRegister)
 {
-	BC(JumpDist, conditionIn.BranchCondition, conditionIn.ConditionBit);
+	BC(JumpDist, conditionIn.BranchCondition, conditionIn.ConditionBit, setLinkRegister);
 }
 //distance/4, branch if true/false, bit to check
-void BC(int JumpDist, int BranchCondition, int ConditionBit)
+void BC(int JumpDist, int BranchCondition, int ConditionBit, bool setLinkRegister)
 {
 	// If we're jumping backwards...
 	if (JumpDist < 0)
@@ -1984,6 +2110,7 @@ void BC(int JumpDist, int BranchCondition, int ConditionBit)
 	OpHex |= GetOpSegment(BranchCondition, 5, 10);
 	OpHex |= GetOpSegment(ConditionBit, 5, 15);
 	OpHex |= GetOpSegment(JumpDist, 14, 29);
+	OpHex |= GetOpSegment(setLinkRegister, 1, 31);
 	WriteIntToFile(OpHex);
 }
 
@@ -2204,6 +2331,18 @@ void FDIVS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionR
 	OpHex |= GetOpSegment(FPSourceReg1, 5, 15);
 	OpHex |= GetOpSegment(FPSourceReg2, 5, 20);
 	OpHex |= GetOpSegment(18, 5, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
+void FMADD(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg)
+{
+	OpHex = GetOpSegment(63, 6, 5);
+	OpHex |= GetOpSegment(FPDestReg, 5, 10);
+	OpHex |= GetOpSegment(FPSourceReg1, 5, 15);
+	OpHex |= GetOpSegment(FPSourceReg3, 5, 20);
+	OpHex |= GetOpSegment(FPSourceReg2, 5, 25);
+	OpHex |= GetOpSegment(29, 5, 30);
 	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
 	WriteIntToFile(OpHex);
 }
@@ -2935,6 +3074,15 @@ void SUBF(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg)
 	OpHex |= GetOpSegment(SourceReg1, 5, 20);
 	OpHex |= GetOpSegment(40, 9, 30);
 	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
+void SUBFIC(int DestReg, int SourceReg, int Immediate)
+{
+	OpHex = GetOpSegment(8, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
 }
 

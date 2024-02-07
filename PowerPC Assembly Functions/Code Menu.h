@@ -85,17 +85,17 @@ extern int DASH_ATTACK_ITEM_GRAB_INDEX;
 extern int TRIP_TOGGLE_INDEX;
 extern int TRIP_RATE_MULTIPLIER_INDEX;
 extern int TRIP_INTERVAL_INDEX;
-extern int BACKPLATE_COLOR_1_INDEX;
-extern int BACKPLATE_COLOR_2_INDEX;
-extern int BACKPLATE_COLOR_3_INDEX;
-extern int BACKPLATE_COLOR_4_INDEX;
-extern int BACKPLATE_COLOR_C_INDEX;
-extern int BACKPLATE_COLOR_T_INDEX;
+extern int PSCC_COLOR_1_INDEX;
+extern int PSCC_COLOR_2_INDEX;
+extern int PSCC_COLOR_3_INDEX;
+extern int PSCC_COLOR_4_INDEX;
 extern int JUMPSQUAT_OVERRIDE_TOGGLE_INDEX;
 extern int JUMPSQUAT_OVERRIDE_FRAMES_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MIN_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MAX_INDEX;
 
+// utility
+extern int TOGGLE_BASE_LINE_INDEX;
 
 struct ConstantPair {
 	int address;
@@ -278,28 +278,65 @@ extern std::vector<menuTheme> THEME_SPEC_LIST;
 // Used to determine whether or not we actually need to output the hook for a given theme-able file.
 extern std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX;
 
-namespace backplateColorConstants
+namespace pscc
 {
-	enum playerSlotColorLevel
+	struct color
 	{
-		pSCL_NONE = 0,
-		pSCL_SHIELDS_AND_PLUMES_ONLY,
-		pSCL_SHIELDS_PLUMES_AND_IN_GAME_HUD,
-		pSCL_MENUS_AND_IN_GAME_WITHOUT_CSS_INPUT,
-		pSCL_MENUS_AND_IN_GAME_WITH_CSS_INPUT,
-		pSCL__COUNT
+		float hue;
+		float saturation;
+		float luminance;
+
+		color(float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f) :
+			hue(hueIn), saturation(satIn), luminance(lumIn) {};
+		bool colorValid() const;
 	};
-	extern const std::array<std::string, playerSlotColorLevel::pSCL__COUNT> modeNames;
+	extern std::map<std::string, color> colorTable;
+	static constexpr std::size_t colorTableEntrySizeInBytes = 0xC;
+	std::size_t getColorTableSizeInBytes();
+	std::size_t getColorTableOffsetToColor(std::string colorName);
+
+
+	enum schemePredefIDs
+	{
+		spi_P1 = 0,
+		spi_P2,
+		spi_P3,
+		spi_P4,
+		spi__COUNT
+	};
+	enum colorSchemeColorSlots
+	{
+		cscs_MENU1 = 0,
+		cscs_MENU2,
+		cscs_INGAME1,
+		cscs_INGAME2,
+		cscs__COUNT
+	};
+	struct colorScheme
+	{
+		std::string name;
+		std::array<std::string, cscs__COUNT> colors;
+		colorScheme(std::string nameIn = "");
+		void downfillEmptySlots();
+		bool schemeValid() const;
+	};
+	struct colorSchemeTable
+	{
+		std::vector<colorScheme> entries;
+		colorSchemeTable();
+		static constexpr std::size_t schemeTableEntrySizeInBytes = colorSchemeColorSlots::cscs__COUNT;
+		std::size_t tableSizeInBytes() const;
+		std::vector<unsigned char> tableToByteVec() const;
+	};
+	extern colorSchemeTable schemeTable;
+	
+	std::size_t getFullEmbedSizeInWords();
 }
-// Denotes the total number colors available to the HUD Color Switcher.
-// Used to ensure that if we add a mechanism for adding additional colors, they'll be accounted for, both
-// in the actual generated ASM in _BackplateColors, and by the actual code menu lines themselves.
-extern const unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT;
 
 // Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)
 extern std::vector<std::string> CONFIG_INCOMING_COMMENTS;
 extern bool CONFIG_DELETE_CONTROLS_COMMENTS;
-extern unsigned char CONFIG_BACKPLATE_COLOR_MODE;
+extern bool CONFIG_PSCC_ENABLED;
 extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
 extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
 
@@ -325,9 +362,8 @@ extern const std::string asmOutputFilePath;
 extern const std::string cmnuOutputFilePath;
 extern const std::string cmnuOptionsOutputFilePath;
 extern const std::string asmTextOutputFilePath;
-extern const std::string asmBuildLocationDirectory;
+extern const std::vector<std::string> asmBuildLocationDirectories;
 extern const std::string cmnuBuildLocationDirectory;
-extern const std::string asmBuildLocationFilePath;
 extern const std::string cmnuBuildLocationFilePath;
 std::string getCMNUAbsolutePath();
 // AutoGCTRM Constants
@@ -441,6 +477,7 @@ public:
 		lbf_UNSELECTABLE = 0,
 		lbf_HIDDEN,
 		lbf_STICKY,
+		lbf_REMOVED,
 		lbf__COUNT
 	};
 	struct LineBehaviorFlagSetting
@@ -484,7 +521,9 @@ public:
 
 	void WriteLineData(int* SourceSelectionIndexPtr, vector<u8> SelectionOffsets)
 	{
-		if (behaviorFlags[Line::lbf_UNSELECTABLE].value)
+		if (behaviorFlags[Line::lbf_REMOVED]) return; // If the line is explicitly marked as removed, skip it!
+
+		if (behaviorFlags[Line::lbf_UNSELECTABLE])
 		{
 			Color = UNSELECTABLE_LINE_COLOR_OFFSET;
 		}
@@ -560,8 +599,8 @@ public:
 	// Note: The top 4 bits of the Flags Byte are line-specific flags, bottom 4 are line-agnostic flags (see Line::LINE_FLAGS_FIELDS enum)!
 	u8 Flags = 0;
 	u16 TextOffset;
-	u16 DownOffset;
-	u16 UpOffset;
+	u16 DownOffset = 0;
+	u16 UpOffset = 0;
 	string Text;
 	u16 Size;
 	u8 lineNum;
@@ -698,12 +737,16 @@ public:
 class SelectionMirror : public Selection
 {
 public:
-	SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index) 
+	SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index, bool inheritFlags = 1) 
 		: Selection(Text, {}, {}, Default, Index)
 	{
 		this->Min = SourceSelection.Min;
 		this->Max = SourceSelection.Max;
 		this->SourceSelectionIndexPtr = SourceSelection.Index;
+		if (inheritFlags)
+		{
+			this->behaviorFlags = SourceSelection.behaviorFlags;
+		}
 	}
 };
 
@@ -711,7 +754,12 @@ class Toggle : public Selection
 {
 public:
 	Toggle(string Text, bool Default, int &Index)
-		: Selection(Text,  { "OFF", "ON" }, Default, Index) {}
+		: Selection(Text, {}, {}, Default, Index)
+	{
+		this->Min = 0;
+		this->Max = 1;
+		this->SourceSelectionIndexPtr = &TOGGLE_BASE_LINE_INDEX;
+	}
 };
 
 class SubMenu : public Line
@@ -791,10 +839,20 @@ public:
 		// Reset page size, will be re-tallied in the following loop.
 		Size = NUM_WORD_ELEMS * 4;
 		this->Lines = LinesIn;
+		std::size_t excludedLines = 0;
 		// Do some final line attribute assignment stuff...
 		for (std::size_t i = 0; i < this->Lines.size(); i++)
 		{
-			this->Lines[i]->lineNum = i;
+			// If the line is explicitly marked as removed...
+			if (this->Lines[i]->behaviorFlags[Line::lbf_REMOVED])
+			{
+				// ... increment the counter...
+				excludedLines++;
+				// ... and skip it!
+				continue;
+			}
+			// Subtract the number of excluded lines from i, to ensure excluded lines aren't counted!
+			this->Lines[i]->lineNum = i - excludedLines;
 			this->Lines[i]->PageOffset = Size;
 			Size += this->Lines[i]->Size;
 		}
@@ -816,7 +874,7 @@ public:
 
 	void ConnectSelectableLines()
 	{
-		vector<int> SelectableLines;
+		vector<int> SelectableLines{};
 		GetSelectableLines(SelectableLines);
 		if (SelectableLines.size() > 0) 
 		{
@@ -842,9 +900,12 @@ public:
 	{
 		for (int i = 0; i < Lines.size(); i++) 
 		{
-			if (Lines[i]->type != COMMENT_LINE && Lines[i]->type != PRINT_LINE) 
+			Line* currLine = Lines[i];
+			if (currLine->type != COMMENT_LINE && currLine->type != PRINT_LINE)
 			{
-				if (!Lines[i]->behaviorFlags[Line::lbf_UNSELECTABLE] && !Lines[i]->behaviorFlags[Line::lbf_HIDDEN])
+				if (!currLine->behaviorFlags[Line::lbf_UNSELECTABLE] && 
+					!currLine->behaviorFlags[Line::lbf_HIDDEN] && 
+					!currLine->behaviorFlags[Line::lbf_REMOVED])
 				{
 					SelectableLines.push_back(i);
 				}

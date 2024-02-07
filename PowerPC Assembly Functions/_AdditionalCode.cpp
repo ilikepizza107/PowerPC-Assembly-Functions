@@ -3,6 +3,7 @@
 
 namespace lava
 {
+	const std::string version = "v1.3.9";
 	int CMNUCopyOverride = INT_MAX;
 	int ASMCopyOverride = INT_MAX;
 	int GCTBuildOverride = INT_MAX;
@@ -114,7 +115,7 @@ namespace lava
 
 		return copySucceeded;
 	}
-	bool handleAutoGCTRMProcess(std::ostream& logOutput, int decisionOverride)
+	bool handleAutoGCTRMProcess(std::ostream& logOutput)
 	{
 		bool result = 0;
 
@@ -130,7 +131,7 @@ namespace lava
 			bool boostGCTBackupResolved = !boostGCTBackupNeeded;
 
 			std::cout << "[Press 'Y' for Yes, 'N' for No]\n";
-			if ((decisionOverride == INT_MAX && yesNoDecision('y', 'n')) || (decisionOverride != INT_MAX && decisionOverride != 0))
+			if ((lava::GCTBuildOverride == INT_MAX && yesNoDecision('y', 'n')) || (lava::GCTBuildOverride != INT_MAX && lava::GCTBuildOverride != 0))
 			{
 				if (mainGCTBackupNeeded || boostGCTBackupNeeded)
 				{
@@ -183,6 +184,42 @@ namespace lava
 				std::cout << "Skipping GCTRM.\n";
 			}
 		}
+		return result;
+	}
+	bool placeASMInBuild(std::ostream& logOutput)
+	{
+		bool result = 0;
+
+		std::size_t pathIndex = SIZE_MAX;
+		for (std::size_t i = 0; pathIndex == SIZE_MAX && i < asmBuildLocationDirectories.size(); i++)
+		{
+			if (std::filesystem::is_directory(buildFolder + asmBuildLocationDirectories[i]))
+			{
+				pathIndex = i;
+			}
+		}
+
+		if (pathIndex != SIZE_MAX)
+		{
+			std::string asmBuildLocationFilePath = buildFolder + asmBuildLocationDirectories[pathIndex] + asmFileName;
+			if (std::filesystem::is_regular_file(asmBuildLocationFilePath))
+			{
+				result = lava::offerCopyOverAndBackup(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride);
+				if (result)
+				{
+					logOutput << "Note: Backed up \"" << asmBuildLocationFilePath << "\" and overwrote it with the newly built ASM.\n";
+				}
+			}
+			else
+			{
+				result = lava::offerCopy(asmOutputFilePath, asmBuildLocationFilePath, lava::ASMCopyOverride);
+				if (result)
+				{
+					logOutput << "Note: Copied newly built ASM to \"" << asmBuildLocationFilePath << "\".\n";
+				}
+			}
+		}
+
 		return result;
 	}
 
@@ -280,10 +317,26 @@ namespace lava
 		const std::string prefixTag = "replacementPrefix";
 
 		// Dash Attack Item Grab
-		const std::string dashAttackItemGrabTag = "dashAttackItemGrab";
+		const std::string dashAttackItemGrabTag = "vBrawlItemGrab";
 
-		// Colors
+		// PSCC
 		const std::string slotColorDeclsTag = "slotColorChanger";
+		const std::string colorTag = "color";
+		const std::string colorDefsTag = "colorDefinitions";
+		const std::string colorP1Tag = "colorP1";
+		const std::string colorP2Tag = "colorP2";
+		const std::string colorP3Tag = "colorP3";
+		const std::string colorP4Tag = "colorP4";
+		const std::string colorRGBTag = "colorRGB";
+		const std::string colorHueTag = "hue";
+		const std::string colorSatTag = "saturation";
+		const std::string colorLumTag = "luminance";
+		const std::string colorSchemeTag = "scheme";
+		const std::string colorSchemeDefsTag = "schemeDefinitions";
+		const std::string colorSchemeMenu1Tag = "menuColor1";
+		const std::string colorSchemeMenu2Tag = "menuColor2";
+		const std::string colorSchemeIngame1Tag = "ingameColor1";
+		const std::string colorSchemeIngame2Tag = "ingameColor2";
 
 		// Jumpsquat Override
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
@@ -578,7 +631,7 @@ namespace lava
 		}
 		else
 		{
-			logOutput << "[WARNING] EX Character Declaration block parsed, but no valid entries were found!\n";
+			logOutput << "[WARNING] Character Declaration block parsed, but no valid entries were found!\n";
 		}
 	}
 	void regenEXCharacterDeclsInXML(pugi::xml_node_iterator& characterDeclNodeItr, const std::vector<std::pair<std::string, u16>>& nameIDPairs)
@@ -826,6 +879,126 @@ namespace lava
 		}
 	}
 
+	// Color Handling
+	std::vector<std::pair<std::string, pscc::color>> collectColorsFromXML(const pugi::xml_node_iterator& colorDeclNodeItr)
+	{
+		std::vector<std::pair<std::string, pscc::color>> result;
+
+		for (pugi::xml_node_iterator colorItr = colorDeclNodeItr->begin(); colorItr != colorDeclNodeItr->end(); colorItr++)
+		{
+			if (colorItr->name() == configXMLConstants::colorTag)
+			{
+				pscc::color tempColor;
+				std::string colorName = colorItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				// If the entry has no name, skip to next node.
+				if (colorName.empty()) continue;
+
+				tempColor.hue = colorItr->attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
+				if (tempColor.hue != FLT_MAX)
+				{
+					tempColor.hue /= 60.0f;
+				}
+				tempColor.saturation = colorItr->attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
+				tempColor.luminance = colorItr->attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
+
+				result.push_back(std::make_pair(colorName, tempColor));
+			}
+		}
+
+		return result;
+	}
+	void addCollectedColorsToMenuLists(const std::vector<std::pair<std::string, pscc::color>>& extraColors, lava::outputSplitter& logOutput)
+	{
+		for (std::size_t i = 0; i < extraColors.size(); i++)
+		{
+			const std::string* currColorName = &extraColors[i].first;
+			const pscc::color* currColor = &extraColors[i].second;
+
+			if (currColorName->empty())
+			{
+				logOutput << "[ERROR] XML Color Definition #" << i << " provided no name! Skipping color!\n";
+				continue;
+			}
+			if (!currColor->colorValid())
+			{
+				logOutput << "[ERROR] Color \"" << *currColorName << "\" invalid! Skipping color!\n";
+				continue;
+			}
+
+			if (pscc::colorTable.find(*currColorName) != pscc::colorTable.end())
+			{
+				logOutput << "[CHANGED] \"" << *currColorName << "\"!\n";
+			}
+			else
+			{
+				logOutput << "[ADDED] \"" << *currColorName << "\"!\n";
+			}
+			pscc::colorTable[*currColorName] = *currColor;
+		}
+	}
+	std::vector<pscc::colorScheme> collectSchemesFromXML(const pugi::xml_node_iterator& schemeDeclNodeItr)
+	{
+		std::vector<pscc::colorScheme> result;
+
+		for (pugi::xml_node_iterator schemeItr = schemeDeclNodeItr->begin(); schemeItr != schemeDeclNodeItr->end(); schemeItr++)
+		{
+			if (schemeItr->name() == configXMLConstants::colorSchemeTag)
+			{
+				pscc::colorScheme tempScheme;
+				tempScheme.name = schemeItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
+				// If the entry has no name, skip to next node.
+				if (tempScheme.name.empty()) continue;
+
+				tempScheme.colors[pscc::cscs_MENU1] = schemeItr->attribute(configXMLConstants::colorSchemeMenu1Tag.c_str()).as_string("");
+				tempScheme.colors[pscc::cscs_MENU2] = schemeItr->attribute(configXMLConstants::colorSchemeMenu2Tag.c_str()).as_string("");
+				tempScheme.colors[pscc::cscs_INGAME1] = schemeItr->attribute(configXMLConstants::colorSchemeIngame1Tag.c_str()).as_string("");
+				tempScheme.colors[pscc::cscs_INGAME2] = schemeItr->attribute(configXMLConstants::colorSchemeIngame2Tag.c_str()).as_string("");
+				tempScheme.downfillEmptySlots();
+
+				result.push_back(tempScheme);
+			}
+		}
+
+		return result;
+	}
+	void addCollectedSchemesToMenuLists(const std::vector<pscc::colorScheme> collectedSchemes, lava::outputSplitter& logOutput)
+	{
+		std::map<std::string, std::size_t> tempSchemeList{};
+		for (std::size_t i = 0; i < pscc::schemeTable.entries.size(); i++)
+		{
+			tempSchemeList[pscc::schemeTable.entries[i].name] = i;
+		}
+
+		for (std::size_t i = 0; i < collectedSchemes.size(); i++)
+		{
+			const pscc::colorScheme* currScheme = &collectedSchemes[i];
+
+			if (currScheme->name.empty())
+			{
+				logOutput << "[ERROR] XML Color Scheme Definition #" << i << " provided no name! Skipping color!\n";
+				continue;
+			}
+			if (!currScheme->schemeValid())
+			{
+				logOutput << "[ERROR] Color Scheme \"" << currScheme->name << "\" invalid! Skipping color!\n";
+				continue;
+			}
+			auto findRes = tempSchemeList.find(currScheme->name);
+			if (findRes != tempSchemeList.end())
+			{
+				logOutput << "[CHANGED]";
+				pscc::schemeTable.entries[findRes->second] = *currScheme;
+			}
+			else
+			{
+				logOutput << "[ADDED]";
+				tempSchemeList[currScheme->name] = pscc::schemeTable.entries.size();
+				pscc::schemeTable.entries.push_back(*currScheme);
+			}
+			logOutput << " \"" << currScheme->name << "\"!\n";
+		}
+	}
+
 	// Generic Code Handling
 	// Reads in the requested code version from the from the incoming node, and (if it's less than the mode count passed in) stores it in the storage var.
 	// Returns the applied mode value, or UCHAR_MAX (0xFF) if either no mode was specified or the requested value was invalid.
@@ -873,13 +1046,13 @@ namespace lava
 		{
 			// ... interpret its value as a bool, and note the success.
 			enabledStorageVariable = modeAttrObj.as_bool(enabledStorageVariable);
-			logOutput << "[SUCCESS] Option is now " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
+			logOutput << "[SET] Feature is now " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
 		}
 		// Otherwise...
 		else
 		{
 			// ... we leave the value as is and note the lack of a mode specification.
-			logOutput << "[WARNING] No value specified! Option is still " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
+			logOutput << "[WARNING] No value specified! Feature is still " << ((enabledStorageVariable) ? "included" : "excluded") << "!\n";
 		}
 
 		return enabledStorageVariable;
@@ -993,6 +1166,10 @@ namespace lava
 							}
 						}
 					}
+					else
+					{
+						logOutput << "[WARNING] Comment Declaration block parsed, but no valid entries were found!\n";
+					}
 				}
 			}
 
@@ -1016,21 +1193,21 @@ namespace lava
 					{
 						logOutput << "[WARNING] Invalid list requested! Using \"" << characterListVersionNames[characterListVersion] << "\" list instead!\n";
 					}
-					logOutput << "\n";
 				}
 
-				// If we're set to additionally collect externally defined EX Characters...
+				// If we're set to additionally collect externally defined Characters...
 				if (COLLECT_EXTERNAL_EX_CHARACTERS)
 				{
 					// ... collect character entries from the XML, then add them to the menu.
-					logOutput << "Adding EX Characters to Character List...\n";
 					bool collectedPlaintextEntry = 0;
 					// Populate our entry list...
 					std::vector<std::pair<std::string, u16>> nameIDPairs = collectEXCharactersFromXML(declNodeItr, collectedPlaintextEntry);
 					// ... and if that list doesn't end up empty...
 					if (!nameIDPairs.empty())
 					{
-						// ... then we'll add those to the menu lists proper.
+						// ... then we'll note that we're adding characters...
+						logOutput << "Adding Characters to Character List...\n";
+						// ... and add those to the menu lists proper.
 						addCollectedEXCharactersToMenuLists(nameIDPairs, logOutput);
 						// Additionally, if we pulled any entries from plaintext...
 						if (collectedPlaintextEntry)
@@ -1046,7 +1223,7 @@ namespace lava
 				}
 
 				//Do final character list summary.
-				logOutput << "\nFinal Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
+				logOutput << "Final Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
 				for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
 				{
 					logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";
@@ -1067,25 +1244,20 @@ namespace lava
 						bool collectedPlaintextEntry = 0;
 						// Populate our entry list...
 						std::vector<std::pair<std::string, std::string>> tempRosterList = collectEXRostersFromXML(codeNodeItr, collectedPlaintextEntry);
-						// ... and if that list doesn't end up empty...
-						if (!tempRosterList.empty())
+						addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
+						// Additionally, if we pulled any entries from plaintext...
+						if (collectedPlaintextEntry)
 						{
-							// ... then we'll add those to the menu lists proper.
-							addCollectedEXRostersToMenuLists(tempRosterList, logOutput);
-							// Additionally, if we pulled any entries from plaintext...
-							if (collectedPlaintextEntry)
-							{
-								// ... then we need to promote them to properly formatted entries, so regen the entries...
-								regenRosterDeclsInXML(codeNodeItr, tempRosterList);
-								// ... and fix the indentation on them!
-								fixIndentationOfChildNodes(*codeNodeItr);
-								// Additionally, flag that we need to do a rebuild later.
-								doRebuild = 1;
-							}
+							// ... then we need to promote them to properly formatted entries, so regen the entries...
+							regenRosterDeclsInXML(codeNodeItr, tempRosterList);
+							// ... and fix the indentation on them!
+							fixIndentationOfChildNodes(*codeNodeItr);
+							// Additionally, flag that we need to do a rebuild later.
+							doRebuild = 1;
 						}
 
 						//Do final roster list summary.
-						logOutput << "\nFinal Roster List:\n";
+						logOutput << "Final Roster List:\n";
 						for (std::size_t i = 0; i < ROSTER_LIST.size(); i++)
 						{
 							logOutput << "\t\"" << ROSTER_LIST[i] << "\" (Filename: " << ROSTER_FILENAME_LIST[i] << ")\n";
@@ -1101,7 +1273,7 @@ namespace lava
 						addCollectedThemesToMenuLists(tempThemeList, logOutput);
 
 						// Do final theme list summary.
-						logOutput << "\nFinal Theme List:\n";
+						logOutput << "Final Theme List:\n";
 						for (std::size_t i = 0; i < THEME_LIST.size(); i++)
 						{
 							logOutput << "\t\"" << THEME_LIST[i] << "\", Replacement Prefixes Are:\n";
@@ -1128,9 +1300,60 @@ namespace lava
 					// If we're looking at the Slot Colors block...
 					else if (codeNodeItr->name() == configXMLConstants::slotColorDeclsTag)
 					{
-						logOutput << "\nSetting Player Slot Color Changer mode... \n";
-						// ... handle setting its mode. 
-						setCodeModeFromXML(codeNodeItr, CONFIG_BACKPLATE_COLOR_MODE, backplateColorConstants::playerSlotColorLevel::pSCL__COUNT, logOutput);
+						logOutput << "\nSetting Player Slot Color Changer status... \n";
+						// ... handle enabling/disabling it.
+						// And if we end up enabling it...
+						if (setCodeEnabledFromXML(codeNodeItr, CONFIG_PSCC_ENABLED, logOutput))
+						{
+							pugi::xml_node_iterator targetNode = codeNodeItr->child(configXMLConstants::colorDefsTag.c_str());
+							if (*targetNode)
+							{
+								logOutput << "Parsing Color Definitions... \n";
+								std::vector<std::pair<std::string, pscc::color>> extraColors = collectColorsFromXML(targetNode);
+								if (!extraColors.empty())
+								{
+									addCollectedColorsToMenuLists(extraColors, logOutput);
+								}
+								else
+								{
+									logOutput << "[WARNING] Color Definition Block parsed, but no valid entries found!\n";
+								}
+							}
+
+							targetNode = codeNodeItr->child(configXMLConstants::colorSchemeDefsTag.c_str());
+							if (*targetNode)
+							{
+								logOutput << "Parsing Color Scheme Definitions... \n";
+								std::vector<pscc::colorScheme> extraSchemes = collectSchemesFromXML(targetNode);
+								if (!extraSchemes.empty())
+								{
+									addCollectedSchemesToMenuLists(extraSchemes, logOutput);
+								}
+								else
+								{
+									logOutput << "[WARNING] Scheme Definition Block parsed, but no valid entries found!\n";
+								}
+							}
+
+							//Do final scheme list summary.
+							logOutput << "Final Color Scheme List:\n";
+							for (std::size_t i = 0; i < pscc::schemeTable.entries.size(); i++)
+							{
+								const pscc::colorScheme* currScheme = &pscc::schemeTable.entries[i];
+								logOutput << std::setw(0x10) << ("\"" + currScheme->name + "\" ");
+								switch (i)
+								{
+								case pscc::schemePredefIDs::spi_P1: { logOutput << "[P1 + Red Team]"; break; }
+								case pscc::schemePredefIDs::spi_P2: { logOutput << "[P2 + Blue Team]"; break; }
+								case pscc::schemePredefIDs::spi_P3: { logOutput << "[P3]"; break; }
+								case pscc::schemePredefIDs::spi_P4: { logOutput << "[P4 + Green Team]"; break; }
+								default: { break; }
+								}
+								logOutput << "\n";
+							}
+
+							pscc::schemeTable.tableToByteVec();
+						}
 					}
 				}
 			}

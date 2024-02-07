@@ -80,17 +80,16 @@ int DASH_ATTACK_ITEM_GRAB_INDEX = -1;
 int TRIP_TOGGLE_INDEX = -1;
 int TRIP_RATE_MULTIPLIER_INDEX = -1;
 int TRIP_INTERVAL_INDEX = -1;
-int BACKPLATE_COLOR_1_INDEX = -1;
-int BACKPLATE_COLOR_2_INDEX = -1;
-int BACKPLATE_COLOR_3_INDEX = -1;
-int BACKPLATE_COLOR_4_INDEX = -1;
-int BACKPLATE_COLOR_C_INDEX = -1;
-int BACKPLATE_COLOR_T_INDEX = -1;
+int PSCC_COLOR_1_INDEX = -1;
+int PSCC_COLOR_2_INDEX = -1;
+int PSCC_COLOR_3_INDEX = -1;
+int PSCC_COLOR_4_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_TOGGLE_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_FRAMES_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_MIN_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_MAX_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
+int TOGGLE_BASE_LINE_INDEX = -1;
 
 //constant overrides
 vector<ConstantPair> constantOverrides;
@@ -291,23 +290,164 @@ std::vector<string> THEME_LIST;
 std::vector<menuTheme> THEME_SPEC_LIST{};
 std::array<bool, themeConstants::tpi__PATH_COUNT> THEME_FILE_GOT_UNIQUE_PREFIX{};
 
-namespace backplateColorConstants
+namespace pscc
 {
-	const std::array<std::string, playerSlotColorLevel::pSCL__COUNT> modeNames =
+	namespace psccConstants
 	{
-		"Disabled",
-		"Shields & Death Plumes",
-		"Shields, Death Plumes, & In-Game HUD",
-		"All In-Game Elements, CSS, & Results Screen",
-		"All Elements & CSS Color Change Input",
+		const std::string predefStr = "pd_";
+		const std::string menuSuffStr = "_m";
+		const std::string ingameSuffStr = "_ig";
+		const std::string secSuffStr = "_2";
+
+		const std::string SchemeNameP1 = "P1";
+		const std::string SchemeNameP2 = "P2";
+		const std::string SchemeNameP3 = "P3";
+		const std::string SchemeNameP4 = "P4";
+		const std::string SchemeNameRGB = "RGB";
+
+		const std::string ColNameP1_M = predefStr + SchemeNameP1 + menuSuffStr;
+		const std::string ColNameP1_M2 = predefStr + SchemeNameP1 + menuSuffStr + secSuffStr;
+		const std::string ColNameP1_IG = predefStr + SchemeNameP1 + ingameSuffStr;
+		const std::string ColNameP1_IG2 = predefStr + SchemeNameP1 + ingameSuffStr + secSuffStr;
+		const std::string ColNameP2_M = predefStr + SchemeNameP2 + menuSuffStr;
+		const std::string ColNameP2_M2 = predefStr + SchemeNameP2 + menuSuffStr + secSuffStr;
+		const std::string ColNameP2_IG = predefStr + SchemeNameP2 + ingameSuffStr;
+		const std::string ColNameP2_IG2 = predefStr + SchemeNameP2 + ingameSuffStr + secSuffStr;
+		const std::string ColNameP3_M = predefStr + SchemeNameP3 + menuSuffStr;
+		const std::string ColNameP3_M2 = predefStr + SchemeNameP3 + menuSuffStr + secSuffStr;
+		const std::string ColNameP3_IG = predefStr + SchemeNameP3 + ingameSuffStr;
+		const std::string ColNameP3_IG2 = predefStr + SchemeNameP3 + ingameSuffStr + secSuffStr;
+		const std::string ColNameP4_M = predefStr + SchemeNameP4 + menuSuffStr;
+		const std::string ColNameP4_M2 = predefStr + SchemeNameP4 + menuSuffStr + secSuffStr;
+		const std::string ColNameP4_IG = predefStr + SchemeNameP4 + ingameSuffStr;
+		const std::string ColNameP4_IG2 = predefStr + SchemeNameP4 + ingameSuffStr + secSuffStr;
+		const std::string ColNameRGB = predefStr + SchemeNameRGB;
+	}
+
+	bool color::colorValid() const
+	{
+		return (hue != FLT_MAX) && (saturation != FLT_MAX) && (luminance != FLT_MAX);
+	}
+
+	std::map<std::string, color> colorTable =
+	{
+		{psccConstants::ColNameP1_M,	{0.00f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP1_IG2,	{5.80f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP2_M,	{3.90f,	0.70f,	0.50f}},
+		{psccConstants::ColNameP2_IG,	{3.60f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP3_M,	{0.85f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP3_IG,	{1.05f,	0.80f,	0.55f}},
+		{psccConstants::ColNameP4_M,	{2.10f,	0.80f,	0.375f}},
+		{psccConstants::ColNameRGB,     {0.00f, 1.00f,  0.50f}},
 	};
+	std::size_t getColorTableSizeInBytes()
+	{
+		return (colorTable.size() * colorTableEntrySizeInBytes);
+	}
+
+	colorScheme::colorScheme(std::string nameIn)
+	{
+		name = nameIn;
+		colors.fill("");
+	}
+	void colorScheme::downfillEmptySlots()
+	{
+		if (!colors[colorSchemeColorSlots::cscs_MENU1].empty())
+		{
+			std::string defaultColor = colors[colorSchemeColorSlots::cscs_MENU1];
+			for (std::size_t i = colorSchemeColorSlots::cscs_MENU1 + 1; i < colorSchemeColorSlots::cscs__COUNT; i++)
+			{
+				if (colors[i].empty())
+				{
+					colors[i] = defaultColor;
+				}
+				else
+				{
+					defaultColor = colors[i];
+				}
+			}
+		}
+	}
+	bool colorScheme::schemeValid() const
+	{
+		bool result = 1;
+
+		for (auto i : colors)
+		{
+			result &= (pscc::colorTable.find(i) != pscc::colorTable.end());
+		}
+
+		return result;
+	}
+	colorSchemeTable::colorSchemeTable()
+	{
+		entries.resize(schemePredefIDs::spi__COUNT, colorScheme());
+		colorScheme* currCol = nullptr;
+
+		currCol = &entries[schemePredefIDs::spi_P1];
+		currCol->name = psccConstants::SchemeNameP1;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP1_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP1_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP1_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP1_IG2;
+
+		currCol = &entries[schemePredefIDs::spi_P2];
+		currCol->name = psccConstants::SchemeNameP2;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP2_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP2_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP2_IG;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP2_IG;
+
+		currCol = &entries[schemePredefIDs::spi_P3];
+		currCol->name = psccConstants::SchemeNameP3;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP3_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP3_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP3_IG;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP3_IG;
+
+		currCol = &entries[schemePredefIDs::spi_P4];
+		currCol->name = psccConstants::SchemeNameP4;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP4_M;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP4_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP4_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP4_M;
+	}
+	std::size_t colorSchemeTable::tableSizeInBytes() const
+	{
+		return (entries.size() * schemeTableEntrySizeInBytes);
+	}
+	std::vector<unsigned char> colorSchemeTable::tableToByteVec() const
+	{
+		std::vector<unsigned char> result(tableSizeInBytes(), 0x00);
+		for (std::size_t i = 0, writeIdx = 0; i < entries.size(); i++)
+		{
+			for (auto u : entries[i].colors)
+			{
+				result[writeIdx++] = std::distance(colorTable.begin(), colorTable.find(u));
+			}
+		}
+		return result;
+	}
+	std::size_t getColorTableOffsetToColor(std::string colorName)
+	{
+		std::size_t result = SIZE_MAX;
+
+		auto findRes = colorTable.find(colorName);
+		if (findRes != colorTable.end())
+		{
+			result = std::distance(colorTable.begin(), findRes) * colorTableEntrySizeInBytes;
+		}
+
+		return result;
+	}
+
+	colorSchemeTable schemeTable;
 }
-const unsigned long BACKPLATE_COLOR_TOTAL_COLOR_COUNT = 10;
 
 // Incoming Configuration XML Variables
 std::vector<std::string> CONFIG_INCOMING_COMMENTS{};
 bool CONFIG_DELETE_CONTROLS_COMMENTS = false;
-unsigned char CONFIG_BACKPLATE_COLOR_MODE = backplateColorConstants::pSCL_NONE;
+bool CONFIG_PSCC_ENABLED = false;
 bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED = 1;
 bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED = 1;
 
@@ -339,7 +479,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 	const std::string asmFileName = "Net-CodeMenu.asm";
 	const std::string asmTextFileName = "Net-CodeMenu.txt";
 	const std::string cmnuFileName = "dnet.cmnu";
-	const std::string asmBuildLocationDirectory = "Source/Netplay/";
+	const std::vector<std::string> asmBuildLocationDirectories = { "Source/Netplay/" };
 	const std::string cmnuBuildLocationDirectory = "pf/menu3/";
 	#elif BUILD_NETPLAY_FILES == false
 	const std::string changelogFileName = "Code_Menu_Changelog.txt";
@@ -349,7 +489,7 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 	const std::string asmFileName = "CodeMenu.asm";
 	const std::string asmTextFileName = "CodeMenu.txt";
 	const std::string cmnuFileName = "data.cmnu";
-	const std::string asmBuildLocationDirectory = "Source/Project+/";
+	const std::vector<std::string> asmBuildLocationDirectories = { "Source/CodeMenu/", "Source/Project+/" };
 	const std::string cmnuBuildLocationDirectory = "pf/menu3/";
 	#endif
 #else
@@ -359,7 +499,6 @@ const std::string GCTRMCommandBase = "\"" + GCTRMExePath + "\" -g -l -q ";
 //		- boostGCTName
 //		- asmFileName
 //		- asmTextFileName
-//		- asmBuildLocationDirectory
 const std::string changelogFileName = "Code_Menu_Changelog.txt";
 const std::string optionsFilename = "Code_Menu_Options.xml";
 const std::string mainGCTName = "RSBE01";
@@ -367,7 +506,7 @@ const std::string boostGCTName = "";
 const std::string asmFileName = "";
 const std::string asmTextFileName = "";
 const std::string cmnuFileName = "cm.bin";
-const std::string asmBuildLocationDirectory = "";
+const std::vector<std::string> asmBuildLocationDirectories = {};
 const std::string cmnuBuildLocationDirectory = "./";
 #endif
 
@@ -379,7 +518,6 @@ const std::string asmOutputFilePath = outputFolder + asmFileName;
 const std::string asmTextOutputFilePath = outputFolder + asmTextFileName;
 const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
 const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
-const std::string asmBuildLocationFilePath = buildFolder + asmBuildLocationDirectory + asmFileName;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
 std::string getCMNUAbsolutePath()
 {
@@ -414,6 +552,7 @@ namespace xmlTagConstants
 	const std::string lockedTag = "locked";
 	const std::string hiddenTag = "hidden";
 	const std::string stickyTag = "sticky";
+	const std::string excludedTag = "excluded";
 }
 pugi::xml_document menuOptionsTree{};
 bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument)
@@ -624,6 +763,14 @@ void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_docu
 				// ... and force enable XML output for the flag!
 				currLine->behaviorFlags[Line::lbf_STICKY].forceXMLOutput = 1;
 			}
+			// Check if the line is explicitly marked as removed...
+			if (tempAttr = lineFindItr->second.attribute(xmlTagConstants::excludedTag.c_str()), tempAttr)
+			{
+				// ... and if so, mark it as such...
+				currLine->behaviorFlags[Line::lbf_REMOVED].value = tempAttr.as_bool();
+				// ... and force enable XML output for the flag!
+				currLine->behaviorFlags[Line::lbf_REMOVED].forceXMLOutput = 1;
+			}
 		}
 
 		// Check if the page is explicitly marked as hidden...
@@ -651,6 +798,15 @@ void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_docu
 			// ... and force enable XML output for the flag!
 			currPage->CalledFromLine.behaviorFlags[Line::lbf_STICKY].forceXMLOutput = 1;
 		}
+		// Check if the page is explicitly marked as removed...
+		if (tempAttr = pageFindItr->second.attribute(xmlTagConstants::excludedTag.c_str()), tempAttr)
+		{
+			// ... and if so, mark it as such...
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_REMOVED].value = tempAttr.as_bool();
+			// ... and force enable XML output for the flag!
+			currPage->CalledFromLine.behaviorFlags[Line::lbf_REMOVED].forceXMLOutput = 1;
+		}
+
 	}
 	// And lastly, for each page...
 	for (Page* currPage : Pages)
@@ -711,6 +867,11 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 		if (pageFlagSetting || pageFlagSetting.forceXMLOutput)
 		{
 			pageNode.append_attribute(xmlTagConstants::stickyTag.c_str()).set_value(pageFlagSetting);
+		}
+		pageFlagSetting = currPage->CalledFromLine.behaviorFlags[Line::lbf_REMOVED];
+		if (pageFlagSetting || pageFlagSetting.forceXMLOutput)
+		{
+			pageNode.append_attribute(xmlTagConstants::excludedTag.c_str()).set_value(pageFlagSetting);
 		}
 
 		for (unsigned long u = 0; u < currPage->Lines.size(); u++)
@@ -787,6 +948,11 @@ bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut)
 				{
 					lineNode.append_attribute(xmlTagConstants::stickyTag.c_str()).set_value(lineFlagSetting);
 				}
+				lineFlagSetting = currLine->behaviorFlags[Line::lbf_REMOVED];
+				if (lineFlagSetting || lineFlagSetting.forceXMLOutput)
+				{
+					lineNode.append_attribute(xmlTagConstants::excludedTag.c_str()).set_value(lineFlagSetting);
+				}
 			}
 		}
 	}
@@ -822,13 +988,16 @@ void CodeMenu()
 	P1Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P1_INDEX, "%.0f%%"));
 	P1Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P1_INDEX));
 	P1Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P1_INDEX));
-	if (PROJECT_PLUS_EX_BUILD)
-	{
-		P1Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P1_INDEX));
-		P1Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P1_INDEX));
-		P1Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
-		P1Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P1_FLASH_RED_INDEX));
-	}
+	Selection* P1InputBuffer = new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P1_INDEX);
+	P1InputBuffer->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
+	Selection* P1ALC = new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P1_INDEX);
+	P1ALC->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
+	P1Lines.push_back(P1InputBuffer);
+	P1Lines.push_back(P1ALC);
+	P1Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P1Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
+	P1Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P1_FLASH_RED_INDEX));
+	P1Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
 	P1Lines.push_back(new Comment(""));
 	P1Lines.push_back(new Print("Tag Hex: %s", { &P1_TAG_STRING_INDEX }));
 	P1Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -844,13 +1013,12 @@ void CodeMenu()
 	P2Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P2_INDEX, "%.0f%%"));
 	P2Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P2_INDEX));
 	P2Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P2_INDEX));
-	if (PROJECT_PLUS_EX_BUILD)
-	{
-		P2Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P2_INDEX));
-		P2Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P2_INDEX));
-		P2Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
-		P2Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P2_FLASH_RED_INDEX));
-	}
+	P2Lines.push_back(new SelectionMirror(*P1InputBuffer, "Input Buffer", 0, BUFFER_P2_INDEX));
+	P2Lines.push_back(new SelectionMirror(*P1ALC, "Automatic L-Cancelling", 0, ALC_P2_INDEX));
+	P2Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P2Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
+	P2Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P2_FLASH_RED_INDEX));
+	P2Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
 	P2Lines.push_back(new Comment(""));
 	P2Lines.push_back(new Print("Tag Hex: %s", { &P2_TAG_STRING_INDEX }));
 	P2Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -862,13 +1030,12 @@ void CodeMenu()
 	P3Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P3_INDEX, "%.0f%%"));
 	P3Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P3_INDEX));
 	P3Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P3_INDEX));
-	if (PROJECT_PLUS_EX_BUILD)
-	{
-		P3Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P3_INDEX));
-		P3Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P3_INDEX));
-		P3Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
-		P3Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P3_FLASH_RED_INDEX));
-	}
+	P3Lines.push_back(new SelectionMirror(*P1InputBuffer, "Input Buffer", 0, BUFFER_P3_INDEX));
+	P3Lines.push_back(new SelectionMirror(*P1ALC, "Automatic L-Cancelling", 0, ALC_P3_INDEX));
+	P3Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P3Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
+	P3Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P3_FLASH_RED_INDEX));
+	P3Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
 	P3Lines.push_back(new Comment(""));
 	P3Lines.push_back(new Print("Tag Hex: %s", { &P3_TAG_STRING_INDEX }));
 	P3Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -880,13 +1047,12 @@ void CodeMenu()
 	P4Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P4_INDEX, "%.0f%%"));
 	P4Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P4_INDEX));
 	P4Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P4_INDEX));
-	if (PROJECT_PLUS_EX_BUILD)
-	{
-		P4Lines.push_back(new Selection("Input Buffer", { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }, 0, BUFFER_P4_INDEX));
-		P4Lines.push_back(new Selection("Automatic L-Cancelling", { "OFF", "ON", "Modified" }, 0, ALC_P4_INDEX));
-		P4Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
-		P4Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P4_FLASH_RED_INDEX));
-	}
+	P4Lines.push_back(new SelectionMirror(*P1InputBuffer, "Input Buffer", 0, BUFFER_P4_INDEX));
+	P4Lines.push_back(new SelectionMirror(*P1ALC, "Automatic L-Cancelling", 0, ALC_P4_INDEX));
+	P4Lines.push_back(new Floating("ALC Modifier", 0.099, 3, 0.5, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	P4Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
+	P4Lines.push_back(new Toggle("Red Flash on L-Cancel Failure", false, ALC_P4_FLASH_RED_INDEX));
+	P4Lines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !PROJECT_PLUS_EX_BUILD;
 	P4Lines.push_back(new Comment(""));
 	P4Lines.push_back(new Print("Tag Hex: %s", { &P4_TAG_STRING_INDEX }));
 	P4Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
@@ -944,7 +1110,7 @@ void CodeMenu()
 	ConstantsLines.push_back(new Selection("Staling Toggle", { "Default", "ON", "OFF" }, 0, STALING_TOGGLE_INDEX));
 	if (CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED)
 	{
-		ConstantsLines.push_back(new Selection("Aerial & Dash Attack Item Grab Toggle", { "OFF", "ON" }, 0, DASH_ATTACK_ITEM_GRAB_INDEX));
+		ConstantsLines.push_back(new Toggle("Aerial & Dash Attack Item Grab Toggle", 0, DASH_ATTACK_ITEM_GRAB_INDEX));
 	}
 	//ConstantsLines.push_back(new Selection("Tripping Toggle", { "OFF", "ON" }, 0, TRIP_TOGGLE_INDEX));
 	//ConstantsLines.push_back(new Floating("Tripping Rate", 0, 100, 1.0, 1.0, TRIP_RATE_MULTIPLIER_INDEX, "%.2f%"));
@@ -976,13 +1142,14 @@ void CodeMenu()
 	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
 	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
-	if (PROJECT_PLUS_EX_BUILD)
-	{
-		SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
-		SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
-		SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
-		SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
-	}
+	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
+	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = true;
+	SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
+	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = !PROJECT_PLUS_EX_BUILD;
+	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
+	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = !PROJECT_PLUS_EX_BUILD;
+	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
+	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = !PROJECT_PLUS_EX_BUILD;
 	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
 	Page SpecialModePage("Special Modes", SpecialModeLines);
 
@@ -1037,18 +1204,19 @@ void CodeMenu()
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
 	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
-	HUDColorLines.push_back(new Integer("Red",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 1, 1, BACKPLATE_COLOR_1_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Blue",		0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 2, 1, BACKPLATE_COLOR_2_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Yellow",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 3, 1, BACKPLATE_COLOR_3_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Green",	0, BACKPLATE_COLOR_TOTAL_COLOR_COUNT - 1, 4, 1, BACKPLATE_COLOR_4_INDEX, "Color %d", Integer::INT_FLAG_ALLOW_WRAP));
-	HUDColorLines.push_back(new Integer("Gray",		9, 9, 9, 0, BACKPLATE_COLOR_C_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
-	HUDColorLines.back()->behaviorFlags[Line::lbf_UNSELECTABLE].value = 1;
-	HUDColorLines.back()->behaviorFlags[Line::lbf_STICKY].value = 1;
-	HUDColorLines.push_back(new Integer("Clear",	0, 0, 0, 0, BACKPLATE_COLOR_T_INDEX, "Color %d")); // Note: Cannot be changed, on purpose.
-	HUDColorLines.back()->behaviorFlags[Line::lbf_UNSELECTABLE].value = 1;
-	HUDColorLines.back()->behaviorFlags[Line::lbf_STICKY].value = 1;
+	std::vector<std::string> schemeNames(pscc::schemeTable.entries.size(), "");
+	for (std::size_t i = 0; i < pscc::schemeTable.entries.size(); i++)
+	{
+		schemeNames[i] = pscc::schemeTable.entries[i].name;
+	}
+	Selection* P1ColorLine = new Selection("Player 1", schemeNames, pscc::schemePredefIDs::spi_P1, PSCC_COLOR_1_INDEX);
+	P1ColorLine->behaviorFlags[Line::lbf_STICKY].value = 1;
+	HUDColorLines.push_back(P1ColorLine);
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 2", pscc::schemePredefIDs::spi_P2, PSCC_COLOR_2_INDEX));
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 3", pscc::schemePredefIDs::spi_P3, PSCC_COLOR_3_INDEX));
+	HUDColorLines.push_back(new SelectionMirror(*P1ColorLine, "Player 4", pscc::schemePredefIDs::spi_P4, PSCC_COLOR_4_INDEX));
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
-	if ((CONFIG_BACKPLATE_COLOR_MODE > 0) && (CONFIG_BACKPLATE_COLOR_MODE < backplateColorConstants::pSCL__COUNT))
+	if (CONFIG_PSCC_ENABLED && (pscc::schemeTable.entries.size() >= 4))
 	{
 		MainLines.push_back(&HUDColorsPage.CalledFromLine);
 	}
@@ -1089,8 +1257,9 @@ void CodeMenu()
 	MainLines.push_back(new Integer("P1 4th Shield Blue", 0, 0xFF, 0, 1, SHIELD_BLUE_4));
 	MainLines.push_back(new Integer("P1 4th Shield Alpha", 0, 0xFF, 0, 1, SHIELD_ALPHA_4));*/
 
-
-
+	MainLines.push_back(new Selection("_", { "OFF", "ON"}, 0, TOGGLE_BASE_LINE_INDEX));
+	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_HIDDEN].value = 1;
+	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_UNSELECTABLE].value = 1;
 	Page Main("Main", MainLines);
 	
 	//Unclepunch fps code
@@ -1448,6 +1617,7 @@ void CreateMenu(Page MainPage)
 	for (int i = 0; i < Pages.size(); i++) {
 		CurrentOffset += Page::NUM_WORD_ELEMS * 4;
 		for (Line* &x : Pages[i]->Lines) {
+			if (x->behaviorFlags[Line::lbf_REMOVED]) continue; // If the line is explicitly marked as removed, skip it!
 			if (x->Index != nullptr) {
 				*(x->Index) = CurrentOffset;
 			}
@@ -1478,12 +1648,12 @@ void CreateMenu(Page MainPage)
 	//button combos
 	AddValueToByteArray(BUTTON_L | BUTTON_R | BUTTON_Y , Header); //salty runback
 	AddValueToByteArray(BUTTON_L | BUTTON_R | BUTTON_X, Header); //skip results
-	// Old Line Color Table
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
-	AddValueToByteArray(0x00, Header);
+	// Float Conversion Space
+	AddValueToByteArray(0x43300000, Header); // Conversion Constant
+	AddValueToByteArray(0x00000000, Header);
+	AddValueToByteArray(0x43300000, Header); // Conversion Staging Space
+	AddValueToByteArray(0x00000000, Header);
+	AddValueToByteArray(0x00000000, Header); // Extra Staging Word
 	//frame timers
 	AddValueToByteArray(0, Header); //move frame timer
 	AddValueToByteArray(0, Header); //value frame timer
@@ -1645,17 +1815,16 @@ void CreateMenu(Page MainPage)
 	// Tripping Cooldown Toggle
 	AddValueToByteArray(TRIP_INTERVAL_INDEX, Header);
 
-	// Backplate Settings
-	AddValueToByteArray(BACKPLATE_COLOR_1_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_2_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_3_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_4_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_C_INDEX, Header);
-	AddValueToByteArray(BACKPLATE_COLOR_T_INDEX, Header);
-	//BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC
-	// Used to store some temp values related to the color changer!
+	// PSCC Settings
+	AddValueToByteArray(PSCC_COLOR_1_INDEX, Header);
+	AddValueToByteArray(PSCC_COLOR_2_INDEX, Header);
+	AddValueToByteArray(PSCC_COLOR_3_INDEX, Header);
+	AddValueToByteArray(PSCC_COLOR_4_INDEX, Header);
+	//PSCC_TEAM_BATTLE_STORE_LOC
 	// First byte is an offset used to lbzx to either VALUE or DEFAULT quickly (init to VALUE).
 	AddValueToByteArray(Line::VALUE << 0x18, Header);
+	// Player Slot Color Float Table Address
+	AddValueToByteArray(0, Header);
 
 	// Jumpsquat Override
 	AddValueToByteArray(JUMPSQUAT_OVERRIDE_TOGGLE_INDEX, Header);
@@ -1683,6 +1852,13 @@ void CreateMenu(Page MainPage)
 		// ... reserve space for them in the CMNU!
 		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH, 0xCC);
 	}
+
+	
+	// PSCC Quick Font Loc
+	AddValueToByteArray(0xFF, Header);
+	AddValueToByteArray(0xFF, Header);
+	AddValueToByteArray(0xFF, Header);
+	AddValueToByteArray(0xA8, Header);
 
 	if (LINE_COLOR_TABLE.table_size() > 0)
 	{
@@ -1713,17 +1889,88 @@ void CreateMenu(Page MainPage)
 }
 
 void constantOverride() {
-	ASMStart(0x80023d60, "[CM: Code Menu] Constant Overrides");
+	std::size_t rgbColorTableOffset = pscc::getColorTableOffsetToColor(pscc::psccConstants::ColNameRGB);
+
+	ASMStart(0x80023d60, std::string("[CM: Code Menu] Constant Overrides") + 
+		std::string((CONFIG_PSCC_ENABLED && (rgbColorTableOffset != SIZE_MAX)) ? " + Incr. PSCC RGB Strobe Float" : ""));
 
 	int reg1 = 4;
 	int reg2 = 5;
+	int reg3 = 11;
 
+	unsigned short prevIndexHiHalf = 0xFFFF;
+	unsigned short prevDestHiHalf = 0xFFFF;
 	for(auto& x : constantOverrides) {
-		LoadWordToReg(reg1, *x.index + Line::VALUE);
-		SetRegister(reg2, x.address);
-		STW(reg1, reg2, 0);
+
+		unsigned short indexHiHalf = *x.index >> 0x10;
+		unsigned short indexLoHalf = (*x.index & 0xFFFF) + Line::VALUE;
+		indexHiHalf += bool(indexLoHalf >= 0x8000);
+		if (indexHiHalf != prevIndexHiHalf)
+		{
+			ADDIS(reg1, 0, indexHiHalf);
+		}
+		LWZ(reg3, reg1, indexLoHalf);
+		prevIndexHiHalf = indexHiHalf;
+
+		unsigned short destHiHalf = x.address >> 0x10;
+		unsigned short destLoHalf = x.address & 0xFFFF;
+		destHiHalf += bool(destLoHalf >= 0x8000);
+		if (destHiHalf != prevDestHiHalf)
+		{
+			ADDIS(reg2, 0, destHiHalf);
+		}
+		STW(reg3, reg2, destLoHalf);
+		prevDestHiHalf = destHiHalf;
 	}
 
+	if (CONFIG_PSCC_ENABLED && (rgbColorTableOffset != SIZE_MAX))
+	{
+		int menuNotLoadedLabel = GetNextLabel();
+		// If reg1 isn't already loaded with the top half of START_OF_CODE_MENU_HEADER...
+		if (prevIndexHiHalf != unsigned short(START_OF_CODE_MENU_HEADER >> 0x10))
+		{
+			// ... set up its value!
+			ADDIS(reg1, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+		}
+		// Try to load START_OF_CODE_MENU from the header.
+		LWZ(reg2, reg1, (START_OF_CODE_MENU_HEADER & 0xFFFF) + 4);
+		// Use reg1 to store the full START_OF_CODE_MENU value into reg3...
+		ADDI(reg3, reg1, START_OF_CODE_MENU & 0xFFFF);
+		// ... then compare the two: the loaded value vs the expected value.
+		CMPL(reg3, reg2, EQUAL_L);
+		// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
+		JumpToLabel(menuNotLoadedLabel, bCACB_NOT_EQUAL);
+
+		
+		// Load the Float Table address into reg3!
+		LWZ(reg3, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
+		// Load the hue value for color 0 (ie. the first float in the table)
+		LFS(13, reg3, rgbColorTableOffset);
+
+		// Calculate the constant for our incrementing value, load it into fr12...
+		float conversionConstant = 1.0f/90.0f;
+		unsigned short conversionHex = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(conversionConstant).data()) >> 0x10;
+		ADDIS(reg2, 0, conversionHex);
+		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		LFS(12, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		// ... and add it to f13 to increment the hue! 
+		FADDS(13, 13, 12);
+
+		// Load 6.0f into fr12...
+		ADDIS(reg2, 0, 0x40c0);
+		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		LFS(12, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		// ... and if our incremented hue is above 6.0f...
+		FCMPU(13, 12, 1);
+		BC(2, bCACB_LESSER.inConditionRegField(1));
+		// ... set it back to 0.0f (subtract it from itself)!
+		FSUB(13, 13, 13);
+
+		// Finally, store the incremented hue back in the float table!
+		STFS(13, reg3, rgbColorTableOffset);
+		Label(menuNotLoadedLabel);
+	}
+	
 	ASMEnd(0x2c000000); //cmpwi, r0, 0
 }
 
@@ -3419,3 +3666,4 @@ void RunIfPortToggle(int ARRAY_LOC, int PortReg) {
 		}
 	}
 }
+

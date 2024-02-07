@@ -193,12 +193,12 @@
     <ClInclude Include="Tag Based Costumes.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="_AdditionalCode.h" />
-    <ClInclude Include="_BackplateColors.h" />
     <ClInclude Include="_CSSRosterChange.h" />
     <ClInclude Include="_DashAttackItemGrab.h" />
     <ClInclude Include="_lavaBytes.h" />
     <ClInclude Include="_lavaGeckoHexConvert.h" />
     <ClInclude Include="_lavaOutputSplitter.h" />
+    <ClInclude Include="_PlayerSlotColorChangers.h" />
     <ClInclude Include="_ThemeChange.h" />
     <ClInclude Include="_TripRateModifier.h" />
   </ItemGroup>
@@ -242,12 +242,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="_AdditionalCode_Util.cpp" />
-    <ClCompile Include="_BackplateColors.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="_CSSRosterChange.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
@@ -280,6 +274,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="_PlayerSlotColorChangers.cpp" />
     <ClCompile Include="_ThemeChange.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>

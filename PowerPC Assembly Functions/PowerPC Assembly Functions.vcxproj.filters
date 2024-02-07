@@ -105,9 +105,6 @@
     <ClInclude Include="_TripRateModifier.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="_BackplateColors.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="_lavaASMHexConvert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -121,6 +118,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="_CodeMenuHeaderConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="_PlayerSlotColorChangers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -212,9 +212,6 @@
     <ClCompile Include="_TripRateModifier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="_BackplateColors.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="_lavaASMHexConvert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -225,6 +222,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_JumpsquatOverride.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_PlayerSlotColorChangers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

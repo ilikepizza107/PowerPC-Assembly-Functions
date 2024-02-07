@@ -10,7 +10,7 @@
 
 namespace lava
 {
-	const std::string version = "v1.3.1";
+	extern const std::string version;
 	extern int CMNUCopyOverride;
 	extern int ASMCopyOverride;
 	extern int GCTBuildOverride;
@@ -32,7 +32,8 @@ namespace lava
 	bool yesNoDecision(char yesKey, char noKey);
 	bool offerCopyOverAndBackup(std::string fileToCopy, std::string fileToOverwrite, int decisionOverride = INT_MAX);
 	bool offerCopy(std::string fileToCopy, std::string fileToOverwrite, int decisionOverride = INT_MAX);
-	bool handleAutoGCTRMProcess(std::ostream& logOutput, int decisionOverride = INT_MAX);
+	bool handleAutoGCTRMProcess(std::ostream& logOutput);
+	bool placeASMInBuild(std::ostream& logOutput);
 
 	// Assembly Utility Functions
 	void WriteByteVec(const unsigned char* Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator = 0);

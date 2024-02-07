@@ -2,47 +2,52 @@
 <!--PowerPC Assembly Functions (Code Menu Building Utility) Feature Configuration Document-->
 <!--Use this document to configure the features offered by the Code Menu! See README.md for further details.-->
 <codeMenuConfig>
-	<!--To alter some miscellaneous properties of the menu, edit the contents of this block!-->
-	<menuProperties>
-		<!--Specifies what folder on the SD Card the menu will expect to be in. Must be 8 characters long!-->
-		<!--Leave this blank to use the default folder.-->
-		<buildBaseFolder name="Project+" />
-		<!--Specify a replacement for the text that usually sits at the top of the menu.-->
-		<!--Leave this blank to leave the original title text in place.-->
-		<menuTitle text="Project+ Code Menu" />
-		<!--Specify additional comment text to add to the top of the menu!-->
-		<!--Note: By default, comments specified here are included beneath the usual comments outlining the menu's controls.-->
-		<!--To delete those comments on the controls, set the "deleteControlsComments" argument to "true"!-->
-		<menuComments deleteControlsComments="false">
-			<!--
-			<comment text="YOUR_COMMENT_HERE" />
-			-->
-		</menuComments>
-	</menuProperties>
-	
-	<!--The "baseListVersion" field determines which characters will appear in the list for the character switchers!-->
-	<!--0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+-->
-	<characterList baseListVersion="3" />
-	
-	<codeSettings>
-		<!--To declare new themes, add new entries into this block!-->
-		<themeChanger enabled="true">
-			<!--Add new themes in the following format:
-			<menuTheme name="YOUR_NAME_HERE!">
-				<themeFile name="sc_selcharacter.pac" replacementPrefix="ex_"/>
-			</menuTheme>
-			-->
-		</themeChanger>
-		
-		<!--Adds a toggle for enabling/disabling grabbing items with dash attack to the "Gameplay Modifiers" menu!-->
-		<dashAttackItemGrab enabled="true" />
-		
-		<!--Adds lines for manipulating how many frames of jumpsquat characters go through to the "Gameplay Modifiers" menu!-->
-		<jumpsquatModifier enabled="true" />
-		
-		<!--Controls the behavior of the Player Slot Color Changer Code!-->
-		<!--The "mode" field dictates what elements of the game the code will affect:-->
-		<!--0: Disabled, 1: Shields + Death Plumes, 2: Previous + In-game HUD, 3: Previous + CSS + Results, 4: Previous + CSS Color Change Input -->
-		<slotColorChanger codeMode="0" />
-	</codeSettings>
+    <!--To alter some miscellaneous properties of the menu, edit the contents of this block!-->
+    <menuProperties>
+        <!--Specifies what folder on the SD Card the menu will expect to be in. Must be 8 characters long!-->
+        <!--Leave this blank to use the default folder.-->
+        <buildBaseFolder name="Project+" />
+        <!--Specify a replacement for the text that usually sits at the top of the menu.-->
+        <!--Leave this blank to leave the original title text in place.-->
+        <menuTitle text="Project+ Code Menu" />
+        <!--Specify additional comment text to add to the top of the menu!-->
+        <!--Note: By default, comments specified here are included beneath the usual comments outlining the menu's controls.-->
+        <!--To delete those comments on the controls, set the "deleteControlsComments" argument to "true"!-->
+        <menuComments deleteControlsComments="false">
+            <!--
+            <comment text="YOUR_COMMENT_HERE" />
+            -->
+        </menuComments>
+    </menuProperties>
+    
+    <!--The "baseListVersion" field determines which characters will appear in the list for the character switchers!-->
+    <!--0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+-->
+    <characterList baseListVersion="3" />
+    
+    <codeSettings>
+        <!--To declare new themes, add new entries into this block!-->
+        <themeChanger enabled="true">
+            <!--Add new themes in the following format:
+            <menuTheme name="YOUR_NAME_HERE!">
+                <themeFile name="sc_selcharacter.pac" replacementPrefix="ex_"/>
+            </menuTheme>
+            -->
+        </themeChanger>
+        
+        <!--Adds a toggle for enabling/disabling grabbing items with aerials and dash attacks to the "Gameplay Modifiers" menu!-->
+        <vBrawlItemGrab enabled="true" />
+        
+        <!--Adds lines for manipulating how many frames of jumpsquat characters go through to the "Gameplay Modifiers" menu!-->
+        <jumpsquatModifier enabled="true" />
+        
+        <!--Controls the behavior of the Player Slot Color Changer Code!-->
+        <slotColorChanger enabled="false">
+            <color      name="Pink"     hue="315.0"  saturation="1.00"   luminance="0.50" />
+            <color      name="Purple"   hue="280.0"  saturation="1.00"   luminance="0.50" />
+            <color      name="Orange"   hue= "27.0"  saturation="0.95"   luminance="0.50" />
+            <color      name="Cyan"     hue="171.0"  saturation="1.00"   luminance="0.50" />
+            <color      name="Gray"     hue=  "0.0"  saturation="0.00"   luminance="0.50" />
+            <colorRGB   name="RGB"      hue=  "0.0"  saturation="1.00"   luminance="0.50" />
+        </slotColorChanger>
+    </codeSettings>
 </codeMenuConfig>

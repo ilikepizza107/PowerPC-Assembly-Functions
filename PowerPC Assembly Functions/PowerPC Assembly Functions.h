@@ -47,7 +47,7 @@ extern const std::array<std::string, characterListVersions::__clv_Count> charact
 #define PROJECT_PLUS_EX_BUILD (true && (BUILD_TYPE == PROJECT_PLUS))
 // Controls whether or not externally defined character, rosters, and themes are loaded into their respective lists.
 // Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
-#define COLLECT_EXTERNAL_EX_CHARACTERS (true && PROJECT_PLUS_EX_BUILD)
+#define COLLECT_EXTERNAL_EX_CHARACTERS (true)
 #define COLLECT_EXTERNAL_ROSTERS (true && PROJECT_PLUS_EX_BUILD)
 #define COLLECT_EXTERNAL_THEMES (true) // Note, this isn't locked to P+Ex builds, actually. Should work on any build with a Code Menu!
 
@@ -247,6 +247,8 @@ constexpr unsigned long bitIndexFromButtonHex(unsigned long buttonHex, bool doIn
 #define BRANCH_IF_TRUE 0b01100
 #define BRANCH_IF_FALSE 0b00100
 #define BRANCH_ALWAYS 0b10100
+#define BRANCH_IF_DZ 0b10010
+#define BRANCH_IF_DNZ 0b10000
 #define MAX_IFS 15
 #define MAX_LABELS 50
 #define MAX_JUMPS 50
@@ -314,6 +316,7 @@ struct branchConditionAndConditionBit
 
 	// Returns a copy of this bCACB, with the ConditionRegField set to the specified value!
 	branchConditionAndConditionBit inConditionRegField(unsigned char ConditionRegFieldIn) const;
+	branchConditionAndConditionBit andDecrementCTR(bool branchIfCTRIsZero) const;
 };
 const static branchConditionAndConditionBit bCACB_EQUAL				=		{ BRANCH_IF_TRUE, EQ, 0 };
 const static branchConditionAndConditionBit bCACB_NOT_EQUAL			=		{ BRANCH_IF_FALSE, EQ, 0 };
@@ -323,6 +326,8 @@ const static branchConditionAndConditionBit bCACB_LESSER			=		{ BRANCH_IF_TRUE, 
 const static branchConditionAndConditionBit bCACB_LESSER_OR_EQ		=		{ BRANCH_IF_FALSE, GT, 0 };
 const static branchConditionAndConditionBit bCACB_OVERFLOW			=		{ BRANCH_IF_TRUE, SO, 0 };
 const static branchConditionAndConditionBit bCACB_NO_OVERFLOW		=		{ BRANCH_IF_FALSE, SO, 0 };
+const static branchConditionAndConditionBit bCACB_DZ				=		{ BRANCH_IF_DZ, 0, 0 };
+const static branchConditionAndConditionBit bCACB_DNZ				=		{ BRANCH_IF_DNZ, 0, 0 };
 const static branchConditionAndConditionBit bCACB_UNSPECIFIED		=		{ INT_MAX, INT_MAX, UCHAR_MAX };
 
 namespace labels
@@ -332,9 +337,10 @@ namespace labels
 		int labelNum = INT_MAX;
 		std::streampos jumpSourcePos = SIZE_MAX;
 		branchConditionAndConditionBit jumpCondition = bCACB_UNSPECIFIED;
+		bool setLR = 0;
 
-		labelJump(int labelNumIn = INT_MAX, std::streampos jumpSourcePosIn = SIZE_MAX, branchConditionAndConditionBit jumpConditionIn = bCACB_UNSPECIFIED) :
-			labelNum(labelNumIn), jumpSourcePos(jumpSourcePosIn), jumpCondition(jumpConditionIn) {};
+		labelJump(int labelNumIn = INT_MAX, std::streampos jumpSourcePosIn = SIZE_MAX, branchConditionAndConditionBit jumpConditionIn = bCACB_UNSPECIFIED, bool setLRIn = 0) :
+			labelNum(labelNumIn), jumpSourcePos(jumpSourcePosIn), jumpCondition(jumpConditionIn), setLR(setLRIn) {};
 	};
 }
 
@@ -352,6 +358,7 @@ static int WhileIndex = 0;
 static int ASMStartAddress = 0;
 extern std::vector<std::streampos> LabelPosVec;
 extern std::vector<labels::labelJump> LabelJumpVec;
+extern std::streampos currentGeckoEmbedStartPos;  // Used for opening and closing Gecko Embeds!
 static vector<int> FPPushRecords;
 static vector<int> CounterLoppRecords;
 static vector<int> StackIteratorRecords;
@@ -389,6 +396,9 @@ void LoadByteToReg(int Register, int Address);
 void LoadWordToReg(int DestReg, int Reg, int Address);
 void LoadHalfToReg(int DestReg, int Reg, int Address);
 void LoadByteToReg(int DestReg, int Reg, int Address);
+void StoreWordAtAddr(int SourceReg, int AddrReg, int Address);
+void StoreHalfAtAddr(int SourceReg, int AddrReg, int Address);
+void StoreByteAtAddr(int SourceReg, int AddrReg, int Address);
 void ConvertIntToFloat(int SourceReg, int TempReg, int ResultReg);
 void ASMStart(int BranchAddress, std::string name = "", std::string blurb = "");
 void ASMEnd(int Replacement);
@@ -398,8 +408,8 @@ void CodeRawStart(std::string name, std::string blurb);
 void CodeRawEnd();
 void Label(int LabelNum);
 int GetNextLabel();
-void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn = bCACB_UNSPECIFIED);
-void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit);
+void JumpToLabel(int LabelNum, branchConditionAndConditionBit conditionIn = bCACB_UNSPECIFIED, bool setLinkRegister = 0);
+void JumpToLabel(int LabelNum, int BranchCondition, int ConditionBit, bool setLinkRegister = 0);
 void CompleteJumps();
 int CalcBranchOffset(int Location, int Target);
 void StrCpy(int Destination, int Source, int Temp);
@@ -413,6 +423,12 @@ void LoadIntoGeckoRegister(int Address, int Reg, int size);
 void StoreGeckoRegisterAt(int Address, int Reg, int size, int repeats = 0);
 void GeckoIf(u32 Address, int Comparison, int Value);
 void GeckoEndIf();
+// Opens a Gecko Embed. Note: Writes Embed address into PO!
+bool GeckoDataEmbedStart();
+// Closes the active Gecko Embed, padding for alingment to 0x8 bytes as necessary.
+// If AddressStoreLocation is provided, will additional write Embed Address to that location.
+// Also does a BAPO reset by default, which can be skipped using the provided argument.
+bool GeckoDataEmbedEnd(u32 AddressStoreLocation = ULONG_MAX, bool skipBAPOReset = 0);
 //searches for byte, elementOffset is distance between elements, ResultReg returns index if found, else -1
 //StartAddressReg ends with the address of the found element, or an address after the array
 void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int elementOffset, int ResultReg, int TempReg);
@@ -523,8 +539,8 @@ void ANDI(int DestReg, int SourceReg, int Immediate);
 void ANDIS(int DestReg, int SourceReg, int Immediate);
 void B(int JumpDist);
 void BA(int Address);
-void BC(int JumpDist, branchConditionAndConditionBit conditionIn);
-void BC(int JumpDist, int BranchCondition, int ConditionBit);
+void BC(int JumpDist, branchConditionAndConditionBit conditionIn, bool setLinkRegister = 0);
+void BC(int JumpDist, int BranchCondition, int ConditionBit, bool setLinkRegister = 0);
 void BCTR();
 void BCTRL();
 void BL(int JumpDist);
@@ -550,6 +566,7 @@ void FCTIW(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FCTIWZ(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FDIV(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
 void FDIVS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
+void FMADD(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg = 0);
 void FMR(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FMUL(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void FMULS(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
@@ -632,6 +649,7 @@ void STWUX(int SourceReg, int AddressReg1, int AddressReg2);
 void STWX(int SourceReg, int AddressReg1, int AddressReg2);
 //DestReg = SourceReg1 - SourceReg2
 void SUBF(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
+void SUBFIC(int DestReg, int SourceReg, int Immediate);
 void SYNC();
 void XOR(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void XORI(int DestReg, int SourceReg, int Immediate);

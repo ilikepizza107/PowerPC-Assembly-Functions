@@ -14,8 +14,9 @@ static const int CURRENT_PAGE_PTR_LOC = START_OF_CODE_MENU_HEADER; //4
 static const int MAIN_PAGE_PTR_LOC = CURRENT_PAGE_PTR_LOC + 4; //4
 static const int SALTY_RUNBACK_BUTTON_COMBO_LOC = MAIN_PAGE_PTR_LOC + 4; //4
 static const int SKIP_RESULTS_BUTTON_COMBO_LOC = SALTY_RUNBACK_BUTTON_COMBO_LOC + 4; //4
-static const int OLD_COLOR_ARRAY = SKIP_RESULTS_BUTTON_COMBO_LOC + 4; // 0x14; This is deprecated, the color array has been moved to LINE_COLOR_TABLE!
-static const int MOVE_FRAME_TIMER_LOC = OLD_COLOR_ARRAY + 0x14; //4
+static const int FLOAT_CONVERSION_CONST_LOC = SKIP_RESULTS_BUTTON_COMBO_LOC + 4; // 0x8, DO NOT OVERWRITE VALUE HERE
+static const int FLOAT_CONVERSION_STAGING_LOC = FLOAT_CONVERSION_CONST_LOC + 8; // 0xC, Write the value to convert into this + 0x4; Bottom 0x8 bytes may be used for Double Staging!
+static const int MOVE_FRAME_TIMER_LOC = FLOAT_CONVERSION_STAGING_LOC + 0xC; //4
 static const int INCREMENT_FRAME_TIMER_LOC = MOVE_FRAME_TIMER_LOC + 4; //4
 static const int FRAME_ADVANCE_FRAME_TIMER = INCREMENT_FRAME_TIMER_LOC + 4; //4
 
@@ -118,15 +119,14 @@ static const int TRIP_TOGGLE_LOC = DASH_ATTACK_ITEM_GRAB_LOC + 4; //4
 static const int TRIP_RATE_MULTIPLIER_LOC = TRIP_TOGGLE_LOC + 4; //4
 static const int TRIP_INTERVAL_LOC = TRIP_RATE_MULTIPLIER_LOC + 4; //4
 
-static const int BACKPLATE_COLOR_1_LOC = TRIP_INTERVAL_LOC + 4; //4
-static const int BACKPLATE_COLOR_2_LOC = BACKPLATE_COLOR_1_LOC + 4; //4
-static const int BACKPLATE_COLOR_3_LOC = BACKPLATE_COLOR_2_LOC + 4; //4
-static const int BACKPLATE_COLOR_4_LOC = BACKPLATE_COLOR_3_LOC + 4; //4
-static const int BACKPLATE_COLOR_C_LOC = BACKPLATE_COLOR_4_LOC + 4; //4
-static const int BACKPLATE_COLOR_T_LOC = BACKPLATE_COLOR_C_LOC + 4; //4
-static const int BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC = BACKPLATE_COLOR_T_LOC + 4; //4
+static const int PSCC_COLOR_1_LOC = TRIP_INTERVAL_LOC + 4; //4
+static const int PSCC_COLOR_2_LOC = PSCC_COLOR_1_LOC + 4; //4
+static const int PSCC_COLOR_3_LOC = PSCC_COLOR_2_LOC + 4; //4
+static const int PSCC_COLOR_4_LOC = PSCC_COLOR_3_LOC + 4; //4
+static const int PSCC_TEAM_BATTLE_STORE_LOC = PSCC_COLOR_4_LOC + 4; //4
+static const int PSCC_FLOAT_TABLE_LOC = PSCC_TEAM_BATTLE_STORE_LOC + 0x4; // 0x04, Player Slot Color Float Table Address
 
-static const int JUMPSQUAT_OVERRIDE_TOGGLE_LOC = BACKPLATE_COLOR_TEAM_BATTLE_STORE_LOC + 4; // 4
+static const int JUMPSQUAT_OVERRIDE_TOGGLE_LOC = PSCC_FLOAT_TABLE_LOC + 4; // 4
 static const int JUMPSQUAT_OVERRIDE_FRAMES_LOC = JUMPSQUAT_OVERRIDE_TOGGLE_LOC + 4; // 4
 static const int JUMPSQUAT_OVERRIDE_MIN_LOC = JUMPSQUAT_OVERRIDE_FRAMES_LOC + 4; // 4
 static const int JUMPSQUAT_OVERRIDE_MAX_LOC = JUMPSQUAT_OVERRIDE_MIN_LOC + 4; // 4
@@ -189,6 +189,8 @@ static const int MEM2_CONSTANTS_LENGTH = MEM2_CONSTANTS_END - MEM2_CONSTANTS_STA
 #define PURPLE        0x6E0094FF
 #define PINK          0xFF60C0FF
 
+static const int PSCC_FONT_CONSTS_LOC = MEM2_CONSTANTS_END; // 0x10
+
 // Line Color Expansion
 static struct
 {
@@ -203,7 +205,7 @@ static struct
 		__COLOR_COUNT
 	};
 
-	constexpr unsigned int table_start() { return MEM2_CONSTANTS_END; };
+	constexpr unsigned int table_start() { return PSCC_FONT_CONSTS_LOC + 0x10; };
 
 	// See getArray() function for color value definitions!
 	std::array<int, __COLOR_COUNT> COLORS = getArray();
