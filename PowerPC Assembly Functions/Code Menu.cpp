@@ -1864,7 +1864,7 @@ void CreateMenu(Page MainPage)
 	{
 		for (std::size_t i = 0; i < LINE_COLOR_TABLE.__COLOR_COUNT; i++)
 		{
-			AddValueToByteArray(LINE_COLOR_TABLE.COLORS[i], Header);
+			AddValueToByteArray(LINE_COLOR_TABLE.COLORS_ARR[i], Header);
 		}
 	}
 

@@ -297,6 +297,12 @@ namespace lava
 		const std::string commentTag = "comment";
 		const std::string deleteOrigCommentsTag = "deleteControlsComments";
 
+		// Line Colors
+		const std::string menuLineColorsTag = "menuLineColors";
+		const std::string lineColorTag = "lineColor";
+		const std::string lineKindTag = "lineKind";
+		const std::string colorHexTag = "colorHex";
+
 		// EX Characters
 		const std::string characterListTag = "characterList";
 		const std::string baseCharListTag = "baseListVersion";
@@ -438,6 +444,39 @@ namespace lava
 			// ... add an additional tab!
 			result += "\t";
 		}
+		return result;
+	}
+
+	// Line Color Handling
+	bool applyLineColorValues(const pugi::xml_node_iterator& colorDeclNodeItr)
+	{
+		bool result = 0;
+
+		// Collect any line color entries contained in the node.
+		for (pugi::xml_node_iterator colorItr = colorDeclNodeItr->begin(); colorItr != colorDeclNodeItr->end(); colorItr++)
+		{
+			// If we're looking at a proper line color entry...
+			if (colorItr->name() == configXMLConstants::lineColorTag)
+			{
+				// ... try grabbing the line kind it affects.
+				unsigned long lineKind = colorItr->attribute(configXMLConstants::lineKindTag.c_str()).as_uint(ULONG_MAX);
+				// If the grabbed kind is within range of the table...
+				if (lineKind < LINE_COLOR_TABLE.__COLOR_COUNT)
+				{
+					// ... then additionally grab the rgba hex from the node.
+					unsigned long rgbaIn = colorItr->attribute(configXMLConstants::colorHexTag.c_str()).as_uint(0xDEADBEEF);
+					// Provided we've successfully done that as well...
+					if (rgbaIn != 0xDEADBEEF)
+					{
+						// ... set the relevant value in the line color table!
+						LINE_COLOR_TABLE.COLORS_ARR[lineKind] = rgbaIn;
+						// Additionally, mark that we've successfully set at least one color.
+						result = 1;
+					}
+				}
+			}
+		}
+
 		return result;
 	}
 
@@ -1170,6 +1209,32 @@ namespace lava
 					{
 						logOutput << "[WARNING] Comment Declaration block parsed, but no valid entries were found!\n";
 					}
+				}
+			}
+
+			// If a line colors block exists...
+			if (declNodeItr->name() == configXMLConstants::menuLineColorsTag)
+			{
+				// ... note that we're parsing it...
+				logOutput << "\nApplying Line Colors from \"" << configFilePath << "\"...\n";
+				// ... and try to apply its values.
+				bool colorApplied = applyLineColorValues(declNodeItr);
+				// If we successfully applied at least one color...
+				if (colorApplied)
+				{
+					// ... summarize the table!
+					__LineColorsTable* table = &LINE_COLOR_TABLE;
+					logOutput << "[SUCCESS] Final Line Color List:\n";
+					logOutput << "\tNormal: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_NORMAL], 0x8) << "\n";
+					logOutput << "\tSelected: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_HIGHL], 0x8) << "\n";
+					logOutput << "\tChanged: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_CH_NORMAL], 0x8) << "\n";
+					logOutput << "\tChanged & Selected: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_CH_HIGHL], 0x8) << "\n";
+					logOutput << "\tComment: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_COMMENT], 0x8) << "\n";
+					logOutput << "\tLocked: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_LOCKED], 0x8) << "\n";
+				}
+				else
+				{
+					logOutput << "[WARNING] Line Colors Block parsed, but no valid entries found!\n";
 				}
 			}
 
