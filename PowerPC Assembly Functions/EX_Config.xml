@@ -19,7 +19,16 @@
             -->
         </menuComments>
     </menuProperties>
-    
+	
+    <!--To modify the menu's line colors, add new entries into this block!-->
+	<menuLineColors>
+	    <!--Add entries in the following format:
+        <lineColor lineKind="0" colorHex="0xRRGGBBAA" />
+        -->
+		<!--Where "lineKind" corresponds to the type of line whose color you're modifying.-->
+		<!--0: Normal, 1: Selected, 2: Changed, 3: Changed & Selected, 4: Comment, 5: Locked-->
+	</menuLineColors>
+	
     <!--To add characters to the code menu, add entries for them into this block!-->
     <!--Note: the "baseListVersion" field determines the base character list your declarations will be added to!-->
     <!--0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+, 4: P+EX 1.0, 5: P+EX 1.2-->

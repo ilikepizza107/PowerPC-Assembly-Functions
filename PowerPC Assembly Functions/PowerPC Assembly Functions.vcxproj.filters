@@ -227,5 +227,8 @@
     <ClCompile Include="_PlayerSlotColorChangers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="_CodeMenuHeaderConstants.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

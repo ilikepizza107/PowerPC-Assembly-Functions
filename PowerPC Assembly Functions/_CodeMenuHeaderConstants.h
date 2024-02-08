@@ -192,9 +192,9 @@ static const int MEM2_CONSTANTS_LENGTH = MEM2_CONSTANTS_END - MEM2_CONSTANTS_STA
 static const int PSCC_FONT_CONSTS_LOC = MEM2_CONSTANTS_END; // 0x10
 
 // Line Color Expansion
-static struct
+struct __LineColorsTable
 {
-	enum COLORS
+	enum COLORS_ENUM
 	{
 		COLOR_NORMAL,
 		COLOR_HIGHL,
@@ -206,28 +206,25 @@ static struct
 	};
 
 	constexpr unsigned int table_start() { return PSCC_FONT_CONSTS_LOC + 0x10; };
-
 	// See getArray() function for color value definitions!
-	std::array<int, __COLOR_COUNT> COLORS = getArray();
+	std::array<int, __COLOR_COUNT> COLORS_ARR;
 
-	constexpr unsigned int table_size() { return COLORS.size() * 4; };
+	__LineColorsTable()
+	{
+		COLORS_ARR[COLORS_ENUM::COLOR_NORMAL] = WHITE;
+		COLORS_ARR[COLORS_ENUM::COLOR_HIGHL] = YELLOW;
+		COLORS_ARR[COLORS_ENUM::COLOR_CH_NORMAL] = TEAL;
+		COLORS_ARR[COLORS_ENUM::COLOR_CH_HIGHL] = BLUE;
+		COLORS_ARR[COLORS_ENUM::COLOR_COMMENT] = GREEN;
+		COLORS_ARR[COLORS_ENUM::COLOR_LOCKED] = LIGHT_GRAY;
+	}
+
+	constexpr unsigned int table_size() { return COLORS_ARR.size() * 4; };
 	constexpr unsigned int table_end() { return table_start() + table_size(); };
 
-	constexpr unsigned int offset(enum COLORS colorIn) { return colorIn * 4; };
-
-private:
-	constexpr std::array<int, __COLOR_COUNT> getArray()
-	{
-		std::array<int, __COLOR_COUNT> result{};
-		result[COLORS::COLOR_NORMAL]        = WHITE;
-		result[COLORS::COLOR_HIGHL]         = YELLOW;
-		result[COLORS::COLOR_CH_NORMAL]     = TEAL;
-		result[COLORS::COLOR_CH_HIGHL]      = BLUE;
-		result[COLORS::COLOR_COMMENT]       = GREEN;
-		result[COLORS::COLOR_LOCKED]        = LIGHT_GRAY;
-		return result;
-	}
-} LINE_COLOR_TABLE;
+	constexpr unsigned int offset(enum COLORS_ENUM colorIn) { return colorIn * 4; };
+};
+extern __LineColorsTable LINE_COLOR_TABLE;
 static const u8 NORMAL_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_NORMAL);
 static const u8 HIGHLIGHTED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_HIGHL);
 static const u8 CHANGED_LINE_COLOR_OFFSET = LINE_COLOR_TABLE.offset(LINE_COLOR_TABLE.COLOR_CH_NORMAL);
