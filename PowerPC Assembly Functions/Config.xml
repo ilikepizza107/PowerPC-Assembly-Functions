@@ -19,16 +19,16 @@
             -->
         </menuComments>
     </menuProperties>
-	
+    
     <!--To modify the menu's line colors, add new entries into this block!-->
-	<menuLineColors>
-	    <!--Add entries in the following format:
+    <menuLineColors>
+        <!--Add entries in the following format:
         <lineColor lineKind="0" colorHex="0xRRGGBBAA" />
         -->
-		<!--Where "lineKind" corresponds to the type of line whose color you're modifying.-->
-		<!--0: Normal, 1: Selected, 2: Changed, 3: Changed & Selected, 4: Comment, 5: Locked-->
-	</menuLineColors>
-	
+        <!--Where "lineKind" corresponds to the type of line whose color you're modifying.-->
+        <!--0: Normal, 1: Selected, 2: Changed, 3: Changed & Selected, 4: Comment, 5: Locked-->
+    </menuLineColors>
+    
     <!--The "baseListVersion" field determines which characters will appear in the list for the character switchers!-->
     <!--0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+-->
     <characterList baseListVersion="3" />

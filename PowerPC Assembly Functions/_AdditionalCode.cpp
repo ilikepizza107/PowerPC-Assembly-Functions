@@ -433,20 +433,6 @@ namespace lava
 		return result;
 	}
 
-	// Returns a string to be used as padding to replace the newline and indentation from replaced plaintext nodes. 
-	std::string getNodeIndentationPCDataReplacement(const pugi::xml_node_iterator& nodeItr)
-	{
-		// Indentation is for the children of the current node, so we include a tab to start.
-		std::string result = "\n\t";
-		// Then for each level up we can go through the parents of this node...
-		for (pugi::xml_node_iterator currNode = nodeItr->parent(); !currNode->parent().empty(); currNode = currNode->parent())
-		{
-			// ... add an additional tab!
-			result += "\t";
-		}
-		return result;
-	}
-
 	// Line Color Handling
 	bool applyLineColorValues(const pugi::xml_node_iterator& colorDeclNodeItr)
 	{
