@@ -1356,8 +1356,8 @@ namespace lava
 						// And if we end up enabling it...
 						if (setCodeEnabledFromXML(codeNodeItr, CONFIG_PSCC_ENABLED, logOutput))
 						{
-							pugi::xml_node_iterator targetNode = codeNodeItr->child(configXMLConstants::colorDefsTag.c_str());
-							if (*targetNode)
+							pugi::xml_node targetNode = codeNodeItr->child(configXMLConstants::colorDefsTag.c_str());
+							if (targetNode)
 							{
 								logOutput << "Parsing Color Definitions... \n";
 								std::vector<std::pair<std::string, pscc::color>> extraColors = collectColorsFromXML(targetNode);
@@ -1372,7 +1372,7 @@ namespace lava
 							}
 
 							targetNode = codeNodeItr->child(configXMLConstants::colorSchemeDefsTag.c_str());
-							if (*targetNode)
+							if (targetNode)
 							{
 								logOutput << "Parsing Color Scheme Definitions... \n";
 								std::vector<pscc::colorScheme> extraSchemes = collectSchemesFromXML(targetNode);
