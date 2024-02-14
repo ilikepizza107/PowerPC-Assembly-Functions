@@ -345,6 +345,15 @@ extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
 // Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
 static fstream MenuFile;
 void initMenuFileStream();
+// The output bundle for logging purposes!
+struct __logOutputStruct : public lava::outputSplitter
+{
+	static constexpr unsigned long changelogID = 0x10000;
+	__logOutputStruct();
+	std::ostream* getChangelogPtr();
+};
+extern __logOutputStruct ChangelogOutput;
+
 
 
 // Logging and Input Constants
@@ -404,11 +413,10 @@ bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationD
 void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers);
 void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes);
 void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
-std::vector<const char*> splitLineContentString(const std::string& joinedStringIn);
-void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn);
-bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn);
+void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn, lava::outputSplitter& logOutput);
+bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn, lava::outputSplitter& logOutput);
 bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
-
+std::vector<std::string_view> splitLineContentString(const std::string& joinedStringIn);
 
 
 static const int START_OF_CODE_MENU = END_OF_CODE_MENU_HEADER;
@@ -512,6 +520,9 @@ public:
 
 		Padding = (4 - Size % 4) % 4;
 		Size += Padding;
+
+		std::string_view baseString = splitLineContentString(this->Text)[0];
+		this->LineName = baseString.substr(0, baseString.find(":"));
 	}
 
 	virtual void WriteLineData()
@@ -541,7 +552,7 @@ public:
 		vector<u8> output;
 		AddValueToByteArray(Size, output);
 		if (Size == 0) {
-			cout << Text << endl;
+			std::cout << Text << endl;
 		}
 		AddValueToByteArray(type, output);
 		AddValueToByteArray(Flags, output);
@@ -607,6 +618,8 @@ public:
 	int Padding;
 	vector<int*> args;
 
+	// Truncated version of the Text field. Just everything before the first colon (":") in the first delimited string.
+	std::string LineName = "";
 
 	//offsets
 	static const int SIZE = 0; //2
@@ -663,7 +676,7 @@ public:
 		Line::WriteLineData();
 		for (auto x : argValues) {
 			sprintf(OpHexBuffer, "%08X", x);
-			cout << Text << ": " << OpHexBuffer << endl;
+			//cout << Text << ": " << OpHexBuffer << endl;
 			x = _byteswap_ulong(x);
 			
 			MenuFile.write((const char*)& x, 4);

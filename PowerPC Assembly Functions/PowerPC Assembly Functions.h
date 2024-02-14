@@ -12,6 +12,7 @@
 #include <sstream>
 #include "_lavaGeckoHexConvert.h"
 #include "_CodeMenuHeaderConstants.h"
+#include "_lavaOutputSplitter.h"
 using namespace std;
 
 //set to 1 if debugging.  records positions every frame and compares them during replay
