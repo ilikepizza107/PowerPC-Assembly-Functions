@@ -36,7 +36,6 @@ const std::string codeSuffix = " [QuickLava]";
 const std::string activatorStringBase = "lBC0";
 signed short activatorStringHiHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data());
 signed short activatorStringLowHalf = lava::bytesToFundamental<signed short>((unsigned char*)activatorStringBase.data() + 2);
-//signed short externalActivatorStringHiHalf = (unsigned short)activatorStringHiHalf + 0x2000;
 unsigned long safeStackWordOff = 0x10; // Stores version of the code we need to run if signal word found; 0xFFFFFFFF otherwise!
 
 void psccIncrementOnButtonPress()
@@ -225,6 +224,56 @@ void psccMiscAdjustments()
 	SetRegister(25, 501);
 	ASMEnd();
 
+	int randFranchiseIconExitLabel = GetNextLabel();
+	ASMStart(0x80697074, codePrefix + "Random Franchise Icon uses Unique CLR0 Frame" + codeSuffix, "");
+	// Restore Original Instruction
+	MR(25, 3);
+	// Grab Team Battle Status...
+	ADDIS(11, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
+	LBZ(12, 11, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	// ... and if we *are* in Team mode...
+	CMPLI(12, Line::VALUE, 0x7);
+	// ... then skip this code.
+	JumpToLabel(randFranchiseIconExitLabel, bCACB_NOT_EQUAL.inConditionRegField(0x7));
+	// Grab player kind...
+	LWZ(12, 30, 0x1B4);
+	// ... and if we aren't a Human player...
+	CMPLI(12, 0x1, 0x7);
+	// ... then skip this code.
+	JumpToLabel(randFranchiseIconExitLabel, bCACB_NOT_EQUAL.inConditionRegField(0x7));
+	// Grab player port ID.
+	LWZ(12, 30, 0x1B0);
+	// Re-use the comparison from before this hook: add 4 to the ID if we're on the Random Icon.
+	BC(2, bCACB_NOT_EQUAL);
+	ADDI(12, 12, 0x4);
+	// Add another 0x1 to account for Frame 0 being clear.
+	ADDI(12, 12, 0x1);
+	// Convert the ID to float!
+	// Store the ID in the bottom half of the staging location
+	STW(12, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF);
+	// Load the staged ID float into f12
+	LFD(1, 11, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
+	// Load the float conversion constant from its location
+	LFD(13, 11, FLOAT_CONVERSION_CONST_LOC & 0xFFFF);
+	// Subtract the constant from the ID float to finish conversion!
+	FSUBS(1, 1, 13);
+	// Get Franchise Icon pointer from Player Area struct.
+	LWZ(3, 30, 0xB8);
+	// And set the frame color!
+	CallBrawlFunc(MU_SET_FRAME_MAT_COL, 12);
+	MR(3, 25);
+	CMPLI(3, 0x29, 0);
+	Label(randFranchiseIconExitLabel);
+	ASMEnd();
+
+	ASMStart(0x806986C0, "", "");
+	LWZ(0, 28, 0x1B0);
+	LWZ(12, 28, 0x1B8);
+	CMPLI(12, 0x29, 0x0);
+	BC(2, bCACB_NOT_EQUAL);
+	ADDIC(0, 0, 0x4);
+	ASMEnd();
+
 	int colorResetExitLabel = GetNextLabel();
 	ASMStart(0x8068BE94, codePrefix + "Color Choice Resets on Setting PlayerKind to None" + codeSuffix, 
 		"Ensures that colors are reset when players unplug their controllers,\n"
@@ -337,8 +386,8 @@ void psccSetupCode()
 	CMPLI(reg3, 0x3, 7);
 	JumpToLabel(badExitLabel, bCACB_GREATER.inConditionRegField(0x7));
 
-	// Reuse the check from the last line to branch for Mode 3!
-	// Note, we did this check in CF7 so that we can use whether we're in it again later to toggle the final port number subtraction!
+	// Reuse the check from the last line to branch for Mode 3 (which is handled in the Mode 1 logic, this isn't a typo lol)
+	// Note, we did this check in CR7 so that we can use whether we're in it again later to toggle the final port number subtraction!
 	JumpToLabel(mode0Label, bCACB_EQUAL.inConditionRegField(0x7));
 	// If Mode 0...
 	CMPLI(reg3, 0x0, 0);
@@ -519,11 +568,13 @@ void psccMainCode()
 	{
 		// Load the target port from safe space!
 		LHZ(reg0, 1, safeStackWordOff + 0x6);
+		// Subtract 1 so P1 is now 0, and use the Condition Reg to also implicitly compare against 0!
+		ADDIC(reg0, reg0, -1, 1);
 		// If the target port doesn't correspond to one of the code menu lines, we'll skip execution.
-		CMPLI(reg0, 1, 0);
 		JumpToLabel(exitLabel, bCACB_LESSER);
-		CMPLI(reg0, 4, 0);
+		CMPLI(reg0, 7, 0);
 		JumpToLabel(exitLabel, bCACB_GREATER);
+		ANDI(reg0, reg0, 0b11);
 
 		// Set up our conversion float in TempReg1
 		ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
@@ -559,7 +610,7 @@ void psccMainCode()
 		LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 		// Now multiply the target port by 4 to calculate the offset to the line we want, and insert it into reg1.
 		RLWIMI(reg1, reg0, 2, 0x10, 0x1D);
-		LWZ(reg1, reg1, (PSCC_COLOR_1_LOC & 0xFFFF) - 0x4); // Minus 0x4 because target frame is 1 higher than the corresponding line.
+		LWZ(reg1, reg1, PSCC_COLOR_1_LOC & 0xFFFF);
 		// Use it to load the targetIndex...
 		LWZX(reg2, reg1, reg2);
 

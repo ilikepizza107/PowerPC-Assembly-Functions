@@ -107,6 +107,7 @@ extern std::string MENU_NAME;
 #define GF_GET_HEAP 0x800249cc // r3 = Heap ID
 #define FT_GET_INPUT 0x8083ae38 // r3 = FighterPtr, RETURNS IN r3 & r4!!
 #define FT_MGR_GET_PLAYER_NO 0x80815ad0 // r3 = ftManager pointer, r4 = entryID
+#define MU_SET_FRAME_MAT_COL 0x800B7A18
 ///Function addresses end
 
 
