@@ -2457,6 +2457,18 @@ void FRSQRTE(int DestReg, int SourceReg, bool SetConditionReg)
 	WriteIntToFile(OpHex);
 }
 
+void FSEL(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg)
+{
+	OpHex = GetOpSegment(63, 6, 5);
+	OpHex |= GetOpSegment(FPDestReg, 5, 10);
+	OpHex |= GetOpSegment(FPSourceReg1, 5, 15);
+	OpHex |= GetOpSegment(FPSourceReg3, 5, 20);
+	OpHex |= GetOpSegment(FPSourceReg2, 5, 25);
+	OpHex |= GetOpSegment(23, 5, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
 void FSQRT(int FPDestReg, int FPSourceReg, bool SetConditionReg) {
 	OpHex = GetOpSegment(63, 6, 5);
 	OpHex |= GetOpSegment(FPDestReg, 5, 10);

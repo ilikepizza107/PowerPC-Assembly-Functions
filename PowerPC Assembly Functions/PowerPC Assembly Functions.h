@@ -579,6 +579,7 @@ void FNEG(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FRES(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FRSP(int DestReg, int SourceReg, bool SetConditionReg = 0);
 void FRSQRTE(int DestReg, int SourceReg, bool SetConditionReg = 0);
+void FSEL(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg = 0);
 void FSQRT(int FPDestReg, int FPSourceReg, bool SetConditionReg = 0);
 void FSUB(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
 void FSUBS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionReg = 0);
