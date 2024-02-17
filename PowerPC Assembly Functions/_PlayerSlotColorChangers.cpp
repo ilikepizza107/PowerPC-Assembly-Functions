@@ -495,6 +495,8 @@ void psccMainCode()
 	int reg0 = 0;
 	int reg1 = 11;
 	int reg2 = 12;
+	int reg3 = 10;
+	int GQRBackupReg = 9;
 	int RGBAResultReg = 3;
 
 	int floatCalcRegisters[2] = { 7, 8 };
@@ -555,9 +557,9 @@ void psccMainCode()
 		JumpToLabel(satModEndLabel);													// ... and jump to end!
 		// Modifier > 1.0f case!
 		Label(satModUpLabel);															// Otherwise, we'll scale the *rest* of the distance!
-		FSUB(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// Mul = Mul - 1.0f  
-		FSUB(floatTempRegisters[1], floatTempRegisters[0], floatCalcRegisters[1]);		// Temp = 1.0f - Value
-		FMADD(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[1], floatCalcRegisters[1]);		// Value = (Mul * Temp) + Value
+		FSUBS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// Mul = Mul - 1.0f  
+		FSUBS(floatTempRegisters[1], floatTempRegisters[0], floatCalcRegisters[1]);		// Temp = 1.0f - Value
+		FMADDS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[1], floatCalcRegisters[1]);		// Value = (Mul * Temp) + Value
 		FADD(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);		// Restore the 2.0f float, since we overwrote it earlier!
 		Label(satModEndLabel);
 		BLR();
@@ -581,11 +583,12 @@ void psccMainCode()
 		// Store our RGBA value so we can load it Paired-Single style!
 		STW(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF);
 		// Backup GQR0 in preparation for our Paired Single float reads.
-		MFSPR(reg2, 912);
+		MFSPR(GQRBackupReg, 912);
 		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x8) & 0xFFFF);
 		// Setup a new Quantization Register for our reads
-		// Specifically, we're reading Unsigned Bytes, and dividing them by 2^7 = 128!
+		// Specifically, we're reading/writing Unsigned Bytes, and quantizing them to 2^7 = 128!
 		ADDIS(reg2, 0, 0x0704);
+		ORI(reg2, reg2, 0x0804);
 		MTSPR(reg2, 912);
 		// Load Hue Float to Hue FReg
 		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, 0);
@@ -597,8 +600,6 @@ void psccMainCode()
 		LFS(floatTempRegisters[0], 2, -0x6168);
 		// ... and use it to multiply the Hue (to ensure it ranges from 0.0 to 6.0).
 		FMULS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
-		LWZ(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x8) & 0xFFFF);
-		MTSPR(reg2, 912);
 
 		// Load buffered Team Battle Status Offset
 		LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
@@ -628,17 +629,17 @@ void psccMainCode()
 		// Load the associated float (and point reg1 to our floatTriple)...
 		LFSUX(floatTempRegisters[0], reg1, reg0);
 		// ... and add it to our Hue float!
-		FADD(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
+		FADDS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
 
 		// Load 1.0f into TempReg0, and 2.0f into TempReg1.
 		LFS(floatTempRegisters[0], 2, -0x6170);
-		FADD(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
+		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
 
 		// Ensure that our Hue remains in the 0.0f to 6.0 range by doing mod 6.0f!
-		FADD(floatCalcRegisters[1], floatTempRegisters[0], floatTempRegisters[1]);		// Hue = Hue mod 6.0f
-		FADD(floatCalcRegisters[1], floatCalcRegisters[1], floatCalcRegisters[1]);		//
+		FADDS(floatCalcRegisters[1], floatTempRegisters[0], floatTempRegisters[1]);		// Hue = Hue mod 6.0f
+		FADDS(floatCalcRegisters[1], floatCalcRegisters[1], floatCalcRegisters[1]);		//
 		B(2);																			//
-		FSUB(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[1]);		//
+		FSUBS(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[1]);		//
 		FCMPU(floatHSLRegisters[0], floatCalcRegisters[1], 1);							//
 		BC(-2, bCACB_GREATER_OR_EQ.inConditionRegField(1));								//
 
@@ -655,11 +656,11 @@ void psccMainCode()
 		FMR(floatHSLRegisters[2], floatCalcRegisters[0]);
 
 		// Calculate Chroma
-		FADD(floatCalcRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);		// C = Luminence * 2.0f
-		FSUB(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// C = C - 1.0f
+		FADDS(floatCalcRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);		// C = Luminence * 2.0f
+		FSUBS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// C = C - 1.0f
 		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// C = Abs(X)
-		FSUB(floatCalcRegisters[0], floatTempRegisters[0], floatCalcRegisters[0]);		// C = 1.0f - C
-		FMUL(floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[1]);		// C = C * Saturation
+		FSUBS(floatCalcRegisters[0], floatTempRegisters[0], floatCalcRegisters[0]);		// C = 1.0f - C
+		FMULS(floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[1]);		// C = C * Saturation
 
 		// Calculate X
 		FMR(floatCalcRegisters[1], floatHSLRegisters[0]);								// X = Hue
@@ -673,8 +674,8 @@ void psccMainCode()
 		FMUL(floatCalcRegisters[1], floatCalcRegisters[1], floatCalcRegisters[0]);		// X = X * C
 
 		// Calculate M (we'll write this into TempReg1, since we'll no longer need 2.0f after this!
-		FDIV(floatTempRegisters[1], floatCalcRegisters[0], floatTempRegisters[1]);		// M = C / 2.0f
-		FSUB(floatTempRegisters[1], floatHSLRegisters[2], floatTempRegisters[1]);		// M = Luminence - M
+		FDIVS(floatTempRegisters[1], floatCalcRegisters[0], floatTempRegisters[1]);		// M = C / 2.0f
+		FSUBS(floatTempRegisters[1], floatHSLRegisters[2], floatTempRegisters[1]);		// M = Luminence - M
 
 		// Get integer-converted Hue value in reg0!
 		FCTIWZ(floatTempRegisters[0], floatHSLRegisters[0]);
@@ -718,30 +719,25 @@ void psccMainCode()
 		FMR(floatHSLRegisters[2], floatCalcRegisters[1]);								// B = X
 		FMR(floatHSLRegisters[0], floatCalcRegisters[0]);								// R = Chroma
 
+		// Add M to our newly sorted registers.
 		Label(addMLabel);
+		// Add M to Hue Reg
+		FADDS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[1]);
+		// Pull Luminance into PS1 of Saturation Register, then add M to both at once.
+		PS_MERGE00(floatHSLRegisters[1], floatHSLRegisters[1], floatHSLRegisters[2]);
+		PS_ADD(floatHSLRegisters[1], floatHSLRegisters[1], floatTempRegisters[1]);
 
-		// Load Int-Float-Conversion Value into CalcReg0
-		LFD(floatCalcRegisters[0], reg1, FLOAT_CONVERSION_CONST_LOC & 0xFFFF);
-		// Load 255.0f into CalcReg1
-		ADDI(reg2, 0, 0xFF);
-		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-		LFD(floatCalcRegisters[1], reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
-		FSUB(floatCalcRegisters[1], floatCalcRegisters[1], floatCalcRegisters[0]);
+		// Store R component
+		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF, 1, 0);
+		// Store G and B components
+		PSQ_ST(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 5) & 0xFFFF, 0, 0);
+		// Store A component
+		STB(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 7) & 0xFFFF);
+		// Re-load final RGBA hex!
+		LWZ(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF);
 
-		// Finally, for each of our RGB values...
-		for (unsigned long i = 0; i < 3; i++)
-		{
-			// ... add M to it...
-			FADD(floatHSLRegisters[i], floatHSLRegisters[i], floatTempRegisters[1]);
-			// ... and multiply it by 255.0f;
-			FMUL(floatHSLRegisters[i], floatHSLRegisters[i], floatCalcRegisters[1]);
-			// From there, convert it back to an integer...
-			FCTIWZ(floatHSLRegisters[i], floatHSLRegisters[i]);
-			STFD(floatHSLRegisters[i], reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-			LWZ(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 8);
-			// ... and store it in the appropriate spot in r3; and we're finally done!
-			RLWIMI(RGBAResultReg, reg2, 0x18 - (i * 0x8), 0x00 + (i * 0x08), 0x07 + (i * 0x8));
-		}
+		// Restore backed up GQR0 value!
+		MTSPR(GQRBackupReg, 912);
 	}
 	Label(skipMode1);
 
