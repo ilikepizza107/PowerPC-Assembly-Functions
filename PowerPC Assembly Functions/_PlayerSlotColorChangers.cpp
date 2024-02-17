@@ -656,8 +656,7 @@ void psccMainCode()
 		FMR(floatHSLRegisters[2], floatCalcRegisters[0]);
 
 		// Calculate Chroma
-		FADDS(floatCalcRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);		// C = Luminence * 2.0f
-		FSUBS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// C = C - 1.0f
+		FMSUBS(floatCalcRegisters[0], floatHSLRegisters[2], floatTempRegisters[1], floatTempRegisters[0]); // C = (Luminence * 2.0f) - 1.0f
 		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// C = Abs(X)
 		FSUBS(floatCalcRegisters[0], floatTempRegisters[0], floatCalcRegisters[0]);		// C = 1.0f - C
 		FMULS(floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[1]);		// C = C * Saturation
