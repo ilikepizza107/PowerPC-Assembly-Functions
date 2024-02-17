@@ -504,7 +504,6 @@ void psccMainCode()
 	int floatHSLRegisters[3] = { 11, 12, 13 };
 	int floatCurrFrameReg = 31;
 
-	int endOfSubroutines = GetNextLabel();
 	int skipMode1 = GetNextLabel();
 	int exitLabel = GetNextLabel();
 	// Hooks "GetAnmResult/[nw4r3g3d9ResAnmClrCFPQ34nw4r3g3d12]/g3d_res".
@@ -525,46 +524,6 @@ void psccMainCode()
 	RLWNM(reg0, reg2, reg0, 0x1F, 0x1F, 1);
 	// If the bit wasn't 0 (ie. if the code is disabled for this material-target), skip to exit!
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
-
-	// Otherwise, jump past our subroutines to the code body!
-	JumpToLabel(endOfSubroutines);
-
-	// Apply Multiplier Subroutine
-	// Arguments:
-	//		CalcReg0 = Multiplier
-	//		CalcReg1 = Value
-	// Requires:
-	//		TempReg0 = 1.0f
-	//		TempReg1 = 2.0f
-	// Returns:
-	//		Scaled Value via CalcReg0
-	// Description:
-	// Takes in a Multiplier between 0.0f and 2.0f, and a Value between 0.0f and 1.0f, and:
-	// - For Multiplier values below or equal to 1.0f, scales Value down towards 0.0f
-	// - For Multiplier values above 1.0f, scales Value up towards 1.0f
-	int applyMultiplierSubroutineLabel = GetNextLabel();
-	{
-		Label(applyMultiplierSubroutineLabel);
-		// Argument
-		int satModUpLabel = GetNextLabel();
-		int satModEndLabel = GetNextLabel();
-		FCMPU(floatCalcRegisters[0], floatTempRegisters[1], 1);							// Compare Multiplier with 2.0f...
-		JumpToLabel(satModEndLabel, bCACB_GREATER.inConditionRegField(1));				// ... and skip our multiplier if it's too large!
-		FCMPU(floatCalcRegisters[0], floatTempRegisters[0], 1);							// Compare Multiplier with 1.0f
-		JumpToLabel(satModUpLabel, bCACB_GREATER.inConditionRegField(1));
-		// Modifier <= 1.0f Case:
-		FMUL(floatCalcRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);		// Simply scale Value by our Multiplier...
-		JumpToLabel(satModEndLabel);													// ... and jump to end!
-		// Modifier > 1.0f case!
-		Label(satModUpLabel);															// Otherwise, we'll scale the *rest* of the distance!
-		FSUBS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// Mul = Mul - 1.0f  
-		FSUBS(floatTempRegisters[1], floatTempRegisters[0], floatCalcRegisters[1]);		// Temp = 1.0f - Value
-		FMADDS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[1], floatCalcRegisters[1]);		// Value = (Mul * Temp) + Value
-		FADD(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);		// Restore the 2.0f float, since we overwrote it earlier!
-		Label(satModEndLabel);
-		BLR();
-	}
-	Label(endOfSubroutines);
 
 	// Main Algorithm!
 	{
@@ -643,20 +602,35 @@ void psccMainCode()
 		FCMPU(floatHSLRegisters[0], floatCalcRegisters[1], 1);							//
 		BC(-2, bCACB_GREATER_OR_EQ.inConditionRegField(1));								//
 
-		// Apply Saturation Multiplier
-		FMR(floatCalcRegisters[0], floatHSLRegisters[1]);								// Copy Saturation Multiplier into CalcReg0...
-		LFS(floatCalcRegisters[1], reg1, 0x4);											// ... and load Absolute Saturation into CalcReg1 from the triple.
-		JumpToLabel(applyMultiplierSubroutineLabel, bCACB_UNSPECIFIED, 1);
-		FMR(floatHSLRegisters[1], floatCalcRegisters[0]);
-
-		// Apply Luminence Multiplier
-		FMR(floatCalcRegisters[0], floatHSLRegisters[2]);								// Copy Luminence Multiplier into CalcReg0...
-		LFS(floatCalcRegisters[1], reg1, 0x8);											// ... and load Absolute Luminence into CalcReg1 from the triple.
-		JumpToLabel(applyMultiplierSubroutineLabel, bCACB_UNSPECIFIED, 1);
-		FMR(floatHSLRegisters[2], floatCalcRegisters[0]);
+		// Apply Saturation and Luminance Multipliers!
+		// Move Lum Multiplier into Sat Mul PS1
+		PS_MERGE00(floatHSLRegisters[1], floatHSLRegisters[1], floatHSLRegisters[2]);
+		// Then zero out the old Sat Mul reg, since we'll need a 0.0f in a second.
+		FSUBS(floatHSLRegisters[2], floatHSLRegisters[2], floatHSLRegisters[2]);
+		// Load the Absolute Saturation and Luminance values into CalcReg0 PS1 and 2
+		PSQ_L(floatCalcRegisters[0], reg1, 0x4, 0, 1);
+		// Subtract 1.0 from each multiplier
+		PS_SUB(floatCalcRegisters[1], floatHSLRegisters[1], floatTempRegisters[0]);
+		// If (Mul - 1) >= 0.0f, then FinalMul = Mul - 1, Else FinalMul = Mul
+		PS_SEL(floatHSLRegisters[1], floatCalcRegisters[1], floatCalcRegisters[1], floatHSLRegisters[1]);
+		// If (Mul - 1) >= 0.0f, then FinalAdd = AbsVal, Else FinalAdd = 0.0
+		PS_SEL(floatHSLRegisters[2], floatCalcRegisters[1], floatCalcRegisters[0], floatHSLRegisters[2]);
+		// Get 1 - Val
+		PS_SUB(floatTempRegisters[1], floatTempRegisters[0], floatCalcRegisters[0]);
+		// If (Mul - 1) >= 0.0f, then FinalMul2 = 1 - Val, Else FinalMul2 = Val
+		PS_SEL(floatCalcRegisters[1], floatCalcRegisters[1], floatTempRegisters[1], floatCalcRegisters[0]);
+		// Final Result = (FinalMul1 * FinalMul2) + FinalAdd
+		PS_MADD(floatHSLRegisters[1], floatHSLRegisters[1], floatCalcRegisters[1], floatHSLRegisters[2]);
+		// Copy Lum result back into Lum Register!
+		PS_MERGE11(floatHSLRegisters[2], floatHSLRegisters[1], floatHSLRegisters[1]);
+		// Put 2.0f back in TempReg1
+		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
 
 		// Calculate Chroma
-		FMSUBS(floatCalcRegisters[0], floatHSLRegisters[2], floatTempRegisters[1], floatTempRegisters[0]); // C = (Luminence * 2.0f) - 1.0f
+		FADDS(floatCalcRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);		// C = Luminence * 2.0f
+		FSUBS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// C = C - 1.0f
+
+		//FMSUBS(floatCalcRegisters[0], floatHSLRegisters[2], floatTempRegisters[1], floatTempRegisters[0]); // C = (Luminence * 2.0f) - 1.0f
 		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// C = Abs(X)
 		FSUBS(floatCalcRegisters[0], floatTempRegisters[0], floatCalcRegisters[0]);		// C = 1.0f - C
 		FMULS(floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[1]);		// C = C * Saturation
