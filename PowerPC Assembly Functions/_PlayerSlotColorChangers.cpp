@@ -594,13 +594,13 @@ void psccMainCode()
 		LFS(floatTempRegisters[0], 2, -0x6170);
 		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
 
-		// Ensure that our Hue remains in the 0.0f to 6.0 range by doing mod 6.0f!
-		FADDS(floatCalcRegisters[1], floatTempRegisters[0], floatTempRegisters[1]);		// Hue = Hue mod 6.0f
-		FADDS(floatCalcRegisters[1], floatCalcRegisters[1], floatCalcRegisters[1]);		//
-		B(2);																			//
-		FSUBS(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[1]);		//
-		FCMPU(floatHSLRegisters[0], floatCalcRegisters[1], 1);							//
-		BC(-2, bCACB_GREATER_OR_EQ.inConditionRegField(1));								//
+		// Ensure that our Hue remains in the 0.0f to 6.0 range: Load 6.0f
+		LFS(floatCalcRegisters[1], 2, -0x62FC);
+		// Subtract 6.0f from Hue value...
+		FSUBS(floatCalcRegisters[0], floatHSLRegisters[0], floatCalcRegisters[1]);
+		// ... and if the result is >= 0.0f, take it. Otherwise, retain the original value.
+		// Note: Don't need a full modulo loop: the Hue mathematically *can't* be >= 12.0f, so never requires >1 subtraction.
+		FSEL(floatHSLRegisters[0], floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[0]);
 
 		// Apply Saturation and Luminance Multipliers!
 		// Move Lum Multiplier into Sat Mul PS1
@@ -627,10 +627,7 @@ void psccMainCode()
 		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
 
 		// Calculate Chroma
-		FADDS(floatCalcRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);		// C = Luminence * 2.0f
-		FSUBS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);		// C = C - 1.0f
-
-		//FMSUBS(floatCalcRegisters[0], floatHSLRegisters[2], floatTempRegisters[1], floatTempRegisters[0]); // C = (Luminence * 2.0f) - 1.0f
+		FMSUBS(floatCalcRegisters[0], floatHSLRegisters[2], floatTempRegisters[1], floatTempRegisters[0]); // C = (Luminence * 2.0f) - 1.0f
 		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// C = Abs(X)
 		FSUBS(floatCalcRegisters[0], floatTempRegisters[0], floatCalcRegisters[0]);		// C = 1.0f - C
 		FMULS(floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[1]);		// C = C * Saturation
