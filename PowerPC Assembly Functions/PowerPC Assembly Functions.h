@@ -608,11 +608,15 @@ void LSWI(int StartReg, int AddressReg, int numBytes);
 // Note: Must MTXER the Num of Bytes to Load before using this Overload!
 void LSWX(int StartReg, int AddressReg1, int AddressReg2);
 void LSWX(int StartReg, int AddressReg1, int AddressReg2, int NumArgsReg);
+// Note: Function automatically handles swapping top and bottom halves of the SpReg ID!
+void MFSPR(int TargetReg, int SpecialRegID);
 void MFCTR(int TargetReg);
 void MFLR(int TargetReg);
 void MFXER(int TargetReg);
 void MOD(int DestReg, int SourceReg1, int SourceReg2);
 void MR(int DestReg, int SourceReg);
+// Note: Function automatically handles swapping top and bottom halves of the SpReg ID!
+void MTSPR(int SourceReg, int SpecialRegID);
 void MTCTR(int TargetReg);
 void MTLR(int TargetReg);
 void MTXER(int TargetReg);

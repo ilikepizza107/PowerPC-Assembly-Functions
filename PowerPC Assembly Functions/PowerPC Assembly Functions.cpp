@@ -2683,31 +2683,31 @@ void LSWX(int StartReg, int AddressReg1, int AddressReg2, int NumArgsReg) {
 	LSWX(StartReg, AddressReg1, AddressReg2);
 }
 
-void MFCTR(int TargetReg)
+void MFSPR(int TargetReg, int SpecialRegID)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(TargetReg, 5, 10);
-	OpHex |= GetOpSegment(9 << 5, 10, 20); //spr
+	unsigned char SPRHi = SpecialRegID & 0b11111;
+	unsigned char SPRLo = (SpecialRegID >> 5) & 0b11111;
+	OpHex |= GetOpSegment(SPRHi, 5, 15);
+	OpHex |= GetOpSegment(SPRLo, 5, 20);
 	OpHex |= GetOpSegment(339, 10, 30);
 	WriteIntToFile(OpHex);
+}
+
+void MFCTR(int TargetReg)
+{
+	MFSPR(TargetReg, 9);
 }
 
 void MFLR(int TargetReg)
 {
-	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(TargetReg, 5, 10);
-	OpHex |= GetOpSegment(8 << 5, 10, 20); //spr
-	OpHex |= GetOpSegment(339, 10, 30);
-	WriteIntToFile(OpHex);
+	MFSPR(TargetReg, 8);
 }
 
 void MFXER(int TargetReg)
 {
-	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(TargetReg, 5, 10);
-	OpHex |= GetOpSegment(1 << 5, 10, 20); //xer
-	OpHex |= GetOpSegment(339, 10, 30);
-	WriteIntToFile(OpHex);
+	MFSPR(TargetReg, 1);
 }
 
 //DestReg = SourceReg1 % SourceReg2
@@ -2723,30 +2723,30 @@ void MR(int DestReg, int SourceReg)
 	OR(DestReg, SourceReg, SourceReg);
 }
 
-void MTCTR(int TargetReg)
+void MTSPR(int TargetReg, int SpecialRegID)
 {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(TargetReg, 5, 10);
-	OpHex |= GetOpSegment(9 << 5, 10, 20); //spr
+	unsigned char SPRHi = SpecialRegID & 0b11111;
+	unsigned char SPRLo = (SpecialRegID >> 5) & 0b11111;
+	OpHex |= GetOpSegment(SPRHi, 5, 15);
+	OpHex |= GetOpSegment(SPRLo, 5, 20);
 	OpHex |= GetOpSegment(467, 10, 30);
 	WriteIntToFile(OpHex);
+}
+
+void MTCTR(int TargetReg)
+{
+	MTSPR(TargetReg, 9);
 }
 
 void MTLR(int TargetReg)
 {
-	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(TargetReg, 5, 10);
-	OpHex |= GetOpSegment(8 << 5, 10, 20); //lr
-	OpHex |= GetOpSegment(467, 10, 30);
-	WriteIntToFile(OpHex);
+	MTSPR(TargetReg, 8);
 }
 
 void MTXER(int TargetReg) {
-	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(TargetReg, 5, 10);
-	OpHex |= GetOpSegment(1 << 5, 10, 20); //xer
-	OpHex |= GetOpSegment(467, 10, 30);
-	WriteIntToFile(OpHex);
+	MTSPR(TargetReg, 1);
 }
 
 void MULLI(int DestReg, int SourceReg, int Immediate)
