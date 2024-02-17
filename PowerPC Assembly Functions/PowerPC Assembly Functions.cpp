@@ -2347,6 +2347,18 @@ void FMADD(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, 
 	WriteIntToFile(OpHex);
 }
 
+void FMADDS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg)
+{
+	OpHex = GetOpSegment(59, 6, 5);
+	OpHex |= GetOpSegment(FPDestReg, 5, 10);
+	OpHex |= GetOpSegment(FPSourceReg1, 5, 15);
+	OpHex |= GetOpSegment(FPSourceReg3, 5, 20);
+	OpHex |= GetOpSegment(FPSourceReg2, 5, 25);
+	OpHex |= GetOpSegment(29, 5, 30);
+	OpHex |= GetOpSegment(SetConditionReg, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
 void FMR(int DestReg, int SourceReg, bool SetConditionReg)
 {
 	OpHex = GetOpSegment(63, 6, 5);
@@ -2843,88 +2855,88 @@ void ORIS(int DestReg, int SourceReg, int Immediate)
 	WriteIntToFile(OpHex);
 }
 
-void PSQ_L(int FPDestReg, int FPAddressReg, int Immediate, int W, int I)
+void PSQ_L(int FPDestReg, int AddressReg, int Immediate, int W, int I)
 {
 	OpHex = GetOpSegment(56, 6, 5);
 	OpHex |= GetOpSegment(FPDestReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg, 5, 15);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(W, 1, 16);
 	OpHex |= GetOpSegment(I, 3, 19);
 	OpHex |= GetOpSegment(Immediate, 12, 31);
 	WriteIntToFile(OpHex);
 }
-void PSQ_LU(int FPDestReg, int FPAddressReg, int Immediate, int W, int I)
+void PSQ_LU(int FPDestReg, int AddressReg, int Immediate, int W, int I)
 {
 	OpHex = GetOpSegment(57, 6, 5);
 	OpHex |= GetOpSegment(FPDestReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg, 5, 15);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(W, 1, 16);
 	OpHex |= GetOpSegment(I, 3, 19);
 	OpHex |= GetOpSegment(Immediate, 12, 31);
 	WriteIntToFile(OpHex);
 }
-void PSQ_LX(int FPDestReg, int FPAddressReg1, int FPAddressReg2, int W, int I)
+void PSQ_LX(int FPDestReg, int AddressReg1, int AddressReg2, int W, int I)
 {
 	OpHex = GetOpSegment(4, 6, 5);
 	OpHex |= GetOpSegment(FPDestReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg1, 5, 15);
-	OpHex |= GetOpSegment(FPAddressReg2, 5, 20);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(W, 1, 21);
 	OpHex |= GetOpSegment(I, 3, 24);
 	OpHex |= GetOpSegment(6, 6, 30);
 	OpHex |= GetOpSegment(0, 1, 31);
 	WriteIntToFile(OpHex);
 }
-void PSQ_LUX(int FPDestReg, int FPAddressReg1, int FPAddressReg2, int W, int I)
+void PSQ_LUX(int FPDestReg, int AddressReg1, int AddressReg2, int W, int I)
 {
 	OpHex = GetOpSegment(4, 6, 5);
 	OpHex |= GetOpSegment(FPDestReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg1, 5, 15);
-	OpHex |= GetOpSegment(FPAddressReg2, 5, 20);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(W, 1, 21);
 	OpHex |= GetOpSegment(I, 3, 24);
 	OpHex |= GetOpSegment(38, 6, 30);
 	OpHex |= GetOpSegment(0, 1, 31);
 	WriteIntToFile(OpHex);
 }
-void PSQ_ST(int FPSourceReg, int FPAddressReg, int Immediate, int W, int I)
+void PSQ_ST(int FPSourceReg, int AddressReg, int Immediate, int W, int I)
 {
 	OpHex = GetOpSegment(60, 6, 5);
 	OpHex |= GetOpSegment(FPSourceReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg, 5, 15);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(W, 1, 16);
 	OpHex |= GetOpSegment(I, 3, 19);
 	OpHex |= GetOpSegment(Immediate, 12, 31);
 	WriteIntToFile(OpHex);
 }
-void PSQ_STU(int FPSourceReg, int FPAddressReg, int Immediate, int W, int I)
+void PSQ_STU(int FPSourceReg, int AddressReg, int Immediate, int W, int I)
 {
 	OpHex = GetOpSegment(61, 6, 5);
 	OpHex |= GetOpSegment(FPSourceReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg, 5, 15);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(W, 1, 16);
 	OpHex |= GetOpSegment(I, 3, 19);
 	OpHex |= GetOpSegment(Immediate, 12, 31);
 	WriteIntToFile(OpHex);
 }
-void PSQ_STX(int FPSourceReg, int FPAddressReg1, int FPAddressReg2, int W, int I)
+void PSQ_STX(int FPSourceReg, int AddressReg1, int AddressReg2, int W, int I)
 {
 	OpHex = GetOpSegment(4, 6, 5);
 	OpHex |= GetOpSegment(FPSourceReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg1, 5, 15);
-	OpHex |= GetOpSegment(FPAddressReg2, 5, 20);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(W, 1, 21);
 	OpHex |= GetOpSegment(I, 3, 24);
 	OpHex |= GetOpSegment(7, 6, 30);
 	OpHex |= GetOpSegment(0, 1, 31);
 	WriteIntToFile(OpHex);
 }
-void PSQ_STUX(int FPSourceReg, int FPAddressReg1, int FPAddressReg2, int W, int I)
+void PSQ_STUX(int FPSourceReg, int AddressReg1, int AddressReg2, int W, int I)
 {
 	OpHex = GetOpSegment(4, 6, 5);
 	OpHex |= GetOpSegment(FPSourceReg, 5, 10);
-	OpHex |= GetOpSegment(FPAddressReg1, 5, 15);
-	OpHex |= GetOpSegment(FPAddressReg2, 5, 20);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(W, 1, 21);
 	OpHex |= GetOpSegment(I, 3, 24);
 	OpHex |= GetOpSegment(39, 6, 30);
