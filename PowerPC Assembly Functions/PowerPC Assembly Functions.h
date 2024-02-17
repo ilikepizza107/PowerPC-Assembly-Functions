@@ -571,6 +571,8 @@ void FDIVS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, bool SetConditionR
 void FMADD(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg = 0);
 void FMADDS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg = 0);
 void FMR(int DestReg, int SourceReg, bool SetConditionReg = 0);
+void FMSUB(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg = 0);
+void FMSUBS(int FPDestReg, int FPSourceReg1, int FPSourceReg2, int FPSourceReg3, bool SetConditionReg = 0);
 void FMUL(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void FMULS(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void FNEG(int DestReg, int SourceReg, bool SetConditionReg = 0);
