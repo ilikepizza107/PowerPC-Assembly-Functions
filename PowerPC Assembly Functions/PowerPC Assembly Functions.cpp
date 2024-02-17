@@ -3290,103 +3290,113 @@ void SRAWI(int DestReg, int SourceReg, int ShiftNum, bool SetConditionReg)
 	WriteIntToFile(OpHex);
 }
 
-void STB(int DestReg, int AddressReg, int Immediate)
+void STB(int SourceReg, int AddressReg, int Immediate)
 {
 	OpHex = GetOpSegment(38, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
 }
 
-void STBU(int DestReg, int AddressReg, int Immediate)
+void STBU(int SourceReg, int AddressReg, int Immediate)
 {
 	OpHex = GetOpSegment(39, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
 }
 
-void STBUX(int DestReg, int AddressReg1, int AddressReg2)
+void STBUX(int SourceReg, int AddressReg1, int AddressReg2)
 {
 	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg1, 5, 15);
 	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(247, 10, 30);
 	WriteIntToFile(OpHex);
 }
 
-void STBX(int DestReg, int AddressReg1, int AddressReg2)
+void STBX(int SourceReg, int AddressReg1, int AddressReg2)
 {
 	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg1, 5, 15);
 	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(215, 10, 30);
 	WriteIntToFile(OpHex);
 }
 
-void STFD(int DestReg, int AddressReg, int Immediate)
+void STFD(int SourceReg, int AddressReg, int Immediate)
 {
 	OpHex = GetOpSegment(54, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
 }
 
-void STFS(int DestReg, int AddressReg, int Immediate)
-{
-	OpHex = GetOpSegment(52, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
-	OpHex |= GetOpSegment(AddressReg, 5, 15);
-	OpHex |= GetOpSegment(Immediate, 16, 31);
-	WriteIntToFile(OpHex);
-}
-
-void STFSU(int DestReg, int AddressReg, int Immediate)
-{
-	OpHex = GetOpSegment(53, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
-	OpHex |= GetOpSegment(AddressReg, 5, 15);
-	OpHex |= GetOpSegment(Immediate, 16, 31);
-	WriteIntToFile(OpHex);
-}
-
-void STH(int DestReg, int AddressReg, int Immediate)
-{
-	OpHex = GetOpSegment(44, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
-	OpHex |= GetOpSegment(AddressReg, 5, 15);
-	OpHex |= GetOpSegment(Immediate, 16, 31);
-	WriteIntToFile(OpHex);
-}
-
-void STHU(int DestReg, int AddressReg, int Immediate)
-{
-	OpHex = GetOpSegment(45, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
-	OpHex |= GetOpSegment(AddressReg, 5, 15);
-	OpHex |= GetOpSegment(Immediate, 16, 31);
-	WriteIntToFile(OpHex);
-}
-
-void STHUX(int DestReg, int AddressReg1, int AddressReg2)
+void STFIWX(int SourceReg, int AddressReg1, int AddressReg2)
 {
 	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(983, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
+void STFS(int SourceReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(52, 6, 5);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void STFSU(int SourceReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(53, 6, 5);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void STH(int SourceReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(44, 6, 5);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void STHU(int SourceReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(45, 6, 5);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void STHUX(int SourceReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg1, 5, 15);
 	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(439, 10, 30);
 	WriteIntToFile(OpHex);
 }
 
-void STHX(int DestReg, int AddressReg1, int AddressReg2)
+void STHX(int SourceReg, int AddressReg1, int AddressReg2)
 {
 	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg1, 5, 15);
 	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(407, 10, 30);
@@ -3427,38 +3437,38 @@ void STSWX(int StartReg, int AddressReg1, int AddressReg2, int NumArgsReg)
 	STSWX(StartReg, AddressReg1, AddressReg2);
 }
 
-void STW(int DestReg, int AddressReg, int Immediate)
+void STW(int SourceReg, int AddressReg, int Immediate)
 {
 	OpHex = GetOpSegment(36, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
 }
 
-void STWU(int DestReg, int AddressReg, int Immediate)
+void STWU(int SourceReg, int AddressReg, int Immediate)
 {
 	OpHex = GetOpSegment(37, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
 	WriteIntToFile(OpHex);
 }
 
-void STWUX(int DestReg, int AddressReg1, int AddressReg2)
+void STWUX(int SourceReg, int AddressReg1, int AddressReg2)
 {
 	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg1, 5, 15);
 	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(183, 10, 30);
 	WriteIntToFile(OpHex);
 }
 
-void STWX(int DestReg, int AddressReg1, int AddressReg2)
+void STWX(int SourceReg, int AddressReg1, int AddressReg2)
 {
 	OpHex = GetOpSegment(31, 6, 5);
-	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg1, 5, 15);
 	OpHex |= GetOpSegment(AddressReg2, 5, 20);
 	OpHex |= GetOpSegment(151, 10, 30);

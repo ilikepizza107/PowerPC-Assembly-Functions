@@ -676,6 +676,7 @@ void STBU(int SourceReg, int AddressReg, int Immediate);
 void STBUX(int SourceReg, int AddressReg1, int AddressReg2);
 void STBX(int SourceReg, int AddressReg1, int AddressReg2);
 void STFD(int SourceReg, int AddressReg, int Immediate);
+void STFIWX(int SourceReg, int AddressReg1, int AddressReg2);
 void STFS(int SourceReg, int AddressReg, int Immediate);
 void STFSU(int SourceReg, int AddressReg, int Immediate);
 void STH(int SourceReg, int AddressReg, int Immediate);
