@@ -576,35 +576,29 @@ void psccMainCode()
 		JumpToLabel(exitLabel, bCACB_GREATER);
 		ANDI(reg0, reg0, 0b11);
 
-		// Set up our conversion float in TempReg1
+		// Set up the top half of reg1 with 0x804E to simplify accessing code menu stuff.
 		ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
-		LFD(floatTempRegisters[1], reg1, (FLOAT_CONVERSION_CONST_LOC & 0xFFFF));
-
-		// Load TempReg0 with 255.0f
-		ADDI(reg2, 0, 0xFF);
-		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 0x4);
-		LFD(floatTempRegisters[0], reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
-		FSUB(floatTempRegisters[0], floatTempRegisters[0], floatTempRegisters[1]);
-
-		// Load our 3 HSL values into their float registers!
-		for (unsigned long i = 0; i < 3; i++)
-		{
-			RLWINM(reg2, RGBAResultReg, (i + 1) * 0x8, 0x18, 0x1F);
-			if (i == 0)
-			{
-				// Multiply hue specifically by 6, since hue rotation spans 0.0f -> 6.0f.
-				MULLI(reg2, reg2, 0x6);
-			}
-			else
-			{
-				// For the other two values, just multiply by 2, since these will act as our modifiers.
-				MULLI(reg2, reg2, 0x2);
-			}
-			STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 0x4);
-			LFD(floatHSLRegisters[i], reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
-			FSUB(floatHSLRegisters[i], floatHSLRegisters[i], floatTempRegisters[1]);
-			FDIV(floatHSLRegisters[i], floatHSLRegisters[i], floatTempRegisters[0]);
-		}
+		// Store our RGBA value so we can load it Paired-Single style!
+		STW(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF);
+		// Backup GQR0 in preparation for our Paired Single float reads.
+		MFSPR(reg2, 912);
+		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x8) & 0xFFFF);
+		// Setup a new Quantization Register for our reads
+		// Specifically, we're reading Unsigned Bytes, and dividing them by 2^7 = 128!
+		ADDIS(reg2, 0, 0x0704);
+		MTSPR(reg2, 912);
+		// Load Hue Float to Hue FReg
+		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, 0);
+		// Load Saturation and Luminance Floats to Sat FReg...
+		PSQ_L(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x5) & 0xFFFF, 0, 0);
+		// ... and move Luminance Float to Lum FReg.
+		PS_MERGE11(floatHSLRegisters[2], floatHSLRegisters[1], floatHSLRegisters[1]);
+		// Load 3.0f into TempReg0...
+		LFS(floatTempRegisters[0], 2, -0x6168);
+		// ... and use it to multiply the Hue (to ensure it ranges from 0.0 to 6.0).
+		FMULS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
+		LWZ(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x8) & 0xFFFF);
+		MTSPR(reg2, 912);
 
 		// Load buffered Team Battle Status Offset
 		LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
@@ -637,7 +631,6 @@ void psccMainCode()
 		FADD(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
 
 		// Load 1.0f into TempReg0, and 2.0f into TempReg1.
-		// We'll grab 255.0f again when we need it, and we won't be needing the conversion constant again.
 		LFS(floatTempRegisters[0], 2, -0x6170);
 		FADD(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
 
