@@ -500,8 +500,8 @@ void psccMainCode()
 	int reg2 = 12;
 	int GQRBackupReg1 = 9;
 	int GQRBackupReg2 = 10;
-	int CustomGQRID1 = 918; int CustomGQRIndex1 = CustomGQRID1 - 912; // GQR6
-	int CustomGQRID2 = 919; int CustomGQRIndex2 = CustomGQRID2 - 912; // GQR7
+	int CustomGQRID1 = 917; int CustomGQRIndex1 = CustomGQRID1 - 912; // GQR5
+	int CustomGQRID2 = 918; int CustomGQRIndex2 = CustomGQRID2 - 912; // GQR6
 	int RGBAResultReg = 3;
 
 	int floatCalcRegisters[2] = { 7, 8 };
