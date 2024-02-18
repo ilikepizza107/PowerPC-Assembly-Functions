@@ -476,9 +476,12 @@ void psccEmbedFloatTable()
 	GeckoDataEmbedStart();
 	for (auto i = pscc::colorTable.cbegin(); i != pscc::colorTable.cend(); i++)
 	{
-		WriteIntToFile(lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(i->second.hue).data()));
-		WriteIntToFile(lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(i->second.saturation).data()));
-		WriteIntToFile(lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(i->second.luminance).data()));
+		signed short hueHex = signed short((std::max(std::min(i->second.hue, 6.0f), -6.0f) / 6.0f) * SHRT_MAX);
+		signed short satHex = signed short(std::max(std::min(i->second.saturation, 1.0f), -1.0f) * SHRT_MAX);
+		signed short lumHex = signed short(std::max(std::min(i->second.luminance, 1.0f), -1.0f) * SHRT_MAX);
+
+		WriteIntToFile((unsigned long(hueHex) << 0x10) | unsigned long(satHex));
+		WriteIntToFile((unsigned long(lumHex) << 0x10) | unsigned long(i->second.flags));
 	}
 
 	std::vector<unsigned char> schemeVec = pscc::schemeTable.tableToByteVec();
@@ -495,8 +498,10 @@ void psccMainCode()
 	int reg0 = 0;
 	int reg1 = 11;
 	int reg2 = 12;
-	int reg3 = 10;
-	int GQRBackupReg = 9;
+	int GQRBackupReg1 = 9;
+	int GQRBackupReg2 = 10;
+	int CustomGQRID1 = 918; int CustomGQRIndex1 = CustomGQRID1 - 912; // GQR6
+	int CustomGQRID2 = 919; int CustomGQRIndex2 = CustomGQRID2 - 912; // GQR7
 	int RGBAResultReg = 3;
 
 	int floatCalcRegisters[2] = { 7, 8 };
@@ -541,18 +546,21 @@ void psccMainCode()
 		ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
 		// Store our RGBA value so we can load it Paired-Single style!
 		STW(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF);
-		// Backup GQR0 in preparation for our Paired Single float reads.
-		MFSPR(GQRBackupReg, 912);
-		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x8) & 0xFFFF);
-		// Setup a new Quantization Register for our reads
-		// Specifically, we're reading/writing Unsigned Bytes, and quantizing them to 2^7 = 128!
+		// Backup GQRs in preparation for our Paired Single float reads.
+		MFSPR(GQRBackupReg1, CustomGQRID1);
+		MFSPR(GQRBackupReg2, CustomGQRID2);
+		// Setup new Quantization Register for our reads
+		// First GQR: For reading/writing Unsigned RGBA Bytes, and quantizing/dequantizing them to 2^7 and 2^8 respectively!
 		ADDIS(reg2, 0, 0x0704);
 		ORI(reg2, reg2, 0x0804);
-		MTSPR(reg2, 912);
+		MTSPR(reg2, CustomGQRID1);
+		//Second GQR: For reading Signed Color Table Shorts, and quantizing them to 2^16!
+		ADDIS(reg2, 0, 0x0F07);
+		MTSPR(reg2, CustomGQRID2);
 		// Load Hue Float to Hue FReg
-		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, 0);
+		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, CustomGQRIndex1);
 		// Load Saturation and Luminance Floats to Sat FReg...
-		PSQ_L(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x5) & 0xFFFF, 0, 0);
+		PSQ_L(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x5) & 0xFFFF, 0, CustomGQRIndex1);
 		// ... and move Luminance Float to Lum FReg.
 		PS_MERGE11(floatHSLRegisters[2], floatHSLRegisters[1], floatHSLRegisters[1]);
 		// Load 3.0f into TempReg0...
@@ -583,24 +591,28 @@ void psccMainCode()
 
 		// Grab the appropriate Color Index
 		LBZX(reg2, reg1, reg2);
-		MULLI(reg0, reg2, 0xC);
+		MULLI(reg0, reg2, pscc::colorTableEntrySizeInBytes);
 
-		// Load the associated float (and point reg1 to our floatTriple)...
-		LFSUX(floatTempRegisters[0], reg1, reg0);
-		// ... and add it to our Hue float!
-		FADDS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
+		// Load and quantize the Hue short (and update reg1 to point to our floatTriple)...
+		PSQ_LUX(floatCalcRegisters[0], reg1, reg0, 1, CustomGQRIndex2);
+		// Load 6.0f into TempReg1...
+		LFS(floatTempRegisters[1], 2, -0x62FC);
+		// ... and use it to scale up our Hue float!
+		FMULS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[1]);
+
+		// Then add it to our Hue modifier!
+		FADDS(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[0]);
+
+		// Ensure that our Hue remains in the 0.0f to 6.0 range: 
+		// Subtract 6.0f from Hue value...
+		FSUBS(floatCalcRegisters[0], floatHSLRegisters[0], floatTempRegisters[1]);
+		// ... and if the result is >= 0.0f, take it. Otherwise, retain the original value.
+		// Note: Don't need a full modulo loop: the Hue mathematically *can't* be >= 12.0f, so never requires >1 subtraction.
+		FSEL(floatHSLRegisters[0], floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[0]);
 
 		// Load 1.0f into TempReg0, and 2.0f into TempReg1.
 		LFS(floatTempRegisters[0], 2, -0x6170);
 		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
-
-		// Ensure that our Hue remains in the 0.0f to 6.0 range: Load 6.0f
-		LFS(floatCalcRegisters[1], 2, -0x62FC);
-		// Subtract 6.0f from Hue value...
-		FSUBS(floatCalcRegisters[0], floatHSLRegisters[0], floatCalcRegisters[1]);
-		// ... and if the result is >= 0.0f, take it. Otherwise, retain the original value.
-		// Note: Don't need a full modulo loop: the Hue mathematically *can't* be >= 12.0f, so never requires >1 subtraction.
-		FSEL(floatHSLRegisters[0], floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[0]);
 
 		// Apply Saturation and Luminance Multipliers!
 		// Move Lum Multiplier into Sat Mul PS1
@@ -608,7 +620,7 @@ void psccMainCode()
 		// Then zero out the old Sat Mul reg, since we'll need a 0.0f in a second.
 		FSUBS(floatHSLRegisters[2], floatHSLRegisters[2], floatHSLRegisters[2]);
 		// Load the Absolute Saturation and Luminance values into CalcReg0 PS1 and 2
-		PSQ_L(floatCalcRegisters[0], reg1, 0x4, 0, 1);
+		PSQ_L(floatCalcRegisters[0], reg1, 0x2, 0, CustomGQRIndex2);
 		// Subtract 1.0 from each multiplier
 		PS_SUB(floatCalcRegisters[1], floatHSLRegisters[1], floatTempRegisters[0]);
 		// If (Mul - 1) >= 0.0f, then FinalMul = Mul - 1, Else FinalMul = Mul
@@ -698,16 +710,17 @@ void psccMainCode()
 		PS_ADD(floatHSLRegisters[1], floatHSLRegisters[1], floatTempRegisters[1]);
 
 		// Store R component
-		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF, 1, 0);
+		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF, 1, CustomGQRIndex1);
 		// Store G and B components
-		PSQ_ST(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 5) & 0xFFFF, 0, 0);
+		PSQ_ST(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 5) & 0xFFFF, 0, CustomGQRIndex1);
 		// Store A component
 		STB(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 7) & 0xFFFF);
 		// Re-load final RGBA hex!
 		LWZ(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF);
 
 		// Restore backed up GQR0 value!
-		MTSPR(GQRBackupReg, 912);
+		MTSPR(GQRBackupReg1, CustomGQRID1);
+		MTSPR(GQRBackupReg2, CustomGQRID2);
 	}
 	Label(skipMode1);
 

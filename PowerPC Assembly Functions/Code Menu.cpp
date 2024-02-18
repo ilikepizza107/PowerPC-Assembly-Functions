@@ -1971,30 +1971,17 @@ void constantOverride() {
 		
 		// Load the Float Table address into reg3!
 		LWZ(reg3, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
-		// Load the hue value for color 0 (ie. the first float in the table)
-		LFS(13, reg3, rgbColorTableOffset);
-
-		// Calculate the constant for our incrementing value, load it into fr12...
-		float conversionConstant = 1.0f/90.0f;
-		unsigned short conversionHex = lava::bytesToFundamental<unsigned long>(lava::fundamentalToBytes<float>(conversionConstant).data()) >> 0x10;
-		ADDIS(reg2, 0, conversionHex);
-		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-		LFS(12, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-		// ... and add it to f13 to increment the hue! 
-		FADDS(13, 13, 12);
-
-		// Load 6.0f into fr12...
-		ADDIS(reg2, 0, 0x40c0);
-		STW(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-		LFS(12, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-		// ... and if our incremented hue is above 6.0f...
-		FCMPU(13, 12, 1);
-		BC(2, bCACB_LESSER.inConditionRegField(1));
-		// ... set it back to 0.0f (subtract it from itself)!
-		FSUB(13, 13, 13);
-
-		// Finally, store the incremented hue back in the float table!
-		STFS(13, reg3, rgbColorTableOffset);
+		// Load the Hue Short for the RGB Color
+		LHZ(reg2, reg3, rgbColorTableOffset);
+		// Increment it...
+		ADDI(reg2, reg2, 0x40);
+		// ... and if it's beyond the bounds of a signed short...
+		CMPLI(reg2, SHRT_MAX, 0);
+		BC(2, bCACB_LESSER);
+		// ... reset it to 0!
+		ADDI(reg2, 0, 0x00);
+		// Store incremented Hue Short!
+		STH(reg2, reg3, rgbColorTableOffset);
 		Label(menuNotLoadedLabel);
 	}
 	

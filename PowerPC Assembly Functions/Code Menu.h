@@ -285,13 +285,14 @@ namespace pscc
 		float hue;
 		float saturation;
 		float luminance;
+		unsigned short flags;
 
-		color(float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f) :
-			hue(hueIn), saturation(satIn), luminance(lumIn) {};
+		color(float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f, unsigned short flagsIn = 0x00) :
+			hue(hueIn), saturation(satIn), luminance(lumIn), flags(flagsIn) {};
 		bool colorValid() const;
 	};
 	extern std::map<std::string, color> colorTable;
-	static constexpr std::size_t colorTableEntrySizeInBytes = 0xC;
+	static constexpr std::size_t colorTableEntrySizeInBytes = 0x8;
 	std::size_t getColorTableSizeInBytes();
 	std::size_t getColorTableOffsetToColor(std::string colorName);
 
