@@ -2623,6 +2623,44 @@ void LFSX(int DestReg, int AddressReg, int AddressReg2)
 	WriteIntToFile(OpHex);
 }
 
+void LHA(int DestReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(42, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void LHAU(int DestReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(43, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void LHAUX(int DestReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(375, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
+void LHAX(int DestReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(343, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
 void LHZ(int DestReg, int AddressReg, int Immediate)
 {
 	OpHex = GetOpSegment(40, 6, 5);
