@@ -559,10 +559,8 @@ void psccMainCode()
 		MTSPR(reg2, CustomGQRID2);
 		// Load Hue Float to Hue FReg
 		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, CustomGQRIndex1);
-		// Load Saturation and Luminance Floats to Sat FReg...
+		// Load Saturation and Luminance Floats to Sat FReg.
 		PSQ_L(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x5) & 0xFFFF, 0, CustomGQRIndex1);
-		// ... and move Luminance Float to Lum FReg.
-		PS_MERGE11(floatHSLRegisters[2], floatHSLRegisters[1], floatHSLRegisters[1]);
 		// Load 3.0f into TempReg0...
 		LFS(floatTempRegisters[0], 2, -0x6168);
 		// ... and use it to multiply the Hue (to ensure it ranges from 0.0 to 6.0).
@@ -615,10 +613,8 @@ void psccMainCode()
 		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
 
 		// Apply Saturation and Luminance Multipliers!
-		// Move Lum Multiplier into Sat Mul PS1
-		PS_MERGE00(floatHSLRegisters[1], floatHSLRegisters[1], floatHSLRegisters[2]);
-		// Then zero out the old Sat Mul reg, since we'll need a 0.0f in a second.
-		FSUBS(floatHSLRegisters[2], floatHSLRegisters[2], floatHSLRegisters[2]);
+		// Zero out the dedicated Lum Mul reg, since we'll need a 0.0f in a second and aren't actually using the reg yet.
+		FSUBS(floatHSLRegisters[2], floatTempRegisters[0], floatTempRegisters[0]);
 		// Load the Absolute Saturation and Luminance values into CalcReg0 PS1 and 2
 		PSQ_L(floatCalcRegisters[0], reg1, 0x2, 0, CustomGQRIndex2);
 		// Subtract 1.0 from each multiplier
