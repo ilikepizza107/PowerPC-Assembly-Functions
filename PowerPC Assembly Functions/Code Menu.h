@@ -282,6 +282,18 @@ namespace pscc
 {
 	struct color
 	{
+		enum flagBits
+		{
+			//fb_DISABLE_HUE_MOD_UP   = 0b0000000000000001,
+			//fb_DISABLE_HUE_MOD_DOWN = 0b0000000000000010,
+			fb_DISABLE_SAT_MOD_UP   = 0b0000000000000100,
+			fb_DISABLE_SAT_MOD_DOWN = 0b0000000000001000,
+			fb_DISABLE_LUM_MOD_UP   = 0b0000000000010000,
+			fb_DISABLE_LUM_MOD_DOWN = 0b0000000000100000,
+			//fb_INVERT_HUE_MOD_UP    = 0b0000000001000000,
+			//fb_INVERT_HUE_MOD_DOWN  = 0b0000000010000000,
+		};
+
 		float hue;
 		float saturation;
 		float luminance;

@@ -593,6 +593,8 @@ void psccMainCode()
 
 		// Load and quantize the Hue short (and update reg1 to point to our floatTriple)...
 		PSQ_LUX(floatCalcRegisters[0], reg1, reg0, 1, CustomGQRIndex2);
+		// ... and load the color's flags while we're at it.
+		LHZ(reg2, reg1, 0x06);
 		// Load 6.0f into TempReg1...
 		LFS(floatTempRegisters[1], 2, -0x62FC);
 		// ... and use it to scale up our Hue float!
@@ -611,6 +613,38 @@ void psccMainCode()
 		// Load 1.0f into TempReg0, and 2.0f into TempReg1.
 		LFS(floatTempRegisters[0], 2, -0x6170);
 		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
+
+		// Apply Saturation and Luminance Color Flags!
+		// Prepare our minimum (0.0f) and maximum (2.0f) values in CalcRegs 0 and 1 respectively!
+		FSUBS(floatCalcRegisters[0], floatTempRegisters[0], floatTempRegisters[0]);
+		PS_MERGE01(floatCalcRegisters[1], floatTempRegisters[1], floatTempRegisters[1]);
+		// If downwards saturation mods are disabled...
+		ANDI(reg0, reg2, pscc::color::fb_DISABLE_SAT_MOD_DOWN);
+		BC(2, bCACB_EQUAL);
+		// ... then overwrite PS0 of the Min reg with 1.0f
+		PS_MERGE01(floatCalcRegisters[0], floatTempRegisters[0], floatCalcRegisters[0]);
+		// If downwards luminance mods are disabled...
+		ANDI(reg0, reg2, pscc::color::fb_DISABLE_LUM_MOD_DOWN);
+		BC(2, bCACB_EQUAL);
+		// ... then overwrite PS1 of the Min reg with 1.0f
+		PS_MERGE01(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[0]);
+		// If upwards saturation mods are disabled...
+		ANDI(reg0, reg2, pscc::color::fb_DISABLE_SAT_MOD_UP);
+		BC(2, bCACB_EQUAL);
+		// ... then overwrite PS0 of the Max reg with 1.0f
+		PS_MERGE01(floatCalcRegisters[1], floatTempRegisters[0], floatCalcRegisters[1]);
+		// If upwards saturation mods are disabled...
+		ANDI(reg0, reg2, pscc::color::fb_DISABLE_LUM_MOD_UP);
+		BC(2, bCACB_EQUAL);
+		// ... then overwrite PS1 of the Max reg with 1.0f
+		PS_MERGE01(floatCalcRegisters[1], floatCalcRegisters[1], floatTempRegisters[0]);
+		// Then Clamp the multiplier values!
+		// Apply the min...
+		PS_SUB(floatHSLRegisters[2], floatHSLRegisters[1], floatCalcRegisters[0]);
+		PS_SEL(floatHSLRegisters[1], floatHSLRegisters[2], floatHSLRegisters[1], floatCalcRegisters[0]);
+		// Apply the max...
+		PS_SUB(floatHSLRegisters[2], floatCalcRegisters[1], floatHSLRegisters[1]);
+		PS_SEL(floatHSLRegisters[1], floatHSLRegisters[2], floatHSLRegisters[1], floatCalcRegisters[1]);
 
 		// Apply Saturation and Luminance Multipliers!
 		// Zero out the dedicated Lum Mul reg, since we'll need a 0.0f in a second and aren't actually using the reg yet.
