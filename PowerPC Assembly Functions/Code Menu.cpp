@@ -1858,6 +1858,9 @@ void CreateMenu(Page MainPage)
 	AddValueToByteArray(JUMPSQUAT_OVERRIDE_FRAMES_INDEX, Header);
 	AddValueToByteArray(JUMPSQUAT_OVERRIDE_MIN_INDEX, Header);
 	AddValueToByteArray(JUMPSQUAT_OVERRIDE_MAX_INDEX, Header);
+
+	// Player Slot Color Callback Table Address
+	AddValueToByteArray(0xFFFFFFFF, Header);
 	
 	//draw settings buffer
 	vector<u32> DSB(0x200 / 4, 0);
@@ -1916,14 +1919,12 @@ void CreateMenu(Page MainPage)
 }
 
 void constantOverride() {
-	std::size_t rgbColorTableOffset = pscc::getColorTableOffsetToColor(pscc::psccConstants::ColNameRGB);
-
 	ASMStart(0x80023d60, std::string("[CM: Code Menu] Constant Overrides") + 
-		std::string((CONFIG_PSCC_ENABLED && (rgbColorTableOffset != SIZE_MAX)) ? " + Incr. PSCC RGB Strobe Float" : ""));
+		std::string(CONFIG_PSCC_ENABLED ? " + Run PSCC Color Update Callbacks" : ""));
 
-	int reg1 = 4;
-	int reg2 = 5;
-	int reg3 = 11;
+	int reg1 = 11;
+	int reg2 = 12;
+	int reg3 = 10;
 
 	unsigned short prevIndexHiHalf = 0xFFFF;
 	unsigned short prevDestHiHalf = 0xFFFF;
@@ -1950,7 +1951,7 @@ void constantOverride() {
 		prevDestHiHalf = destHiHalf;
 	}
 
-	if (CONFIG_PSCC_ENABLED && (rgbColorTableOffset != SIZE_MAX))
+	if (CONFIG_PSCC_ENABLED)
 	{
 		int menuNotLoadedLabel = GetNextLabel();
 		// If reg1 isn't already loaded with the top half of START_OF_CODE_MENU_HEADER...
@@ -1961,27 +1962,73 @@ void constantOverride() {
 		}
 		// Try to load START_OF_CODE_MENU from the header.
 		LWZ(reg2, reg1, (START_OF_CODE_MENU_HEADER & 0xFFFF) + 4);
-		// Use reg1 to store the full START_OF_CODE_MENU value into reg3...
+		// Use reg3 to store the full START_OF_CODE_MENU value into reg3...
 		ADDI(reg3, reg1, START_OF_CODE_MENU & 0xFFFF);
 		// ... then compare the two: the loaded value vs the expected value.
-		CMPL(reg3, reg2, EQUAL_L);
+		CMPL(reg3, reg2, 0);
 		// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
 		JumpToLabel(menuNotLoadedLabel, bCACB_NOT_EQUAL);
 
+		// Additionally, load the pointer for the callback array.
+		LWZ(reg2, reg1, PSCC_CALLBACK_TABLE_LOC & 0xFFFF);
+		// If it's not set...
+		CMPI(reg2, 0xFFFF, 0);
+		// ... skip!
+		JumpToLabel(menuNotLoadedLabel, bCACB_EQUAL);
+
+		// Otherwise, we're free to run our callbacks!
+		// First, do a register backup!
+		// Allocate a stack frame for r14 and up!
+		STWU(1, 1, -0x60);
+		// Store r0 (we need its value for the comparison at the end of this hook!)
+		STW(0, 1, 0x8);
+		// Backup and store LR
+		MFLR(0);
+		STW(0, 1, 0x4);
+		// Store r14 through r31
+		STMW(14, 1, 0xC);
+
+		// Setup our own variables starting at r14
+		int callbackArrayPtr = 14;
+		int colorTablePtr = 15;
+		int currentColorOffset = 16;
+
+		// Copy callback array pointer out of reg2
+		MR(callbackArrayPtr, reg2);
+		// Zero our Offset register
+		ADDI(currentColorOffset, 0, 0);
+		// Grab a pointer to our color table.
+		LWZ(colorTablePtr, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
+
+		// Run our callback loop!
+		int callbackLoopHeadLabel = GetNextLabel();
+		int funcBadLabel = GetNextLabel();
+		Label(callbackLoopHeadLabel);
+		ADD(3, colorTablePtr, currentColorOffset);
+		LBZ(reg2, 3, 0x7);
+		CMPLI(reg2, 0x10, 0);
+		JumpToLabel(funcBadLabel, bCACB_GREATER_OR_EQ);
+		RLWINM(reg2, reg2, 2, 0, 0x1D);
+		LWZX(reg2, callbackArrayPtr, reg2);
+		CMPLI(reg2, 0x00, 0);
+		JumpToLabel(funcBadLabel, bCACB_EQUAL);
+		MTCTR(reg2);
+		BCTRL();
+		Label(funcBadLabel);
+		ADDI(currentColorOffset, currentColorOffset, pscc::colorTableEntrySizeInBytes);
+		CMPLI(currentColorOffset, pscc::getColorTableSizeInBytes(), 0);
+		JumpToLabel(callbackLoopHeadLabel, bCACB_LESSER);
 		
-		// Load the Float Table address into reg3!
-		LWZ(reg3, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
-		// Load the Hue Short for the RGB Color
-		LHZ(reg2, reg3, rgbColorTableOffset);
-		// Increment it...
-		ADDI(reg2, reg2, 0x40);
-		// ... and if it's beyond the bounds of a signed short...
-		CMPLI(reg2, SHRT_MAX, 0);
-		BC(2, bCACB_LESSER);
-		// ... reset it to 0!
-		ADDI(reg2, 0, 0x00);
-		// Store incremented Hue Short!
-		STH(reg2, reg3, rgbColorTableOffset);
+		// Finally, restore register backups!
+		// Restore LR
+		LWZ(0, 1, 0x4);
+		MTLR(0);
+		// Restore r0
+		LWZ(0, 1, 0x8);
+		// Restore r14 through r31
+		LMW(14, 1, 0xC);
+		// Deallocate stack frame!
+		ADDI(1, 1, 0x60);
 		Label(menuNotLoadedLabel);
 	}
 	
