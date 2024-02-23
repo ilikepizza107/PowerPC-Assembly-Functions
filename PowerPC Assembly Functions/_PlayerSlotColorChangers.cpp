@@ -481,7 +481,7 @@ void psccEmbedFloatTable()
 		signed short lumHex = signed short(std::max(std::min(i->second.luminance, 1.0f), -1.0f) * SHRT_MAX);
 
 		WriteIntToFile((unsigned long(hueHex) << 0x10) | unsigned long(satHex));
-		WriteIntToFile((unsigned long(lumHex) << 0x10) | unsigned long(i->second.flags));
+		WriteIntToFile((unsigned long(lumHex) << 0x10) | (unsigned long(i->second.flags) << 0x8) | unsigned long(i->second.callbackFunctionIndex) );
 	}
 
 	std::vector<unsigned char> schemeVec = pscc::schemeTable.tableToByteVec();
@@ -594,13 +594,25 @@ void psccMainCode()
 		// Load and quantize the Hue short (and update reg1 to point to our floatTriple)...
 		PSQ_LUX(floatCalcRegisters[0], reg1, reg0, 1, CustomGQRIndex2);
 		// ... and load the color's flags while we're at it.
-		LHZ(reg2, reg1, 0x06);
+		LBZ(reg2, reg1, 0x06);
 		// Load 6.0f into TempReg1...
 		LFS(floatTempRegisters[1], 2, -0x62FC);
 		// ... and use it to scale up our Hue float!
 		FMULS(floatCalcRegisters[0], floatCalcRegisters[0], floatTempRegisters[1]);
 
-		// Then add it to our Hue modifier!
+		// Apply Hue Color Flags!
+		// If the color requests its Hue modifiers be inverted...
+		ANDI(reg0, reg2, pscc::color::fb_INVERT_HUE_MOD);
+		BC(2, bCACB_EQUAL);
+		// ... subtract the incoming modifier from 6.0f to flip it.
+		FSUBS(floatHSLRegisters[0], floatTempRegisters[1], floatHSLRegisters[0]);
+		// If the color requests that Hue modifiers be outright disabled though...
+		ANDI(reg0, reg2, pscc::color::fb_DISABLE_HUE_MOD);
+		BC(2, bCACB_EQUAL);
+		// ... then zero it out.
+		FSUBS(floatHSLRegisters[0], floatHSLRegisters[0], floatHSLRegisters[0]);
+
+		// Then add our Hue modifier to the incoming Hue value!
 		FADDS(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[0]);
 
 		// Ensure that our Hue remains in the 0.0f to 6.0 range: 

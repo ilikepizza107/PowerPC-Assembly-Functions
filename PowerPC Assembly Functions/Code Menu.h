@@ -284,23 +284,22 @@ namespace pscc
 	{
 		enum flagBits
 		{
-			//fb_DISABLE_HUE_MOD_UP   = 0b0000000000000001,
-			//fb_DISABLE_HUE_MOD_DOWN = 0b0000000000000010,
-			fb_DISABLE_SAT_MOD_UP   = 0b0000000000000100,
-			fb_DISABLE_SAT_MOD_DOWN = 0b0000000000001000,
-			fb_DISABLE_LUM_MOD_UP   = 0b0000000000010000,
-			fb_DISABLE_LUM_MOD_DOWN = 0b0000000000100000,
-			//fb_INVERT_HUE_MOD_UP    = 0b0000000001000000,
-			//fb_INVERT_HUE_MOD_DOWN  = 0b0000000010000000,
+			fb_INVERT_HUE_MOD       = 0b00000001,
+			fb_DISABLE_HUE_MOD      = 0b00000010,
+			fb_DISABLE_SAT_MOD_UP   = 0b00000100,
+			fb_DISABLE_SAT_MOD_DOWN = 0b00001000,
+			fb_DISABLE_LUM_MOD_UP   = 0b00010000,
+			fb_DISABLE_LUM_MOD_DOWN = 0b00100000,
 		};
 
 		float hue;
 		float saturation;
 		float luminance;
-		unsigned short flags;
+		unsigned char flags;
+		unsigned char callbackFunctionIndex;
 
-		color(float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f, unsigned short flagsIn = 0x00) :
-			hue(hueIn), saturation(satIn), luminance(lumIn), flags(flagsIn) {};
+		color(float hueIn = 0.0f, float satIn = 1.0f, float lumIn = 1.0f, unsigned char flagsIn = 0x00, unsigned char callbackIdxIn = UCHAR_MAX) :
+			hue(hueIn), saturation(satIn), luminance(lumIn), flags(flagsIn), callbackFunctionIndex(callbackIdxIn) {};
 		bool colorValid() const;
 	};
 	extern std::map<std::string, color> colorTable;
