@@ -288,6 +288,8 @@ namespace lava
 		const std::string textTag = "text";
 		const std::string filenameTag = "filename";
 		const std::string codeModeTag = "codeMode";
+		const std::string indexTag = "index";
+		const std::string valueTag = "value";
 
 		// Menu Properties
 		const std::string menuPropsTag = "menuProperties";
@@ -333,7 +335,6 @@ namespace lava
 		const std::string colorP2Tag = "colorP2";
 		const std::string colorP3Tag = "colorP3";
 		const std::string colorP4Tag = "colorP4";
-		const std::string colorRGBTag = "colorRGB";
 		const std::string colorHueTag = "hue";
 		const std::string colorSatTag = "saturation";
 		const std::string colorLumTag = "luminance";
@@ -343,6 +344,7 @@ namespace lava
 		const std::string colorSchemeMenu2Tag = "menuColor2";
 		const std::string colorSchemeIngame1Tag = "ingameColor1";
 		const std::string colorSchemeIngame2Tag = "ingameColor2";
+		const std::string colorFlagTag = "colorFlag";
 
 		// Jumpsquat Override
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
@@ -909,25 +911,30 @@ namespace lava
 	{
 		std::vector<std::pair<std::string, pscc::color>> result;
 
-		for (pugi::xml_node_iterator colorItr = colorDeclNodeItr->begin(); colorItr != colorDeclNodeItr->end(); colorItr++)
+		for (pugi::xml_node colorNode : colorDeclNodeItr->children(configXMLConstants::colorTag.c_str()))
 		{
-			if (colorItr->name() == configXMLConstants::colorTag)
+			pscc::color tempColor;
+			std::string colorName = colorNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+			// If the entry has no name, skip to next node.
+			if (colorName.empty()) continue;
+
+			tempColor.hue = colorNode.attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
+			if (tempColor.hue != FLT_MAX)
 			{
-				pscc::color tempColor;
-				std::string colorName = colorItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
-				// If the entry has no name, skip to next node.
-				if (colorName.empty()) continue;
-
-				tempColor.hue = colorItr->attribute(configXMLConstants::colorHueTag.c_str()).as_float(FLT_MAX);
-				if (tempColor.hue != FLT_MAX)
-				{
-					tempColor.hue /= 60.0f;
-				}
-				tempColor.saturation = colorItr->attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
-				tempColor.luminance = colorItr->attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
-
-				result.push_back(std::make_pair(colorName, tempColor));
+				tempColor.hue /= 60.0f;
 			}
+			tempColor.saturation = colorNode.attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
+			tempColor.luminance = colorNode.attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
+
+			for (auto flagNode : colorNode.children(configXMLConstants::colorFlagTag.c_str()))
+			{
+				unsigned long flagIndex = flagNode.attribute(configXMLConstants::indexTag.c_str()).as_uint(ULONG_MAX);
+				if (flagIndex >= 8) continue;
+				unsigned char flagValue = flagNode.attribute(configXMLConstants::valueTag.c_str()).as_bool(0);
+				tempColor.flags |= flagValue << flagIndex;
+			}
+
+			result.push_back(std::make_pair(colorName, tempColor));
 		}
 
 		return result;
