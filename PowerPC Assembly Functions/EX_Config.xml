@@ -64,26 +64,37 @@
         <!--Controls the behavior of the Player Slot Color Changer Code!-->
         <slotColorChanger enabled="false">
             <colorDefinitions>
-                <color name="Pink"      hue="315.0" saturation="1.00" luminance="0.50" />
-                <color name="Purple"    hue="280.0" saturation="1.00" luminance="0.50" />
-                <color name="Purple_2"  hue="300.0" saturation="0.90" luminance="0.50" />
-                <color name="Orange"    hue="30.0"  saturation="1.00" luminance="0.45" />
-                <color name="Orange_2"  hue="38.0"  saturation="0.90" luminance="0.60" />
-                <color name="Cyan"      hue="172.0" saturation="1.00" luminance="0.50" />
-                <color name="Gray"      hue="0.0"   saturation="0.00" luminance="0.50" />
-                <color name="Black"     hue="0.0"   saturation="0.00" luminance="0.00" />
-                <color name="White"     hue="0.0"   saturation="0.00" luminance="1.00" />
+                <color name="Pink" hue="315.0" saturation="1.00" luminance="0.50" />
+                <color name="Purple" hue="280.0" saturation="1.00" luminance="0.50" >
+                    <flag name="DisableHueMod"/>
+                </color>
+                <color name="Orange" hue="35.0" saturation="1.00" luminance="0.48" >
+                    <flag name="DisableHueMod"/>
+                </color>
+                <color name="Cyan" hue="172.0" saturation="1.00" luminance="0.50" >
+                    <flag name="DisableHueMod"/>
+                </color>
+                <color name="Gray" hue="0.0" saturation="0.00" luminance="0.50" >
+                    <flag name="DisableSatModUp"/> <flag name="DisableSatModDown"/>
+                </color>
+                <color name="Black" hue="0.0" saturation="0.00" luminance="0.08" >
+                    <flag name="DisableSatModUp"/> <flag name="DisableSatModDown"/>
+                    <flag name="DisableLumModUp"/> <flag name="DisableLumModDown"/>
+                </color>
+                <color name="White" hue="0.0" saturation="0.00" luminance="1.00" >
+                    <flag name="DisableSatModUp"/> <flag name="DisableSatModDown"/>
+                </color>
             </colorDefinitions>
             <schemeDefinitions>
-                <scheme name="Pink"     menuColor1="Pink"     ingameColor1="Pink"      />
-                <scheme name="Purple"   menuColor1="Purple"   ingameColor1="Purple"    ingameColor2="Purple_2" />
-                <scheme name="Orange"   menuColor1="Orange"   ingameColor1="Orange"    ingameColor2="Orange_2" />
-                <scheme name="Cyan"     menuColor1="Cyan"     ingameColor1="Cyan"      />
-                <scheme name="Gray"     menuColor1="Gray"     ingameColor1="Gray"      />
-                <scheme name="Black"    menuColor1="Black"    ingameColor1="Black"     menuColor2="White"   ingameColor2="White" />
-                <scheme name="White"    menuColor1="White"    ingameColor1="White"     />
-                <scheme name="RGB"      menuColor1="pd_RGB"   ingameColor1="pd_RGB"    />
-                <scheme name="DarkRGB"  menuColor1="Black"    ingameColor1="Black"     menuColor2="pd_RGB"  ingameColor2="pd_RGB"/>
+                <scheme name="Pink" menuColor1="Pink" ingameColor1="Pink" />
+                <scheme name="Purple" menuColor1="Purple" ingameColor1="Purple" />
+                <scheme name="Orange" menuColor1="Orange" ingameColor1="Orange" />
+                <scheme name="Cyan" menuColor1="Cyan" ingameColor1="Cyan" />
+                <scheme name="Gray" menuColor1="Gray" ingameColor1="Gray" />
+                <scheme name="Black" menuColor1="Black" ingameColor1="Black" menuColor2="White" ingameColor2="White" />
+                <scheme name="White" menuColor1="White" ingameColor1="White" />
+                <scheme name="RGB" menuColor1="pd_RGB" ingameColor1="pd_RGB" />
+                <scheme name="DarkRGB" menuColor1="Black" ingameColor1="Black" menuColor2="pd_RGB" ingameColor2="pd_RGB" />
             </schemeDefinitions>
         </slotColorChanger>
     </codeSettings>
