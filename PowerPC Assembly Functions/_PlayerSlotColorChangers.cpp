@@ -10,7 +10,7 @@ const std::string codeSuffix = " [QuickLava]";
 // - Determine that it's in our range
 // - Get the index for the color being requested by the relevant code menu line
 // - Grab the stored "RGBA" for that frame; not actually RGBA, it's the following
-//     0x00 = Signed 8 - bit Hue Shift(Fixed Point)
+//     0x00 = Unsigned 8 - bit Hue Shift(Fixed Point)
 //     0x01 = Unsigned 8 - bit Saturation(Fixed Point)
 //     0x02 = Unsigned 8 - bit Luminence(Fixed Point)
 //     0x03 = Unsigned 8 - bit Alpha
@@ -554,8 +554,9 @@ void psccMainCode()
 		ADDIS(reg2, 0, 0x0704);
 		ORI(reg2, reg2, 0x0804);
 		MTSPR(reg2, CustomGQRID1);
-		//Second GQR: For reading Signed Color Table Shorts, and quantizing them to 2^16!
+		//Second GQR: For reading Signed Color Table Shorts (quantized to 2^16) and storing floats as unquantized Unsigned Shorts!
 		ADDIS(reg2, 0, 0x0F07);
+		ORI(reg2, reg2, 0x0005);
 		MTSPR(reg2, CustomGQRID2);
 		// Load Hue Float to Hue FReg
 		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, CustomGQRIndex1);
@@ -680,68 +681,53 @@ void psccMainCode()
 		// Put 2.0f back in TempReg1
 		FADDS(floatTempRegisters[1], floatTempRegisters[0], floatTempRegisters[0]);
 
-		// Calculate Chroma
-		FMSUBS(floatCalcRegisters[0], floatHSLRegisters[2], floatTempRegisters[1], floatTempRegisters[0]); // C = (Luminence * 2.0f) - 1.0f
-		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// C = Abs(X)
-		FSUBS(floatCalcRegisters[0], floatTempRegisters[0], floatCalcRegisters[0]);		// C = 1.0f - C
-		FMULS(floatCalcRegisters[0], floatCalcRegisters[0], floatHSLRegisters[1]);		// C = C * Saturation
+		// Calculate Chroma: C = Sat(1 - Abs(2Lum - 1.0f))
+		FMSUBS(floatCalcRegisters[0], floatHSLRegisters[2], floatTempRegisters[1], floatTempRegisters[0]); // C = (Lum * 2.0f) - 1.0f
+		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// C = Abs(C)
+		FNMSUBS(floatCalcRegisters[0], floatHSLRegisters[1], floatCalcRegisters[0], floatHSLRegisters[1]); // C = -(Sat*C - Sat) == Sat(1.0f - C)
 
-		// Calculate X
-		FMR(floatCalcRegisters[1], floatHSLRegisters[0]);								// X = Hue
-		B(2);																			// X = X mod 2.0f
-		FSUB(floatCalcRegisters[1], floatCalcRegisters[1], floatTempRegisters[1]);		//
-		FCMPU(floatCalcRegisters[1], floatTempRegisters[1], 1);							//
+		// Get integer-converted Hue value in reg2 before calcing X so we can free up HSLReg0!
+		ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
+		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4, 1, CustomGQRIndex2);
+		LHZ(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+
+		// We don't need the original Hue value anymore, but do need Hue % 2.0f, so we'll do that in HSLReg0!
+		B(2);																			// Hue = Hue mod 2.0f
+		FSUBS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[1]);		//
+		FCMPU(floatHSLRegisters[0], floatTempRegisters[1], 1);							//
 		BC(-2, bCACB_GREATER_OR_EQ.inConditionRegField(1));								//
-		FSUB(floatCalcRegisters[1], floatCalcRegisters[1], floatTempRegisters[0]);		// X = X - 1.0f
+		// Calculate X: X = C(1.0f - Abs((H % 2.0f) - 1.0f))
+		FSUBS(floatCalcRegisters[1], floatHSLRegisters[0], floatTempRegisters[0]);		// X = X - 1.0f
 		FABS(floatCalcRegisters[1], floatCalcRegisters[1]);								// X = Abs(X)
-		FSUB(floatCalcRegisters[1], floatTempRegisters[0], floatCalcRegisters[1]);		// X = 1.0f - X
-		FMUL(floatCalcRegisters[1], floatCalcRegisters[1], floatCalcRegisters[0]);		// X = X * C
+		FNMSUBS(floatCalcRegisters[1], floatCalcRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]); // X = -(C*X - C) == C(1.0f - X)
 
 		// Calculate M (we'll write this into TempReg1, since we'll no longer need 2.0f after this!
 		FDIVS(floatTempRegisters[1], floatCalcRegisters[0], floatTempRegisters[1]);		// M = C / 2.0f
 		FSUBS(floatTempRegisters[1], floatHSLRegisters[2], floatTempRegisters[1]);		// M = Luminence - M
 
-		// Get integer-converted Hue value in reg0!
-		FCTIWZ(floatTempRegisters[0], floatHSLRegisters[0]);
-		ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-		STFD(floatTempRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
-		LWZ(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 8);
-
+		// Now that C, X, and M are all calculated, finish up the conversion!
 		int addMLabel = GetNextLabel();
-		// Write our floats into their appropriate slots!
-		// Move the target case into CTR in case we need it for BDZ'ing in a moment.
-		MTCTR(reg2);
-		// Additionally, compare it with 0; since our BDZ won't catch it if we decr past 0 then check.
-		CMPLI(reg2, 0x00, 0);
-
-		FSUB(floatHSLRegisters[2], floatHSLRegisters[2], floatHSLRegisters[2]);			// B = 0
-		// 0 Case:
-		FMR(floatHSLRegisters[0], floatCalcRegisters[0]);								// R = Chroma
-		FMR(floatHSLRegisters[1], floatCalcRegisters[1]);								// G = X
-		JumpToLabel(addMLabel, bCACB_EQUAL);
-		// 1 Case:
-		FMR(floatHSLRegisters[0], floatCalcRegisters[1]);								// R = X
-		FMR(floatHSLRegisters[1], floatCalcRegisters[0]);								// G = Chroma
-		JumpToLabel(addMLabel, bCACB_DZ);
-
-		FSUB(floatHSLRegisters[0], floatHSLRegisters[0], floatHSLRegisters[0]);			// R = 0
-		// 2 Case:
-		FMR(floatHSLRegisters[1], floatCalcRegisters[0]);								// G = Chroma
-		FMR(floatHSLRegisters[2], floatCalcRegisters[1]);								// B = X
-		JumpToLabel(addMLabel, bCACB_DZ);
-		// 3 Case:
-		FMR(floatHSLRegisters[1], floatCalcRegisters[1]);								// G = X
-		FMR(floatHSLRegisters[2], floatCalcRegisters[0]);								// B = Chroma
-		JumpToLabel(addMLabel, bCACB_DZ);
-
-		FSUB(floatHSLRegisters[1], floatHSLRegisters[1], floatHSLRegisters[1]);			// G = 0
-		// 4 Case:
-		FMR(floatHSLRegisters[2], floatCalcRegisters[0]);								// B = Chroma
-		FMR(floatHSLRegisters[0], floatCalcRegisters[1]);								// R = X
-		JumpToLabel(addMLabel, bCACB_DZ);
-		// 5 Case:
-		FMR(floatHSLRegisters[2], floatCalcRegisters[1]);								// B = X
-		FMR(floatHSLRegisters[0], floatCalcRegisters[0]);								// R = Chroma
+		// First, subtract 1.0f from our Hue % 2.0f in HSLReg0 so we can FSEL off it (into TempReg0, since we don't need 1.0f anymore)!
+		FSUBS(floatTempRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
+		// Then, do each case of the piecewise.
+		// Cases 0 and 1
+		CMPLI(reg2, 0x2, 0);
+		BC(5, bCACB_GREATER_OR_EQ);
+		FSEL(floatHSLRegisters[0], floatTempRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[0] = (Hue % 2.0f) ? X : C
+		FSEL(floatHSLRegisters[1], floatTempRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[1] = (Hue % 2.0f) ? C : X
+		FSUBS(floatHSLRegisters[2], floatHSLRegisters[2], floatHSLRegisters[2]);							// HSL[2] = 0
+		JumpToLabel(addMLabel);
+		// Cases 2 and 3
+		CMPLI(reg2, 0x4, 0);
+		BC(5, bCACB_GREATER_OR_EQ);
+		FSEL(floatHSLRegisters[1], floatTempRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[1] = (Hue % 2.0f) ? X : C
+		FSEL(floatHSLRegisters[2], floatTempRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[2] = (Hue % 2.0f) ? C : X
+		FSUBS(floatHSLRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);							// HSL[0] = 0
+		JumpToLabel(addMLabel);
+		// Cases 4 and 5
+		FSEL(floatHSLRegisters[2], floatTempRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[2] = (Hue % 2.0f) ? X : C
+		FSEL(floatHSLRegisters[0], floatTempRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[0] = (Hue % 2.0f) ? C : X
+		FSUBS(floatHSLRegisters[1], floatHSLRegisters[2], floatHSLRegisters[2]);							// HSL[1] = 0
 
 		// Add M to our newly sorted registers.
 		Label(addMLabel);
@@ -760,7 +746,7 @@ void psccMainCode()
 		// Re-load final RGBA hex!
 		LWZ(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF);
 
-		// Restore backed up GQR0 value!
+		// Restore backed up GQR0 values!
 		MTSPR(GQRBackupReg1, CustomGQRID1);
 		MTSPR(GQRBackupReg2, CustomGQRID2);
 	}
