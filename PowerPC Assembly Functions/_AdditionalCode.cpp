@@ -290,6 +290,8 @@ namespace lava
 		const std::string codeModeTag = "codeMode";
 		const std::string indexTag = "index";
 		const std::string valueTag = "value";
+		const std::string flagTag = "flag";
+		const std::string callbackTag = "callback";
 
 		// Menu Properties
 		const std::string menuPropsTag = "menuProperties";
@@ -344,7 +346,15 @@ namespace lava
 		const std::string colorSchemeMenu2Tag = "menuColor2";
 		const std::string colorSchemeIngame1Tag = "ingameColor1";
 		const std::string colorSchemeIngame2Tag = "ingameColor2";
-		const std::string colorFlagTag = "colorFlag";
+		const std::vector<std::string> colorFlagNames =
+		{
+			"InvertHueMod",
+			"DisableHueMod",
+			"DisableSatModUp",
+			"DisableSatModDown",
+			"DisableLumModUp",
+			"DisableLumModDown",
+		};
 
 		// Jumpsquat Override
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
@@ -926,12 +936,20 @@ namespace lava
 			tempColor.saturation = colorNode.attribute(configXMLConstants::colorSatTag.c_str()).as_float(FLT_MAX);
 			tempColor.luminance = colorNode.attribute(configXMLConstants::colorLumTag.c_str()).as_float(FLT_MAX);
 
-			for (auto flagNode : colorNode.children(configXMLConstants::colorFlagTag.c_str()))
+			for (auto flagNode : colorNode.children(configXMLConstants::flagTag.c_str()))
 			{
-				unsigned long flagIndex = flagNode.attribute(configXMLConstants::indexTag.c_str()).as_uint(ULONG_MAX);
-				if (flagIndex >= 8) continue;
-				unsigned char flagValue = flagNode.attribute(configXMLConstants::valueTag.c_str()).as_bool(0);
-				tempColor.flags |= flagValue << flagIndex;
+				const std::vector<std::string>* flagNames = &configXMLConstants::colorFlagNames;
+				auto flagNameItr = std::find(
+					flagNames->cbegin(), flagNames->cend(), flagNode.attribute(configXMLConstants::nameTag.c_str()).as_string(""));
+				if (flagNameItr == flagNames->cend()) continue;
+				unsigned char flagValue = flagNode.attribute(configXMLConstants::valueTag.c_str()).as_bool(1);
+				tempColor.flags |= flagValue << std::distance(flagNames->cbegin(), flagNameItr);
+			}
+
+			pugi::xml_node callbackNode = colorNode.child(configXMLConstants::callbackTag.c_str());
+			if (callbackNode)
+			{
+				tempColor.callbackFunctionIndex = callbackNode.attribute(xmlTagConstants::indexTag.c_str()).as_uint(UCHAR_MAX);
 			}
 
 			result.push_back(std::make_pair(colorName, tempColor));
