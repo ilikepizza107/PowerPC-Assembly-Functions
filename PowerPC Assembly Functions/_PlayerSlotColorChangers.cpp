@@ -309,18 +309,6 @@ void psccCLR0V4InstallCode()
 	CMPLI(reg2, 0x4, 0);
 	JumpToLabel(v4PatchExit, bCACB_NOT_EQUAL);
 
-	// Attempt to Load the "Original Path" Value
-	LWZ(reg3, reg1, 0x1C);
-	LWZUX(reg2, reg3, reg1);
-	// If this fails, the register'll be "CLR0", otherwise it should be the specified value.
-	// Do some subtractions to check that the activator is there *and* get the code operation version!
-	ADDIS(reg2, reg2, -activatorStringHiHalf);
-	ADDI(reg2, reg2, -activatorStringLowHalf);
-	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
-	// If it failed to (ie. the reg > 9), we'll skip.
-	CMPLI(reg2, 0x9, 0);
-	JumpToLabel(v4PatchExit, bCACB_GREATER);
-
 	// If we're looking at one of our CLR0s, we're gonna rotate its header up to match its order to v3's!
 	LMW(28, reg1, 0x18);
 	LWZ(reg2, reg1, 0x14);
