@@ -249,14 +249,10 @@ void psccMiscAdjustments()
 	// Add another 0x1 to account for Frame 0 being clear.
 	ADDI(12, 12, 0x1);
 	// Convert the ID to float!
-	// Store the ID in the bottom half of the staging location
-	STW(12, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF);
-	// Load the staged ID float into f12
-	LFD(1, 11, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
-	// Load the float conversion constant from its location
-	LFD(13, 11, FLOAT_CONVERSION_CONST_LOC & 0xFFFF);
-	// Subtract the constant from the ID float to finish conversion!
-	FSUBS(1, 1, 13);
+	// Store the ID in the bottom half of the staging location...
+	STH(12, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x04) & 0xFFFF);
+	// ... then load it as a Paired Single (Unscaled Unsigned Short quantization).
+	PSQ_L(1, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x04) & 0xFFFF, 1, 3);
 	// Get Franchise Icon pointer from Player Area struct.
 	LWZ(3, 30, 0xB8);
 	// And set the frame color!
@@ -357,9 +353,9 @@ void psccSetupCode()
 	int reg3 = 28; // Holds Mode!
 
 	// Mode0 = Port via Name Suffix
-	// Mode1 = Mode0 - 1
-	// Mode2 = Port via Frame
-	// Mode3 = Mode2 + 1
+	// Mode1 = Port via Frame
+	// Mode2 = Mode1 + 1
+	// Mode3 = Mode0 - 1
 
 	int mode0Label = GetNextLabel();
 	int mode1Label = GetNextLabel();
@@ -400,12 +396,16 @@ void psccSetupCode()
 	// Mode2 is the only option left, and it's the same as Mode1, only we add 1 to the frame first; so we can just make it an add-on for Mode1.
 
 	Label(mode2Label);
+	// Mode2 == Mode1 except we need to add 1.0f to our frame before storing it.
+	// So load 1.0f...
 	LFS(12, 2, -0x6170);
-	FADD(13, 13, 12);
-	// Store frame as an integer, and store it as the second word of our safe space.
+	// ... and add it to our frame register.
+	FADDS(13, 13, 12);
 	Label(mode1Label);
-	FCTIWZ(13, 13);
-	STFD(13, 1, safeStackWordOff);
+	// Round our frame to single precision, just to be certain we can safely PSQ_ST it...
+	FRSP(13, 13);
+	// ... then store using GQR3 (store as unsigned short) in the third & fourth half-words in our safe space.
+	PSQ_ST(13, 1, safeStackWordOff + 0x4, 0, 3);
 	JumpToLabel(getUserDataLabel);
 
 	Label(mode0Label);
@@ -422,7 +422,7 @@ void psccSetupCode()
 	// Add 1 to that number...
 	ADDI(reg2, reg2, 1);
 	// ... and store it to reference as our target port!
-	STW(reg2, 1, safeStackWordOff + 0x4);
+	STH(reg2, 1, safeStackWordOff + 0x6);
 
 	// Next, we need to try to get the CLR0's UserData and the accompanying mask data.
 	Label(getUserDataLabel);
@@ -543,7 +543,7 @@ void psccMainCode()
 		ANDI(reg0, reg0, 0b11);
 
 		// Set up the top half of reg1 with 0x804E to simplify accessing code menu stuff.
-		ADDIS(reg1, 0, FLOAT_CONVERSION_CONST_LOC >> 0x10);
+		ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
 		// Store our RGBA value so we can load it Paired-Single style!
 		STW(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF);
 		// Backup GQRs in preparation for our Paired Single float reads.
