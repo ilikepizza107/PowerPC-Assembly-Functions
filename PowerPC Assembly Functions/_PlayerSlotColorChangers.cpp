@@ -542,9 +542,8 @@ void psccMainCode()
 		ADDIS(reg2, 0, 0x0704);
 		ORI(reg2, reg2, 0x0804);
 		MTSPR(reg2, CustomGQRID1);
-		//Second GQR: For reading Signed Color Table Shorts (quantized to 2^16) and storing floats as unquantized Unsigned Shorts!
+		//Second GQR: For reading Signed Color Table Shorts (quantized to 2^16)!
 		ADDIS(reg2, 0, 0x0F07);
-		ORI(reg2, reg2, 0x0005);
 		MTSPR(reg2, CustomGQRID2);
 		// Load Hue Float to Hue FReg
 		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, CustomGQRIndex1);
@@ -676,17 +675,19 @@ void psccMainCode()
 
 		// Get integer-converted Hue value in reg2 before calcing X so we can free up HSLReg0!
 		ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4, 1, CustomGQRIndex2);
+		// Note: using GQR3 here for Non-quantized Unsigned Short conversion).
+		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4, 1, 3);
 		LHZ(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
 
-		// We don't need the original Hue value anymore, but do need Hue % 2.0f, so we'll do that in HSLReg0!
-		B(2);																			// Hue = Hue mod 2.0f
+		// We don't need the original Hue value anymore, but do need (Hue % 2.0f) - 1.0f, so we'll do that in HSLReg0!
+		B(2);																			// HSLReg0 = Hue mod 2.0f
 		FSUBS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[1]);		//
 		FCMPU(floatHSLRegisters[0], floatTempRegisters[1], 1);							//
 		BC(-2, bCACB_GREATER_OR_EQ.inConditionRegField(1));								//
+		FSUBS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);		// HSLReg0 = X - 1.0f
+
 		// Calculate X: X = C(1.0f - Abs((H % 2.0f) - 1.0f))
-		FSUBS(floatCalcRegisters[1], floatHSLRegisters[0], floatTempRegisters[0]);		// X = X - 1.0f
-		FABS(floatCalcRegisters[1], floatCalcRegisters[1]);								// X = Abs(X)
+		FABS(floatCalcRegisters[1], floatHSLRegisters[0]);								// X = Abs(X)
 		FNMSUBS(floatCalcRegisters[1], floatCalcRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]); // X = -(C*X - C) == C(1.0f - X)
 
 		// Calculate M (we'll write this into TempReg1, since we'll no longer need 2.0f after this!
@@ -695,27 +696,26 @@ void psccMainCode()
 
 		// Now that C, X, and M are all calculated, finish up the conversion!
 		int addMLabel = GetNextLabel();
-		// First, subtract 1.0f from our Hue % 2.0f in HSLReg0 so we can FSEL off it (into TempReg0, since we don't need 1.0f anymore)!
-		FSUBS(floatTempRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
+		// Remember, we have (Hue % 2.0f) - 1.0f) in HSLReg0; we're gonna FSEL off it!
 		// Then, do each case of the piecewise.
 		// Cases 0 and 1
 		CMPLI(reg2, 0x2, 0);
 		BC(5, bCACB_GREATER_OR_EQ);
-		FSEL(floatHSLRegisters[0], floatTempRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[0] = (Hue % 2.0f) ? X : C
-		FSEL(floatHSLRegisters[1], floatTempRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[1] = (Hue % 2.0f) ? C : X
-		FSUBS(floatHSLRegisters[2], floatHSLRegisters[2], floatHSLRegisters[2]);							// HSL[2] = 0
+		FSEL(floatHSLRegisters[1], floatHSLRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[1] = (Hue % 2.0f) ? C : X
+		FSEL(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[0] = (Hue % 2.0f) ? X : C
+		FSUBS(floatHSLRegisters[2], floatHSLRegisters[2], floatHSLRegisters[2]);						// HSL[2] = 0
 		JumpToLabel(addMLabel);
 		// Cases 2 and 3
 		CMPLI(reg2, 0x4, 0);
 		BC(5, bCACB_GREATER_OR_EQ);
-		FSEL(floatHSLRegisters[1], floatTempRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[1] = (Hue % 2.0f) ? X : C
-		FSEL(floatHSLRegisters[2], floatTempRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[2] = (Hue % 2.0f) ? C : X
-		FSUBS(floatHSLRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);							// HSL[0] = 0
+		FSEL(floatHSLRegisters[1], floatHSLRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[1] = (Hue % 2.0f) ? X : C
+		FSEL(floatHSLRegisters[2], floatHSLRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[2] = (Hue % 2.0f) ? C : X
+		FSUBS(floatHSLRegisters[0], floatHSLRegisters[2], floatHSLRegisters[2]);						// HSL[0] = 0
 		JumpToLabel(addMLabel);
 		// Cases 4 and 5
-		FSEL(floatHSLRegisters[2], floatTempRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[2] = (Hue % 2.0f) ? X : C
-		FSEL(floatHSLRegisters[0], floatTempRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[0] = (Hue % 2.0f) ? C : X
-		FSUBS(floatHSLRegisters[1], floatHSLRegisters[2], floatHSLRegisters[2]);							// HSL[1] = 0
+		FSEL(floatHSLRegisters[2], floatHSLRegisters[0], floatCalcRegisters[1], floatCalcRegisters[0]);	// HSL[2] = (Hue % 2.0f) ? X : C
+		FSEL(floatHSLRegisters[0], floatHSLRegisters[0], floatCalcRegisters[0], floatCalcRegisters[1]);	// HSL[0] = (Hue % 2.0f) ? C : X
+		FSUBS(floatHSLRegisters[1], floatHSLRegisters[2], floatHSLRegisters[2]);						// HSL[1] = 0
 
 		// Add M to our newly sorted registers.
 		Label(addMLabel);
