@@ -464,12 +464,12 @@ void psccEmbedFloatTable()
 	GeckoDataEmbedStart();
 	for (auto i = pscc::colorTable.cbegin(); i != pscc::colorTable.cend(); i++)
 	{
-		signed short hueHex = signed short((std::max(std::min(i->second.hue, 6.0f), -6.0f) / 6.0f) * SHRT_MAX);
-		signed short satHex = signed short(std::max(std::min(i->second.saturation, 1.0f), -1.0f) * SHRT_MAX);
-		signed short lumHex = signed short(std::max(std::min(i->second.luminance, 1.0f), -1.0f) * SHRT_MAX);
+		unsigned long hueHex = unsigned short((std::max(std::min(i->second.hue, 6.0f), 0.0f) / 6.0f) * USHRT_MAX);
+		unsigned long satHex = unsigned short(std::max(std::min(i->second.saturation, 1.0f), 0.0f) * USHRT_MAX);
+		unsigned long lumHex = unsigned short(std::max(std::min(i->second.luminance, 1.0f), 0.0f) * USHRT_MAX);
 
-		WriteIntToFile((unsigned long(hueHex) << 0x10) | unsigned long(satHex));
-		WriteIntToFile((unsigned long(lumHex) << 0x10) | (unsigned long(i->second.flags) << 0x8) | unsigned long(i->second.callbackFunctionIndex) );
+		WriteIntToFile((hueHex << 0x10) | satHex);
+		WriteIntToFile((lumHex << 0x10) | (unsigned long(i->second.flags) << 0x8) | unsigned long(i->second.callbackFunctionIndex) );
 	}
 
 	std::vector<unsigned char> schemeVec = pscc::schemeTable.tableToByteVec();
@@ -542,8 +542,8 @@ void psccMainCode()
 		ADDIS(reg2, 0, 0x0704);
 		ORI(reg2, reg2, 0x0804);
 		MTSPR(reg2, CustomGQRID1);
-		//Second GQR: For reading Signed Color Table Shorts (quantized to 2^16)!
-		ADDIS(reg2, 0, 0x0F07);
+		//Second GQR: For reading Unsigned Color Table Shorts (quantized to 2^15)!
+		ADDIS(reg2, 0, 0x1005);
 		MTSPR(reg2, CustomGQRID2);
 		// Load Hue Float to Hue FReg
 		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, CustomGQRIndex1);
