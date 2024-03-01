@@ -981,12 +981,36 @@ void SetGeckoPointerAddress(int Address)
 	WriteIntToFile(Address);
 }
 
+void LoadIntoGeckoBaseAddress(int Address)
+{
+	WriteIntToFile(0x40000000);
+	WriteIntToFile(Address);
+}
+void LoadIntoGeckoBaseAddressRelativeTo(int Offset, bool BAPO)
+{
+	unsigned long opSignature = 0x40010000;
+	if (BAPO)
+	{
+		opSignature |= 0x10000000;
+	}
+	WriteIntToFile(opSignature);
+	WriteIntToFile(Offset);
+}
 void LoadIntoGeckoPointer(int Address)
 {
 	WriteIntToFile(0x48000000);
 	WriteIntToFile(Address);
 }
-
+void LoadIntoGeckoPointerRelativeTo(int Offset, bool BAPO)
+{
+	unsigned long opSignature = 0x48010000;
+	if (BAPO)
+	{
+		opSignature |= 0x10000000;
+	}
+	WriteIntToFile(opSignature);
+	WriteIntToFile(Offset);
+}
 //size is in bytes
 //Writes for some reason!!!!???? Don't use!!!
 void LoadIntoGeckoRegister(int Address, int Reg, int size) {
@@ -994,6 +1018,36 @@ void LoadIntoGeckoRegister(int Address, int Reg, int size) {
 	WriteIntToFile(Address);
 }
 
+void StoreGeckoBaseAddress(int Address)
+{
+	WriteIntToFile(0x44000000);
+	WriteIntToFile(Address & 0x00FFFFFF);
+}
+void StoreGeckoBaseAddressRelativeTo(int Offset, bool BAPO)
+{
+	unsigned long opSignature = 0x44010000;
+	if (BAPO)
+	{
+		opSignature |= 0x10000000;
+	}
+	WriteIntToFile(opSignature);
+	WriteIntToFile(Offset);
+}
+void StoreGeckoPointer(int Address)
+{
+	WriteIntToFile(0x4C000000);
+	WriteIntToFile(Address & 0x00FFFFFF);
+}
+void StoreGeckoPointerRelativeTo(int Offset, bool BAPO)
+{
+	unsigned long opSignature = 0x4C010000;
+	if (BAPO)
+	{
+		opSignature |= 0x10000000;
+	}
+	WriteIntToFile(opSignature);
+	WriteIntToFile(Offset);
+}
 //repeats is number of extra times after first to write
 void StoreGeckoRegisterAt(int Address, int Reg, int size, int repeats) {
 	WriteIntToFile(0x84000000 | ((size >> 1) << 20) | (repeats << 4) | Reg);
@@ -1035,14 +1089,20 @@ void GeckoEndIf() {
 	WriteIntToFile(0x80008000);
 }
 
+void GeckoReset()
+{
+	WriteIntToFile(0xE0000000);
+	WriteIntToFile(0x80008000);
+}
+
 bool GeckoDataEmbedStart()
 {
 	bool result = 0;
 
 	if (currentGeckoEmbedStartPos == SIZE_MAX)
 	{
-		// Point PO to the next Instruction + 0x08 bytes, which'll be the Embed itself...
-		WriteIntToFile(0x4E000008); WriteIntToFile(0x00);
+		// Point BA to the next Instruction + 0x08 bytes, which'll be the Embed itself...
+		WriteIntToFile(0x46000008); WriteIntToFile(0x00);
 		currentGeckoEmbedStartPos = WPtr.tellp();
 		// .. then write an unconditional Gecko GOTO, the distance for which we'll come back to write later.
 		WriteIntToFile(0x66200000); WriteIntToFile(0x00);
@@ -1086,14 +1146,14 @@ bool GeckoDataEmbedEnd(u32 AddressStoreLocation, bool skipBAPOReset)
 		// If we've provided a Location to Store this Embed's Address...
 		if (AddressStoreLocation != SIZE_MAX)
 		{
-			// ... use a Gecko PO Store Instruction to write the embed to the designated location.
-			WriteIntToFile(0x4C000000); WriteIntToFile(AddressStoreLocation & 0x00FFFFFF);
+			// ... use a Gecko BA Store Instruction to write the embed to the designated location.
+			StoreGeckoBaseAddress(AddressStoreLocation & 0x00FFFFFF);
 		}
 		// Lastly, if we haven't asked to skip it...
 		if (!skipBAPOReset)
 		{
 			// ... reset BA and PO.
-			WriteIntToFile(0xE0000000); WriteIntToFile(0x80008000);
+			GeckoReset();
 		}
 		
 		// Null out the start position to signal that the embed has been closed!

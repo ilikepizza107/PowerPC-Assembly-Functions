@@ -422,15 +422,27 @@ void Gecko32BitWrite(int Address, int Value);
 void Gecko8BitWrite(int Address, int Value, int NumTimes = 1);
 void SetGeckoBaseAddress(int Address);
 void SetGeckoPointerAddress(int Address);
+void LoadIntoGeckoBaseAddress(int Address);
+// Set BAPO to 0 to store relative to BA, or to 1 to store relative to PO!
+void LoadIntoGeckoBaseAddressRelativeTo(int Offset, bool BAPO);
 void LoadIntoGeckoPointer(int Address);
+// Set BAPO to 0 to store relative to BA, or to 1 to store relative to PO!
+void LoadIntoGeckoPointerRelativeTo(int Offset, bool BAPO);
 void LoadIntoGeckoRegister(int Address, int Reg, int size);
+void StoreGeckoBaseAddress(int Address);
+// Set BAPO to 0 to store relative to BA, or to 1 to store relative to PO!
+void StoreGeckoBaseAddressRelativeTo(int Offset, bool BAPO);
+void StoreGeckoPointer(int Address);
+// Set BAPO to 0 to store relative to BA, or to 1 to store relative to PO!
+void StoreGeckoPointerRelativeTo(int Offset, bool BAPO);
 void StoreGeckoRegisterAt(int Address, int Reg, int size, int repeats = 0);
 void GeckoIf(u32 Address, int Comparison, int Value);
 void GeckoEndIf();
-// Opens a Gecko Embed. Note: Writes Embed address into PO!
+void GeckoReset();
+// Opens a Gecko Embed. Note: Writes Embed address into BA!
 bool GeckoDataEmbedStart();
 // Closes the active Gecko Embed, padding for alingment to 0x8 bytes as necessary.
-// If AddressStoreLocation is provided, will additional write Embed Address to that location.
+// If AddressStoreLocation is provided, will additionally write Embed Address to that location.
 // Also does a BAPO reset by default, which can be skipped using the provided argument.
 bool GeckoDataEmbedEnd(u32 AddressStoreLocation = ULONG_MAX, bool skipBAPOReset = 0);
 //searches for byte, elementOffset is distance between elements, ResultReg returns index if found, else -1
