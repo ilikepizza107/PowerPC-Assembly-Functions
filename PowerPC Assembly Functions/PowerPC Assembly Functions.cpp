@@ -775,6 +775,44 @@ void ASMEnd(int Replacement)
 	ASMEnd();
 }
 
+void ASMPulseStart(std::string name, std::string blurb)
+{
+	// Open a ledger entry for the code.
+	ledger::openLedgerEntry(name, blurb);
+
+	// Write out its Gecko Signature...
+	int OpWord = (0xC0 << 24);
+	WriteIntToFile(OpWord);
+	WriteIntToFile(0);
+	// ... and record its start address.
+	ASMStartAddress = WPtr.tellp();
+}
+void ASMPulseEnd()
+{
+	// Write final BLR to properly end PULSE!
+	BLR();
+	// Get length of pulse...
+	int PulseLength = (int(WPtr.tellp()) - ASMStartAddress) / 0x2;
+	// ... and if it isn't a multiple of 0x8...
+	if (PulseLength % 0x8)
+	{
+		// ... add a 0x00 to pad out the line...
+		WriteIntToFile(0);
+		// ... and update the length accordingly.
+		PulseLength += 0x4;
+	}
+	// Note where the pulse ends...
+	int PulseEndPos = WPtr.tellp();
+	// ... jump back up to its beginning...
+	WPtr.seekp(ASMStartAddress - 0x8);
+	// ... and write the calculated length of the Pulse in its proper spot.
+	WriteIntToFile(PulseLength / 0x8);
+	// Hop back to the end of the Pulse...
+	WPtr.seekp(PulseEndPos);
+	// ... and close its ledger entry!
+	ledger::closeLedgerEntry();
+}
+
 void CodeRaw(std::string name, std::string blurb, const std::vector<unsigned long>& rawHexIn)
 {
 	ledger::openLedgerEntry(name, blurb);
