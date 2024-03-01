@@ -304,6 +304,7 @@ namespace pscc
 	};
 	extern std::map<std::string, color> colorTable;
 	static constexpr std::size_t colorTableEntrySizeInBytes = 0x8;
+	static constexpr std::size_t callbackTableEntryCount = 0x8;
 	std::size_t getColorTableSizeInBytes();
 	std::size_t getColorTableOffsetToColor(std::string colorName);
 

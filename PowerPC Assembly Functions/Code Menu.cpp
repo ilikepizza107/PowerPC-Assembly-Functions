@@ -337,7 +337,7 @@ namespace pscc
 		{psccConstants::ColNameP2_IG,	{3.60f,	1.00f,	0.50f}},
 		{psccConstants::ColNameP3_M,	{0.85f,	0.90f,	0.55f, pscc::color::fb_DISABLE_HUE_MOD}},
 		{psccConstants::ColNameP4_M,	{2.10f,	0.80f,	0.375f, pscc::color::fb_DISABLE_HUE_MOD}},
-		{psccConstants::ColNameRGB,     {0.00f, 1.00f,  0.50f, pscc::color::fb_DISABLE_HUE_MOD, 0xF}},
+		{psccConstants::ColNameRGB,     {0.00f, 1.00f,  0.50f, pscc::color::fb_DISABLE_HUE_MOD, callbackTableEntryCount - 1}},
 	};
 	std::size_t getColorTableSizeInBytes()
 	{
@@ -1968,15 +1968,10 @@ void constantOverride() {
 		// And if the two aren't equal, then we know the menu isn't loaded, skip to notLoaded tag!
 		JumpToLabel(menuNotLoadedLabel, bCACB_NOT_EQUAL);
 
-		// Additionally, load the pointer for the callback array.
-		LWZ(reg2, reg1, PSCC_CALLBACK_TABLE_LOC & 0xFFFF);
-		// If it's not set...
-		CMPI(reg2, 0xFFFF, 0);
-		// ... skip!
-		JumpToLabel(menuNotLoadedLabel, bCACB_EQUAL);
-
 		// Otherwise, we're free to run our callbacks!
-		// First, do a register backup!
+		// Load the pointer for the callback array...
+		LWZ(reg2, reg1, PSCC_CALLBACK_TABLE_LOC & 0xFFFF);
+		// ...and do a register backup!
 		// Allocate a stack frame for r14 and up!
 		STWU(1, 1, -0x60);
 		// Store r0 (we need its value for the comparison at the end of this hook!)
@@ -1987,10 +1982,10 @@ void constantOverride() {
 		// Store r14 through r31
 		STMW(14, 1, 0xC);
 
-		// Setup our own variables starting at r14
-		int callbackArrayPtr = 14;
-		int colorTablePtr = 15;
-		int currentColorOffset = 16;
+		// Setup our own variables starting at r31
+		int callbackArrayPtr = 31;
+		int colorTablePtr = 30;
+		int currentColorOffset = 29;
 
 		// Copy callback array pointer out of reg2
 		MR(callbackArrayPtr, reg2);
@@ -2005,7 +2000,7 @@ void constantOverride() {
 		Label(callbackLoopHeadLabel);
 		ADD(3, colorTablePtr, currentColorOffset);
 		LBZ(reg2, 3, 0x7);
-		CMPLI(reg2, 0x10, 0);
+		CMPLI(reg2, pscc::callbackTableEntryCount, 0);
 		JumpToLabel(funcBadLabel, bCACB_GREATER_OR_EQ);
 		RLWINM(reg2, reg2, 2, 0, 0x1D);
 		LWZX(reg2, callbackArrayPtr, reg2);

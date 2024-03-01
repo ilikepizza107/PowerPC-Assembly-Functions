@@ -481,6 +481,31 @@ void psccEmbedFloatTable()
 	CodeRawEnd();
 }
 
+void psccCallbackCodes()
+{
+	CodeRawStart(codePrefix + "Embed Color Callback Table" + codeSuffix, 
+		lava::numToDecStringWithPadding(pscc::callbackTableEntryCount, 0) + " Slots Long, Final is Reserved for RGB Strobe!");
+	GeckoDataEmbedStart();
+	for (std::size_t i = 0; i < (pscc::callbackTableEntryCount - 1); i++)
+	{
+		WriteIntToFile(0x00000000);
+	}
+	WriteIntToFile(0xFFFFFFFF);
+	GeckoDataEmbedEnd(PSCC_CALLBACK_TABLE_LOC);
+	CodeRawEnd();
+
+	CodeRawStart(codePrefix + "RGB Strobe Callback" + codeSuffix, "");
+	GeckoDataEmbedStart();
+	LHZ(12, 3, 0x00);
+	ADDI(12, 12, 0x80);
+	STH(12, 3, 0x00);
+	BLR();
+	GeckoDataEmbedEnd(ULONG_MAX, 1);
+	LoadIntoGeckoPointer(PSCC_CALLBACK_TABLE_LOC);
+	StoreGeckoBaseAddressRelativeTo((pscc::callbackTableEntryCount - 1) * 0x4, 1);
+	GeckoReset();
+	CodeRawEnd();
+}
 void psccMainCode()
 {
 	int reg0 = 0;
@@ -758,6 +783,7 @@ void playerSlotColorChangersV3(bool enabled)
 		psccCLR0V4InstallCode();
 		psccProtectStackCode();
 		psccEmbedFloatTable();
+		psccCallbackCodes();
 		psccSetupCode();
 		psccMainCode();
 
