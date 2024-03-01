@@ -322,6 +322,57 @@ void psccCLR0V4InstallCode()
 	ASMEnd(0x81050000); // Restore Original Instruction: lwz r8, 0 (r5)
 }
 
+
+
+void psccEmbedFloatTable()
+{
+	CodeRawStart(codePrefix + "Embed Color and Scheme Tables" + codeSuffix, "");
+	GeckoDataEmbedStart();
+	for (auto i = pscc::colorTable.cbegin(); i != pscc::colorTable.cend(); i++)
+	{
+		unsigned long hueHex = unsigned short((std::max(std::min(i->second.hue, 6.0f), 0.0f) / 6.0f) * USHRT_MAX);
+		unsigned long satHex = unsigned short(std::max(std::min(i->second.saturation, 1.0f), 0.0f) * USHRT_MAX);
+		unsigned long lumHex = unsigned short(std::max(std::min(i->second.luminance, 1.0f), 0.0f) * USHRT_MAX);
+
+		WriteIntToFile((hueHex << 0x10) | satHex);
+		WriteIntToFile((lumHex << 0x10) | (unsigned long(i->second.flags) << 0x8) | unsigned long(i->second.callbackFunctionIndex));
+	}
+
+	std::vector<unsigned char> schemeVec = pscc::schemeTable.tableToByteVec();
+	for (auto i : schemeVec)
+	{
+		WPtr << lava::numToHexStringWithPadding(i, 2);
+	}
+	GeckoDataEmbedEnd(PSCC_FLOAT_TABLE_LOC);
+	CodeRawEnd();
+}
+
+void psccCallbackCodes()
+{
+	CodeRawStart(codePrefix + "Embed Color Callback Table" + codeSuffix,
+		lava::numToDecStringWithPadding(pscc::callbackTableEntryCount, 0) + " Slots Long, Final is Reserved for RGB Strobe!");
+	GeckoDataEmbedStart();
+	for (std::size_t i = 0; i < (pscc::callbackTableEntryCount - 1); i++)
+	{
+		WriteIntToFile(0x00000000);
+	}
+	WriteIntToFile(0xFFFFFFFF);
+	GeckoDataEmbedEnd(PSCC_CALLBACK_TABLE_LOC);
+	CodeRawEnd();
+
+	CodeRawStart(codePrefix + "RGB Strobe Callback" + codeSuffix, "");
+	GeckoDataEmbedStart();
+	LHZ(12, 3, 0x00);
+	ADDI(12, 12, 0x80);
+	STH(12, 3, 0x00);
+	BLR();
+	GeckoDataEmbedEnd(ULONG_MAX, 1);
+	LoadIntoGeckoPointer(PSCC_CALLBACK_TABLE_LOC);
+	StoreGeckoBaseAddressRelativeTo((pscc::callbackTableEntryCount - 1) * 0x4, 1);
+	GeckoReset();
+	CodeRawEnd();
+}
+
 void psccProtectStackCode()
 {
 	CodeRawStart(codePrefix + "Borrow Stack Space" + codeSuffix, 
@@ -458,54 +509,6 @@ void psccSetupCode()
 	ASMEnd();
 }
 
-void psccEmbedFloatTable()
-{
-	CodeRawStart(codePrefix + "Embed Color and Scheme Tables" + codeSuffix, "");
-	GeckoDataEmbedStart();
-	for (auto i = pscc::colorTable.cbegin(); i != pscc::colorTable.cend(); i++)
-	{
-		unsigned long hueHex = unsigned short((std::max(std::min(i->second.hue, 6.0f), 0.0f) / 6.0f) * USHRT_MAX);
-		unsigned long satHex = unsigned short(std::max(std::min(i->second.saturation, 1.0f), 0.0f) * USHRT_MAX);
-		unsigned long lumHex = unsigned short(std::max(std::min(i->second.luminance, 1.0f), 0.0f) * USHRT_MAX);
-
-		WriteIntToFile((hueHex << 0x10) | satHex);
-		WriteIntToFile((lumHex << 0x10) | (unsigned long(i->second.flags) << 0x8) | unsigned long(i->second.callbackFunctionIndex) );
-	}
-
-	std::vector<unsigned char> schemeVec = pscc::schemeTable.tableToByteVec();
-	for (auto i : schemeVec)
-	{
-		WPtr << lava::numToHexStringWithPadding(i, 2);
-	}
-	GeckoDataEmbedEnd(PSCC_FLOAT_TABLE_LOC);
-	CodeRawEnd();
-}
-
-void psccCallbackCodes()
-{
-	CodeRawStart(codePrefix + "Embed Color Callback Table" + codeSuffix, 
-		lava::numToDecStringWithPadding(pscc::callbackTableEntryCount, 0) + " Slots Long, Final is Reserved for RGB Strobe!");
-	GeckoDataEmbedStart();
-	for (std::size_t i = 0; i < (pscc::callbackTableEntryCount - 1); i++)
-	{
-		WriteIntToFile(0x00000000);
-	}
-	WriteIntToFile(0xFFFFFFFF);
-	GeckoDataEmbedEnd(PSCC_CALLBACK_TABLE_LOC);
-	CodeRawEnd();
-
-	CodeRawStart(codePrefix + "RGB Strobe Callback" + codeSuffix, "");
-	GeckoDataEmbedStart();
-	LHZ(12, 3, 0x00);
-	ADDI(12, 12, 0x80);
-	STH(12, 3, 0x00);
-	BLR();
-	GeckoDataEmbedEnd(ULONG_MAX, 1);
-	LoadIntoGeckoPointer(PSCC_CALLBACK_TABLE_LOC);
-	StoreGeckoBaseAddressRelativeTo((pscc::callbackTableEntryCount - 1) * 0x4, 1);
-	GeckoReset();
-	CodeRawEnd();
-}
 void psccMainCode()
 {
 	int reg0 = 0;
@@ -781,9 +784,9 @@ void playerSlotColorChangersV3(bool enabled)
 		psccStoreTeamBattleStatus();
 		psccMiscAdjustments();
 		psccCLR0V4InstallCode();
-		psccProtectStackCode();
 		psccEmbedFloatTable();
 		psccCallbackCodes();
+		psccProtectStackCode();
 		psccSetupCode();
 		psccMainCode();
 
