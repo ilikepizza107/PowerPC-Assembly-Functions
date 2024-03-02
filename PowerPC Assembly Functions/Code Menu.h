@@ -346,29 +346,6 @@ namespace pscc
 	std::size_t getFullEmbedSizeInWords();
 }
 
-// Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)
-extern std::vector<std::string> CONFIG_INCOMING_COMMENTS;
-extern bool CONFIG_DELETE_CONTROLS_COMMENTS;
-extern bool CONFIG_PSCC_ENABLED;
-extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
-extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
-
-
-// The stream for the MenuFile.
-// Path is no longer specified in this line, is instead controlled by the below paths and applied in initMenuFileStream().
-static fstream MenuFile;
-void initMenuFileStream();
-// The output bundle for logging purposes!
-struct __logOutputStruct : public lava::outputSplitter
-{
-	static constexpr unsigned long changelogID = 0x10000;
-	__logOutputStruct();
-	std::ostream* getChangelogPtr();
-};
-extern __logOutputStruct ChangelogOutput;
-
-
-
 // Logging and Input Constants
 extern const std::string outputFolder;
 extern const std::string menuConfigXMLFileName;
@@ -399,38 +376,21 @@ extern const std::string boostGCTName;
 extern const std::string boostGCTFile;
 extern const std::string boostGCTTextFile;
 
-
-// Options File Functions
-namespace xmlTagConstants
+// The stream for the MenuFile.
+// Path is no longer specified in this line, is instead controlled by the above paths and applied in initMenuFileStream().
+static fstream MenuFile;
+void initMenuFileStream();
+// The output bundle for logging purposes!
+struct __logOutputStruct : public lava::outputSplitter
 {
-	extern const std::string codeMenuTag;
-	extern const std::string nameTag;
-	extern const std::string indexTag;
-	extern const std::string valueTag;
-	extern const std::string valueMinTag;
-	extern const std::string valueMaxTag;
-	extern const std::string valueDefaultTag;
-	extern const std::string editableTag;
-	extern const std::string cmnuPathTag;
-	extern const std::string pageTag;
-	extern const std::string selectionTag;
-	extern const std::string selectionDefaultTag;
-	extern const std::string selectionOptionTag;
-	extern const std::string intTag;
-	extern const std::string floatTag;
-	extern const std::string lockedTag;
-}
-class Page; // Page Class Forward Decl.
-extern pugi::xml_document menuOptionsTree;
-bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument);
-void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers);
-void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes);
-void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
-void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn, lava::outputSplitter& logOutput);
-bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn, lava::outputSplitter& logOutput);
-bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
-std::vector<std::string_view> splitLineContentString(const std::string& joinedStringIn);
+	static constexpr unsigned long changelogID = 0x10000;
+	__logOutputStruct();
+	std::ostream* getChangelogPtr();
+};
+extern __logOutputStruct ChangelogOutput;
 
+std::vector<std::string_view> splitLineContentString(const std::string& joinedStringIn);
+std::string getLineNameFromLineText(const std::string& lineText);
 
 static const int START_OF_CODE_MENU = END_OF_CODE_MENU_HEADER;
 static int CurrentOffset = START_OF_CODE_MENU;
@@ -534,8 +494,7 @@ public:
 		Padding = (4 - Size % 4) % 4;
 		Size += Padding;
 
-		std::string_view baseString = splitLineContentString(this->Text)[0];
-		this->LineName = baseString.substr(0, baseString.find(":"));
+		this->LineName = getLineNameFromLineText(this->Text);
 	}
 
 	virtual void WriteLineData()
@@ -939,6 +898,58 @@ public:
 		}
 	}
 };
+
+// Options File Functions
+extern pugi::xml_document menuOptionsTree;
+namespace xml
+{
+	// Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)
+	extern std::vector<std::string> CONFIG_INCOMING_COMMENTS;
+	extern bool CONFIG_DELETE_CONTROLS_COMMENTS;
+	extern bool CONFIG_PSCC_ENABLED;
+	extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
+	extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
+
+	// Enumeration of the xml-definable line fields.
+	enum lineFields
+	{
+		lf_ValDefault = 0,
+		lf_ValMin,
+		lf_ValMax,
+		lf_Speed,
+		lf_Options,
+		lc__COUNT
+	};
+	typedef std::array<bool, lineFields::lc__COUNT> fieldChangeArr;
+
+	// A bundle which holds the details for an externally defined line!
+	struct externalLineBundle
+	{
+		std::string lineName = "";
+		int INDEX = INT_MAX;
+		unsigned long INDEX_EXPORT_ADDRESS = ULONG_MAX;
+		std::shared_ptr<Line> linePtr = nullptr;
+		fieldChangeArr populated{};
+
+	private:
+		void buildIntegerLine(const pugi::xml_node& sourceNode);
+		void buildFloatLine(const pugi::xml_node& sourceNode);
+		void buildSelectionLine(const pugi::xml_node& sourceNode);
+
+	public:
+		externalLineBundle(const pugi::xml_node& sourceNode);
+	};
+	// Contains all lines defined externally, via XML!
+	extern std::vector<externalLineBundle> externalLines;
+
+	bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument);
+	void recursivelyFindPages(Page& currBasePageIn, std::vector<Page*>& collectedPointers);
+	void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes);
+	void findLinesInPageNode(const pugi::xml_node& pageNode, std::map<std::string, pugi::xml_node>& collectedNodes);
+	void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn, lava::outputSplitter& logOutput);
+	bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn, lava::outputSplitter& logOutput);
+	bool buildMenuOptionsTreeFromMenu(Page& mainPageIn, std::string xmlPathOut);
+}
 
 void PrintChar(int SettingsPtrReg, int CharReg);
 void PrintString(int StringPtrReg, int NumCharsReg, int SettingsPtrReg);

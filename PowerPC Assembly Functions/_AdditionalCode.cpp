@@ -949,7 +949,7 @@ namespace lava
 			pugi::xml_node callbackNode = colorNode.child(configXMLConstants::callbackTag.c_str());
 			if (callbackNode)
 			{
-				tempColor.callbackFunctionIndex = callbackNode.attribute(xmlTagConstants::indexTag.c_str()).as_uint(UCHAR_MAX);
+				tempColor.callbackFunctionIndex = callbackNode.attribute(configXMLConstants::indexTag.c_str()).as_uint(UCHAR_MAX);
 			}
 
 			result.push_back(std::make_pair(colorName, tempColor));
@@ -1195,8 +1195,8 @@ namespace lava
 				if (foundNode)
 				{
 					logOutput << "Menu header comments block detected! Parsing contents...\n";
-					CONFIG_DELETE_CONTROLS_COMMENTS = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
-					if (CONFIG_DELETE_CONTROLS_COMMENTS)
+					xml::CONFIG_DELETE_CONTROLS_COMMENTS = foundNode.attribute(configXMLConstants::deleteOrigCommentsTag.c_str()).as_bool(0);
+					if (xml::CONFIG_DELETE_CONTROLS_COMMENTS)
 					{
 						logOutput << "[NOTE] Menu Controls comment block will be omitted!\n";
 					}
@@ -1210,7 +1210,7 @@ namespace lava
 								pugi::xml_attribute tempAttr = commentItr->attribute(configXMLConstants::textTag.c_str());
 								if (tempAttr)
 								{
-									CONFIG_INCOMING_COMMENTS.push_back(tempAttr.as_string());
+									xml::CONFIG_INCOMING_COMMENTS.push_back(tempAttr.as_string());
 									logOutput << "\t[ADDED] \"" << tempAttr.as_string() << "\"\n";
 								}
 							}
@@ -1364,14 +1364,14 @@ namespace lava
 					{
 						logOutput << "\nSetting Dash Attack Item Grab Toggle status...\n";
 						// ... handle enabling/disabling it.
-						setCodeEnabledFromXML(codeNodeItr, CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED, logOutput);
+						setCodeEnabledFromXML(codeNodeItr, xml::CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED, logOutput);
 					}
 					// If we're looking at the Jumpsquat Override block...
 					else if (codeNodeItr->name() == configXMLConstants::jumpsquatOverrideTag)
 					{
 						logOutput << "\nSetting Jumpsquat Modifier status...\n";
 						// ... handle enabling/disabling it.
-						setCodeEnabledFromXML(codeNodeItr, CONFIG_JUMPSQUAT_OVERRIDE_ENABLED, logOutput);
+						setCodeEnabledFromXML(codeNodeItr, xml::CONFIG_JUMPSQUAT_OVERRIDE_ENABLED, logOutput);
 					}
 					// If we're looking at the Slot Colors block...
 					else if (codeNodeItr->name() == configXMLConstants::slotColorDeclsTag)
@@ -1379,7 +1379,7 @@ namespace lava
 						logOutput << "\nSetting Player Slot Color Changer status... \n";
 						// ... handle enabling/disabling it.
 						// And if we end up enabling it...
-						if (setCodeEnabledFromXML(codeNodeItr, CONFIG_PSCC_ENABLED, logOutput))
+						if (setCodeEnabledFromXML(codeNodeItr, xml::CONFIG_PSCC_ENABLED, logOutput))
 						{
 							pugi::xml_node targetNode = codeNodeItr->child(configXMLConstants::colorDefsTag.c_str());
 							if (targetNode)

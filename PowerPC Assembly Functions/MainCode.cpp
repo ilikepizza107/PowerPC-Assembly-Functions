@@ -121,7 +121,7 @@ int main(int argc, char** argv)
 	{
 		initMenuFileStream();
 
-		loadMenuOptionsTree(cmnuOptionsOutputFilePath, menuOptionsTree);
+		xml::loadMenuOptionsTree(cmnuOptionsOutputFilePath, menuOptionsTree);
 		buildCharacterIDLists();
 		buildRosterLists();
 		buildThemeLists();
@@ -239,11 +239,11 @@ int main(int argc, char** argv)
 
 		//playerSlotColorChangers(CONFIG_BACKPLATE_COLOR_MODE);
 
-		playerSlotColorChangersV3(CONFIG_PSCC_ENABLED);
+		playerSlotColorChangersV3(xml::CONFIG_PSCC_ENABLED);
 
-		dashAttackItemGrab(CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED);
+		dashAttackItemGrab(xml::CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED);
 
-		jumpsquatOverride(CONFIG_JUMPSQUAT_OVERRIDE_ENABLED);
+		jumpsquatOverride(xml::CONFIG_JUMPSQUAT_OVERRIDE_ENABLED);
 
 		// tripRateModifier();
 

@@ -4,6 +4,6 @@
 #include "stdafx.h"
 #include "_AdditionalCode.h"
 
-void playerSlotColorChangersV3(bool enabled = CONFIG_PSCC_ENABLED);
+void playerSlotColorChangersV3(bool enabled = xml::CONFIG_PSCC_ENABLED);
 
 #endif
