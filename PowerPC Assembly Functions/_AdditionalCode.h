@@ -38,11 +38,7 @@ namespace lava
 	void WriteByteVec(const unsigned char* Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator = 0);
 	void WriteByteVec(std::vector<unsigned char> Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator = 0);
 	void WriteByteVec(std::string Bytes, u32 Address, unsigned char addressReg, unsigned char manipReg, std::size_t numToWrite, bool appendNullTerminator = 0);
-
-	// ==================== Menu Config Parsing and Constants ====================
-
-	// Parses the specified Configuration XML and applies any changes it requests to the menu.
-	bool parseAndApplyConfigXML(std::string configFilePath, lava::outputSplitter& logOutput);
+	
 }
 
 #endif

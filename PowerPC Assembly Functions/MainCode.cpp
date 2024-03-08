@@ -121,7 +121,6 @@ int main(int argc, char** argv)
 	{
 		initMenuFileStream();
 
-		xml::loadMenuOptionsTree(cmnuOptionsOutputFilePath, menuOptionsTree);
 		buildCharacterIDLists();
 		buildRosterLists();
 		buildThemeLists();
@@ -193,12 +192,12 @@ int main(int argc, char** argv)
 		}
 
 		// If we're building in netplay mode, we'll try to parse using the netplay-specific config file.
-		bool parsedConfigXML = (BUILD_NETPLAY_FILES && lava::parseAndApplyConfigXML(netMenuConfigXMLFileName, ChangelogOutput));
+		bool parsedConfigXML = (BUILD_NETPLAY_FILES && xml::parseAndApplyConfigXML(netMenuConfigXMLFileName, ChangelogOutput));
 		// If we don't parse the netplay config (either because we're building the offline menu or cuz it didn't exist)...
 		if (!parsedConfigXML)
 		{
 			// try to parse the offline config file.
-			parsedConfigXML = lava::parseAndApplyConfigXML(menuConfigXMLFileName, ChangelogOutput);
+			parsedConfigXML = xml::parseAndApplyConfigXML(menuConfigXMLFileName, ChangelogOutput);
 		}
 		// And if we couldn't parse that either...
 		if (!parsedConfigXML)

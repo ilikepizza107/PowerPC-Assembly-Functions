@@ -201,6 +201,7 @@
     <ClInclude Include="_PlayerSlotColorChangers.h" />
     <ClInclude Include="_ThemeChange.h" />
     <ClInclude Include="_TripRateModifier.h" />
+    <ClInclude Include="_XMLProcessing.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AIDisplay.cpp" />
@@ -288,6 +289,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="_XMLProcessing.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
