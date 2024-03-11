@@ -20,16 +20,7 @@ namespace xml
 
 	// ============================================================================
 
-
-
-	// ==================== Menu Options Parsing and Constants ====================
-
-	// Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)
-	extern std::vector<std::string> CONFIG_INCOMING_COMMENTS;
-	extern bool CONFIG_DELETE_CONTROLS_COMMENTS;
-	extern bool CONFIG_PSCC_ENABLED;
-	extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
-	extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
+	// =======================  Addon Parsing and Constants =======================
 
 	// Enumeration of the xml-definable line fields.
 	enum lineFields
@@ -43,12 +34,12 @@ namespace xml
 	};
 	typedef std::array<bool, lineFields::lc__COUNT> fieldChangeArr;
 
-	// A bundle which holds the details for an externally defined line!
-	struct externalLineBundle
+	// A bundle which holds the details for an addon line!
+	struct addonLine
 	{
 		std::string lineName = "";
 		int INDEX = INT_MAX;
-		unsigned long INDEX_EXPORT_ADDRESS = ULONG_MAX;
+		unsigned long LOCAL_LOC = ULONG_MAX;
 		std::shared_ptr<Line> linePtr = nullptr;
 		fieldChangeArr populated{};
 
@@ -58,9 +49,31 @@ namespace xml
 		void buildSelectionLine(const pugi::xml_node& sourceNode);
 
 	public:
-		externalLineBundle(const pugi::xml_node& sourceNode);
+		addonLine(const pugi::xml_node& sourceNode);
+	};
+	struct addonPage
+	{
+		std::string pageName = "";
+		std::vector<addonLine> lines{};
+	};
+	struct addon
+	{
+		std::string addonName = "";
+		std::string shortName = "";
+		std::vector<addonPage> pages{};
 	};
 
+	// ============================================================================
+
+
+	// ==================== Menu Options Parsing and Constants ====================
+
+	// Incoming Configuration XML Variables (See "Code Menu.cpp" for defaults, and "_AdditionalCode.cpp" for relevant Config Parsing code!)
+	extern std::vector<std::string> CONFIG_INCOMING_COMMENTS;
+	extern bool CONFIG_DELETE_CONTROLS_COMMENTS;
+	extern bool CONFIG_PSCC_ENABLED;
+	extern bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED;
+	extern bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED;
 
 	void applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, const pugi::xml_document& xmlDocumentIn, lava::outputSplitter& logOutput);
 	bool applyLineSettingsFromMenuOptionsTree(Page& mainPageIn, std::string xmlPathIn, lava::outputSplitter& logOutput);

@@ -18,8 +18,11 @@ namespace xml
 		const std::string _enableASMHexCommentsTag = "enableASMHexComments";
 
 		// General
+		const std::string codeMenuTag = "codeMenu";
 		const std::string menuConfigTag = "codeMenuConfig";
+		const std::string cmnuPathTag = "cmnuPath";
 		const std::string enabledTag = "enabled";
+		const std::string editableTag = "editable";
 		const std::string nameTag = "name";
 		const std::string textTag = "text";
 		const std::string filenameTag = "filename";
@@ -28,6 +31,32 @@ namespace xml
 		const std::string valueTag = "value";
 		const std::string flagTag = "flag";
 		const std::string callbackTag = "callback";
+
+		// Line Values
+		const std::string pageTag = "codeMenuPage";
+		const std::string selectionTag = "codeMenuSelection";
+		const std::string intTag = "codeMenuInt";
+		const std::string floatTag = "codeMenuFloat";
+		const std::string speedTag = "speed";
+		const std::string valueMinTag = "minValue";
+		const std::string valueMaxTag = "maxValue";
+		const std::string valueDefaultTag = "defaultValue";
+		const std::string selectionDefaultTag = "defaultOption";
+		const std::string selectionOptionTag = "option";
+
+		// Line Behavior Flag Tags
+		struct lbfTagVec : std::vector<std::string>
+		{
+			lbfTagVec()
+			{
+				resize(Line::LineBehaviorFlags::lbf__COUNT, "BAD_TAG");
+				(*this)[Line::LineBehaviorFlags::lbf_UNSELECTABLE] = "locked";
+				(*this)[Line::LineBehaviorFlags::lbf_HIDDEN] = "hidden";
+				(*this)[Line::LineBehaviorFlags::lbf_STICKY] = "sticky";
+				(*this)[Line::LineBehaviorFlags::lbf_REMOVED] = "excluded";
+			}
+		} const lineBehaviorFlagTags;
+
 
 		// Menu Properties
 		const std::string menuPropsTag = "menuProperties";
@@ -94,6 +123,9 @@ namespace xml
 
 		// Jumpsquat Override
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
+
+		// Addons
+		const std::string localLOCtag = "localLOC";
 	}
 
 	void fixIndentationOfChildNodes(pugi::xml_node& targetNode)
@@ -1182,42 +1214,15 @@ namespace xml
 	// ============================================================================
 
 
+	// =======================  Addon Parsing and Constants =======================
+
+
+
+	// ============================================================================
+
 
 	// ==================== Menu Options Parsing and Constants ====================
 
-	namespace xmlTagConstants
-	{
-		const std::string codeMenuTag = "codeMenu";
-		const std::string nameTag = "name";
-		const std::string indexTag = "index";
-		const std::string valueTag = "value";
-		const std::string speedTag = "speed";
-		const std::string valueMinTag = "minValue";
-		const std::string valueMaxTag = "maxValue";
-		const std::string valueDefaultTag = "defaultValue";
-		const std::string editableTag = "editable";
-		const std::string cmnuPathTag = "cmnuPath";
-		const std::string pageTag = "codeMenuPage";
-		const std::string selectionTag = "codeMenuSelection";
-		const std::string selectionDefaultTag = "defaultOption";
-		const std::string selectionOptionTag = "option";
-		const std::string intTag = "codeMenuInt";
-		const std::string floatTag = "codeMenuFloat";
-		const std::string indexExportTag = "exportDestination";
-
-		// Line Behavior Flag Tags
-		struct lbfTagVec : std::vector<std::string>
-		{
-			lbfTagVec()
-			{
-				resize(Line::LineBehaviorFlags::lbf__COUNT, "BAD_TAG");
-				(*this)[Line::LineBehaviorFlags::lbf_UNSELECTABLE] = "locked";
-				(*this)[Line::LineBehaviorFlags::lbf_HIDDEN] = "hidden";
-				(*this)[Line::LineBehaviorFlags::lbf_STICKY] = "sticky";
-				(*this)[Line::LineBehaviorFlags::lbf_REMOVED] = "excluded";
-			}
-		} const lineBehaviorFlagTags;
-	}
 
 	// Incoming Configuration XML Variables
 	std::vector<std::string> CONFIG_INCOMING_COMMENTS{};
@@ -1237,7 +1242,7 @@ namespace xml
 			for (std::size_t lbfItr = 0; lbfItr < Line::LineBehaviorFlags::lbf__COUNT; lbfItr++)
 			{
 				// ... check for a corresponding attribute on the current node.
-				pugi::xml_attribute tempAttr = sourceNode.attribute(xmlTagConstants::lineBehaviorFlagTags[lbfItr].c_str());
+				pugi::xml_attribute tempAttr = sourceNode.attribute(configXMLConstants::lineBehaviorFlagTags[lbfItr].c_str());
 				// If one exists...
 				if (tempAttr)
 				{
@@ -1259,31 +1264,31 @@ namespace xml
 	{
 		std::array<bool, lineFields::lc__COUNT> result{};
 
-		pugi::xml_node minValNode = sourceNode.child(xmlTagConstants::valueMinTag.c_str());
+		pugi::xml_node minValNode = sourceNode.child(configXMLConstants::valueMinTag.c_str());
 		if (minValNode && allowedChanges[lineFields::lf_ValMin])
 		{
 			u32 currentVal = targetLine->Min;
-			u32 incomingVal = minValNode.attribute(xmlTagConstants::valueTag.c_str()).as_uint(currentVal);
+			u32 incomingVal = minValNode.attribute(configXMLConstants::valueTag.c_str()).as_uint(currentVal);
 			result[lineFields::lf_ValMin] = incomingVal != currentVal;
 
 			targetLine->Min = incomingVal;
 		}
 
-		pugi::xml_node maxValNode = sourceNode.child(xmlTagConstants::valueMaxTag.c_str());
+		pugi::xml_node maxValNode = sourceNode.child(configXMLConstants::valueMaxTag.c_str());
 		if (maxValNode && allowedChanges[lineFields::lf_ValMax])
 		{
 			u32 currentVal = targetLine->Max;
-			u32 incomingVal = maxValNode.attribute(xmlTagConstants::valueTag.c_str()).as_uint(currentVal);
+			u32 incomingVal = maxValNode.attribute(configXMLConstants::valueTag.c_str()).as_uint(currentVal);
 			result[lineFields::lf_ValMax] = incomingVal != currentVal;
 
 			targetLine->Max = incomingVal;
 		}
 
-		pugi::xml_node defaultValNode = sourceNode.child(xmlTagConstants::valueDefaultTag.c_str());
+		pugi::xml_node defaultValNode = sourceNode.child(configXMLConstants::valueDefaultTag.c_str());
 		if (defaultValNode && allowedChanges[lineFields::lf_ValDefault])
 		{
 			u32 currentVal = GetFloatFromHex(targetLine->Default);
-			u32 incomingVal = defaultValNode.attribute(xmlTagConstants::valueTag.c_str()).as_float(currentVal);
+			u32 incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
 			incomingVal = std::min(std::max(incomingVal, targetLine->Min), targetLine->Max);
 			result[lineFields::lf_ValDefault] = incomingVal != currentVal;
 
@@ -1291,11 +1296,11 @@ namespace xml
 			targetLine->Value = targetLine->Default;
 		}
 
-		pugi::xml_node speedNode = sourceNode.child(xmlTagConstants::speedTag.c_str());
+		pugi::xml_node speedNode = sourceNode.child(configXMLConstants::speedTag.c_str());
 		if (speedNode && allowedChanges[lineFields::lf_Speed])
 		{
 			u32 currentVal = targetLine->Speed;
-			u32 incomingVal = speedNode.attribute(xmlTagConstants::valueTag.c_str()).as_uint(currentVal);
+			u32 incomingVal = speedNode.attribute(configXMLConstants::valueTag.c_str()).as_uint(currentVal);
 			result[lineFields::lf_Speed] = incomingVal != currentVal;
 
 			targetLine->Speed = incomingVal;
@@ -1307,31 +1312,31 @@ namespace xml
 	{
 		std::array<bool, lineFields::lc__COUNT> result{};
 
-		pugi::xml_node minValNode = sourceNode.child(xmlTagConstants::valueMinTag.c_str());
+		pugi::xml_node minValNode = sourceNode.child(configXMLConstants::valueMinTag.c_str());
 		if (minValNode && allowedChanges[lineFields::lf_ValMin])
 		{
 			float currentVal = GetFloatFromHex(targetLine->Min);
-			float incomingVal = minValNode.attribute(xmlTagConstants::valueTag.c_str()).as_float(currentVal);
+			float incomingVal = minValNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
 			result[lineFields::lf_ValMin] = std::abs(incomingVal - currentVal) > 0.00001f;
 
 			targetLine->Min = GetHexFromFloat(incomingVal);
 		}
 
-		pugi::xml_node maxValNode = sourceNode.child(xmlTagConstants::valueMaxTag.c_str());
+		pugi::xml_node maxValNode = sourceNode.child(configXMLConstants::valueMaxTag.c_str());
 		if (maxValNode && allowedChanges[lineFields::lf_ValMax])
 		{
 			float currentVal = GetFloatFromHex(targetLine->Max);
-			float incomingVal = maxValNode.attribute(xmlTagConstants::valueTag.c_str()).as_float(currentVal);
+			float incomingVal = maxValNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
 			result[lineFields::lf_ValMax] = std::abs(incomingVal - currentVal) > 0.00001f;
 
 			targetLine->Max = GetHexFromFloat(incomingVal);
 		}
 
-		pugi::xml_node defaultValNode = sourceNode.child(xmlTagConstants::valueDefaultTag.c_str());
+		pugi::xml_node defaultValNode = sourceNode.child(configXMLConstants::valueDefaultTag.c_str());
 		if (defaultValNode && allowedChanges[lineFields::lf_ValDefault])
 		{
 			float currentVal = GetFloatFromHex(targetLine->Default);
-			float incomingVal = defaultValNode.attribute(xmlTagConstants::valueTag.c_str()).as_float(currentVal);
+			float incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
 			float maxVal = GetFloatFromHex(targetLine->Max);
 			float minVal = GetFloatFromHex(targetLine->Min);
 			incomingVal = std::min(std::max(incomingVal, minVal), maxVal);
@@ -1341,11 +1346,11 @@ namespace xml
 			targetLine->Value = targetLine->Default;
 		}
 
-		pugi::xml_node speedNode = sourceNode.child(xmlTagConstants::speedTag.c_str());
+		pugi::xml_node speedNode = sourceNode.child(configXMLConstants::speedTag.c_str());
 		if (speedNode && allowedChanges[lineFields::lf_Speed])
 		{
 			float currentVal = GetFloatFromHex(targetLine->Speed);
-			float incomingVal = speedNode.attribute(xmlTagConstants::valueTag.c_str()).as_float(currentVal);
+			float incomingVal = speedNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
 			result[lineFields::lf_Speed] = std::abs(incomingVal - currentVal) > 0.00001f;
 
 			targetLine->Speed = GetHexFromFloat(incomingVal);
@@ -1355,7 +1360,7 @@ namespace xml
 	}
 
 	// External Lines
-	void externalLineBundle::buildIntegerLine(const pugi::xml_node& sourceNode)
+	void addonLine::buildIntegerLine(const pugi::xml_node& sourceNode)
 	{
 		linePtr = std::make_shared<Integer>(lineName, INT_MAX, INT_MAX, INT_MAX, INT_MAX, this->INDEX);
 		fieldChangeArr allowedChanges{};
@@ -1365,7 +1370,7 @@ namespace xml
 		allowedChanges[lineFields::lf_Speed] = 1;
 		applyIntegerLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
 	}
-	void externalLineBundle::buildFloatLine(const pugi::xml_node& sourceNode)
+	void addonLine::buildFloatLine(const pugi::xml_node& sourceNode)
 	{
 		linePtr = std::make_shared<Floating>(lineName, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, this->INDEX);
 		fieldChangeArr allowedChanges{};
@@ -1375,37 +1380,37 @@ namespace xml
 		allowedChanges[lineFields::lf_Speed] = 1;
 		applyFloatLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
 	}
-	void externalLineBundle::buildSelectionLine(const pugi::xml_node& sourceNode)
+	void addonLine::buildSelectionLine(const pugi::xml_node& sourceNode)
 	{
 		std::vector<std::string> options{};
-		for (auto optionNode : sourceNode.children(xmlTagConstants::selectionOptionTag.c_str()))
+		for (auto optionNode : sourceNode.children(configXMLConstants::selectionOptionTag.c_str()))
 		{
-			options.push_back(optionNode.attribute(xmlTagConstants::valueTag.c_str()).as_string(""));
+			options.push_back(optionNode.attribute(configXMLConstants::valueTag.c_str()).as_string(""));
 		}
 
 		std::size_t defaultIndex =
-			sourceNode.child(xmlTagConstants::selectionDefaultTag.c_str()).attribute(xmlTagConstants::indexTag.c_str()).as_uint(0);
+			sourceNode.child(configXMLConstants::selectionDefaultTag.c_str()).attribute(configXMLConstants::indexTag.c_str()).as_uint(0);
 		defaultIndex = std::min(defaultIndex, options.size());
 
 		linePtr = std::make_shared<Selection>(lineName, options, defaultIndex, this->INDEX);
 	}
-	externalLineBundle::externalLineBundle(const pugi::xml_node& sourceNode)
+	addonLine::addonLine(const pugi::xml_node& sourceNode)
 	{
-		lineName = sourceNode.attribute(xmlTagConstants::nameTag.c_str()).as_string("");
+		lineName = sourceNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 		lineName = getLineNameFromLineText(lineName);
-		INDEX_EXPORT_ADDRESS = sourceNode.attribute(xmlTagConstants::indexExportTag.c_str()).as_uint(ULONG_MAX);
+		LOCAL_LOC = sourceNode.attribute(configXMLConstants::localLOCtag.c_str()).as_uint(ULONG_MAX);
 
-		if (!lineName.empty() && INDEX_EXPORT_ADDRESS != ULONG_MAX)
+		if (!lineName.empty() && LOCAL_LOC != ULONG_MAX)
 		{
-			if (sourceNode.name() == xmlTagConstants::intTag)
+			if (sourceNode.name() == configXMLConstants::intTag)
 			{
 				buildIntegerLine(sourceNode);
 			}
-			else if (sourceNode.name() == xmlTagConstants::floatTag)
+			else if (sourceNode.name() == configXMLConstants::floatTag)
 			{
 				buildFloatLine(sourceNode);
 			}
-			else if (sourceNode.name() == xmlTagConstants::selectionTag)
+			else if (sourceNode.name() == configXMLConstants::selectionTag)
 			{
 				buildSelectionLine(sourceNode);
 			}
@@ -1454,17 +1459,17 @@ namespace xml
 	void findPagesInOptionsTree(const pugi::xml_document& optionsTree, std::map<std::string, pugi::xml_node>& collectedNodes)
 	{
 		// Request the code menu base node from the optionsTree...
-		pugi::xml_node menuNode = optionsTree.child(xmlTagConstants::codeMenuTag.c_str());
+		pugi::xml_node menuNode = optionsTree.child(configXMLConstants::codeMenuTag.c_str());
 		// ... and if it was validly returned...
 		if (menuNode)
 		{
 			// ... get the collection of page nodes from the menu.
-			pugi::xml_object_range pageNodes = menuNode.children(xmlTagConstants::pageTag.c_str());
+			pugi::xml_object_range pageNodes = menuNode.children(configXMLConstants::pageTag.c_str());
 			// For each of these pages...
 			for (pugi::xml_named_node_iterator pageItr = pageNodes.begin(); pageItr != pageNodes.end(); pageItr++)
 			{
 				// ... request its name attribute...
-				pugi::xml_attribute pageNameAttr = pageItr->attribute(xmlTagConstants::nameTag.c_str());
+				pugi::xml_attribute pageNameAttr = pageItr->attribute(configXMLConstants::nameTag.c_str());
 				// ... and if it's validly returned...
 				if (pageNameAttr)
 				{
@@ -1478,10 +1483,10 @@ namespace xml
 	{
 		for (pugi::xml_node_iterator lineItr = pageNode.begin(); lineItr != pageNode.end(); lineItr++)
 		{
-			if (lineItr->name() == xmlTagConstants::selectionTag || lineItr->name() == xmlTagConstants::floatTag || lineItr->name() == xmlTagConstants::intTag)
+			if (lineItr->name() == configXMLConstants::selectionTag || lineItr->name() == configXMLConstants::floatTag || lineItr->name() == configXMLConstants::intTag)
 			{
 				// Request the name attribute from the current node...
-				pugi::xml_attribute nameAttr = lineItr->attribute(xmlTagConstants::nameTag.c_str());
+				pugi::xml_attribute nameAttr = lineItr->attribute(configXMLConstants::nameTag.c_str());
 				// ... and if the returned attribute is valid...
 				if (nameAttr)
 				{
@@ -1525,7 +1530,7 @@ namespace xml
 					// ... note its current state!
 					logOutput << "\t- Page " <<
 						(currPage->CalledFromLine.behaviorFlags[lbfItr] ? "is now " : "is no longer ") <<
-						xmlTagConstants::lineBehaviorFlagTags[lbfItr] << "!\n";
+						configXMLConstants::lineBehaviorFlagTags[lbfItr] << "!\n";
 				}
 			}
 
@@ -1547,10 +1552,10 @@ namespace xml
 				{
 				case SELECTION_LINE:
 				{
-					pugi::xml_node defaultValNode = lineFindItr->second.child(xmlTagConstants::selectionDefaultTag.c_str());
+					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::selectionDefaultTag.c_str());
 					if (defaultValNode)
 					{
-						pugi::xml_attribute defaultIndexAttr = defaultValNode.attribute(xmlTagConstants::indexTag.c_str());
+						pugi::xml_attribute defaultIndexAttr = defaultValNode.attribute(configXMLConstants::indexTag.c_str());
 						if (defaultIndexAttr)
 						{
 							u32 valueIn = defaultIndexAttr.as_uint(currLine->Default);
@@ -1564,10 +1569,10 @@ namespace xml
 				}
 				case INTEGER_LINE:
 				{
-					pugi::xml_node defaultValNode = lineFindItr->second.child(xmlTagConstants::valueDefaultTag.c_str());
+					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::valueDefaultTag.c_str());
 					if (defaultValNode)
 					{
-						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(xmlTagConstants::valueTag.c_str());
+						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(configXMLConstants::valueTag.c_str());
 						if (defaultValueAttr)
 						{
 							int valueIn = defaultValueAttr.as_int(currLine->Default);
@@ -1581,10 +1586,10 @@ namespace xml
 				}
 				case FLOATING_LINE:
 				{
-					pugi::xml_node defaultValNode = lineFindItr->second.child(xmlTagConstants::valueDefaultTag.c_str());
+					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::valueDefaultTag.c_str());
 					if (defaultValNode)
 					{
-						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(xmlTagConstants::valueTag.c_str());
+						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(configXMLConstants::valueTag.c_str());
 						if (defaultValueAttr)
 						{
 							float valueIn = defaultValueAttr.as_float(GetFloatFromHex(currLine->Default));
@@ -1642,7 +1647,7 @@ namespace xml
 							// ... note its current state!
 							logOutput << "\t- Line " <<
 								(currLine->behaviorFlags[lbfItr] ? "is now " : "is no longer ") <<
-								xmlTagConstants::lineBehaviorFlagTags[lbfItr] << "!\n";
+								configXMLConstants::lineBehaviorFlagTags[lbfItr] << "!\n";
 						}
 					}
 				}
@@ -1691,8 +1696,8 @@ namespace xml
 		commentNode = MenuOptionsTree.append_child(pugi::node_comment);
 		commentNode.set_value("Important Note: Only change values noted as editable! Changing anything else will not work!");
 
-		pugi::xml_node menuBaseNode = MenuOptionsTree.append_child(xmlTagConstants::codeMenuTag.c_str());
-		pugi::xml_attribute menuPathAttr = menuBaseNode.append_attribute(xmlTagConstants::cmnuPathTag.c_str());
+		pugi::xml_node menuBaseNode = MenuOptionsTree.append_child(configXMLConstants::codeMenuTag.c_str());
+		pugi::xml_attribute menuPathAttr = menuBaseNode.append_attribute(configXMLConstants::cmnuPathTag.c_str());
 		menuPathAttr.set_value(getCMNUAbsolutePath().c_str());
 
 		std::vector<Page*> Pages{ &mainPageIn };
@@ -1702,8 +1707,8 @@ namespace xml
 		{
 			const Page* currPage = Pages[i];
 
-			pugi::xml_node pageNode = menuBaseNode.append_child(xmlTagConstants::pageTag.c_str());
-			pugi::xml_attribute pageNameAttr = pageNode.append_attribute(xmlTagConstants::nameTag.c_str());
+			pugi::xml_node pageNode = menuBaseNode.append_child(configXMLConstants::pageTag.c_str());
+			pugi::xml_attribute pageNameAttr = pageNode.append_attribute(configXMLConstants::nameTag.c_str());
 			pageNameAttr.set_value(currPage->PageName.c_str());
 			// For each kind of LineBehaviorFlag...
 			for (std::size_t lbfItr = 0; lbfItr < Line::LineBehaviorFlags::lbf__COUNT; lbfItr++)
@@ -1714,7 +1719,7 @@ namespace xml
 				if (flagSetting || flagSetting.forceXMLOutput)
 				{
 					// ... append the attribute with the appropriate value!
-					pageNode.append_attribute(xmlTagConstants::lineBehaviorFlagTags[lbfItr].c_str()).set_value(flagSetting);
+					pageNode.append_attribute(configXMLConstants::lineBehaviorFlagTags[lbfItr].c_str()).set_value(flagSetting);
 				}
 			}
 
@@ -1728,46 +1733,46 @@ namespace xml
 				{
 				case SELECTION_LINE:
 				{
-					lineNode = pageNode.append_child(xmlTagConstants::selectionTag.c_str());
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
+					lineNode = pageNode.append_child(configXMLConstants::selectionTag.c_str());
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0].data());
-					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::selectionDefaultTag.c_str());
-					defaultValNode.append_attribute(xmlTagConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
-					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
+					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::selectionDefaultTag.c_str());
+					defaultValNode.append_attribute(configXMLConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
+					defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
 					for (unsigned long i = 1; i < deconstructedText.size(); i++)
 					{
-						pugi::xml_node optionNode = lineNode.append_child(xmlTagConstants::selectionOptionTag.c_str());
-						pugi::xml_attribute optionValueAttr = optionNode.append_attribute(xmlTagConstants::valueTag.c_str());
+						pugi::xml_node optionNode = lineNode.append_child(configXMLConstants::selectionOptionTag.c_str());
+						pugi::xml_attribute optionValueAttr = optionNode.append_attribute(configXMLConstants::valueTag.c_str());
 						optionValueAttr.set_value(deconstructedText[i].data());
 					}
 					break;
 				}
 				case INTEGER_LINE:
 				{
-					lineNode = pageNode.append_child(xmlTagConstants::intTag.c_str());
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
+					lineNode = pageNode.append_child(configXMLConstants::intTag.c_str());
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0].data());
-					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
-					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Min).c_str());
-					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
-					defaultValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
-					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
-					pugi::xml_node maxValNode = lineNode.append_child(xmlTagConstants::valueMaxTag.c_str());
-					maxValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(currLine->Max).c_str());
+					pugi::xml_node minValNode = lineNode.append_child(configXMLConstants::valueMinTag.c_str());
+					minValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(currLine->Min).c_str());
+					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
+					defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
+					defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
+					pugi::xml_node maxValNode = lineNode.append_child(configXMLConstants::valueMaxTag.c_str());
+					maxValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(currLine->Max).c_str());
 					break;
 				}
 				case FLOATING_LINE:
 				{
-					lineNode = pageNode.append_child(xmlTagConstants::floatTag.c_str());
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(xmlTagConstants::nameTag.c_str());
+					lineNode = pageNode.append_child(configXMLConstants::floatTag.c_str());
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0].data());
-					pugi::xml_node minValNode = lineNode.append_child(xmlTagConstants::valueMinTag.c_str());
-					minValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
-					pugi::xml_node defaultValNode = lineNode.append_child(xmlTagConstants::valueDefaultTag.c_str());
-					defaultValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Default)).c_str());
-					defaultValNode.append_attribute(xmlTagConstants::editableTag.c_str()).set_value("true");
-					pugi::xml_node maxValNode = lineNode.append_child(xmlTagConstants::valueMaxTag.c_str());
-					maxValNode.append_attribute(xmlTagConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Max)).c_str());
+					pugi::xml_node minValNode = lineNode.append_child(configXMLConstants::valueMinTag.c_str());
+					minValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
+					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
+					defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Default)).c_str());
+					defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
+					pugi::xml_node maxValNode = lineNode.append_child(configXMLConstants::valueMaxTag.c_str());
+					maxValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Max)).c_str());
 					break;
 				}
 				default:
@@ -1786,7 +1791,7 @@ namespace xml
 						if (flagSetting || flagSetting.forceXMLOutput)
 						{
 							// ... append the attribute with the appropriate value!
-							lineNode.append_attribute(xmlTagConstants::lineBehaviorFlagTags[lbfItr].c_str()).set_value(flagSetting);
+							lineNode.append_attribute(configXMLConstants::lineBehaviorFlagTags[lbfItr].c_str()).set_value(flagSetting);
 						}
 					}
 				}
