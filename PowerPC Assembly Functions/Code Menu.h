@@ -350,6 +350,10 @@ namespace pscc
 extern const std::string outputFolder;
 extern const std::string menuConfigXMLFileName;
 extern const std::string netMenuConfigXMLFileName;
+extern const std::string addonInputFolderPath;
+extern const std::string addonInputSourceFilename;
+extern const std::string addonInputConfigFilename;
+extern const std::string addonOutputFolderPath;
 extern const std::string symbolMapInputFileName;
 extern const std::string changelogFileName;
 extern const std::string optionsFilename;
@@ -364,6 +368,7 @@ extern const std::string asmTextOutputFilePath;
 extern const std::vector<std::string> asmBuildLocationDirectories;
 extern const std::string cmnuBuildLocationDirectory;
 extern const std::string cmnuBuildLocationFilePath;
+extern const std::string addonBuildLocation;
 std::string getCMNUAbsolutePath();
 // AutoGCTRM Constants
 extern const std::string buildFolder;
@@ -449,6 +454,8 @@ static int CurrentOffset = START_OF_CODE_MENU;
 #define FRAMES_WAITED_DURING_SLOW_MOTION 3
 
 class Page;
+// Maps page shortnames to their respective structs.
+extern std::map<lava::shortNameType, Page*> menuPagesMap;
 
 class Line
 {
@@ -810,7 +817,22 @@ public:
 	static const int PRINT_LOW_HOLD = NUM_CHANGED_LINES + 4;
 	static const int FIRST_LINE_OFFSET = NUM_WORD_ELEMS * 4;
 
-	Page(string Name, vector<Line*> Lines) {
+	Page(string Name, vector<Line*> Lines, lava::shortNameType shortName = lava::shortNameType("")) {
+		if (!shortName.empty())
+		{
+			auto pageFindRes = menuPagesMap.find(shortName);
+			if (pageFindRes == menuPagesMap.end())
+			{
+				menuPagesMap[shortName] = this;
+			}
+			else
+			{
+				std::cerr << "[ERROR] Shortname of page \"" << Name << "\" (" << shortName << ")" << 
+					" is already in use by Page \"" << pageFindRes->second->PageName << "\"!\n";
+				exit(1);
+			}
+		}
+
 		CalledFromLine = SubMenu(Name, this);
 		PageName = Name;
 		PrepareLines(Lines);
@@ -911,7 +933,7 @@ void ActualCodes();
 void ControlCodeMenu();
 void PrintCodeMenu();
 void PrimeCodeMenu();
-void CreateMenu(Page MainPage);
+void CreateMenu(Page& MainPage);
 void ExecuteAction(int ActionReg);
 void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, bool isIndirectReset);
 void ResetPage(int StackReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5, int TempReg6);

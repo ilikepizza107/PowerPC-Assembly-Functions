@@ -37,31 +37,57 @@ namespace xml
 	// A bundle which holds the details for an addon line!
 	struct addonLine
 	{
+		// Fullname used for display and logging purposes.
 		std::string lineName = "";
+		// Shortname used for linking.
+		lava::shortNameType shortName = "";
 		int INDEX = INT_MAX;
-		unsigned long LOCAL_LOC = ULONG_MAX;
 		std::shared_ptr<Line> linePtr = nullptr;
 		fieldChangeArr populated{};
 
 	private:
 		void buildIntegerLine(const pugi::xml_node& sourceNode);
 		void buildFloatLine(const pugi::xml_node& sourceNode);
+		void buildToggleLine(const pugi::xml_node& sourceNode);
 		void buildSelectionLine(const pugi::xml_node& sourceNode);
+		void buildCommentLine(const pugi::xml_node& sourceNode);
 
 	public:
+		addonLine() {};
 		addonLine(const pugi::xml_node& sourceNode);
+		bool populate(const pugi::xml_node& sourceNode);
 	};
 	struct addonPage
 	{
+		// Fullname used for display and logging purposes.
 		std::string pageName = "";
-		std::vector<addonLine> lines{};
+		// Shortname used for linking.
+		lava::shortNameType shortName = "";
+		// Collected lines in order.
+		std::vector<std::shared_ptr<addonLine>> lines{};
+		// Map of line shortnames to their structs.
+		std::map<lava::shortNameType, std::shared_ptr<addonLine>> lineMap{};
+
+		bool populate(const pugi::xml_node& sourceNode);
 	};
 	struct addon
 	{
+		// Fullname used for display and logging purposes.
 		std::string addonName = "";
-		std::string shortName = "";
-		std::vector<addonPage> pages{};
+		// Shortname used for linking.
+		lava::shortNameType shortName = "";
+		// Input Folder.
+		std::filesystem::path inputDirPath = "";
+		// Maps page shortnames to their structs!
+		std::map<lava::shortNameType, addonPage> pages{};
+
+		addon() {};
+		addon(std::string inputDirPathIn);
+		bool populate(std::string inputDirPathIn);
 	};
+	extern std::vector<addon> collectedAddons;
+
+	void applyCollectedAddons();
 
 	// ============================================================================
 
@@ -81,4 +107,4 @@ namespace xml
 }
 
 #endif
-	
+

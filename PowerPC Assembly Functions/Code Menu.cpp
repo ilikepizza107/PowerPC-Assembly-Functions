@@ -428,6 +428,10 @@ const std::string menuConfigXMLFileName = "EX_Config.xml";
 const std::string menuConfigXMLFileName = "Config.xml";
 #endif
 const std::string netMenuConfigXMLFileName = "Net-" + menuConfigXMLFileName;
+const std::string addonInputFolderPath = "Addons/";
+const std::string addonInputSourceFilename = "Source.asm";
+const std::string addonInputConfigFilename = "Definition.xml";
+const std::string addonOutputFolderPath = "CM_Addons/";
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string symbolMapInputFileName = "symbols.map";
 const std::string buildFolder = ".././";
@@ -489,6 +493,7 @@ const std::string asmTextOutputFilePath = outputFolder + asmTextFileName;
 const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
 const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
+const std::string addonsBuildLocation = buildFolder + "Source/" + addonOutputFolderPath;
 std::string getCMNUAbsolutePath()
 {
 	return MAIN_FOLDER + "/" + cmnuBuildLocationDirectory + cmnuFileName;
@@ -524,9 +529,18 @@ std::vector<std::string_view> splitLineContentString(const std::string& joinedSt
 }
 std::string getLineNameFromLineText(const std::string& lineText)
 {
-	std::string_view baseString = splitLineContentString(lineText)[0];
-	return std::string(baseString.substr(0, baseString.find(":")));
+	std::string result("");
+
+	if (!lineText.empty())
+	{
+		std::string_view baseString = splitLineContentString(lineText)[0];
+		result = baseString.substr(0, baseString.find(":"));
+	}
+	
+	return result;
 }
+
+std::map<lava::shortNameType, Page*> menuPagesMap{};
 
 void CodeMenu()
 {
@@ -820,7 +834,7 @@ void CodeMenu()
 	MainLines.push_back(new Selection("_", { "OFF", "ON"}, 0, TOGGLE_BASE_LINE_INDEX));
 	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_HIDDEN].value = 1;
 	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_UNSELECTABLE].value = 1;
-	Page Main("Main", MainLines);
+	Page Main("Main", MainLines, lava::shortNameType("MAIN"));
 	
 	//Unclepunch fps code
 	CodeRaw("[CM: Code Menu] FPS Code [UnclePunch]", "", {
@@ -1162,9 +1176,13 @@ void ActualCodes()
 	ControlCodes();
 }
 
-void CreateMenu(Page MainPage)
+void CreateMenu(Page& MainPage)
 {
 	xml::applyLineSettingsFromMenuOptionsTree(MainPage, cmnuOptionsOutputFilePath, ChangelogOutput);
+	if (!xml::collectedAddons.empty())
+	{
+		xml::applyCollectedAddons();
+	}
 	xml::buildMenuOptionsTreeFromMenu(MainPage, cmnuOptionsOutputFilePath);
 
 	//make pages

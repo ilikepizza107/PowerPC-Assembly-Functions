@@ -1,0 +1,28 @@
+<addon name="Example" shortName="EXMP" version="v1.0.0">
+	<codeMenuPage shortName="MAIN">
+		<codeMenuComment text="" />
+		<codeMenuComment text="Test Addon!" />
+		<codeMenuToggle name="Infinite Shield" shortName="INFSHLD1">
+			<defaultValue value="0" />
+		</codeMenuToggle>
+		<codeMenuSelection name="Automatic L-Cancelling" shortName="ALC1">
+			<defaultOption index="0" />
+			<option value="OFF" />
+			<option value="ON" />
+			<option value="Modified" />
+		</codeMenuSelection>
+		<codeMenuFloat name="Select Percent" shortName="PERCENT1">
+			<minValue value="0.00" />
+			<defaultValue value="0.00" />
+			<maxValue value="999.00" />
+			<speed value="1.00"/>
+		</codeMenuFloat>
+		<codeMenuInt name="Input Buffer" shortName="BUFFER1">
+			<minValue value="0"/>
+			<defaultValue value="0" />
+			<maxValue value="10"/>
+			<speed value="1"/>
+		</codeMenuInt>
+	</codeMenuPage>
+</addon>
+

@@ -33,10 +33,12 @@ namespace xml
 		const std::string callbackTag = "callback";
 
 		// Line Values
-		const std::string pageTag = "codeMenuPage";
-		const std::string selectionTag = "codeMenuSelection";
-		const std::string intTag = "codeMenuInt";
-		const std::string floatTag = "codeMenuFloat";
+		const std::string menuLinePageTag = "codeMenuPage";
+		const std::string menuLineSelectionTag = "codeMenuSelection";
+		const std::string menuLineToggleTag = "codeMenuToggle";
+		const std::string menuLineIntTag = "codeMenuInt";
+		const std::string menuLineFloatTag = "codeMenuFloat";
+		const std::string menuLineCommentTag = "codeMenuComment";
 		const std::string speedTag = "speed";
 		const std::string valueMinTag = "minValue";
 		const std::string valueMaxTag = "maxValue";
@@ -125,6 +127,9 @@ namespace xml
 		const std::string jumpsquatOverrideTag = "jumpsquatModifier";
 
 		// Addons
+		const std::string addonsBlockTag = "addonIncludes";
+		const std::string addonTag = "addon";
+		const std::string shortnameTag = "shortName";
 		const std::string localLOCtag = "localLOC";
 	}
 
@@ -1074,6 +1079,22 @@ namespace xml
 				}
 			}
 
+			// If an addons block exists...
+			if (declNodeItr->name() == configXMLConstants::addonsBlockTag)
+			{
+				logOutput << "\nParsing Addon Includes block from \"" << configFilePath << "\"...\n";
+
+				for (pugi::xml_node addonNode : declNodeItr->children(configXMLConstants::addonTag.c_str()))
+				{
+					std::string addonName = addonNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+					addon tempAddon;
+					if (tempAddon.populate(addonInputFolderPath + addonName + "/"))
+					{
+						collectedAddons.push_back(tempAddon);
+					}
+				}
+			}
+
 			// If we've reached the code configuration block...
 			if (declNodeItr->name() == configXMLConstants::codeSettingsTag)
 			{
@@ -1216,20 +1237,7 @@ namespace xml
 
 	// =======================  Addon Parsing and Constants =======================
 
-
-
-	// ============================================================================
-
-
-	// ==================== Menu Options Parsing and Constants ====================
-
-
-	// Incoming Configuration XML Variables
-	std::vector<std::string> CONFIG_INCOMING_COMMENTS{};
-	bool CONFIG_DELETE_CONTROLS_COMMENTS = false;
-	bool CONFIG_PSCC_ENABLED = false;
-	bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED = 1;
-	bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED = 1;
+	
 
 	// Line Parsing
 	std::array<bool, Line::LineBehaviorFlags::lbf__COUNT> applyLineBehaviorFlagsFromNode(const pugi::xml_node& sourceNode, Line* targetLine)
@@ -1358,8 +1366,25 @@ namespace xml
 
 		return result;
 	}
+	fieldChangeArr applyToggleLineSettingsFromNode(const pugi::xml_node& sourceNode, Line* targetLine, fieldChangeArr allowedChanges)
+	{
+		std::array<bool, lineFields::lc__COUNT> result{};
 
-	// External Lines
+		pugi::xml_node defaultValNode = sourceNode.child(configXMLConstants::valueDefaultTag.c_str());
+		if (defaultValNode && allowedChanges[lineFields::lf_ValDefault])
+		{
+			bool currentVal = targetLine->Default;
+			bool incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_bool(currentVal);
+			result[lineFields::lf_ValDefault] = incomingVal != currentVal;
+
+			targetLine->Default = incomingVal;
+			targetLine->Value = targetLine->Default;
+		}
+
+		return result;
+	}
+
+	// Addons
 	void addonLine::buildIntegerLine(const pugi::xml_node& sourceNode)
 	{
 		linePtr = std::make_shared<Integer>(lineName, INT_MAX, INT_MAX, INT_MAX, INT_MAX, this->INDEX);
@@ -1368,7 +1393,7 @@ namespace xml
 		allowedChanges[lineFields::lf_ValMax] = 1;
 		allowedChanges[lineFields::lf_ValDefault] = 1;
 		allowedChanges[lineFields::lf_Speed] = 1;
-		applyIntegerLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
+		populated = applyIntegerLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
 	}
 	void addonLine::buildFloatLine(const pugi::xml_node& sourceNode)
 	{
@@ -1378,7 +1403,14 @@ namespace xml
 		allowedChanges[lineFields::lf_ValMax] = 1;
 		allowedChanges[lineFields::lf_ValDefault] = 1;
 		allowedChanges[lineFields::lf_Speed] = 1;
-		applyFloatLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
+		populated = applyFloatLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
+	}
+	void addonLine::buildToggleLine(const pugi::xml_node& sourceNode)
+	{
+		linePtr = std::make_shared<Toggle>(lineName, 0, this->INDEX);
+		fieldChangeArr allowedChanges{};
+		allowedChanges[lineFields::lf_ValDefault] = 1;
+		populated = applyToggleLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
 	}
 	void addonLine::buildSelectionLine(const pugi::xml_node& sourceNode)
 	{
@@ -1394,32 +1426,146 @@ namespace xml
 
 		linePtr = std::make_shared<Selection>(lineName, options, defaultIndex, this->INDEX);
 	}
+	void addonLine::buildCommentLine(const pugi::xml_node& sourceNode)
+	{
+		std::string text = sourceNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
+		linePtr = std::make_shared<Comment>(text);
+	}
 	addonLine::addonLine(const pugi::xml_node& sourceNode)
+	{
+		populate(sourceNode);
+	}
+	bool addonLine::populate(const pugi::xml_node& sourceNode)
 	{
 		lineName = sourceNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 		lineName = getLineNameFromLineText(lineName);
-		LOCAL_LOC = sourceNode.attribute(configXMLConstants::localLOCtag.c_str()).as_uint(ULONG_MAX);
+		shortName = sourceNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
 
-		if (!lineName.empty() && LOCAL_LOC != ULONG_MAX)
+		if (sourceNode.name() == configXMLConstants::menuLineCommentTag)
 		{
-			if (sourceNode.name() == configXMLConstants::intTag)
+			buildCommentLine(sourceNode);
+		}
+		else if (!shortName.empty())
+		{
+			if (sourceNode.name() == configXMLConstants::menuLineIntTag)
 			{
 				buildIntegerLine(sourceNode);
 			}
-			else if (sourceNode.name() == configXMLConstants::floatTag)
+			else if (sourceNode.name() == configXMLConstants::menuLineFloatTag)
 			{
 				buildFloatLine(sourceNode);
 			}
-			else if (sourceNode.name() == configXMLConstants::selectionTag)
+			else if (sourceNode.name() == configXMLConstants::menuLineSelectionTag)
 			{
 				buildSelectionLine(sourceNode);
+			}
+			else if (sourceNode.name() == configXMLConstants::menuLineToggleTag)
+			{
+				buildToggleLine(sourceNode);
 			}
 			if (linePtr.get() != nullptr)
 			{
 				applyLineBehaviorFlagsFromNode(sourceNode, linePtr.get());
 			}
 		}
+
+		return linePtr.get() != nullptr;
 	}
+
+	bool addonPage::populate(const pugi::xml_node& sourceNode)
+	{
+		pageName = sourceNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+		shortName = sourceNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
+
+		for (pugi::xml_node childNode : sourceNode.children())
+		{
+			if (childNode.name() == configXMLConstants::menuLinePageTag) continue;
+			std::shared_ptr<addonLine> tempLine = std::make_shared<addonLine>();
+			if (tempLine->populate(childNode))
+			{
+				lines.push_back(tempLine);
+				if (!tempLine->shortName.empty())
+				{
+					lineMap[tempLine->shortName] = tempLine;
+				}
+			}
+		}
+
+		return !lines.empty();
+	}
+
+	addon::addon(std::string inputDirPathIn)
+	{
+		populate(inputDirPathIn);
+	}
+	bool addon::populate(std::string inputDirPathIn)
+	{
+		bool result = 0;
+
+		// Only continue with construction if all the necessary folders and files exist...
+		if (!std::filesystem::is_directory(inputDirPathIn)) return result;
+		if (!std::filesystem::is_regular_file(inputDirPathIn + "/" + addonInputSourceFilename)) return result;
+		if (!std::filesystem::is_regular_file(inputDirPathIn + "/" + addonInputConfigFilename)) return result;
+		// ... and the config document parses successfully!
+		pugi::xml_document configDoc;
+		if (!configDoc.load_file(std::string(inputDirPathIn + "/" + addonInputConfigFilename).c_str())) return result;
+		// Locate the root node...
+		pugi::xml_node rootNode = configDoc.child(configXMLConstants::addonTag.c_str());
+		// ... and if it exists...
+		if (rootNode)
+		{
+			addonName = rootNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+			shortName = rootNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
+
+			// First, grab every page node.
+			for (pugi::xml_node pageNode : rootNode.children(configXMLConstants::menuLinePageTag.c_str()))
+			{
+				addonPage tempPage;
+				tempPage.populate(pageNode);
+				if (!tempPage.shortName.empty() && !tempPage.lines.empty())
+				{
+					pages[tempPage.shortName] = tempPage;
+					result = 1;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	std::vector<addon> collectedAddons{};
+
+	void applyCollectedAddons()
+	{
+		for (addon currAddon : collectedAddons)
+		{
+			for (auto currPageItr : currAddon.pages)
+			{
+				auto pageFindRes = menuPagesMap.find(currPageItr.first);
+				if (pageFindRes != menuPagesMap.end())
+				{
+					for (std::shared_ptr<addonLine> currLine : currPageItr.second.lines)
+					{
+						pageFindRes->second->Lines.push_back(currLine->linePtr.get());
+					}
+					pageFindRes->second->PrepareLines();
+				}
+			}
+		}
+	}
+
+	// ============================================================================
+
+
+	// ==================== Menu Options Parsing and Constants ====================
+
+
+	// Incoming Configuration XML Variables
+	std::vector<std::string> CONFIG_INCOMING_COMMENTS{};
+	bool CONFIG_DELETE_CONTROLS_COMMENTS = false;
+	bool CONFIG_PSCC_ENABLED = false;
+	bool CONFIG_DASH_ATTACK_ITEM_GRAB_ENABLED = 1;
+	bool CONFIG_JUMPSQUAT_OVERRIDE_ENABLED = 1;
 
 	// Options XML
 	bool loadMenuOptionsTree(std::string xmlPathIn, pugi::xml_document& destinationDocument)
@@ -1464,7 +1610,7 @@ namespace xml
 		if (menuNode)
 		{
 			// ... get the collection of page nodes from the menu.
-			pugi::xml_object_range pageNodes = menuNode.children(configXMLConstants::pageTag.c_str());
+			pugi::xml_object_range pageNodes = menuNode.children(configXMLConstants::menuLinePageTag.c_str());
 			// For each of these pages...
 			for (pugi::xml_named_node_iterator pageItr = pageNodes.begin(); pageItr != pageNodes.end(); pageItr++)
 			{
@@ -1483,7 +1629,7 @@ namespace xml
 	{
 		for (pugi::xml_node_iterator lineItr = pageNode.begin(); lineItr != pageNode.end(); lineItr++)
 		{
-			if (lineItr->name() == configXMLConstants::selectionTag || lineItr->name() == configXMLConstants::floatTag || lineItr->name() == configXMLConstants::intTag)
+			if (lineItr->name() == configXMLConstants::menuLineSelectionTag || lineItr->name() == configXMLConstants::menuLineFloatTag || lineItr->name() == configXMLConstants::menuLineIntTag)
 			{
 				// Request the name attribute from the current node...
 				pugi::xml_attribute nameAttr = lineItr->attribute(configXMLConstants::nameTag.c_str());
@@ -1707,7 +1853,7 @@ namespace xml
 		{
 			const Page* currPage = Pages[i];
 
-			pugi::xml_node pageNode = menuBaseNode.append_child(configXMLConstants::pageTag.c_str());
+			pugi::xml_node pageNode = menuBaseNode.append_child(configXMLConstants::menuLinePageTag.c_str());
 			pugi::xml_attribute pageNameAttr = pageNode.append_attribute(configXMLConstants::nameTag.c_str());
 			pageNameAttr.set_value(currPage->PageName.c_str());
 			// For each kind of LineBehaviorFlag...
@@ -1733,7 +1879,7 @@ namespace xml
 				{
 				case SELECTION_LINE:
 				{
-					lineNode = pageNode.append_child(configXMLConstants::selectionTag.c_str());
+					lineNode = pageNode.append_child(configXMLConstants::menuLineSelectionTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0].data());
 					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::selectionDefaultTag.c_str());
@@ -1749,7 +1895,7 @@ namespace xml
 				}
 				case INTEGER_LINE:
 				{
-					lineNode = pageNode.append_child(configXMLConstants::intTag.c_str());
+					lineNode = pageNode.append_child(configXMLConstants::menuLineIntTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0].data());
 					pugi::xml_node minValNode = lineNode.append_child(configXMLConstants::valueMinTag.c_str());
@@ -1763,7 +1909,7 @@ namespace xml
 				}
 				case FLOATING_LINE:
 				{
-					lineNode = pageNode.append_child(configXMLConstants::floatTag.c_str());
+					lineNode = pageNode.append_child(configXMLConstants::menuLineFloatTag.c_str());
 					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
 					lineNameAttr.set_value(deconstructedText[0].data());
 					pugi::xml_node minValNode = lineNode.append_child(configXMLConstants::valueMinTag.c_str());
