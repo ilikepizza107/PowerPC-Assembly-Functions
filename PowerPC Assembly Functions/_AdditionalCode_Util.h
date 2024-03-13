@@ -2,6 +2,7 @@
 #define ADDITIONAL_CODE_UTIL_H
 
 #include "stdafx.h"
+#include "_lavaBytes.h"
 #include <iomanip>
 #include <type_traits>
 #include <sstream>
@@ -107,6 +108,35 @@ namespace lava
 		return lengthIn + padLength;
 	}
 	std::vector<std::string> splitString(const std::string& sourceStr, std::string delimiter, std::size_t maxSplits = SIZE_MAX);
+
+	// 8-Char Shortname Type
+	class shortNameType
+	{
+		std::size_t len = 0x00;
+		std::array<char, 0x8> arr{};
+		unsigned long long packed = 0x00;
+
+	public:
+		// Populates shortname by taking only the first 8 characters of provided string.
+		shortNameType(std::string str);
+
+		// Overwrite existing name.
+		void set(std::string str);
+
+		// Checks if stored name is 0 characters long.
+		bool empty() const;
+
+		// Get length of name.
+		std::size_t size() const;
+		// Get string copy of name.
+		std::string str() const;
+		// Get string_view of name.
+		std::string_view str_v() const;
+
+		// Implicit Conversion to ullong.
+		operator unsigned long long() const;
+	};
+	std::ostream& operator<< (std::ostream& out, const shortNameType& in);
 }
 
 #endif

@@ -122,4 +122,46 @@ namespace lava
 
 		return result;
 	}
+
+	shortNameType::shortNameType(std::string str)
+	{
+		set(str);
+	}
+	void shortNameType::set(std::string str)
+	{
+		// Empty out array contents.
+		arr.fill(0x00);
+		// Set string length.
+		len = std::min(arr.size(), str.size());
+		for (std::size_t i = 0; i < len; i++)
+		{
+			arr[i] = str[i];
+		}
+		packed = lava::bytesToFundamental<unsigned long long>((unsigned char*)arr.data());
+	}
+	std::size_t shortNameType::size() const
+	{
+		return len;
+	}
+	bool shortNameType::empty() const
+	{
+		return packed == 0;
+	}
+	std::string shortNameType::str() const
+	{
+		return std::string(&arr[0], this->size());
+	}
+	std::string_view shortNameType::str_v() const
+	{
+		return std::string_view(&arr[0], this->size());
+	}
+	shortNameType::operator unsigned long long() const
+	{
+		return packed;
+	}
+	std::ostream& operator<< (std::ostream& out, const shortNameType& in)
+	{
+		out << in.str_v();
+		return out;
+	}
 }
