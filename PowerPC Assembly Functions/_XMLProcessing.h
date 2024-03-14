@@ -76,19 +76,27 @@ namespace xml
 		// Shortname used for linking.
 		lava::shortNameType shortName = "";
 		// Input Folder.
-		std::filesystem::path inputDirPath = "";
+		std::string inputDirPath = "";
 		// Maps page shortnames to their structs!
-		std::map<lava::shortNameType, addonPageTarget> pages{};
+		std::map<lava::shortNameType, addonPageTarget> targetPages{};
+		std::size_t baseLOC = SIZE_MAX;
 
 		addon() {};
 		addon(std::string inputDirPathIn);
 		bool populate(std::string inputDirPathIn);
+		std::string getInputXMLPath();
+		std::string getInputASMPath();
+		std::string getOutputASMPath();
+		std::string getBuildASMPath();
 	};
 
 	extern std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages;
 	extern std::vector<addon> collectedAddons;
 
 	void applyCollectedAddons();
+	void generateAddonEmbeds(std::ostream& outputStream);
+	void appendAddonIncludesToASM();
+	bool copyAddonsFolderIntoBuild();
 
 	// ============================================================================
 

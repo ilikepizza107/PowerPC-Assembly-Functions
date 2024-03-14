@@ -353,6 +353,7 @@ extern const std::string netMenuConfigXMLFileName;
 extern const std::string addonInputFolderPath;
 extern const std::string addonInputSourceFilename;
 extern const std::string addonInputConfigFilename;
+extern const std::string addonAliasBankFilename;
 extern const std::string addonOutputFolderPath;
 extern const std::string symbolMapInputFileName;
 extern const std::string changelogFileName;
@@ -368,7 +369,8 @@ extern const std::string asmTextOutputFilePath;
 extern const std::vector<std::string> asmBuildLocationDirectories;
 extern const std::string cmnuBuildLocationDirectory;
 extern const std::string cmnuBuildLocationFilePath;
-extern const std::string addonBuildLocation;
+extern const std::string addonsOutputLocation;
+extern const std::string addonsBuildLocation;
 std::string getCMNUAbsolutePath();
 // AutoGCTRM Constants
 extern const std::string buildFolder;

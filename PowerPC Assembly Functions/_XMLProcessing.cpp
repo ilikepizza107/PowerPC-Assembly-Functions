@@ -1533,6 +1533,8 @@ namespace xml
 			addonName = rootNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 			shortName = rootNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
 
+			inputDirPath = inputDirPathIn;
+
 			// First, grab every page node.
 			for (pugi::xml_node pageNode : rootNode.children(configXMLConstants::menuLinePageTag.c_str()))
 			{
@@ -1540,7 +1542,7 @@ namespace xml
 				tempPage.populate(pageNode);
 				if (!tempPage.shortName.empty() && !tempPage.lines.empty())
 				{
-					pages[tempPage.shortName] = tempPage;
+					targetPages[tempPage.shortName] = tempPage;
 					result = 1;
 				}
 			}
@@ -1548,6 +1550,24 @@ namespace xml
 
 		return result;
 	}
+	std::string addon::getInputXMLPath()
+	{
+		return inputDirPath + addonInputConfigFilename;
+	}
+	std::string addon::getInputASMPath()
+	{
+		return inputDirPath + addonInputSourceFilename;
+
+	}
+	std::string addon::getOutputASMPath()
+	{
+		return addonsOutputLocation + shortName.str() + ".asm";
+	}
+	std::string addon::getBuildASMPath()
+	{
+		return "Source/" + addonOutputFolderPath + shortName.str() + ".asm";
+	}
+
 
 	std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages{};
 	std::vector<addon> collectedAddons{};
@@ -1556,7 +1576,7 @@ namespace xml
 	{
 		for (addon currAddon : collectedAddons)
 		{
-			for (auto currPageItr : currAddon.pages)
+			for (auto currPageItr : currAddon.targetPages)
 			{
 				auto pageFindRes = menuPagesMap.find(currPageItr.first);
 				if (pageFindRes != menuPagesMap.end())
@@ -1570,6 +1590,83 @@ namespace xml
 			}
 		}
 	}
+	void generateAddonEmbeds(std::ostream& outputStream)
+	{
+		std::size_t startingAddr = std::size_t(START_OF_CODE_MENU_HEADER) + outputStream.tellp();
+		std::size_t currAddr = startingAddr;
+
+		std::filesystem::remove_all(addonsOutputLocation);
+		if (!collectedAddons.empty())
+		{
+			std::filesystem::create_directory(addonsOutputLocation);
+			std::ofstream addonMacroDefs(addonsOutputLocation + addonAliasBankFilename);
+			if (!addonMacroDefs.is_open())
+			{
+				std::cerr << "[ERROR] Unable to write Addon Macro Bank! Aborting Embeds!\n";
+			}
+			else
+			{
+				std::string macroBankHeaderText = "#[CM_Addons] Code Menu Addons Line Alias LOC Bank";
+				addonMacroDefs <<
+					std::string(macroBankHeaderText.size(), '#') << "\n" <<
+					macroBankHeaderText << "\n" <<
+					std::string(macroBankHeaderText.size(), '#') << "\n";
+
+				for (addon currAddon : collectedAddons)
+				{
+					std::filesystem::copy_file(currAddon.getInputASMPath(), currAddon.getOutputASMPath());
+
+					addonMacroDefs << "# Addon \"" << currAddon.addonName << "\" Lines\n";
+					currAddon.baseLOC = currAddr;
+					for (auto currPageTarget : currAddon.targetPages)
+					{
+						for (auto currLine : currPageTarget.second.lineMap)
+						{
+							std::string locNameBase = currAddon.shortName.str() + "_" + currLine.first.str() + "_LOC";
+							addonMacroDefs << "# Line \"" << currLine.second->lineName << "\" in \"" << currAddon.addonName << "\"\n";
+							addonMacroDefs << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
+							addonMacroDefs << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
+							addonMacroDefs << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
+							lava::writeRawDataToStream(outputStream, currLine.second->INDEX);
+							currAddr += 0x4;
+						}
+					}
+					addonMacroDefs << "\n";
+				}
+			}
+		}
+	}
+	void appendAddonIncludesToASM()
+	{
+		std::ofstream asmAppendStream(asmOutputFilePath, std::ios::out | std::ios::app);
+		if (!collectedAddons.empty() && std::filesystem::is_regular_file(asmOutputFilePath))
+		{
+			std::string addonIncludesHeader = "[CM_Addons] Code Menu Addon Includes";
+			asmAppendStream << std::string(addonIncludesHeader.size(), '#') << "\n" <<
+				addonIncludesHeader << "\n" <<
+				std::string(addonIncludesHeader.size(), '#') << "\n";
+			for (addon currAddon : collectedAddons)
+			{
+				asmAppendStream << ".include \"" << currAddon.getBuildASMPath() << "\"\n";
+			}
+		}
+	}
+
+	bool copyAddonsFolderIntoBuild()
+	{
+		bool result = 0;
+
+		std::filesystem::remove_all(addonsBuildLocation);
+		if (std::filesystem::is_directory(addonsOutputLocation))
+		{
+			std::filesystem::copy(addonsOutputLocation, addonsBuildLocation);
+			result = 1;
+		}
+
+		return result;
+	}
+
+
 
 	// ============================================================================
 

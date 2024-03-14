@@ -323,8 +323,13 @@ int main(int argc, char** argv)
 		if (MakeASM(asmTextOutputFilePath, asmOutputFilePath, CONFIG_DISABLE_ASM_DISASSEMBLY))
 		{
 			ChangelogOutput << "Success!\n";
+			xml::appendAddonIncludesToASM();
 			if (lava::placeASMInBuild(*ChangelogOutput.getChangelogPtr()))
 			{
+				if (xml::copyAddonsFolderIntoBuild())
+				{
+					ChangelogOutput << "Note: Additionally copied over Addons folder!\n";
+				}
 				if (lava::handleAutoGCTRMProcess(*ChangelogOutput.getChangelogPtr()) && BUILD_NETPLAY_FILES)
 				{
 					ChangelogOutput << "Note: The built GCTs are configured for use in Dolphin Netplay only, and ARE NOT COMPATIBLE with consoles!\n";

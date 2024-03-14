@@ -428,9 +428,10 @@ const std::string menuConfigXMLFileName = "EX_Config.xml";
 const std::string menuConfigXMLFileName = "Config.xml";
 #endif
 const std::string netMenuConfigXMLFileName = "Net-" + menuConfigXMLFileName;
-const std::string addonInputFolderPath = "Addons/";
+const std::string addonInputFolderPath = "./Addons/";
 const std::string addonInputSourceFilename = "Source.asm";
 const std::string addonInputConfigFilename = "Definition.xml";
+const std::string addonAliasBankFilename = "AddonAliases.asm";
 const std::string addonOutputFolderPath = "CM_Addons/";
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string symbolMapInputFileName = "symbols.map";
@@ -493,6 +494,7 @@ const std::string asmTextOutputFilePath = outputFolder + asmTextFileName;
 const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
 const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
+const std::string addonsOutputLocation = outputFolder + addonOutputFolderPath;
 const std::string addonsBuildLocation = buildFolder + "Source/" + addonOutputFolderPath;
 std::string getCMNUAbsolutePath()
 {
@@ -814,8 +816,6 @@ void CodeMenu()
 	{
 		MainLines.push_back(new Selection("Active Theme", THEME_LIST, 0, THEME_SETTING_INDEX));
 	}
-	
-	//MainLines.push_back(new Print("%s", {&tets}));
 	
 	
 	/*MainLines.push_back(new Integer("P1 1st Shield Red", 0, 0xFF, 0, 1, SHIELD_RED_1));
@@ -1436,7 +1436,6 @@ void CreateMenu(Page& MainPage)
 		Header.resize(Header.size() + MEM2_CONSTANTS_LENGTH, 0xCC);
 	}
 
-	
 	// PSCC Quick Font Loc
 	AddValueToByteArray(0xFF, Header);
 	AddValueToByteArray(0xFF, Header);
@@ -1469,6 +1468,8 @@ void CreateMenu(Page& MainPage)
 	for (auto x : Pages) {
 		x->WritePage();
 	}
+
+	xml::generateAddonEmbeds(MenuFile);
 }
 
 void constantOverride() {
