@@ -1,23 +1,26 @@
 <addon name="Example" shortName="EXMP" version="v1.0.0">
-	<codeMenuPage shortName="MAIN">
+	<codeMenuPage shortName="_MAIN">
 		<codeMenuComment text="" />
-		<codeMenuComment text="Test Addon!" />
-		<codeMenuToggle name="Infinite Shield" shortName="INFSHLD1">
+		<codeMenuSubmenu name="Addon Page Test" shortName="ADDONPG"/>
+	</codeMenuPage>
+	<codeMenuPage shortName="ADDONPG">
+		<codeMenuComment text="Test Addon!"/>
+		<codeMenuToggle name="Addon Toggle Test" shortName="TGLTST">
 			<defaultValue value="0" />
 		</codeMenuToggle>
-		<codeMenuSelection name="Automatic L-Cancelling" shortName="ALC1">
+		<codeMenuSelection name="Addon Selection Test" shortName="SELTST">
 			<defaultOption index="0" />
-			<option value="OFF" />
-			<option value="ON" />
-			<option value="Modified" />
+			<option value="Test Option 1" />
+			<option value="Second Test Option" />
+			<option value="A Third Test Option" />
 		</codeMenuSelection>
-		<codeMenuFloat name="Select Percent" shortName="PERCENT1">
+		<codeMenuFloat name="Addon Float Test" shortName="FLTTST">
 			<minValue value="0.00" />
 			<defaultValue value="0.00" />
 			<maxValue value="999.00" />
 			<speed value="1.00"/>
 		</codeMenuFloat>
-		<codeMenuInt name="Input Buffer" shortName="BUFFER1">
+		<codeMenuInt name="Addon Integer Test" shortName="INTTST">
 			<minValue value="0"/>
 			<defaultValue value="0" />
 			<maxValue value="10"/>

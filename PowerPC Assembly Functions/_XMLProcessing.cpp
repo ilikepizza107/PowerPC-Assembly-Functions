@@ -34,6 +34,7 @@ namespace xml
 
 		// Line Values
 		const std::string menuLinePageTag = "codeMenuPage";
+		const std::string menuLineSubmenuTag = "codeMenuSubmenu";
 		const std::string menuLineSelectionTag = "codeMenuSelection";
 		const std::string menuLineToggleTag = "codeMenuToggle";
 		const std::string menuLineIntTag = "codeMenuInt";
@@ -1385,6 +1386,18 @@ namespace xml
 	}
 
 	// Addons
+	void addonLine::buildSubmenuLine(const pugi::xml_node& sourceNode)
+	{
+		if (!shortName.empty())
+		{
+			if (pageShortnameIsFree(shortName))
+			{
+				auto newPage = collectedNewPages.insert(std::make_pair(shortName, std::make_shared<Page>(lineName, std::vector<Line*>{}, shortName)));
+				linePtr = newPage.first->second->CalledFromLine;
+			}
+			shortName.set("");
+		}
+	}
 	void addonLine::buildIntegerLine(const pugi::xml_node& sourceNode)
 	{
 		linePtr = std::make_shared<Integer>(lineName, INT_MAX, INT_MAX, INT_MAX, INT_MAX, this->INDEX);
@@ -1447,7 +1460,11 @@ namespace xml
 		}
 		else if (!shortName.empty())
 		{
-			if (sourceNode.name() == configXMLConstants::menuLineIntTag)
+			if (sourceNode.name() == configXMLConstants::menuLineSubmenuTag)
+			{
+				buildSubmenuLine(sourceNode);
+			}
+			else if (sourceNode.name() == configXMLConstants::menuLineIntTag)
 			{
 				buildIntegerLine(sourceNode);
 			}
@@ -1472,9 +1489,8 @@ namespace xml
 		return linePtr.get() != nullptr;
 	}
 
-	bool addonPage::populate(const pugi::xml_node& sourceNode)
+	bool addonPageTarget::populate(const pugi::xml_node& sourceNode)
 	{
-		pageName = sourceNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 		shortName = sourceNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
 
 		for (pugi::xml_node childNode : sourceNode.children())
@@ -1520,7 +1536,7 @@ namespace xml
 			// First, grab every page node.
 			for (pugi::xml_node pageNode : rootNode.children(configXMLConstants::menuLinePageTag.c_str()))
 			{
-				addonPage tempPage;
+				addonPageTarget tempPage;
 				tempPage.populate(pageNode);
 				if (!tempPage.shortName.empty() && !tempPage.lines.empty())
 				{
@@ -1533,6 +1549,7 @@ namespace xml
 		return result;
 	}
 
+	std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages{};
 	std::vector<addon> collectedAddons{};
 
 	void applyCollectedAddons()
@@ -1661,7 +1678,7 @@ namespace xml
 
 			// ... and if so, apply any behavior flags attributes on the node, and note which have changed!
 			std::array<bool, Line::LineBehaviorFlags::lbf__COUNT> pageLBFsChanged =
-				applyLineBehaviorFlagsFromNode(pageFindItr->second, &currPage->CalledFromLine);
+				applyLineBehaviorFlagsFromNode(pageFindItr->second, currPage->CalledFromLine.get());
 			// If an LBF changed...
 			bool pageLBFChanged = std::find(pageLBFsChanged.begin(), pageLBFsChanged.end(), 1) != pageLBFsChanged.end();
 			if (pageLBFChanged)
@@ -1675,7 +1692,7 @@ namespace xml
 					if (!pageLBFsChanged[lbfItr]) continue;
 					// ... note its current state!
 					logOutput << "\t- Page " <<
-						(currPage->CalledFromLine.behaviorFlags[lbfItr] ? "is now " : "is no longer ") <<
+						(currPage->CalledFromLine->behaviorFlags[lbfItr] ? "is now " : "is no longer ") <<
 						configXMLConstants::lineBehaviorFlagTags[lbfItr] << "!\n";
 				}
 			}
@@ -1860,7 +1877,7 @@ namespace xml
 			for (std::size_t lbfItr = 0; lbfItr < Line::LineBehaviorFlags::lbf__COUNT; lbfItr++)
 			{
 				// ... grab its setting from the page!
-				Line::LineBehaviorFlagSetting flagSetting = currPage->CalledFromLine.behaviorFlags[lbfItr];
+				Line::LineBehaviorFlagSetting flagSetting = currPage->CalledFromLine->behaviorFlags[lbfItr];
 				// If it's either on or forced labeling is on for it...
 				if (flagSetting || flagSetting.forceXMLOutput)
 				{

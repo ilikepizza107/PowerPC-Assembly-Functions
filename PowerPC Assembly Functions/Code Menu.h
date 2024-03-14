@@ -456,6 +456,8 @@ static int CurrentOffset = START_OF_CODE_MENU;
 class Page;
 // Maps page shortnames to their respective structs.
 extern std::map<lava::shortNameType, Page*> menuPagesMap;
+// Returns true if a given shortname is free to use.
+bool pageShortnameIsFree(lava::shortNameType nameIn);
 
 class Line
 {
@@ -809,7 +811,7 @@ public:
 	u32 NumChangedLines = 0;
 	u32 PrintLowHold = 0;
 	vector<Line*> Lines;
-	SubMenu CalledFromLine;
+	std::shared_ptr<SubMenu> CalledFromLine;
 	static const int NUM_WORD_ELEMS = 4;
 	static const int CURRENT_LINE_OFFSET = 0;
 	static const int PREV_PAGE = CURRENT_LINE_OFFSET + 4;
@@ -833,7 +835,7 @@ public:
 			}
 		}
 
-		CalledFromLine = SubMenu(Name, this);
+		CalledFromLine = std::make_shared<SubMenu>(Name, this);
 		PageName = Name;
 		PrepareLines(Lines);
 	}

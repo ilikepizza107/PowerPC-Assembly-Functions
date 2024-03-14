@@ -541,6 +541,10 @@ std::string getLineNameFromLineText(const std::string& lineText)
 }
 
 std::map<lava::shortNameType, Page*> menuPagesMap{};
+bool pageShortnameIsFree(lava::shortNameType nameIn)
+{
+	return menuPagesMap.find(nameIn) == menuPagesMap.end();
+}
 
 void CodeMenu()
 {
@@ -579,7 +583,7 @@ void CodeMenu()
 	P1Lines.push_back(new Comment(""));
 	P1Lines.push_back(new Print("Tag Hex: %s", { &P1_TAG_STRING_INDEX }));
 	P1Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
-	Page P1("Player 1 Codes", P1Lines);
+	Page P1("Player 1 Codes", P1Lines, lava::shortNameType("_PLAYER1"));
 
 	vector<Line*> P2Lines;
 	P2Lines.push_back(new Toggle("Infinite Shield", false, INFINITE_SHIELDS_P2_INDEX));
@@ -596,7 +600,7 @@ void CodeMenu()
 	P2Lines.push_back(new Comment(""));
 	P2Lines.push_back(new Print("Tag Hex: %s", { &P2_TAG_STRING_INDEX }));
 	P2Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
-	Page P2("Player 2 Codes", P2Lines);
+	Page P2("Player 2 Codes", P2Lines, lava::shortNameType("_PLAYER2"));
 
 	vector<Line*> P3Lines;
 	P3Lines.push_back(new Toggle("Infinite Shield", false, INFINITE_SHIELDS_P3_INDEX));
@@ -613,7 +617,7 @@ void CodeMenu()
 	P3Lines.push_back(new Comment(""));
 	P3Lines.push_back(new Print("Tag Hex: %s", { &P3_TAG_STRING_INDEX }));
 	P3Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
-	Page P3("Player 3 Codes", P3Lines);
+	Page P3("Player 3 Codes", P3Lines, lava::shortNameType("_PLAYER3"));
 
 	vector<Line*> P4Lines;
 	P4Lines.push_back(new Toggle("Infinite Shield", false, INFINITE_SHIELDS_P4_INDEX));
@@ -630,7 +634,7 @@ void CodeMenu()
 	P4Lines.push_back(new Comment(""));
 	P4Lines.push_back(new Print("Tag Hex: %s", { &P4_TAG_STRING_INDEX }));
 	P4Lines.push_back(new Comment("For Use With Tag-Based Costumes"));
-	Page P4("Player 4 Codes", P4Lines);
+	Page P4("Player 4 Codes", P4Lines, lava::shortNameType("_PLAYER4"));
 
 	//debug mode
 	vector<Line*> DebugLines;
@@ -646,7 +650,7 @@ void CodeMenu()
 	DebugLines.push_back(new Toggle("Draw DI", false, DI_DRAW_INDEX));
 	DebugLines.push_back(new Toggle("FPS Display", false, FPS_DISPLAY_INDEX));
 	DebugLines.push_back(new Toggle("HUD", true, HUD_DISPLAY_INDEX));
-	Page DebugMode("Debug Mode Settings", DebugLines);
+	Page DebugMode("Debug Mode Settings", DebugLines, lava::shortNameType("_DEBUG"));
 
 	//value setting
 	vector<Line*> ConstantsLines;
@@ -698,7 +702,7 @@ void CodeMenu()
 		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Minimum Length", minFrameCount, maxFrameCount, minFrameCount, 1, JUMPSQUAT_OVERRIDE_MIN_INDEX, "%d", Integer::INT_FLAG_ALLOW_WRAP));
 		ConstantsLines.push_back(new Integer("Jumpsquat Modifier Maximum Length", minFrameCount, maxFrameCount, maxFrameCount, 1, JUMPSQUAT_OVERRIDE_MAX_INDEX, "%d", Integer::INT_FLAG_ALLOW_WRAP));
 	}
-	Page ConstantsPage("Gameplay Modifiers", ConstantsLines);
+	Page ConstantsPage("Gameplay Modifiers", ConstantsLines, lava::shortNameType("_GMPLMOD"));
 
 	//DBZ Mode settings
 	vector<Line*> DBZModeLines;
@@ -708,13 +712,13 @@ void CodeMenu()
 	DBZModeLines.push_back(new Comment("Acceleration Scales Based On Stick Magnitude"));
 	DBZModeLines.push_back(new Floating("Horizontal Acceleration", -100, 100, 1, .01, DBZ_MODE_ACCEL_X_INDEX, "%.3f"));
 	DBZModeLines.push_back(new Floating("Vertical Acceleration", -100, 100, 1, .01, DBZ_MODE_ACCEL_Y_INDEX, "%.3f"));
-	Page DBZModePage("Flight Mode Settings", DBZModeLines);
+	Page DBZModePage("Flight Mode Settings", DBZModeLines, lava::shortNameType("_FLIGHT"));
 	
 	//Special Mode Settings
 	vector<Line*> SpecialModeLines;
 	SpecialModeLines.push_back(new Comment("Special Modes"));
-	SpecialModeLines.push_back(&ConstantsPage.CalledFromLine);
-	SpecialModeLines.push_back(&DBZModePage.CalledFromLine);
+	SpecialModeLines.push_back(ConstantsPage.CalledFromLine.get());
+	SpecialModeLines.push_back(DBZModePage.CalledFromLine.get());
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
 	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
 	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = true;
@@ -725,7 +729,7 @@ void CodeMenu()
 	SpecialModeLines.push_back(new Floating("Scale Modifier", 0.5, 3, 1, 0.05, EXTERNAL_INDEX, "%.2fX"));
 	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = !PROJECT_PLUS_EX_BUILD;
 	SpecialModeLines.push_back(new Selection("Big Head Mode", { "Off", "On", "Larger", "Largest", "Largerest" }, 0, BIG_HEAD_INDEX));
-	Page SpecialModePage("Special Modes", SpecialModeLines);
+	Page SpecialModePage("Special Modes", SpecialModeLines, lava::shortNameType("_SPECIAL"));
 
 
 	
@@ -752,7 +756,7 @@ void CodeMenu()
 	MainLines.push_back(&TestPage.CalledFromLine);
 #endif
 	
-	MainLines.push_back(&DebugMode.CalledFromLine);
+	MainLines.push_back(DebugMode.CalledFromLine.get());
 	//	MainLines.push_back(new Selection("Endless Friendlies", { "OFF", "Same Stage", "Random Stage", "Round Robin" }, 0, INFINITE_FRIENDLIES_INDEX));
 	MainLines.push_back(new Selection("Endless Friendlies Mode", { "OFF", "All Stay", "Winner Stays", "Loser Stays", "Rotation"}, 0, ENDLESS_FRIENDLIES_MODE_INDEX));
 	MainLines.push_back(new Selection("Endless Friendlies Stage Selection", { "Random", "Same" }, 0, ENDLESS_FRIENDLIES_STAGE_SELECTION_INDEX));
@@ -768,11 +772,11 @@ void CodeMenu()
 #endif
 	MainLines.push_back(new Toggle("Save Previous Replay", false, SAVE_REPLAY_ANYWHERE_INDEX));
 	MainLines.push_back(new Selection("Tag-Based Costumes", { "ON", "ON + Teams", "OFF" }, 0, TAG_COSTUME_TOGGLE_INDEX));
-	MainLines.push_back(&P1.CalledFromLine);
-	MainLines.push_back(&P2.CalledFromLine);
-	MainLines.push_back(&P3.CalledFromLine);
-	MainLines.push_back(&P4.CalledFromLine);
-	MainLines.push_back(&SpecialModePage.CalledFromLine);
+	MainLines.push_back(P1.CalledFromLine.get());
+	MainLines.push_back(P2.CalledFromLine.get());
+	MainLines.push_back(P3.CalledFromLine.get());
+	MainLines.push_back(P4.CalledFromLine.get());
+	MainLines.push_back(SpecialModePage.CalledFromLine.get());
 
 	
 	// HUD Color Settings
@@ -792,7 +796,7 @@ void CodeMenu()
 	Page HUDColorsPage("HUD Colors", HUDColorLines);
 	if (xml::CONFIG_PSCC_ENABLED && (pscc::schemeTable.entries.size() >= 4))
 	{
-		MainLines.push_back(&HUDColorsPage.CalledFromLine);
+		MainLines.push_back(HUDColorsPage.CalledFromLine.get());
 	}
 
 
@@ -834,7 +838,7 @@ void CodeMenu()
 	MainLines.push_back(new Selection("_", { "OFF", "ON"}, 0, TOGGLE_BASE_LINE_INDEX));
 	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_HIDDEN].value = 1;
 	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_UNSELECTABLE].value = 1;
-	Page Main("Main", MainLines, lava::shortNameType("MAIN"));
+	Page Main("Main", MainLines, lava::shortNameType("_MAIN"));
 	
 	//Unclepunch fps code
 	CodeRaw("[CM: Code Menu] FPS Code [UnclePunch]", "", {

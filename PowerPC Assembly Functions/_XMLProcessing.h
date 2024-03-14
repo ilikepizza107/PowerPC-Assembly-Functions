@@ -46,6 +46,7 @@ namespace xml
 		fieldChangeArr populated{};
 
 	private:
+		void buildSubmenuLine(const pugi::xml_node& sourceNode);
 		void buildIntegerLine(const pugi::xml_node& sourceNode);
 		void buildFloatLine(const pugi::xml_node& sourceNode);
 		void buildToggleLine(const pugi::xml_node& sourceNode);
@@ -57,10 +58,8 @@ namespace xml
 		addonLine(const pugi::xml_node& sourceNode);
 		bool populate(const pugi::xml_node& sourceNode);
 	};
-	struct addonPage
+	struct addonPageTarget
 	{
-		// Fullname used for display and logging purposes.
-		std::string pageName = "";
 		// Shortname used for linking.
 		lava::shortNameType shortName = "";
 		// Collected lines in order.
@@ -79,12 +78,14 @@ namespace xml
 		// Input Folder.
 		std::filesystem::path inputDirPath = "";
 		// Maps page shortnames to their structs!
-		std::map<lava::shortNameType, addonPage> pages{};
+		std::map<lava::shortNameType, addonPageTarget> pages{};
 
 		addon() {};
 		addon(std::string inputDirPathIn);
 		bool populate(std::string inputDirPathIn);
 	};
+
+	extern std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages;
 	extern std::vector<addon> collectedAddons;
 
 	void applyCollectedAddons();
