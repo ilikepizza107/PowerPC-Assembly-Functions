@@ -288,6 +288,8 @@ constexpr unsigned long bitIndexFromButtonHex(unsigned long buttonHex, bool doIn
 #define TERMINATE_REPLAY_VALUE 0x06000000
 ///constants end
 
+void writeBorderedStringToStream(std::ostream& output, std::string inputStr, std::size_t minBorderLength, char borderChar = '#');
+
 namespace ledger
 {
 	struct codeLedgerEntry

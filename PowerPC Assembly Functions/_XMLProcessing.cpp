@@ -1303,8 +1303,6 @@ namespace xml
 
 	// =======================  Addon Parsing and Constants =======================
 
-	
-
 	// Line Parsing
 	std::array<bool, Line::LineBehaviorFlags::lbf__COUNT> applyLineBehaviorFlagsFromNode(const pugi::xml_node& sourceNode, Line* targetLine)
 	{
@@ -1529,8 +1527,8 @@ namespace xml
 				{
 					logOutput.write("[ERROR] Failed to establish Submenu Page for Line \"" + lineName + "\": ShortName \"" + shortName.str() + "\" already in use!\n"
 						, ULONG_MAX, lava::outputSplitter::sOS_CERR);
-					shortName.set("");
 				}
+				shortName.set("");
 			}
 			else if (sourceNode.name() == configXMLConstants::menuLineIntTag)
 			{
@@ -1732,7 +1730,6 @@ namespace xml
 		return "Source/" + addonOutputFolderName + shortName.str() + ".asm";
 	}
 
-
 	std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages{};
 	std::vector<addon> collectedAddons{};
 	bool addonShortNameIsFree(lava::shortNameType nameIn)
@@ -1749,20 +1746,26 @@ namespace xml
 		return result;
 	}
 
-
 	void applyCollectedAddons()
 	{
+		// For each collected Addon...
 		for (addon currAddon : collectedAddons)
 		{
+			// ... iterate through each of its collected Page Targets.
 			for (auto currPageItr : currAddon.targetPages)
 			{
+				// Search the menu for a Page with this target's ShortName...
 				auto pageFindRes = menuPagesMap.find(currPageItr.first);
+				// ... and if it's found...
 				if (pageFindRes != menuPagesMap.end())
 				{
+					// ... iterate through its child lines...
 					for (std::shared_ptr<addonLine> currLine : currPageItr.second.lines)
 					{
+						// ... adding each to the targeted Page!
 						pageFindRes->second->Lines.push_back(currLine->linePtr.get());
 					}
+					// Afterwards, re-prepare the page itself to ensure the struct is properly updated.
 					pageFindRes->second->PrepareLines();
 				}
 			}
@@ -1770,81 +1773,97 @@ namespace xml
 	}
 	void generateAddonEmbeds(std::ostream& outputStream)
 	{
-		std::size_t startingAddr = std::size_t(START_OF_CODE_MENU_HEADER) + outputStream.tellp();
-		std::size_t currAddr = startingAddr;
+		// Initialize the address value we'll be iterating as we establish new INDEX values!
+		std::size_t currAddr = std::size_t(START_OF_CODE_MENU_HEADER) + outputStream.tellp();
 
+		// If an Addons Output folder already exists, delete it to ensure no stale content from the older folder ends up in the new one.
+		// Also ensures that if no addons were defined in this run of the builder that there simply *is* no Addons folder.
 		std::filesystem::remove_all(addonsOutputFilePath);
+		// If any Addons were collected successfully...
 		if (!collectedAddons.empty())
 		{
+			// ... make a new output directory.
 			std::filesystem::create_directory(addonsOutputFilePath);
-			std::ofstream addonMacroDefs(addonsOutputFilePath + addonAliasBankFilename);
-			if (!addonMacroDefs.is_open())
+			// Additionally, initialize a new output stream for creating the Aliases file.
+			std::ofstream addonAliasBankStream(addonsOutputFilePath + addonAliasBankFilename);
+			// If that stream successfully opened, proceed with building the Alias bank.
+			if (addonAliasBankStream.is_open())
 			{
-				std::cerr << "[ERROR] Unable to write Addon Macro Bank! Aborting Embeds!\n";
-			}
-			else
-			{
-				std::string macroBankHeaderText = "#[CM_Addons] Code Menu Addons Line Alias LOC Bank";
-				addonMacroDefs <<
-					std::string(macroBankHeaderText.size(), '#') << "\n" <<
-					macroBankHeaderText << "\n" <<
-					std::string(macroBankHeaderText.size(), '#') << "\n";
-
+				// Write out a header for the file (prefixed with a '#' so it doesn't show up in GCTRM)
+				writeBorderedStringToStream(addonAliasBankStream, "#[CM_Addons] Code Menu Addons Line Alias LOC Bank", 0x10, '#');
+				// For each collected Addon...
 				for (addon currAddon : collectedAddons)
 				{
+					// ... copy its source file into the output directory, renamed according to its shortName!
 					std::filesystem::copy_file(currAddon.getInputASMPath(), currAddon.getOutputASMPath());
 
-					addonMacroDefs << "# Addon \"" << currAddon.addonName << "\" Lines\n";
+					// Additionally, mark the beginning of its aliases in the bank...
+					addonAliasBankStream << "# Addon \"" << currAddon.addonName << "\" Lines\n";
+					// and mark down the the beginning of the range occupied by this Addon's Lines' LOC values.
 					currAddon.baseLOC = currAddr;
+					// Then, iterate through each page target...
 					for (auto currPageTarget : currAddon.targetPages)
 					{
+						// ... and for each of their lines...
 						for (auto currLine : currPageTarget.second.lineMap)
 						{
+							// ... output a set of .alias entries for it (one joined, and two split).
 							std::string locNameBase = currAddon.shortName.str() + "_" + currLine.first.str() + "_LOC";
-							addonMacroDefs << "# Line \"" << currLine.second->lineName << "\" in \"" << currAddon.addonName << "\"\n";
-							addonMacroDefs << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
-							addonMacroDefs << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
-							addonMacroDefs << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
+							addonAliasBankStream << "# Line \"" << currLine.second->lineName << "\" in \"" << currAddon.addonName << "\"\n";
+							addonAliasBankStream << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
+							addonAliasBankStream << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
+							addonAliasBankStream << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
+							// Lastly, write the line's INDEX value into the menu cmnu...
 							lava::writeRawDataToStream(outputStream, currLine.second->INDEX);
+							// ... and scoot the address forwards 0x4 bytes to prepare for the next line.
 							currAddr += 0x4;
 						}
 					}
-					addonMacroDefs << "\n";
+					// Write out a newline to separate the end of this Addon with the next one.
+					addonAliasBankStream << "\n";
 				}
+			}
+			// Otherwise, if the Alias bank stream couldn't be opened...
+			else
+			{
+				// ... report the error!
+				std::cerr << "[ERROR] Unable to write Addon Macro Bank! Aborting Embeds!\n";
 			}
 		}
 	}
 	void appendAddonIncludesToASM()
 	{
-		std::ofstream asmAppendStream(asmOutputFilePath, std::ios::out | std::ios::app);
+		// If any Addons were collected successfully, and the the menu .asm file was generated successfully...
 		if (!collectedAddons.empty() && std::filesystem::is_regular_file(asmOutputFilePath))
 		{
-			std::string addonIncludesHeader = "[CM_Addons] Code Menu Addon Includes";
-			asmAppendStream << std::string(addonIncludesHeader.size(), '#') << "\n" <<
-				addonIncludesHeader << "\n" <<
-				std::string(addonIncludesHeader.size(), '#') << "\n";
+			// ... re-open the ASM file (in append mode, so the existing contents aren't touched).
+			std::ofstream asmAppendStream(asmOutputFilePath, std::ios::out | std::ios::app);
+			// Write out a header for the includes we're about to do...
+			writeBorderedStringToStream(asmAppendStream, "[CM_Addons] Code Menu Addon Includes", 0x10, '#');
+			// ... then for each of the Addons we collected...
 			for (addon currAddon : collectedAddons)
 			{
+				// ... write an .include for the associated source file.
 				asmAppendStream << ".include " << currAddon.getBuildASMPath() << "\n";
 			}
 		}
 	}
-
 	bool copyAddonsFolderIntoBuild()
 	{
 		bool result = 0;
 
+		// If an Addons folder already exists within the build, delete it.
 		std::filesystem::remove_all(addonsBuildLocationFolderPath);
+		// If an output Addon folder was generated on this run of the program...
 		if (std::filesystem::is_directory(addonsOutputFilePath))
 		{
+			// ... copy the newly generated Addons output folder to the proper location in the build.
 			std::filesystem::copy(addonsOutputFilePath, addonsBuildLocationFolderPath);
 			result = 1;
 		}
 
 		return result;
 	}
-
-
 
 	// ============================================================================
 

@@ -56,6 +56,14 @@ bool setMAIN_FOLDER(std::string mainFolderIn)
 
 bool CUSTOM_NAME_SUPPLIED = 0;
 
+void writeBorderedStringToStream(std::ostream& output, std::string inputStr, std::size_t minBorderLength, char borderChar)
+{
+	std::string borderString = std::string(std::max(inputStr.size(), minBorderLength), borderChar);
+	output << borderString << "\n";
+	output << inputStr << "\n";
+	output << borderString << "\n";
+}
+
 fstream WPtr;
 std::vector<ledger::codeLedgerEntry> codeLedger = {};
 std::size_t ledger::codeLedgerEntry::length()

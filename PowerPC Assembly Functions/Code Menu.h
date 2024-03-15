@@ -458,7 +458,7 @@ static int CurrentOffset = START_OF_CODE_MENU;
 class Page;
 // Maps page shortnames to their respective structs.
 extern std::map<lava::shortNameType, Page*> menuPagesMap;
-// Returns true if a given shortname is free to use.
+// Returns true if a given page shortname is free to use.
 bool pageShortnameIsFree(lava::shortNameType nameIn);
 
 class Line
