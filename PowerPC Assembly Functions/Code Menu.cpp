@@ -1155,11 +1155,11 @@ void ActualCodes()
 
 void CreateMenu(Page& MainPage)
 {
-	xml::applyLineSettingsFromMenuOptionsTree(MainPage, cmnuOptionsOutputFilePath, ChangelogOutput);
 	if (!xml::collectedAddons.empty())
 	{
 		xml::applyCollectedAddons(ChangelogOutput);
 	}
+	xml::applyLineSettingsFromMenuOptionsTree(MainPage, cmnuOptionsOutputFilePath, ChangelogOutput);
 	xml::buildMenuOptionsTreeFromMenu(MainPage, cmnuOptionsOutputFilePath);
 
 	//make pages
