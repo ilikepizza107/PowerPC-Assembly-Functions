@@ -432,7 +432,7 @@ const std::string addonInputFolderPath = "./Addons/";
 const std::string addonInputSourceFilename = "Source.asm";
 const std::string addonInputConfigFilename = "Definition.xml";
 const std::string addonAliasBankFilename = "AddonAliases.asm";
-const std::string addonOutputFolderPath = "CM_Addons/";
+const std::string addonOutputFolderName = "CM_Addons/";
 const std::string outputFolder = "./Code_Menu_Output/";
 const std::string symbolMapInputFileName = "symbols.map";
 const std::string buildFolder = ".././";
@@ -494,8 +494,8 @@ const std::string asmTextOutputFilePath = outputFolder + asmTextFileName;
 const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
 const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
-const std::string addonsOutputLocation = outputFolder + addonOutputFolderPath;
-const std::string addonsBuildLocation = buildFolder + "Source/" + addonOutputFolderPath;
+const std::string addonsOutputFilePath = outputFolder + addonOutputFolderName;
+const std::string addonsBuildLocationFolderPath = buildFolder + "Source/" + addonOutputFolderName;
 std::string getCMNUAbsolutePath()
 {
 	return MAIN_FOLDER + "/" + cmnuBuildLocationDirectory + cmnuFileName;

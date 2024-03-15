@@ -1725,11 +1725,11 @@ namespace xml
 	}
 	std::filesystem::path addon::getOutputASMPath()
 	{
-		return addonsOutputLocation + shortName.str() + ".asm";
+		return addonsOutputFilePath + shortName.str() + ".asm";
 	}
 	std::filesystem::path addon::getBuildASMPath()
 	{
-		return "Source/" + addonOutputFolderPath + shortName.str() + ".asm";
+		return "Source/" + addonOutputFolderName + shortName.str() + ".asm";
 	}
 
 
@@ -1773,11 +1773,11 @@ namespace xml
 		std::size_t startingAddr = std::size_t(START_OF_CODE_MENU_HEADER) + outputStream.tellp();
 		std::size_t currAddr = startingAddr;
 
-		std::filesystem::remove_all(addonsOutputLocation);
+		std::filesystem::remove_all(addonsOutputFilePath);
 		if (!collectedAddons.empty())
 		{
-			std::filesystem::create_directory(addonsOutputLocation);
-			std::ofstream addonMacroDefs(addonsOutputLocation + addonAliasBankFilename);
+			std::filesystem::create_directory(addonsOutputFilePath);
+			std::ofstream addonMacroDefs(addonsOutputFilePath + addonAliasBankFilename);
 			if (!addonMacroDefs.is_open())
 			{
 				std::cerr << "[ERROR] Unable to write Addon Macro Bank! Aborting Embeds!\n";
@@ -1834,10 +1834,10 @@ namespace xml
 	{
 		bool result = 0;
 
-		std::filesystem::remove_all(addonsBuildLocation);
-		if (std::filesystem::is_directory(addonsOutputLocation))
+		std::filesystem::remove_all(addonsBuildLocationFolderPath);
+		if (std::filesystem::is_directory(addonsOutputFilePath))
 		{
-			std::filesystem::copy(addonsOutputLocation, addonsBuildLocation);
+			std::filesystem::copy(addonsOutputFilePath, addonsBuildLocationFolderPath);
 			result = 1;
 		}
 
