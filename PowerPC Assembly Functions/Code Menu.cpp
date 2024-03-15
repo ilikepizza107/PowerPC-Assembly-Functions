@@ -818,6 +818,7 @@ void CodeMenu()
 	}
 	
 	MainLines.push_back(new Selection("_", { "OFF", "ON"}, 0, TOGGLE_BASE_LINE_INDEX));
+	MainLines.back()->hideFromOptionsXML = 1;
 	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_HIDDEN].value = 1;
 	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_UNSELECTABLE].value = 1;
 	Page Main("Main", MainLines, lava::shortNameType("_MAIN"));

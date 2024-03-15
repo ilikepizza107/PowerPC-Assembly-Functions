@@ -603,6 +603,8 @@ public:
 
 	// Truncated version of the Text field. Just everything before the first colon (":") in the first delimited string.
 	std::string LineName = "";
+	// Allows a line to be forcibly hidden from the Options XML (mostly just here to hide the Toggle base line).
+	bool hideFromOptionsXML = 0;
 
 	//offsets
 	static const int SIZE = 0; //2
@@ -726,6 +728,7 @@ public:
 		Line::WriteLineData(SourceSelectionIndexPtr, OptionOffsets);
 	}
 
+	bool isToggleLine = 0;
 	int* SourceSelectionIndexPtr = nullptr;
 	vector<u8> OptionOffsets;
 };
@@ -755,6 +758,7 @@ public:
 		this->Min = 0;
 		this->Max = 1;
 		this->SourceSelectionIndexPtr = &TOGGLE_BASE_LINE_INDEX;
+		this->isToggleLine = 1;
 	}
 };
 

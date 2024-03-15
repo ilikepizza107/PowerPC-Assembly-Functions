@@ -1954,7 +1954,10 @@ namespace xml
 	{
 		for (pugi::xml_node_iterator lineItr = pageNode.begin(); lineItr != pageNode.end(); lineItr++)
 		{
-			if (lineItr->name() == configXMLConstants::menuLineSelectionTag || lineItr->name() == configXMLConstants::menuLineFloatTag || lineItr->name() == configXMLConstants::menuLineIntTag)
+			if (lineItr->name() == configXMLConstants::menuLineSelectionTag ||
+				lineItr->name() == configXMLConstants::menuLineToggleTag ||
+				lineItr->name() == configXMLConstants::menuLineFloatTag ||
+				lineItr->name() == configXMLConstants::menuLineIntTag)
 			{
 				// Request the name attribute from the current node...
 				pugi::xml_attribute nameAttr = lineItr->attribute(configXMLConstants::nameTag.c_str());
@@ -2023,19 +2026,33 @@ namespace xml
 				{
 				case SELECTION_LINE:
 				{
-					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::selectionDefaultTag.c_str());
-					if (defaultValNode)
+					// Selection lines are special, in that Toggle lines and Selection lines are technically the same thing.
+					// We need to support both, and specifically need to support both Selection and Toggle style input for both.
+					// So, we'll handle them a bit uniquely here. To start, we'll try grabbing the Toggle style default node...
+					u32 valueIn = currLine->Default;
+					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::valueDefaultTag.c_str());
+					// ... and if this line is in fact a Toggle type line, *and* we found the Toggle style default node...
+					if (((Selection*)currLine)->isToggleLine && defaultValNode)
 					{
-						pugi::xml_attribute defaultIndexAttr = defaultValNode.attribute(configXMLConstants::indexTag.c_str());
-						if (defaultIndexAttr)
+						// ... then we'll proceed parsing it Toggle style.
+						valueIn = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_bool(currLine->Default);
+					}
+					// Otherwise, we'll fall back to the Selection style node.
+					else
+					{
+						// Try grabbing the appropriate node...
+						defaultValNode = lineFindItr->second.child(configXMLConstants::selectionDefaultTag.c_str());
+						// ... and if it exists...
+						if (defaultValNode)
 						{
-							u32 valueIn = defaultIndexAttr.as_uint(currLine->Default);
-							valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
-							lineDefaultChanged = valueIn != currLine->Default;
-							currLine->Default = valueIn;
-							currLine->Value = valueIn;
+							// retrieve its value.
+							valueIn = defaultValNode.attribute(configXMLConstants::indexTag.c_str()).as_uint(currLine->Default);
 						}
 					}
+					valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
+					lineDefaultChanged = valueIn != currLine->Default;
+					currLine->Default = valueIn;
+					currLine->Value = valueIn;
 					break;
 				}
 				case INTEGER_LINE:
@@ -2102,7 +2119,18 @@ namespace xml
 						switch (currLine->type)
 						{
 						case FLOATING_LINE: { logOutput << "Default Value is now " << GetFloatFromHex(currLine->Default); break; }
-						case SELECTION_LINE: { logOutput << "Default Index is now " << currLine->Default; break; }
+						case SELECTION_LINE: 
+						{
+							if (((Selection*)currLine)->isToggleLine)
+							{
+								logOutput << "Default Value is now \"" << (currLine->Default ? "true" : "false") << "\"";
+							}
+							else
+							{
+								logOutput << "Default Index is now " << currLine->Default;
+							}
+							break;
+						}
 						default: { logOutput << "Default Value is now " << currLine->Default; break; }
 						}
 						logOutput << "\n";
@@ -2197,6 +2225,8 @@ namespace xml
 			for (unsigned long u = 0; u < currPage->Lines.size(); u++)
 			{
 				const Line* currLine = currPage->Lines[u];
+				// If the line was set to be hidden from the XML, skip outputting it.
+				if (currLine->hideFromOptionsXML) continue;
 
 				std::vector<std::string_view> deconstructedText = splitLineContentString(currLine->Text);
 				pugi::xml_node lineNode{};
@@ -2204,17 +2234,29 @@ namespace xml
 				{
 				case SELECTION_LINE:
 				{
-					lineNode = pageNode.append_child(configXMLConstants::menuLineSelectionTag.c_str());
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
-					lineNameAttr.set_value(deconstructedText[0].data());
-					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::selectionDefaultTag.c_str());
-					defaultValNode.append_attribute(configXMLConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
-					defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
-					for (unsigned long i = 1; i < deconstructedText.size(); i++)
+					if (((Selection*)currLine)->isToggleLine)
 					{
-						pugi::xml_node optionNode = lineNode.append_child(configXMLConstants::selectionOptionTag.c_str());
-						pugi::xml_attribute optionValueAttr = optionNode.append_attribute(configXMLConstants::valueTag.c_str());
-						optionValueAttr.set_value(deconstructedText[i].data());
+						lineNode = pageNode.append_child(configXMLConstants::menuLineToggleTag.c_str());
+						pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
+						lineNameAttr.set_value(deconstructedText[0].data());
+						pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
+						defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(currLine->Default ? "true" : "false");
+						defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
+					}
+					else
+					{
+						lineNode = pageNode.append_child(configXMLConstants::menuLineSelectionTag.c_str());
+						pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
+						lineNameAttr.set_value(deconstructedText[0].data());
+						pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::selectionDefaultTag.c_str());
+						defaultValNode.append_attribute(configXMLConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
+						defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
+						for (unsigned long i = 1; i < deconstructedText.size(); i++)
+						{
+							pugi::xml_node optionNode = lineNode.append_child(configXMLConstants::selectionOptionTag.c_str());
+							pugi::xml_attribute optionValueAttr = optionNode.append_attribute(configXMLConstants::valueTag.c_str());
+							optionValueAttr.set_value(deconstructedText[i].data());
+						}
 					}
 					break;
 				}
