@@ -1364,7 +1364,7 @@ namespace xml
 			incomingVal = std::min(std::max(incomingVal, targetLine->Min), targetLine->Max);
 			result[lineFields::lf_ValDefault] = incomingVal != currentVal;
 
-			targetLine->Default = GetHexFromFloat(incomingVal);
+			targetLine->Default = incomingVal;
 			targetLine->Value = targetLine->Default;
 		}
 
