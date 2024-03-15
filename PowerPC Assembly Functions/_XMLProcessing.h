@@ -78,7 +78,7 @@ namespace xml
 		// Version, for reporting purposes.
 		std::string versionName = "";
 		// Input Folder.
-		std::string inputDirPath = "";
+		std::filesystem::path inputDirPath = "";
 		// Maps page shortnames to their structs!
 		std::map<lava::shortNameType, addonPageTarget> targetPages{};
 		// Denotes where this addons' line INDEX values start in memory.
@@ -86,10 +86,10 @@ namespace xml
 
 		addon() {};
 		bool populate(std::string inputDirPathIn, lava::outputSplitter& logOutput);
-		std::string getInputXMLPath();
-		std::string getInputASMPath();
-		std::string getOutputASMPath();
-		std::string getBuildASMPath();
+		std::filesystem::path getInputXMLPath();
+		std::filesystem::path getInputASMPath();
+		std::filesystem::path getOutputASMPath();
+		std::filesystem::path getBuildASMPath();
 	};
 
 	extern std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages;

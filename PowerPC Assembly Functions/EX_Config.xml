@@ -38,7 +38,9 @@
         -->
     </characterList>
 	
-	<addonIncludes doAutoDetect="true"/>
+	<addonIncludes doAutoDetect="false">
+		<addon path="./Addons/Example Addon/"/>
+	</addonIncludes>
     
     <codeSettings>
         <!--To declare new rosters, add new entries into this block! Valid for EX builds only!-->

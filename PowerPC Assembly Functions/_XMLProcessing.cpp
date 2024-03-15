@@ -25,7 +25,9 @@ namespace xml
 		const std::string editableTag = "editable";
 		const std::string nameTag = "name";
 		const std::string textTag = "text";
+		const std::string pathTag = "path";
 		const std::string filenameTag = "filename";
+		const std::string filepathTag = "filepath";
 		const std::string codeModeTag = "codeMode";
 		const std::string indexTag = "index";
 		const std::string valueTag = "value";
@@ -928,7 +930,7 @@ namespace xml
 			if (declNodeItr->name() == configXMLConstants::menuPropsTag)
 			{
 				// ... apply the contained values.
-				logOutput << "\nApplying Menu Properties from \"" << configFilePath << "\"...\n";
+				logOutput << "\nApplying Menu Properties block from \"" << configFilePath << "\"...\n";
 
 				// Used for pulling values from potential nodes!
 				pugi::xml_node foundNode{};
@@ -1003,7 +1005,7 @@ namespace xml
 			if (declNodeItr->name() == configXMLConstants::menuLineColorsTag)
 			{
 				// ... note that we're parsing it...
-				logOutput << "\nApplying Line Colors from \"" << configFilePath << "\"...\n";
+				logOutput << "\nApplying Line Colors block from \"" << configFilePath << "\"...\n";
 				// ... and try to apply its values.
 				bool colorApplied = applyLineColorValues(declNodeItr);
 				// If we successfully applied at least one color...
@@ -1089,52 +1091,70 @@ namespace xml
 				logOutput << "\nParsing Addon Includes block from \"" << configFilePath << "\"...\n";
 
 				// Establish a list of Addon Names, which we'll populate and load afterwards.
-				std::vector<std::string> addonsToLoad{};
+				std::vector<std::string> addonPathsToLoad{};
 
 				// If we've requested auto-detect mode...
 				if (declNodeItr->attribute(configXMLConstants::autoDetectTag.c_str()).as_bool(0))
 				{
-					// ... we're gonna iterate through every folder in the Addons folder and grab its name to try loading later. 
+					// ... we're gonna just gonna grab the paths of the folders present in the "Addons" directory. 
 					logOutput << "[NOTE] Auto-Detect Mode enabled! Collecting Addons from \"" << addonInputFolderPath << "\"...\n";
-					// For each filesystem object in the directory...
-					for (std::filesystem::directory_entry objInDir : std::filesystem::directory_iterator(addonInputFolderPath))
+					// If the Addons directory actually exists...
+					if (std::filesystem::is_directory(addonInputFolderPath))
 					{
-						// ... check if it's a directory, and skip it if it isn't.
-						if (!objInDir.is_directory()) continue;
-						// Grab the end iterator of the path objects' string elements...
-						auto pathElementItr = objInDir.path().end();
-						// ... then step back once to get the folder name from there (the last element in a folder path is the folder name).
-						std::string addonName = (--pathElementItr)->string();
-						// If the addon has been disabled though (by prefixing its name with "_", skip it.
-						if (addonName[0] == '_') continue;
-						// Otherwise, push it back in our list of addons to load.
-						addonsToLoad.push_back(addonName);
+						// ... then for each filesystem object in the directory...
+						for (std::filesystem::directory_entry objInDir : std::filesystem::directory_iterator(addonInputFolderPath))
+						{
+							// ... confirm that it's a directory, and skip it if it isn't.
+							if (!objInDir.is_directory()) continue;
+							// Grab the end iterator of the associated path objects' string elements...
+							auto pathElementItr = objInDir.path().end();
+							// ... then step back once to get the folder name from there (the last element in a folder path is the folder name).
+							std::string addonName = (--pathElementItr)->string();
+							// If the addon has been disabled by prefixing its name with "_", skip it.
+							if (addonName[0] == '_') continue;
+							// Otherwise, push the full path back in our list of addons to load.
+							addonPathsToLoad.push_back(objInDir.path().string());
+						}
+						// If after that we've successfully collected some folders...
+						if (!addonPathsToLoad.empty())
+						{
+							// ... note as much.
+							logOutput << "[SUCCESS] Identified " << addonPathsToLoad.size() << " potential Addon(s)!\n";
+						}
+						// Otherwise...
+						else
+						{
+							// ... report that we didn't find anything.
+							logOutput << "[WARNING] Searched Addons directory, but found no potential Addons.\n";
+						}
+					}
+					// Otherwise....
+					else
+					{
+						// ... note that the directory doesn't exist.
+						logOutput << "[WARNING] Expected Addon directory doesn't exist! Unable to search for Addon folders!\n";
 					}
 				}
-				// Otherwise, if we're parsing manual definitions...
-				else
+				// Additionally, for each actual entry in the block...
+				for (pugi::xml_node addonNode : declNodeItr->children(configXMLConstants::addonTag.c_str()))
 				{
-					// ... then for each such entry in the block...
-					for (pugi::xml_node addonNode : declNodeItr->children(configXMLConstants::addonTag.c_str()))
-					{
-						// ... attempt to grab its reported name.
-						std::string addonName = addonNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
-						// If the name wasn't empty...
-						if (addonName.empty()) continue;
-						// ... then push it back in our list!
-						addonsToLoad.push_back(addonName);
-					}
+					// ... attempt to grab its reported path.
+					std::string addonPath = addonNode.attribute(configXMLConstants::pathTag.c_str()).as_string("");
+					// If the path wasn't empty...
+					if (addonPath.empty()) continue;
+					// ... then push it back in our list!
+					addonPathsToLoad.push_back(addonPath);
 				}
-				// Finally, for each collected Addon name...
-				for (std::string currAddonName : addonsToLoad)
+				// Finally, for each collected Addon path...
+				for (std::string currPath : addonPathsToLoad)
 				{
-					logOutput << "Attempting to parse Addon \"" << currAddonName << "\"... \n";
+					logOutput << "Attempting to parse Addon in \"" << currPath << "\"... \n";
 					// ... attmept to parse and load it...
 					addon tempAddon;
-					if (tempAddon.populate(addonInputFolderPath + currAddonName + "/", logOutput))
+					if (tempAddon.populate(currPath, logOutput))
 					{
 						// ... and if we successfully parse it, report the success...
-						logOutput << "[SUCCESS] Addon successfully parsed and included (ShortName: \""<< tempAddon.shortName.str() << "\")!\n";
+						logOutput << "[SUCCESS] Successfully parsed and included Addon \"" << tempAddon.addonName << "\" (ShortName: \""<< tempAddon.shortName.str() << "\")!\n";
 						// ... then store it permanently in our list!
 						collectedAddons.push_back(tempAddon);
 					}
@@ -1694,20 +1714,20 @@ namespace xml
 
 		return result;
 	}
-	std::string addon::getInputXMLPath()
+	std::filesystem::path addon::getInputXMLPath()
 	{
-		return inputDirPath + addonInputConfigFilename;
+		return inputDirPath / addonInputConfigFilename;
 	}
-	std::string addon::getInputASMPath()
+	std::filesystem::path addon::getInputASMPath()
 	{
-		return inputDirPath + addonInputSourceFilename;
+		return inputDirPath / addonInputSourceFilename;
 
 	}
-	std::string addon::getOutputASMPath()
+	std::filesystem::path addon::getOutputASMPath()
 	{
 		return addonsOutputLocation + shortName.str() + ".asm";
 	}
-	std::string addon::getBuildASMPath()
+	std::filesystem::path addon::getBuildASMPath()
 	{
 		return "Source/" + addonOutputFolderPath + shortName.str() + ".asm";
 	}
@@ -1805,7 +1825,7 @@ namespace xml
 				std::string(addonIncludesHeader.size(), '#') << "\n";
 			for (addon currAddon : collectedAddons)
 			{
-				asmAppendStream << ".include \"" << currAddon.getBuildASMPath() << "\"\n";
+				asmAppendStream << ".include " << currAddon.getBuildASMPath() << "\n";
 			}
 		}
 	}
@@ -2098,7 +2118,7 @@ namespace xml
 		}
 		else
 		{
-			logOutput.write("[WARNING] Failed to parse Options XML! Proceeding with default settings.\n", ULONG_MAX, lava::outputSplitter::sOS_CERR);
+			logOutput << "[WARNING] Failed to parse Options XML! Proceeding with default settings.\n";
 		}
 
 		return result;
