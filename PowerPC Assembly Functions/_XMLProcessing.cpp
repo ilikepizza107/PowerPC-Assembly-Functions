@@ -1746,14 +1746,20 @@ namespace xml
 		return result;
 	}
 
-	void applyCollectedAddons()
+	void applyCollectedAddons(lava::outputSplitter& logOutput)
 	{
+		logOutput << "\nFinalizing Addon Content Installs...\n";
+
 		// For each collected Addon...
 		for (addon currAddon : collectedAddons)
 		{
+			logOutput << "Installing \"" << currAddon.addonName << "\"...\n";
+
 			// ... iterate through each of its collected Page Targets.
 			for (auto currPageItr : currAddon.targetPages)
 			{
+				logOutput << "\tPage Target \"" << currPageItr.first.str() << "\"... ";
+
 				// Search the menu for a Page with this target's ShortName...
 				auto pageFindRes = menuPagesMap.find(currPageItr.first);
 				// ... and if it's found...
@@ -1767,6 +1773,14 @@ namespace xml
 					}
 					// Afterwards, re-prepare the page itself to ensure the struct is properly updated.
 					pageFindRes->second->PrepareLines();
+					logOutput << "Success!\n";
+				}
+				// Otherwise...
+				else
+				{
+					// ... report an error.
+					logOutput.write("FAILURE!! No Page exits with the given ShortName; associated Lines not written!\n"
+						, ULONG_MAX, lava::outputSplitter::sOS_CERR);
 				}
 			}
 		}

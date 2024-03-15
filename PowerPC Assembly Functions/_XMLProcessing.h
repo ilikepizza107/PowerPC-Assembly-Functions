@@ -98,7 +98,7 @@ namespace xml
 	bool addonShortNameIsFree(lava::shortNameType nameIn);
 
 	// Adds the lines defined in each Addon to their respective pages within the code menu.
-	void applyCollectedAddons();
+	void applyCollectedAddons(lava::outputSplitter& logOutput);
 	// Creates space for each Addon's LOC values, and generates the AddonAliases file for referencing those values in code.
 	void generateAddonEmbeds(std::ostream& outputStream);
 	// Adds .include statements for each Addon's source file to the end of the generated Code Menu .asm file.
