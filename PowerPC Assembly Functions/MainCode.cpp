@@ -126,7 +126,7 @@ int main(int argc, char** argv)
 		buildThemeLists();
 
 		ChangelogOutput.write(
-			"PowerPC Assembly Functions (Code Menu Building Utility " + lava::version + ")\n", ULONG_MAX, lava::outputSplitter::sOS_NULL);
+			"PowerPC Assembly Functions (Code Menu Building Utility " + lava::version + ")\n", ULONG_MAX, lava::outputSplitter::sOS_DISABLED);
 
 		ChangelogOutput << "Building \"" << cmnuFileName << "\" for ";
 		switch (BUILD_TYPE)
