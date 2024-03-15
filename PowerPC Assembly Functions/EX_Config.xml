@@ -38,10 +38,7 @@
         -->
     </characterList>
 	
-	<addonIncludes>
-		<addon name="Example Addon" shortName="EXAMPLE" />
-	</addonIncludes>
-	
+	<addonIncludes doAutoDetect="true"/>
     
     <codeSettings>
         <!--To declare new rosters, add new entries into this block! Valid for EX builds only!-->

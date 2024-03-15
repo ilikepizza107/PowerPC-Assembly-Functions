@@ -55,8 +55,7 @@ namespace xml
 
 	public:
 		addonLine() {};
-		addonLine(const pugi::xml_node& sourceNode);
-		bool populate(const pugi::xml_node& sourceNode);
+		bool populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput);
 	};
 	struct addonPageTarget
 	{
@@ -67,7 +66,8 @@ namespace xml
 		// Map of line shortnames to their structs.
 		std::map<lava::shortNameType, std::shared_ptr<addonLine>> lineMap{};
 
-		bool populate(const pugi::xml_node& sourceNode);
+		bool populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput);
+		bool lineShortNameIsFree(lava::shortNameType nameIn) const;
 	};
 	struct addon
 	{
@@ -75,15 +75,17 @@ namespace xml
 		std::string addonName = "";
 		// Shortname used for linking.
 		lava::shortNameType shortName = "";
+		// Version, for reporting purposes.
+		std::string versionName = "";
 		// Input Folder.
 		std::string inputDirPath = "";
 		// Maps page shortnames to their structs!
 		std::map<lava::shortNameType, addonPageTarget> targetPages{};
+		// Denotes where this addons' line INDEX values start in memory.
 		std::size_t baseLOC = SIZE_MAX;
 
 		addon() {};
-		addon(std::string inputDirPathIn);
-		bool populate(std::string inputDirPathIn);
+		bool populate(std::string inputDirPathIn, lava::outputSplitter& logOutput);
 		std::string getInputXMLPath();
 		std::string getInputASMPath();
 		std::string getOutputASMPath();
@@ -92,6 +94,7 @@ namespace xml
 
 	extern std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages;
 	extern std::vector<addon> collectedAddons;
+	bool addonShortNameIsFree(lava::shortNameType nameIn);
 
 	void applyCollectedAddons();
 	void generateAddonEmbeds(std::ostream& outputStream);

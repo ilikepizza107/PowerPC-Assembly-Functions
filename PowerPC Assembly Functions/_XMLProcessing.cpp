@@ -31,6 +31,7 @@ namespace xml
 		const std::string valueTag = "value";
 		const std::string flagTag = "flag";
 		const std::string callbackTag = "callback";
+		const std::string versionTag = "version";
 
 		// Line Values
 		const std::string menuLinePageTag = "codeMenuPage";
@@ -130,6 +131,7 @@ namespace xml
 		// Addons
 		const std::string addonsBlockTag = "addonIncludes";
 		const std::string addonTag = "addon";
+		const std::string autoDetectTag = "doAutoDetect";
 		const std::string shortnameTag = "shortName";
 		const std::string localLOCtag = "localLOC";
 	}
@@ -1083,14 +1085,57 @@ namespace xml
 			// If an addons block exists...
 			if (declNodeItr->name() == configXMLConstants::addonsBlockTag)
 			{
+				// ... note that we're parsing it!
 				logOutput << "\nParsing Addon Includes block from \"" << configFilePath << "\"...\n";
 
-				for (pugi::xml_node addonNode : declNodeItr->children(configXMLConstants::addonTag.c_str()))
+				// Establish a list of Addon Names, which we'll populate and load afterwards.
+				std::vector<std::string> addonsToLoad{};
+
+				// If we've requested auto-detect mode...
+				if (declNodeItr->attribute(configXMLConstants::autoDetectTag.c_str()).as_bool(0))
 				{
-					std::string addonName = addonNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
-					addon tempAddon;
-					if (tempAddon.populate(addonInputFolderPath + addonName + "/"))
+					// ... we're gonna iterate through every folder in the Addons folder and grab its name to try loading later. 
+					logOutput << "[NOTE] Auto-Detect Mode enabled! Collecting Addons from \"" << addonInputFolderPath << "\"...\n";
+					// For each filesystem object in the directory...
+					for (std::filesystem::directory_entry objInDir : std::filesystem::directory_iterator(addonInputFolderPath))
 					{
+						// ... check if it's a directory, and skip it if it isn't.
+						if (!objInDir.is_directory()) continue;
+						// Grab the end iterator of the path objects' string elements...
+						auto pathElementItr = objInDir.path().end();
+						// ... then step back once to get the folder name from there (the last element in a folder path is the folder name).
+						std::string addonName = (--pathElementItr)->string();
+						// If the addon has been disabled though (by prefixing its name with "_", skip it.
+						if (addonName[0] == '_') continue;
+						// Otherwise, push it back in our list of addons to load.
+						addonsToLoad.push_back(addonName);
+					}
+				}
+				// Otherwise, if we're parsing manual definitions...
+				else
+				{
+					// ... then for each such entry in the block...
+					for (pugi::xml_node addonNode : declNodeItr->children(configXMLConstants::addonTag.c_str()))
+					{
+						// ... attempt to grab its reported name.
+						std::string addonName = addonNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+						// If the name wasn't empty...
+						if (addonName.empty()) continue;
+						// ... then push it back in our list!
+						addonsToLoad.push_back(addonName);
+					}
+				}
+				// Finally, for each collected Addon name...
+				for (std::string currAddonName : addonsToLoad)
+				{
+					logOutput << "Attempting to parse Addon \"" << currAddonName << "\"... \n";
+					// ... attmept to parse and load it...
+					addon tempAddon;
+					if (tempAddon.populate(addonInputFolderPath + currAddonName + "/", logOutput))
+					{
+						// ... and if we successfully parse it, report the success...
+						logOutput << "[SUCCESS] Addon successfully parsed and included (ShortName: \""<< tempAddon.shortName.str() << "\")!\n";
+						// ... then store it permanently in our list!
 						collectedAddons.push_back(tempAddon);
 					}
 				}
@@ -1395,7 +1440,6 @@ namespace xml
 				auto newPage = collectedNewPages.insert(std::make_pair(shortName, std::make_shared<Page>(lineName, std::vector<Line*>{}, shortName)));
 				linePtr = newPage.first->second->CalledFromLine;
 			}
-			shortName.set("");
 		}
 	}
 	void addonLine::buildIntegerLine(const pugi::xml_node& sourceNode)
@@ -1444,12 +1488,10 @@ namespace xml
 		std::string text = sourceNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
 		linePtr = std::make_shared<Comment>(text);
 	}
-	addonLine::addonLine(const pugi::xml_node& sourceNode)
+	bool addonLine::populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput)
 	{
-		populate(sourceNode);
-	}
-	bool addonLine::populate(const pugi::xml_node& sourceNode)
-	{
+		bool lineTypeUnrecognized = 0;
+
 		lineName = sourceNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 		lineName = getLineNameFromLineText(lineName);
 		shortName = sourceNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
@@ -1463,6 +1505,12 @@ namespace xml
 			if (sourceNode.name() == configXMLConstants::menuLineSubmenuTag)
 			{
 				buildSubmenuLine(sourceNode);
+				if (linePtr.get() == nullptr)
+				{
+					logOutput.write("[ERROR] Failed to establish Submenu Page for Line \"" + lineName + "\": ShortName \"" + shortName.str() + "\" already in use!\n"
+						, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+					shortName.set("");
+				}
 			}
 			else if (sourceNode.name() == configXMLConstants::menuLineIntTag)
 			{
@@ -1480,71 +1528,167 @@ namespace xml
 			{
 				buildToggleLine(sourceNode);
 			}
+			else
+			{
+				lineTypeUnrecognized = 1;
+			}
 			if (linePtr.get() != nullptr)
 			{
 				applyLineBehaviorFlagsFromNode(sourceNode, linePtr.get());
 			}
 		}
+		else
+		{
+			lineTypeUnrecognized = 1;
+		}
+
+		if (lineTypeUnrecognized)
+		{
+			logOutput.write("[ERROR] Failed to parse Line \"" + lineName + "\": Invalid Line type specified (\"" + sourceNode.name() + "\")!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+		}
 
 		return linePtr.get() != nullptr;
 	}
 
-	bool addonPageTarget::populate(const pugi::xml_node& sourceNode)
+	bool addonPageTarget::populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput)
 	{
-		shortName = sourceNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
+		bool errorOccurred = 0;
 
-		for (pugi::xml_node childNode : sourceNode.children())
+		// Grab the target's shortName.
+		shortName = sourceNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
+		// If the collected shortName valid...
+		if (!shortName.empty())
 		{
-			if (childNode.name() == configXMLConstants::menuLinePageTag) continue;
-			std::shared_ptr<addonLine> tempLine = std::make_shared<addonLine>();
-			if (tempLine->populate(childNode))
+			// ... continue and parse its line nodes!
+			// For each node...
+			for (pugi::xml_node childNode : sourceNode.children())
 			{
-				lines.push_back(tempLine);
-				if (!tempLine->shortName.empty())
+				// ... create a corresponding line object... 
+				std::shared_ptr<addonLine> tempLine = std::make_shared<addonLine>();
+				// ... attempt to populate using the associated node. If we populate the line successfully...
+				if (tempLine->populate(childNode, logOutput))
 				{
-					lineMap[tempLine->shortName] = tempLine;
+					// ... verify that it's shortName (if it has one) is free to use. If so...
+					if (tempLine->shortName.empty() || lineShortNameIsFree(tempLine->shortName))
+					{
+						// ... add it to our ordered list of lines.
+						lines.push_back(tempLine);
+						// Additionally, if the line had a proper shortName (ie. it's an interactive line in need of a LOC value)...
+						if (!tempLine->shortName.empty())
+						{
+							// ... additionally add it to our map, so we can handle its LOC and INDEX values later!
+							lineMap[tempLine->shortName] = tempLine;
+						}
+					}
+					else
+					{
+						// ... note the failure!
+						errorOccurred = 1;
+						logOutput.write("[ERROR] Failed to parse Line \"" + tempLine->lineName + "\" on Page Target \"" + shortName.str() + "\"!\n"
+							, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+					}
+				}
+				// Otherwise...
+				else
+				{
+					// ... note the failure and continue.
+					errorOccurred = 1;
 				}
 			}
 		}
+		// Otherwise...
+		else
+		{
+			// ... note the failure and continue.
+			errorOccurred = 1;
+			logOutput.write("[ERROR] Failed to parse Page Target: No shortName was specified!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+		}
 
-		return !lines.empty();
+		return !errorOccurred;
 	}
-
-	addon::addon(std::string inputDirPathIn)
+	bool addonPageTarget::lineShortNameIsFree(lava::shortNameType nameIn) const
 	{
-		populate(inputDirPathIn);
+		return lineMap.find(nameIn) == lineMap.end();
 	}
-	bool addon::populate(std::string inputDirPathIn)
+
+
+	bool addon::populate(std::string inputDirPathIn, lava::outputSplitter& logOutput)
 	{
 		bool result = 0;
 
 		// Only continue with construction if all the necessary folders and files exist...
-		if (!std::filesystem::is_directory(inputDirPathIn)) return result;
-		if (!std::filesystem::is_regular_file(inputDirPathIn + "/" + addonInputSourceFilename)) return result;
-		if (!std::filesystem::is_regular_file(inputDirPathIn + "/" + addonInputConfigFilename)) return result;
-		// ... and the config document parses successfully!
-		pugi::xml_document configDoc;
-		if (!configDoc.load_file(std::string(inputDirPathIn + "/" + addonInputConfigFilename).c_str())) return result;
-		// Locate the root node...
-		pugi::xml_node rootNode = configDoc.child(configXMLConstants::addonTag.c_str());
-		// ... and if it exists...
-		if (rootNode)
+		if (!std::filesystem::is_directory(inputDirPathIn))
 		{
-			addonName = rootNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
-			shortName = rootNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
+			logOutput.write("[ERROR] Parsing Failed: \"" + inputDirPathIn + "\" doesn't exist!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+			return 0;
+		}
+		if (!std::filesystem::is_regular_file(inputDirPathIn + "/" + addonInputSourceFilename))
+		{
+			logOutput.write("[ERROR] Parsing Failed: \"" + inputDirPathIn + "/" + addonInputSourceFilename + "\" doesn't exist!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+			return 0;
+		}
+		if (!std::filesystem::is_regular_file(inputDirPathIn + "/" + addonInputConfigFilename))
+		{
+			logOutput.write("[ERROR] Parsing Failed: \"" + inputDirPathIn + "/" + addonInputConfigFilename + "\" doesn't exist!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+			return 0;
+		}
+		// ... and the config document parses successfully...
+		pugi::xml_document configDoc;
+		if (!configDoc.load_file(std::string(inputDirPathIn + "/" + addonInputConfigFilename).c_str()))
+		{
+			logOutput.write("[ERROR] Parsing Failed: \"" + inputDirPathIn + "/" + addonInputConfigFilename + "\" is invalidly formatted!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+			return 0;
+		}
+		// ... and we successfully identify the root node...
+		pugi::xml_node rootNode = configDoc.child(configXMLConstants::addonTag.c_str());
+		if (!rootNode)
+		{
+			logOutput.write("[ERROR] Parsing Failed: \"" + 
+				inputDirPathIn + "/" + addonInputConfigFilename + "\" has no root \"" + configXMLConstants::addonTag + "\" node!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+			return 0;
+		}
+		// ... and the specified shortname is still available!
+		lava::shortNameType collectedShortName(rootNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string(""));
+		if (!addonShortNameIsFree(collectedShortName))
+		{
+			logOutput.write("[ERROR] Parsing Failed: ShortName \"" + collectedShortName.str() + "\" already in use by another Addon!\n"
+				, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+			return 0;
+		}
 
-			inputDirPath = inputDirPathIn;
+		// Otherwise, parse the rest of the Addon!
+		// Properly store its name, shortname, and version...
+		addonName = rootNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
+		shortName = collectedShortName;
+		versionName = rootNode.attribute(configXMLConstants::versionTag.c_str()).as_string("");
+		// ... and record the input path!
+		inputDirPath = inputDirPathIn;
 
-			// First, grab every page node.
-			for (pugi::xml_node pageNode : rootNode.children(configXMLConstants::menuLinePageTag.c_str()))
+		// Then, for each page node...
+		for (pugi::xml_node pageNode : rootNode.children(configXMLConstants::menuLinePageTag.c_str()))
+		{
+			// ... construct a temp page target...
+			addonPageTarget currTarget;
+			// ... and attempt to populate it. If successful...
+			if (currTarget.populate(pageNode, logOutput))
 			{
-				addonPageTarget tempPage;
-				tempPage.populate(pageNode);
-				if (!tempPage.shortName.empty() && !tempPage.lines.empty())
-				{
-					targetPages[tempPage.shortName] = tempPage;
-					result = 1;
-				}
+				// ... add it to our list of pageTargets.
+				targetPages[currTarget.shortName] = currTarget;
+				result = 1;
+			}
+			// Otherwise...
+			else
+			{
+				// ... report the error!
+				logOutput.write("[ERROR] Unable to apply Page Target \"" + currTarget.shortName.str() + "\" due to the above errors!\n"
+					, ULONG_MAX, lava::outputSplitter::sOS_CERR);
 			}
 		}
 
@@ -1571,6 +1715,20 @@ namespace xml
 
 	std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages{};
 	std::vector<addon> collectedAddons{};
+	bool addonShortNameIsFree(lava::shortNameType nameIn)
+	{
+		bool result = 1;
+
+		// Check through each existing addon...
+		for (addon currAddon : collectedAddons)
+		{
+			// ... and set result to 0 if its shortname matches.
+			result &= currAddon.shortName != nameIn;
+		}
+
+		return result;
+	}
+
 
 	void applyCollectedAddons()
 	{
