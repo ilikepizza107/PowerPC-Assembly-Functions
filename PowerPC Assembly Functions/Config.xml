@@ -19,7 +19,7 @@
             -->
         </menuComments>
     </menuProperties>
-    
+
     <!--To modify the menu's line colors, add new entries into this block!-->
     <menuLineColors>
         <!--Add entries in the following format:
@@ -28,11 +28,22 @@
         <!--Where "lineKind" corresponds to the type of line whose color you're modifying.-->
         <!--0: Normal, 1: Selected, 2: Changed, 3: Changed & Selected, 4: Comment, 5: Locked-->
     </menuLineColors>
-    
+
     <!--The "baseListVersion" field determines which characters will appear in the list for the character switchers!-->
     <!--0: vBrawl, 1: vBrawl & Playable Sopo/GBowser/WarioMan, 2: Project M, 3: Project+-->
     <characterList baseListVersion="3" />
-    
+
+    <!--Use this block to register Addons for inclusion in the menu!-->
+    <!--To define entries manually, you may add entries to this block!-->
+    <!--Additionally, to automatically include any Addons present in the "./Addons/" folder, set the "doAutoDetect" argument to "true".-->
+    <addonIncludes doAutoDetect="true">
+        <!--Add entries in the following format:
+        <addon path="./Addons/Example Addon/" />
+        -->
+        <!--Where "path" is a valid filepath which points to the targeted Addon's directory.-->
+        <!--Note: Paths may be given relative to this folder using "./" syntax, as seen above!-->
+    </addonIncludes>
+
     <codeSettings>
         <!--To declare new themes, add new entries into this block!-->
         <themeChanger enabled="true">
@@ -42,13 +53,13 @@
             </menuTheme>
             -->
         </themeChanger>
-        
+
         <!--Adds a toggle for enabling/disabling grabbing items with aerials and dash attacks to the "Gameplay Modifiers" menu!-->
         <vBrawlItemGrab enabled="true" />
-        
+
         <!--Adds lines for manipulating how many frames of jumpsquat characters go through to the "Gameplay Modifiers" menu!-->
         <jumpsquatModifier enabled="true" />
-        
+
         <!--Controls the behavior of the Player Slot Color Changer Code!-->
         <slotColorChanger enabled="false">
             <colorDefinitions>
