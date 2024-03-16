@@ -1,0 +1,44 @@
+<!--Root Node! Denotes Name (for logging purposes), as well as a unique identifier called a shortName.-->
+<!--This shortName must be 8 characters or fewer, and must not be shared by any other installed plugins!-->
+<addon name="Hitfalling Test Plugin v1.0.0 [Eon, mawwwk, QuickLava]" shortName="WIPMHTFL">
+	<!--A Page Target definition; this indicates which page (identified via shortName) you want the enclosed lines to land on!-->
+	<!--This particular shortName points to the "Gameplay Modifiers" submenu, so enclosed lines will be placed at the end of that page!-->
+	<!--Default Page ShortNames are (by convention) prefixed with an underscore ('_'), and include all the following:-->
+	<!--  Page: Debug Mode Settings,  ShortName: _DEBUG    -->
+	<!--  Page: Flight Mode Settings, ShortName: _FLIGHT   -->
+	<!--  Page: Gameplay Modifiers,   ShortName: _GMPLMOD  -->
+	<!--  Page: Main,                 ShortName: _MAIN     -->
+	<!--  Page: Player 1 Codes,       ShortName: _PLAYER1  -->
+	<!--  Page: Player 2 Codes,       ShortName: _PLAYER2  -->
+	<!--  Page: Player 3 Codes,       ShortName: _PLAYER3  -->
+	<!--  Page: Player 4 Codes,       ShortName: _PLAYER4  -->
+	<!--  Page: Special Modes,        ShortName: _SPECIAL  -->
+	<codeMenuPage shortName="_GMPLMOD">
+		<!--This line declares a new submenu! The name field determines its label in-game, and the shortName works the same as any other Page shortName!-->
+		<!--It must not be in use by any other defined pages (declared by default *or* via Addon), and must be 8 characters or fewer! After declaration though...-->
+		<codeMenuSubmenu name="Hitfalling Settings" shortName="HTFLPAGE"/>
+	</codeMenuPage>
+	<!--You may use it in a Page Target definition to place lines on it! The lines enclosed in this node will all land on the newly defined page!-->
+	<codeMenuPage shortName="HTFLPAGE">
+		<!--The following are simply comments, as seen elsewhere in the code menu.-->
+		<!--Be mindful that there is no word-wrap in the CodeMenu; if a line is too long, it will simply run off the screen.-->
+		<codeMenuComment text="This is a test of the new Addon System! Hello!"/>
+		<codeMenuComment text="In particular, this adapts the Hitfalling Toggle"/>
+		<codeMenuComment text="found in the WIP+ CodeMenu; tyty Eon and mawwwk!"/>
+		<!--Note: Blank comments render as empty lines, and so can be used to separate things visually.-->
+		<codeMenuComment text=""/>
+		<!--Below are interactive line declarations!-->
+		<!--The "name" argument of course defines the line's displayed name, while the shortName is used to Identify the line in code.-->
+		<!--The same rules apply here as with all shortNames: it must be 8 or fewer characters, and be unique among all lines *within this Addon* (not globally)!-->
+		<!--When this Addon gets compiled into the Code Menu, each of its interactive lines will be granted a set of 3 .alias entries to be used in code:-->
+		<!--  {ADDON_SHORTNAME}_{LINE_SHORTNAME}_LOC   : The line's full LOC address; load the value at this location to get the address of the line itself! -->
+		<!--  {ADDON_SHORTNAME}_{LINE_SHORTNAME}_LOC_HI: Just the top half of the above LOC value. Usually 0x804E -->
+		<!--  {ADDON_SHORTNAME}_{LINE_SHORTNAME}_LOC_LO: Just the bottom half of the LOC address.-->
+		<!--See accompanying "Source.asm" file for an example of how these are used!-->
+		<!--Otherwise, the contents of line declarations are identical to what's found in the Options XML!-->
+		<codeMenuToggle name="Hiting ToggleA" shortName="ONOFF">
+			<defaultValue value="false" />
+		</codeMenuToggle>
+	</codeMenuPage>
+</addon>
+
