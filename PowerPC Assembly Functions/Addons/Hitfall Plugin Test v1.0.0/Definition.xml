@@ -36,7 +36,7 @@
 		<!--  {ADDON_SHORTNAME}_{LINE_SHORTNAME}_LOC_LO: Just the bottom half of the LOC address.-->
 		<!--See accompanying "Source.asm" file for an example of how these are used!-->
 		<!--Otherwise, the contents of line declarations are identical to what's found in the Options XML!-->
-		<codeMenuToggle name="Hiting ToggleA" shortName="ONOFF">
+		<codeMenuToggle name="Hitfalling Toggle" shortName="ONOFF">
 			<defaultValue value="false" />
 		</codeMenuToggle>
 	</codeMenuPage>
