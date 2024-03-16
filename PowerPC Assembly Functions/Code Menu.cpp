@@ -1443,7 +1443,17 @@ void CreateMenu(Page& MainPage)
 		x->WritePage();
 	}
 
+	std::vector<char> padding(0x10 - (MenuFile.tellp() % 0x10), 0x00);
+	if (padding.size() < 0x10)
+	{
+		copy(padding.begin(), padding.end(), ostreambuf_iterator<char>(MenuFile));
+	}
 	xml::generateAddonEmbeds(MenuFile);
+	padding.resize(0x10 - (MenuFile.tellp() % 0x10), 0x00);
+	if (padding.size() < 0x10)
+	{
+		copy(padding.begin(), padding.end(), ostreambuf_iterator<char>(MenuFile));
+	}
 }
 
 void constantOverride() {
