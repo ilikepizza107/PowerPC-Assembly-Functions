@@ -369,7 +369,7 @@ extern const std::string asmTextOutputFilePath;
 extern const std::vector<std::string> asmBuildLocationDirectories;
 extern const std::string cmnuBuildLocationDirectory;
 extern const std::string cmnuBuildLocationFilePath;
-extern const std::string addonsOutputFilePath;
+extern const std::string addonsOutputFolderPath;
 extern const std::string addonsBuildLocationFolderPath;
 std::string getCMNUAbsolutePath();
 // AutoGCTRM Constants

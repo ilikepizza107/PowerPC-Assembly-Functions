@@ -1721,13 +1721,13 @@ namespace xml
 		return inputDirPath / addonInputSourceFilename;
 
 	}
-	std::filesystem::path addon::getOutputASMPath()
+	std::filesystem::path addon::getOutputDirPath()
 	{
-		return addonsOutputFilePath + shortName.str() + ".asm";
+		return addonsOutputFolderPath + shortName.str() + "/";
 	}
 	std::filesystem::path addon::getBuildASMPath()
 	{
-		return "Source/" + addonOutputFolderName + shortName.str() + ".asm";
+		return "Source/" + addonOutputFolderName + shortName.str() + "/" + addonInputSourceFilename;
 	}
 
 	std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages{};
@@ -1792,14 +1792,14 @@ namespace xml
 
 		// If an Addons Output folder already exists, delete it to ensure no stale content from the older folder ends up in the new one.
 		// Also ensures that if no addons were defined in this run of the builder that there simply *is* no Addons folder.
-		std::filesystem::remove_all(addonsOutputFilePath);
+		std::filesystem::remove_all(addonsOutputFolderPath);
 		// If any Addons were collected successfully...
 		if (!collectedAddons.empty())
 		{
 			// ... make a new output directory.
-			std::filesystem::create_directory(addonsOutputFilePath);
+			std::filesystem::create_directory(addonsOutputFolderPath);
 			// Additionally, initialize a new output stream for creating the Aliases file.
-			std::ofstream addonAliasBankStream(addonsOutputFilePath + addonAliasBankFilename);
+			std::ofstream addonAliasBankStream(addonsOutputFolderPath + addonAliasBankFilename);
 			// If that stream successfully opened, proceed with building the Alias bank.
 			if (addonAliasBankStream.is_open())
 			{
@@ -1808,8 +1808,8 @@ namespace xml
 				// For each collected Addon...
 				for (addon currAddon : collectedAddons)
 				{
-					// ... copy its source file into the output directory, renamed according to its shortName!
-					std::filesystem::copy_file(currAddon.getInputASMPath(), currAddon.getOutputASMPath());
+					// ... copy its folder into the output directory, renamed according to its shortName!
+					std::filesystem::copy(currAddon.inputDirPath, currAddon.getOutputDirPath());
 
 					// Additionally, mark the beginning of its aliases in the bank...
 					addonAliasBankStream << "# Addon \"" << currAddon.addonName << "\" Lines\n";
@@ -1869,10 +1869,10 @@ namespace xml
 		// If an Addons folder already exists within the build, delete it.
 		std::filesystem::remove_all(addonsBuildLocationFolderPath);
 		// If an output Addon folder was generated on this run of the program...
-		if (std::filesystem::is_directory(addonsOutputFilePath))
+		if (std::filesystem::is_directory(addonsOutputFolderPath))
 		{
 			// ... copy the newly generated Addons output folder to the proper location in the build.
-			std::filesystem::copy(addonsOutputFilePath, addonsBuildLocationFolderPath);
+			std::filesystem::copy(addonsOutputFolderPath, addonsBuildLocationFolderPath, std::filesystem::copy_options::recursive);
 			result = 1;
 		}
 

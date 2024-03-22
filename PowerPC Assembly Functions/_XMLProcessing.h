@@ -88,7 +88,7 @@ namespace xml
 		bool populate(std::string inputDirPathIn, lava::outputSplitter& logOutput);
 		std::filesystem::path getInputXMLPath();
 		std::filesystem::path getInputASMPath();
-		std::filesystem::path getOutputASMPath();
+		std::filesystem::path getOutputDirPath();
 		std::filesystem::path getBuildASMPath();
 	};
 

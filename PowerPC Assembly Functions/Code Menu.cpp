@@ -495,7 +495,7 @@ const std::string asmTextOutputFilePath = outputFolder + asmTextFileName;
 const std::string cmnuOutputFilePath = outputFolder + cmnuFileName;
 const std::string cmnuOptionsOutputFilePath = outputFolder + optionsFilename;
 const std::string cmnuBuildLocationFilePath = buildFolder + cmnuBuildLocationDirectory + cmnuFileName;
-const std::string addonsOutputFilePath = outputFolder + addonOutputFolderName;
+const std::string addonsOutputFolderPath = outputFolder + addonOutputFolderName;
 const std::string addonsBuildLocationFolderPath = buildFolder + "Source/" + addonOutputFolderName;
 std::string getCMNUAbsolutePath()
 {
