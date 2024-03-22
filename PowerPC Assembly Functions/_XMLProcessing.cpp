@@ -2164,22 +2164,29 @@ namespace xml
 		bool result = 0;
 
 		logOutput << "\nParsing Options XML from \"" << xmlPathIn << "\"...\n";
-		pugi::xml_document tempDoc;
-		if (loadMenuOptionsTree(xmlPathIn, tempDoc))
+		if (std::filesystem::is_regular_file(xmlPathIn))
 		{
-			logOutput << "[SUCCESS] Applying settings...\n";
-			std::shared_ptr<std::ostream> changelogStreamPtr = logOutput.getOutputEntry(__logOutputStruct::changelogID)->targetStream;
-			std::streampos outputPos = changelogStreamPtr->tellp();
-			applyLineSettingsFromMenuOptionsTree(mainPageIn, tempDoc, logOutput);
-			if (outputPos == changelogStreamPtr->tellp())
+			pugi::xml_document tempDoc;
+			if (loadMenuOptionsTree(xmlPathIn, tempDoc))
 			{
-				logOutput << "[NOTE] XML parsed successfully, no changes detected!\n";
+				logOutput << "[SUCCESS] Applying settings...\n";
+				std::shared_ptr<std::ostream> changelogStreamPtr = logOutput.getOutputEntry(__logOutputStruct::changelogID)->targetStream;
+				std::streampos outputPos = changelogStreamPtr->tellp();
+				applyLineSettingsFromMenuOptionsTree(mainPageIn, tempDoc, logOutput);
+				if (outputPos == changelogStreamPtr->tellp())
+				{
+					logOutput << "[NOTE] XML parsed successfully, no changes detected!\n";
+				}
+				result = 1;
 			}
-			result = 1;
+			else
+			{
+				logOutput << "[WARNING] Failed to parse Options XML! Proceeding with default settings.\n";
+			}
 		}
 		else
 		{
-			logOutput << "[WARNING] Failed to parse Options XML! Proceeding with default settings.\n";
+			logOutput << "[NOTE] Options XML not found, proceeding with default settings.\n";
 		}
 
 		return result;
