@@ -350,13 +350,13 @@ void psccEmbedFloatTable()
 void psccCallbackCodes()
 {
 	CodeRawStart(codePrefix + "Embed Color Callback Table" + codeSuffix,
-		lava::numToDecStringWithPadding(pscc::callbackTableEntryCount, 0) + " Slots Long, Final is Reserved for RGB Strobe!");
+		lava::numToDecStringWithPadding(pscc::callbackTableEntryCount, 0) + " Slots Long, First is Reserved for RGB Strobe!");
 	GeckoDataEmbedStart();
+	WriteIntToFile(0xFFFFFFFF);
 	for (std::size_t i = 0; i < (pscc::callbackTableEntryCount - 1); i++)
 	{
 		WriteIntToFile(0x00000000);
 	}
-	WriteIntToFile(0xFFFFFFFF);
 	GeckoDataEmbedEnd(PSCC_CALLBACK_TABLE_LOC);
 	CodeRawEnd();
 
@@ -368,7 +368,7 @@ void psccCallbackCodes()
 	BLR();
 	GeckoDataEmbedEnd(ULONG_MAX, 1);
 	LoadIntoGeckoPointer(PSCC_CALLBACK_TABLE_LOC);
-	StoreGeckoBaseAddressRelativeTo((pscc::callbackTableEntryCount - 1) * 0x4, 1);
+	StoreGeckoBaseAddressRelativeTo(0, 1);
 	GeckoReset();
 	CodeRawEnd();
 }
@@ -514,11 +514,12 @@ void psccMainCode()
 	int reg0 = 0;
 	int reg1 = 11;
 	int reg2 = 12;
+	int reg3 = 3;
 	int GQRBackupReg1 = 9;
 	int GQRBackupReg2 = 10;
 	int CustomGQRID1 = 917; int CustomGQRIndex1 = CustomGQRID1 - 912; // GQR5
 	int CustomGQRID2 = 918; int CustomGQRIndex2 = CustomGQRID2 - 912; // GQR6
-	int RGBAResultReg = 3;
+	int CLR0ResultStructReg = 28;
 
 	int floatCalcRegisters[2] = { 7, 8 };
 	int floatTempRegisters[2] = { 9, 10 };
@@ -529,6 +530,10 @@ void psccMainCode()
 	int exitLabel = GetNextLabel();
 	// Hooks "GetAnmResult/[nw4r3g3d9ResAnmClrCFPQ34nw4r3g3d12]/g3d_res".
 	ASMStart(0x801934fc, codePrefix + "Main Code" + codeSuffix, "");
+	// Restore Original Instruction: Store RGBA result in Result struct.
+	// Note, this register is free to use after this point, since the result's been stored now!
+	STW(reg3, CLR0ResultStructReg, 0x4);
+
 	// Load the code mode short...
 	LHZ(reg2, 1, safeStackWordOff + 0x4);
 	// ... and if it's null...
@@ -554,14 +559,15 @@ void psccMainCode()
 		ADDIC(reg0, reg0, -1, 1);
 		// If the target port doesn't correspond to one of the code menu lines, we'll skip execution.
 		JumpToLabel(exitLabel, bCACB_LESSER);
+		// Note: We do between 0 and 7 specifically here to accommodate the Random Icon's custom frame value.
 		CMPLI(reg0, 7, 0);
 		JumpToLabel(exitLabel, bCACB_GREATER);
+		// Clamp target line to range from 0-3, again to accommmodate Random Icon.
 		ANDI(reg0, reg0, 0b11);
 
-		// Set up the top half of reg1 with 0x804E to simplify accessing code menu stuff.
-		ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-		// Store our RGBA value so we can load it Paired-Single style!
-		STW(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF);
+		// Set up the top half of the address for Code Menu stuff in reg3 ahead of time so we don't have to redundantly do it.
+		ADDIS(reg3, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+
 		// Backup GQRs in preparation for our Paired Single float reads.
 		MFSPR(GQRBackupReg1, CustomGQRID1);
 		MFSPR(GQRBackupReg2, CustomGQRID2);
@@ -574,14 +580,17 @@ void psccMainCode()
 		ADDIS(reg2, 0, 0x1005);
 		MTSPR(reg2, CustomGQRID2);
 		// Load Hue Float to Hue FReg
-		PSQ_L(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x4) & 0xFFFF, 1, CustomGQRIndex1);
+		PSQ_L(floatHSLRegisters[0], CLR0ResultStructReg, 0x04, 1, CustomGQRIndex1);
 		// Load Saturation and Luminance Floats to Sat FReg.
-		PSQ_L(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 0x5) & 0xFFFF, 0, CustomGQRIndex1);
+		PSQ_L(floatHSLRegisters[1], CLR0ResultStructReg, 0x05, 0, CustomGQRIndex1);
 		// Load 3.0f into TempReg0...
 		LFS(floatTempRegisters[0], 2, -0x6168);
 		// ... and use it to multiply the Hue (to ensure it ranges from 0.0 to 6.0).
 		FMULS(floatHSLRegisters[0], floatHSLRegisters[0], floatTempRegisters[0]);
 
+		// Set up the top half of reg1 with 0x804E to simplify accessing code menu stuff.
+		// Note: Not using reg3 for this since we're gonna modify the register through the RLWIMI trick below.
+		ADDIS(reg1, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
 		// Load buffered Team Battle Status Offset
 		LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 		// Now multiply the target port by 4 to calculate the offset to the line we want, and insert it into reg1.
@@ -600,8 +609,7 @@ void psccMainCode()
 		ADD(reg2, reg2, reg0);
 
 		// Grab the pointer to our Float Hue Table
-		ADDIS(reg1, 0, PSCC_FLOAT_TABLE_LOC >> 0x10);
-		LWZ(reg1, reg1, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
+		LWZ(reg1, reg3, PSCC_FLOAT_TABLE_LOC & 0xFFFF);
 
 		// Grab the appropriate Color Index
 		LBZX(reg2, reg1, reg2);
@@ -701,11 +709,9 @@ void psccMainCode()
 		FABS(floatCalcRegisters[0], floatCalcRegisters[0]);								// C = Abs(C)
 		FNMSUBS(floatCalcRegisters[0], floatHSLRegisters[1], floatCalcRegisters[0], floatHSLRegisters[1]); // C = -(Sat*C - Sat) == Sat(1.0f - C)
 
-		// Get integer-converted Hue value in reg2 before calcing X so we can free up HSLReg0!
-		ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
 		// Note: using GQR3 here for Non-quantized Unsigned Short conversion).
-		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4, 1, 3);
-		LHZ(reg2, reg1, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
+		PSQ_ST(floatHSLRegisters[0], reg3, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4, 1, 3);
+		LHZ(reg2, reg3, (FLOAT_CONVERSION_STAGING_LOC & 0xFFFF) + 4);
 
 		// We don't need the original Hue value anymore, but do need (Hue % 2.0f) - 1.0f, so we'll do that in HSLReg0!
 		B(2);																			// HSLReg0 = Hue mod 2.0f
@@ -754,13 +760,9 @@ void psccMainCode()
 		PS_ADD(floatHSLRegisters[1], floatHSLRegisters[1], floatTempRegisters[1]);
 
 		// Store R component
-		PSQ_ST(floatHSLRegisters[0], reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF, 1, CustomGQRIndex1);
+		PSQ_ST(floatHSLRegisters[0], CLR0ResultStructReg, 0x04, 1, CustomGQRIndex1);
 		// Store G and B components
-		PSQ_ST(floatHSLRegisters[1], reg1, (FLOAT_CONVERSION_STAGING_LOC + 5) & 0xFFFF, 0, CustomGQRIndex1);
-		// Store A component
-		STB(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 7) & 0xFFFF);
-		// Re-load final RGBA hex!
-		LWZ(RGBAResultReg, reg1, (FLOAT_CONVERSION_STAGING_LOC + 4) & 0xFFFF);
+		PSQ_ST(floatHSLRegisters[1], CLR0ResultStructReg, 0x05, 0, CustomGQRIndex1);
 
 		// Restore backed up GQR0 values!
 		MTSPR(GQRBackupReg1, CustomGQRID1);
@@ -769,7 +771,7 @@ void psccMainCode()
 	Label(skipMode1);
 
 	Label(exitLabel);
-	ASMEnd(0x907c0004); // Restore Original Instruction: stw r3, 0x0004 (r28)
+	ASMEnd();
 }
 
 void playerSlotColorChangersV3(bool enabled)

@@ -310,12 +310,13 @@ namespace pscc
 	std::map<std::string, color> colorTable =
 	{
 		{psccConstants::ColNameP1_M,	{0.00f,	1.00f,	0.50f}},
-		{psccConstants::ColNameP1_IG2,	{5.80f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP1_IG2,	{5.80f,	1.00f,	0.40f}},
 		{psccConstants::ColNameP2_M,	{3.90f,	0.70f,	0.50f}},
 		{psccConstants::ColNameP2_IG,	{3.60f,	1.00f,	0.50f}},
+		{psccConstants::ColNameP2_IG2,	{3.45f,	1.00f,	0.40f}},
 		{psccConstants::ColNameP3_M,	{0.85f,	0.90f,	0.55f, pscc::color::fb_DISABLE_HUE_MOD}},
 		{psccConstants::ColNameP4_M,	{2.10f,	0.80f,	0.375f, pscc::color::fb_DISABLE_HUE_MOD}},
-		{psccConstants::ColNameRGB,     {0.00f, 1.00f,  0.50f, pscc::color::fb_DISABLE_HUE_MOD, callbackTableEntryCount - 1}},
+		{psccConstants::ColNameRGB,     {0.00f, 1.00f,  0.50f, pscc::color::fb_DISABLE_HUE_MOD, 0}},
 	};
 	std::size_t getColorTableSizeInBytes()
 	{
@@ -373,7 +374,7 @@ namespace pscc
 		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP2_M;
 		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP2_M;
 		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP2_IG;
-		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP2_IG;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP2_IG2;
 
 		currCol = &entries[schemePredefIDs::spi_P3];
 		currCol->name = psccConstants::SchemeNameP3;
