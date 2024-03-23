@@ -948,8 +948,9 @@ void ResetPage(int StackReg, int TempReg1, int TempReg2, int TempReg3, int TempR
 void ExitMenu();
 void EnterMenu(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2);
 void LeaveMenu(int PageReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5, int TempReg6, int ActionReg);
-void DecreaseValue(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5);
-void IncreaseValue(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5);
+extern int ModifyLineValueSubroutineLabel;
+// r4 = PageReg, r5 = LineReg, r6 = DoDecrReg, r7 = LineTypeReg (left unmodified), r3 & r7 - r12 = Work Regs (modifed)
+void ModifyLineValueSubroutine();
 void Move(int LineReg, int PageReg, int NextLineOffset, int TempReg1, int TempReg2);
 void GetActionFromInputs(int ButtonReg, int ControlStickXReg, int ControlStickYReg, int ResultReg);
 void SetControlStickAction(int StickValReg, int TimerLoc, int NumWaitFrames, int FirstTimeNumWaitFrames, int Threshhold, int PositiveAction, int NegativeAction, int ResultReg);

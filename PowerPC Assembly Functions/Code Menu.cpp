@@ -1568,6 +1568,9 @@ void constantOverride() {
 
 void ControlCodeMenu()
 {
+	// Establish Subroutines!
+	ModifyLineValueSubroutineLabel = GetNextLabel();
+
 	ASMStart(0x80029574, "[CM: Code Menu] Control Code Menu");
 	vector<int> FPRegs(14);
 	iota(FPRegs.begin(), FPRegs.end(), 0);
@@ -2204,7 +2207,12 @@ void ControlCodeMenu()
 	Label(NotLoaded);
 
 	RestoreRegisters();
-	ASMEnd(0x4e800020); //blr
+	BLR();
+
+	// Beginning of Subroutines
+	ModifyLineValueSubroutine();
+
+	ASMEnd();
 }
 
 void ApplyMenuSetting(int Index, int Destination, int reg1, int reg2, int size)
@@ -2252,18 +2260,22 @@ void ExecuteAction(int ActionReg)
 		Move(LineReg, PageReg, TempReg1, TempReg2, TempReg3);
 	}EndIf();
 
-
 	//change value
-	If(ActionReg, EQUAL_I, INCREMENT); //increment
-	IncreaseValue(LineReg, PageReg, TypeReg, TempReg1, TempReg2, TempReg3, TempReg4, TempReg5);
-	EndIf(); //increment
-	If(ActionReg, EQUAL_I, ENTER_SUB_MENU); //increment, if A is pressed
-	IncreaseValue(LineReg, PageReg, TypeReg, TempReg1, TempReg2, TempReg3, TempReg4, TempReg5);
-	EndIf(); //increment
+	// Assume by default that we're gonna increment here, so set r6 to 0!
+	ADDI(6, 0, 0);
+
+	//increment
+	CMPLI(ActionReg, INCREMENT, 0);
+	JumpToLabel(ModifyLineValueSubroutineLabel, bCACB_EQUAL, 1);
+	//increment, if A is pressed
+	CMPLI(ActionReg, ENTER_SUB_MENU, 0);
+	JumpToLabel(ModifyLineValueSubroutineLabel, bCACB_EQUAL, 1);
 	
-	If(ActionReg, EQUAL_I, DECREMENT); //decrement
-	DecreaseValue(LineReg, PageReg, TypeReg, TempReg1, TempReg2, TempReg3, TempReg4, TempReg5);
-	EndIf(); //decrement
+	// If we're decrementing though set r6 so we decrement instead...
+	ADDI(6, 0, 1);
+	// ... and attempt the branch!
+	CMPLI(ActionReg, DECREMENT, 0);
+	JumpToLabel(ModifyLineValueSubroutineLabel, bCACB_EQUAL, 1);
 
 
 	//reset to defaults
@@ -2397,143 +2409,130 @@ void LeaveMenu(int PageReg, int TempReg1, int TempReg2, int TempReg3, int TempRe
 	}EndIf();
 }
 
-void DecreaseValue(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5)
+int ModifyLineValueSubroutineLabel = INT_MAX;
+void ModifyLineValueSubroutine()
 {
-	If(TypeReg, LESS_OR_EQUAL_I, HAS_VALUE_LIMIT); {
-		//has a value to change
-		If(TypeReg, EQUAL_I, SELECTION_LINE); {
-			//selection
-			LWZ(TempReg1, LineReg, Line::VALUE);
-			Decrement(TempReg1);
+	int PageReg = 4;
+	int LineReg = 5;
+	// 0 = Incr, 1 = Decr
+	int OoDecrReg = 6;
+	int TypeReg = 7;
+	int TempReg1 = 12;
+	int TempReg2 = 11;
+	int TempReg3 = 10;
+	int TempReg4 = 9;
+	int TempReg5 = 8;
 
-			If(TempReg1, LESS_I, 0); {
-				LWZ(TempReg1, LineReg, Line::MAX);
-			}EndIf();
-			STW(TempReg1, LineReg, Line::VALUE);
-		}Else(); If(TypeReg, EQUAL_I, INTEGER_LINE); {
-			//integer
-			LWZ(TempReg1, LineReg, Line::VALUE);
-			LWZ(TempReg3, LineReg, Integer::SPEED);
-			SUBF(TempReg1, TempReg1, TempReg3);
+	int TempFReg1 = 1;
+	int TempFReg2 = 2;
+	int TempFReg3 = 3;
 
-			LWZ(TempReg3, LineReg, Integer::MIN);
-			// If Decremented Value is less than Min value...
-			If(TempReg1, LESS, TempReg3); {
-				// ... load flag byte...
-				LBZ(TempReg2, LineReg, Line::FLAGS);
-				// ... and check if the Wrap flag is enabled.
-				ANDI(TempReg2, TempReg2, Integer::INT_FLAG_ALLOW_WRAP);
-				BC(2, bCACB_EQUAL);
-				// If it is, overwrite the MIN value in TempReg3 with the MAX value!
-				LWZ(TempReg3, LineReg, Line::MAX);
+	int exitLabel = GetNextLabel();
 
-				// And finally, copy the TempReg3 into TempReg1.
-				// Final result being, if Wrap flag is enabled, TempReg1 == Max, if not, TempReg1 == Min.
-				MR(TempReg1, TempReg3);
-			}EndIf();
+	Label(ModifyLineValueSubroutineLabel);
 
-			STW(TempReg1, LineReg, Line::VALUE);
-		}Else(); {
-			//floating
-			LFS(2, LineReg, Line::VALUE);
-			LFS(1, LineReg, Floating::SPEED);
-			FSUB(1, 2, 1);
+	// First, check that this line is a type which has an actual value to change.
+	CMPLI(TypeReg, HAS_VALUE_LIMIT, 0);
+	// If not, skip to the end of the subroutine.
+	JumpToLabel(exitLabel, bCACB_GREATER);
 
-			LFS(2, LineReg, Floating::MIN);
-			FCMPU(1, 2, 0);
-			BC(4, BRANCH_IF_FALSE, LT);
-			LFS(2, LineReg, Floating::MAX);
-			STFS(2, LineReg, Line::VALUE);
-			B(2);
-			STFS(1, LineReg, Line::VALUE);
-		}EndIf(); EndIf(); //done
+	// Pre-compare the Change Direction into CR7, since we need it for every case.
+	CMPLI(OoDecrReg, 0, 7);
 
-		//set changed flag
+	If(TypeReg, EQUAL_I, FLOATING_LINE);
+	{
+		// Load the Current Value and Speed as Floats...
+		LFS(TempFReg1, LineReg, Line::VALUE);
+		LFS(TempFReg2, LineReg, Floating::SPEED);
+		// ... and apply the requested operation.
+		// If we're subtracting instead of adding...
+		BC(2, bCACB_EQUAL.inConditionRegField(7));
+		// ... then negate the Speed value before we add, so we subtract instead!
+		FNEG(TempFReg2, TempFReg2);
+		// And actually do the addition.
+		FADDS(TempFReg3, TempFReg1, TempFReg2);
+
+		// Then clamp the value between the Min and Max!
+		// Load the relevant values...
+		LFS(TempFReg1, LineReg, Floating::MIN);
+		LFS(TempFReg2, LineReg, Floating::MAX);
+		// If we're below the Minimum...
+		FCMPU(TempFReg3, TempFReg1, 1);
+		BC(2, bCACB_GREATER_OR_EQ.inConditionRegField(1));
+		// ... then set Value to Maximum!
+		FMR(TempFReg3, TempFReg2);
+		// And if we're above the Maximum...
+		FCMPU(TempFReg3, TempFReg2, 1);
+		BC(2, bCACB_LESSER_OR_EQ.inConditionRegField(1));
+		// ... then set Value to Minimum!
+		FMR(TempFReg3, TempFReg1);
+
+		// And store the result to apply it!
+		STFS(TempFReg3, LineReg, Line::VALUE);
+	}
+	Else();
+	{
+		// Load the line's current value.
 		LWZ(TempReg1, LineReg, Line::VALUE);
-		LBZ(TempReg2, LineReg, Line::COLOR);
-		LWZ(TempReg3, LineReg, Line::DEFAULT);
-		LWZ(TempReg5, PageReg, Page::NUM_CHANGED_LINES);
-		RLWINM(TempReg4, TempReg2, 29, 31, 31);
-		ANDI(TempReg2, TempReg2, ~0x8);
-		If(TempReg1, NOT_EQUAL, TempReg3); {
-			//not default
-			Increment(TempReg5);
-			ORI(TempReg2, TempReg2, 0x8);
-		}EndIf();
-		SUBF(TempReg5, TempReg5, TempReg4);
-		STB(TempReg2, LineReg, Line::COLOR);
-		STW(TempReg5, PageReg, Page::NUM_CHANGED_LINES);
-	}EndIf();
-}
+		// Prepare our Speed and Min values (initializing to 1 and 0, respectively, to accommodate Selection lines).
+		ADDI(TempReg2, 0, 1);
+		ADDI(TempReg3, 0, 0);
 
-void IncreaseValue(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5)
-{
-	If(TypeReg, LESS_OR_EQUAL_I, HAS_VALUE_LIMIT); {
-		//has a value to change
-		If(TypeReg, EQUAL_I, SELECTION_LINE); {
-			//selection
-			LWZ(TempReg1, LineReg, Line::VALUE);
-			Increment(TempReg1);
+		// If we *aren't* looking at a Selection line though...
+		CMPLI(TypeReg, SELECTION_LINE, 0);
+		BC(3, bCACB_EQUAL);
+		// ... we'll grab the actual Speed and Min values from the line itself!
+		LWZ(TempReg2, LineReg, Line::SPEED);
+		LWZ(TempReg3, LineReg, Line::MIN);
 
-			LWZ(TempReg2, LineReg, Line::MAX);
-			If(TempReg1, GREATER, TempReg2); {
-				SetRegister(TempReg1, 0);
-			}EndIf();
-			STW(TempReg1, LineReg, Line::VALUE);
-		}Else(); If(TypeReg, EQUAL_I, INTEGER_LINE); {
-			//integer
-			LWZ(TempReg1, LineReg, Line::VALUE);
-			LWZ(TempReg3, LineReg, Integer::SPEED);
-			ADD(TempReg1, TempReg1, TempReg3);
+		// Now apply the actual operation.
+		// If we're subtracting instead of adding...
+		BC(2, bCACB_EQUAL.inConditionRegField(7));
+		// ... then negate the Speed value before we add, so we subtract instead!
+		NEG(TempReg2, TempReg2);
+		// And actually do the addition.
+		ADD(TempReg1, TempReg1, TempReg2);
 
-			LWZ(TempReg3, LineReg, Integer::MAX);
-			// If Incremented Value is greater than Max value...
-			If(TempReg1, GREATER, TempReg3); {
-				// ... load flag byte...
-				LBZ(TempReg2, LineReg, Line::FLAGS);
-				// ... and check if the Wrap flag is enabled.
-				ANDI(TempReg2, TempReg2, Integer::INT_FLAG_ALLOW_WRAP);
-				BC(2, bCACB_EQUAL);
-				// If it is, overwrite the MAX value in TempReg3 with the MIN value!
-				LWZ(TempReg3, LineReg, Line::MIN);
+		// Then clamp the value between the Min and Max!
+		// We don't need the Speed value anymore, so we'll load the Max over it.
+		LWZ(TempReg2, LineReg, Line::MAX);
 
-				// And finally, copy TempReg3 into TempReg1.
-				// Final result being, if Wrap flag is enabled, TempReg1 == Min, if not, TempReg1 == Max.
-				MR(TempReg1, TempReg3);
-			}EndIf();
+		// First, if we're below the Minimum...
+		CMP(TempReg1, TempReg3, 0);
+		BC(2, bCACB_GREATER_OR_EQ);
+		// ... then set Value to the Maximumum to wrap back around!
+		MR(TempReg1, TempReg2);
+		// And if we're above the Maximum...
+		CMP(TempReg1, TempReg2, 0);
+		BC(2, bCACB_LESSER_OR_EQ);
+		// ... then set Value to the Minimum to wrap back around!
+		MR(TempReg1, TempReg3);
 
-			STW(TempReg1, LineReg, Line::VALUE);
-		}Else(); {
-			//floating
-			LFS(2, LineReg, Line::VALUE);
-			LFS(1, LineReg, Floating::SPEED);
-			FADD(1, 2, 1);
+		// And store the result to apply it!
+		STW(TempReg1, LineReg, Line::VALUE);
+	}
+	EndIf();
 
-			LFS(2, LineReg, Floating::MAX);
-			FCMPU(1, 2, 0);
-			BC(4, BRANCH_IF_FALSE, GT);
-			LFS(2, LineReg, Floating::MIN);
-			STFS(2, LineReg, Line::VALUE);
-			B(2);
-			STFS(1, LineReg, Line::VALUE);
-		}EndIf(); EndIf(); //done
+	//set changed flag
+	LWZ(TempReg1, LineReg, Line::VALUE);
+	LBZ(TempReg2, LineReg, Line::COLOR);
+	LWZ(TempReg3, LineReg, Line::DEFAULT);
+	LWZ(TempReg5, PageReg, Page::NUM_CHANGED_LINES);
+	RLWINM(TempReg4, TempReg2, 29, 31, 31);
+	ANDI(TempReg2, TempReg2, ~0x8);
+	If(TempReg1, NOT_EQUAL, TempReg3);
+	{
+		//not default
+		Increment(TempReg5);
+		ORI(TempReg2, TempReg2, 0x8);
+	}
+	EndIf();
+	SUBF(TempReg5, TempReg5, TempReg4);
+	STB(TempReg2, LineReg, Line::COLOR);
+	STW(TempReg5, PageReg, Page::NUM_CHANGED_LINES);
 
-		//set changed flag
-		LWZ(TempReg1, LineReg, Line::VALUE);
-		LBZ(TempReg2, LineReg, Line::COLOR);
-		LWZ(TempReg3, LineReg, Line::DEFAULT);
-		LWZ(TempReg5, PageReg, Page::NUM_CHANGED_LINES);
-		RLWINM(TempReg4, TempReg2, 29, 31, 31);
-		ANDI(TempReg2, TempReg2, ~0x8);
-		If(TempReg1, NOT_EQUAL, TempReg3); {
-			//not default
-			Increment(TempReg5);
-			ORI(TempReg2, TempReg2, 0x8);
-		}EndIf();
-		SUBF(TempReg5, TempReg5, TempReg4);
-		STB(TempReg2, LineReg, Line::COLOR);
-		STW(TempReg5, PageReg, Page::NUM_CHANGED_LINES);
-	}EndIf();
+	Label(exitLabel);
+	BLR();
 }
 
 void Move(int LineReg, int PageReg, int NextLineOffset, int TempReg1, int TempReg2) {
