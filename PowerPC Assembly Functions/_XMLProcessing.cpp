@@ -49,6 +49,7 @@ namespace xml
 		const std::string valueDefaultTag = "defaultValue";
 		const std::string selectionDefaultTag = "defaultOption";
 		const std::string selectionOptionTag = "option";
+		const std::string formatTag = "format";
 
 		// Line Behavior Flag Tags
 		struct lbfTagVec : std::vector<std::string>
@@ -1449,6 +1450,18 @@ namespace xml
 	}
 
 	// Addons
+	std::string getFormatStr(const pugi::xml_node& sourceNode, std::string defaultString)
+	{
+		std::string result = defaultString;
+
+		pugi::xml_node formatNode = sourceNode.child(configXMLConstants::formatTag.c_str());
+		if (formatNode)
+		{
+			result = formatNode.attribute(configXMLConstants::textTag.c_str()).as_string(defaultString);
+		}
+
+		return result;
+	}
 	void addonLine::buildSubmenuLine(const pugi::xml_node& sourceNode)
 	{
 		if (!shortName.empty())
@@ -1462,7 +1475,7 @@ namespace xml
 	}
 	void addonLine::buildIntegerLine(const pugi::xml_node& sourceNode)
 	{
-		linePtr = std::make_shared<Integer>(lineName, INT_MAX, INT_MAX, INT_MAX, INT_MAX, this->INDEX);
+		linePtr = std::make_shared<Integer>(lineName, INT_MAX, INT_MAX, INT_MAX, INT_MAX, this->INDEX, getFormatStr(sourceNode, "%d"));
 		fieldChangeArr allowedChanges{};
 		allowedChanges[lineFields::lf_ValMin] = 1;
 		allowedChanges[lineFields::lf_ValMax] = 1;
@@ -1472,7 +1485,7 @@ namespace xml
 	}
 	void addonLine::buildFloatLine(const pugi::xml_node& sourceNode)
 	{
-		linePtr = std::make_shared<Floating>(lineName, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, this->INDEX);
+		linePtr = std::make_shared<Floating>(lineName, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, this->INDEX, getFormatStr(sourceNode, "%.3f"));
 		fieldChangeArr allowedChanges{};
 		allowedChanges[lineFields::lf_ValMin] = 1;
 		allowedChanges[lineFields::lf_ValMax] = 1;
