@@ -3168,8 +3168,29 @@ void SaveReplay()
 	MR(reg4, 3);
 
 #if DOLPHIN_BUILD
-	WriteFileToVF(PathPtrReg, reg1, reg2);
+	int tryWriteLabel = GetNextLabel();
+	int writeFinishedLabel = GetNextLabel();
 
+	// Initialize a counter for how many times we're allowed to try loading.
+	ADDI(reg7, 0, 0x8);
+
+	Label(tryWriteLabel);
+	WriteFileToVF(PathPtrReg, reg1, reg2);
+	// If writing the replay succeeded, we can continue.
+	CMPLI(3, 0x00, 0);
+	JumpToLabel(writeFinishedLabel, bCACB_EQUAL);
+	// If not, decrement our retry counter...
+	ADDIC(reg7, reg7, -1, 1);
+	// ... and if the counter winds up below 0, we're out of tries, give up.
+	JumpToLabel(writeFinishedLabel, bCACB_LESSER);
+	// Otherwise though, we need to retry. Wait for a while...
+	SetRegs(3, { 0, 607500 * 3 });
+	CallBrawlFunc(0x801e1a80); //OSSleepTicks
+	// ... then try the write again.
+	JumpToLabel(tryWriteLabel);
+
+	// Once we're done though, unmount and prepare to exit.
+	Label(writeFinishedLabel);
 	SetRegs(3, { DOLPHIN_MOUNT_VF_LOC, 0 });
 	CallBrawlFunc(0x80021038); //unmountVF
 	SetRegister(reg1, 0);
