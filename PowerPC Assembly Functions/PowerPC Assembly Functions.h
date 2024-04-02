@@ -559,6 +559,8 @@ void B(int JumpDist);
 void BA(int Address);
 void BC(int JumpDist, branchConditionAndConditionBit conditionIn, bool setLinkRegister = 0);
 void BC(int JumpDist, int BranchCondition, int ConditionBit, bool setLinkRegister = 0);
+void BCLR(branchConditionAndConditionBit conditionIn, bool setLinkRegister = 0);
+void BCLR(int BranchCondition, int ConditionBit, bool setLinkRegister = 0);
 void BCTR();
 void BCTRL();
 void BL(int JumpDist);

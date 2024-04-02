@@ -2220,6 +2220,22 @@ void BC(int JumpDist, int BranchCondition, int ConditionBit, bool setLinkRegiste
 	WriteIntToFile(OpHex);
 }
 
+void BCLR(branchConditionAndConditionBit conditionIn, bool setLinkRegister)
+{
+	BCLR(conditionIn.BranchCondition, conditionIn.ConditionBit, setLinkRegister);
+}
+void BCLR(int BranchCondition, int ConditionBit, bool setLinkRegister)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(BranchCondition, 5, 10);
+	OpHex |= GetOpSegment(ConditionBit, 5, 15);
+	OpHex |= GetOpSegment(0, 3, 18);
+	OpHex |= GetOpSegment(0, 2, 20);
+	OpHex |= GetOpSegment(16, 10, 30);
+	OpHex |= GetOpSegment(setLinkRegister, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
 void BCTR()
 {
 	WriteIntToFile(0x4e800420);
