@@ -571,6 +571,14 @@ void CMPI(int Reg, int Immediate, int CondField);
 void CMPL(int Reg1, int Reg2, int CondField);
 void CMPLI(int Reg, int Immediate, int CondField);
 void CNTLZW(int DestReg, int SourceReg, bool SetConditionReg = 0);
+void CRAND(int DestBit, int SourceBit1, int SourceBit2);
+void CRANDC(int DestBit, int SourceBit1, int SourceBit2);
+void CREQV(int DestBit, int SourceBit1, int SourceBit2);
+void CRNAND(int DestBit, int SourceBit1, int SourceBit2);
+void CRNOR(int DestBit, int SourceBit1, int SourceBit2);
+void CROR(int DestBit, int SourceBit1, int SourceBit2);
+void CRORC(int DestBit, int SourceBit1, int SourceBit2);
+void CRXOR(int DestBit, int SourceBit1, int SourceBit2);
 //if sourceReg1 == r0, not used
 void DCBF(int SourceReg1, int SourceReg2);
 void DCBST(int SourceReg1, int SourceReg2);

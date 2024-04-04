@@ -2315,6 +2315,87 @@ void CNTLZW(int DestReg, int SourceReg, bool SetConditionReg)
 	WriteIntToFile(OpHex);
 }
 
+void CRAND(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(257, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+void CRANDC(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(129, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+void CREQV(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(289, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+void CRNAND(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(225, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+void CRNOR(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(33, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+void CROR(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(449, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+void CRORC(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(417, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+void CRXOR(int DestBit, int SourceBit1, int SourceBit2)
+{
+	OpHex = GetOpSegment(19, 6, 5);
+	OpHex |= GetOpSegment(DestBit, 5, 10);
+	OpHex |= GetOpSegment(SourceBit1, 5, 15);
+	OpHex |= GetOpSegment(SourceBit2, 5, 20);
+	OpHex |= GetOpSegment(193, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
+}
+
 void DCBF(int SourceReg1, int SourceReg2) {
 	OpHex = GetOpSegment(31, 6, 5);
 	OpHex |= GetOpSegment(SourceReg1, 5, 15);
