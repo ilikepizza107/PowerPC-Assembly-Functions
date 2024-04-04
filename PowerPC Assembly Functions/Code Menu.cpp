@@ -2226,6 +2226,89 @@ void ApplyMenuSetting(int Index, int Destination, int reg1, int reg2, int size)
 	}
 }
 
+/* 
+// This was written as a test of the new Switch Statement implementation!
+// I'd hoped this would shake out to be smaller, but it actually winds up a fair bit larger unfortunately.
+// Still an interesting exploration, and a good demo of how the Switch system is used, so I'm leaving this here.
+void switchTest_ExecuteAction(int ActionReg)
+{
+	int PageReg = 4;
+	int LineReg = 5;
+	int TempReg1 = 6;
+	int TypeReg = 7;
+	int TempReg2 = 8;
+	int TempReg3 = 9;
+	int TempReg4 = 10;
+	int TempReg5 = 11;
+	int TempReg6 = 12;
+
+	LoadWordToReg(PageReg, CURRENT_PAGE_PTR_LOC);
+	LWZ(LineReg, PageReg, Page::CURRENT_LINE_OFFSET);
+	ADD(LineReg, LineReg, PageReg);
+	LBZ(TypeReg, LineReg, Line::TYPE);
+	ADDI(TempReg1, 0, 0);
+	ADDIS(TempReg2, 0, START_OF_CODE_MENU_HEADER >> 0x10);
+
+	switchTable<8> menuActionSwitch;
+	menuActionSwitch.init(ActionReg, 10, 11, 12);
+	menuActionSwitch.caseStart(MOVE_DOWN);
+	{
+		ADDI(TempReg1, 0, 1);
+		menuActionSwitch.caseEnd();
+	}
+	menuActionSwitch.caseStart(MOVE_UP);
+	{
+		Move(LineReg, PageReg, TempReg1, TempReg2, TempReg3);
+		menuActionSwitch.caseBreak();
+	}
+	menuActionSwitch.caseStart(DECREMENT);
+	{
+		ADDI(TempReg1, 0, 1);
+		menuActionSwitch.caseEnd();
+	}
+	menuActionSwitch.caseStart(INCREMENT);
+	{
+		JumpToLabel(ModifyLineValueSubroutineLabel, bCACB_UNSPECIFIED, 1);
+		menuActionSwitch.caseBreak();
+	}
+	menuActionSwitch.caseStart(ENTER_SUB_MENU);
+	{
+		CMPLI(TypeReg, SUB_MENU_LINE, 0);
+		JumpToLabel(menuActionSwitch.getCaseLabel(INCREMENT), bCACB_NOT_EQUAL);
+		EnterMenu(LineReg, PageReg, TypeReg, TempReg1, TempReg2);
+		menuActionSwitch.caseBreak();
+	}
+	menuActionSwitch.caseStart(RESET_LINE);
+	{
+		ORI(TempReg1, TempReg2, RESET_LINES_STACK_LOC & 0xFFFF);
+		ResetLine(LineReg, PageReg, TempReg1, TypeReg, TempReg2, TempReg3, TempReg4, 0);
+		menuActionSwitch.caseBreak();
+	}
+	menuActionSwitch.caseStart(RESET_PAGE);
+	{
+		ORI(TempReg1, TempReg2, RESET_LINES_STACK_LOC & 0xFFFF);
+		PushOnStack(PageReg, TempReg1, TempReg2);
+		ResetPage(TempReg1, TempReg2, TempReg3, TempReg4, TempReg5, TempReg6, 3);
+		menuActionSwitch.caseBreak();
+	}
+	menuActionSwitch.caseStart(LEAVE_SUB_MENU);
+	{
+		LeaveMenu(PageReg, TempReg1, TempReg2, TempReg3, TempReg4, TempReg5, TempReg6, ActionReg);
+		menuActionSwitch.caseEnd();
+	}
+	menuActionSwitch.defaultStart(); menuActionSwitch.defaultEnd();
+	menuActionSwitch.finalize();
+
+	If(ActionReg, EQUAL_I_L, EXIT_MENU);
+	{
+		SetRegister(TempReg1, CODE_MENU_CLOSING);
+		ORI(TempReg2, TempReg2, CODE_MENU_CONTROL_FLAG & 0xFFFF);
+		STW(TempReg1, TempReg2, 0);
+		ExitMenu();
+	}EndIf();
+}
+*/
+
 void ExecuteAction(int ActionReg)
 {
 	int PageReg = 4;

@@ -348,6 +348,263 @@ namespace labels
 	};
 }
 
+template <std::size_t specificCaseCount>
+class switchTable
+{
+	int tableStartLabel = INT_MAX;
+	int codeStartLabel = INT_MAX;
+	int defaultCaseStartLabel = INT_MAX;
+	int defaultCaseEndLabel = INT_MAX;
+
+	struct switchCase
+	{
+		int startLabel = INT_MAX;
+		int endLabel = INT_MAX;
+
+		std::size_t getLengthInBytes()
+		{
+			std::size_t result = SIZE_MAX;
+
+			if (startLabel != INT_MAX && endLabel != INT_MAX)
+			{
+				result = LabelPosVec[endLabel] - LabelPosVec[startLabel];
+			}
+
+			return result;
+		}
+		std::size_t getLengthInInstructions()
+		{
+			std::size_t result = getLengthInBytes();
+
+			if (result != SIZE_MAX)
+			{
+				result /= 0x4;
+			}
+
+			return result;
+		}
+	};
+	unsigned short openCaseID = USHRT_MAX;
+	std::map<unsigned short, switchCase> cases{};
+	switchCase* getCasePtr(unsigned short caseID)
+	{
+		switchCase* result = nullptr;
+
+		auto findRes = cases.find(caseID);
+		if (findRes != cases.end())
+		{
+			result = &findRes->second;
+		}
+
+		return result;
+	}
+	std::size_t getCaseStartOffsetInBytes(unsigned short caseID)
+	{
+		std::size_t result = SIZE_MAX;
+
+		switchCase* targetCase = getCasePtr(caseID);
+		if (targetCase != nullptr && targetCase->startLabel != INT_MAX && codeStartLabel != INT_MAX)
+		{
+			result = (LabelPosVec[targetCase->startLabel] - LabelPosVec[codeStartLabel]) / 2;
+		}
+
+		return result;
+	}
+	std::size_t getCaseStartOffsetInInstructions(unsigned short caseID)
+	{
+		std::size_t result = getCaseStartOffsetInBytes(caseID);
+
+		if (result != SIZE_MAX)
+		{
+			result /= 0x4;
+		}
+
+		return result;
+	}
+	std::size_t getDefaultCaseOffsetInBytes()
+	{
+		std::size_t result = SIZE_MAX;
+
+		std::streampos codeStartPos = LabelPosVec[codeStartLabel];
+		std::streampos defaultCasePos = LabelPosVec[defaultCaseStartLabel];
+
+		if (codeStartPos != SIZE_MAX && defaultCasePos != SIZE_MAX)
+		{
+			result = (defaultCasePos - codeStartPos) / 2;
+		}
+
+		return result;
+	}
+	std::size_t getDefaultCaseOffsetInInstructions()
+	{
+		std::size_t result = getDefaultCaseOffsetInBytes();
+
+		if (result != SIZE_MAX)
+		{
+			result /= 0x4;
+		}
+
+		return result;
+	}
+public:
+	const static bool paddingWordNeeded = (specificCaseCount % 2);
+	// First Entry is Case Count + Default Case, Following are CaseWords, Last is Potential Padding
+	const static std::size_t sizeInBytes = 0x4 + (specificCaseCount * 0x4) + (paddingWordNeeded ? 0x4 : 0x0);
+
+	switchTable()
+	{
+		tableStartLabel = GetNextLabel();
+		codeStartLabel = GetNextLabel();
+		defaultCaseStartLabel = GetNextLabel();
+		defaultCaseEndLabel = GetNextLabel();
+	}
+
+	void init(unsigned char caseReg, unsigned char workReg1, unsigned char workReg2, unsigned char workReg3)
+	{
+		// BL past the table!
+		JumpToLabel(codeStartLabel, bCACB_UNSPECIFIED, 1);
+		// Register Start of Table!
+		Label(tableStartLabel);
+		WPtr.write(std::array<char, sizeInBytes>().data(), sizeInBytes * 2);
+		Label(codeStartLabel);
+		// Get Table Address in reg1
+		MFLR(workReg1);
+		// Add Table Length to Table Addr to get addr of following code.
+		ADDI(workReg2, workReg1, sizeInBytes);
+		// Set up CTR with the number of specific cases in preparation for our loop.
+		LHZ(workReg3, workReg1, 0x00);
+		MTCTR(workReg3);
+		// Set up LR with default case instruction offset.
+		// Load Default offset in bytes.
+		LHZ(workReg3, workReg1, 0x02);
+		// Add the offset to the code block address...
+		ADD(workReg3, workReg2, workReg3);
+		// ... and write that to LR.
+		MTLR(workReg3);
+
+		int dispatchLoopHead = GetNextLabel();
+		Label(dispatchLoopHead);
+		// Load the next case's ID...
+		LHZU(workReg3, workReg1, 0x04);
+		// ... and compare against it!
+		CMPL(caseReg, workReg3, 0);
+		// If our value is greater than the current case, and we have cases left to check, then restart the loop to try the next case.
+		JumpToLabel(dispatchLoopHead, bCACB_GREATER.andDecrementCTR(0));
+		// If our value != the current case (ie. is greater than, or we're out of cases), then no case exists for our value, jump to default.
+		BCLR(bCACB_NOT_EQUAL);
+		// Otherwise, we're at the specific case for this number!
+		// Grab the case's offset in bytes.
+		LHZ(workReg1, workReg1, 0x02);
+		// Add the offset to the code block address...
+		ADD(workReg2, workReg2, workReg1);
+		// ... write that to LR...
+		MTLR(workReg2);
+		// ... and branch to it!
+		BLR();
+	}
+	bool finalize()
+	{
+		bool result = 0;
+
+		std::streampos tableStartPos = LabelPosVec[tableStartLabel];
+		std::streampos codeStartPos = LabelPosVec[codeStartLabel];
+
+		// If the default case hasn't been opened yet, just establish it at the bottom of the code block.
+		if (LabelPosVec[defaultCaseStartLabel] == SIZE_MAX)
+		{
+			defaultStart();
+			defaultEnd();
+		}
+		
+		// Also mark the end of the default case.
+		std::streampos defaultCasePos = LabelPosVec[defaultCaseStartLabel];
+
+		if (tableStartPos != SIZE_MAX && codeStartPos != SIZE_MAX && defaultCasePos != SIZE_MAX)
+		{
+			std::streampos currStrmLocation = WPtr.tellp();
+
+			WPtr.seekp(tableStartPos);
+			WPtr << lava::numToHexStringWithPadding<unsigned short>(specificCaseCount, 0x4);
+			WPtr << lava::numToHexStringWithPadding<unsigned short>(getDefaultCaseOffsetInInstructions(), 0x4);
+			for (auto currCase : cases)
+			{
+				WPtr << lava::numToHexStringWithPadding<unsigned short>(currCase.first, 0x04);
+				WPtr << lava::numToHexStringWithPadding<unsigned short>(getCaseStartOffsetInInstructions(currCase.first), 0x04);
+			}
+			if (paddingWordNeeded)
+			{
+				WPtr << lava::numToHexStringWithPadding<unsigned long>(0xFFFFFFFF, 0x8);
+			}
+
+			WPtr.seekp(currStrmLocation);
+			result = 1;
+		}
+
+		return result;
+	}
+
+	bool caseStart(unsigned short caseID)
+	{
+		bool result = cases.size() < specificCaseCount;
+
+		result &= (getCasePtr(caseID) == nullptr);
+		if (result)
+		{
+			switchCase* newCase = &cases.insert({ caseID, switchCase() }).first->second;
+			newCase->startLabel = GetNextLabel();
+			Label(newCase->startLabel);
+			openCaseID = caseID;
+		}
+
+		return result;
+	}
+	bool caseEnd()
+	{
+		bool result = openCaseID != USHRT_MAX;
+
+		if (result)
+		{
+			switchCase* currCase = &cases[openCaseID];
+			currCase->endLabel = GetNextLabel();
+			Label(currCase->endLabel);
+			openCaseID = USHRT_MAX;
+		}
+
+		return result;
+	}
+	void caseBreak()
+	{
+		JumpToLabel(defaultCaseEndLabel);
+		caseEnd();
+	}
+
+	void defaultStart()
+	{
+		Label(defaultCaseStartLabel);
+	}
+	void defaultEnd()
+	{
+		Label(defaultCaseEndLabel);
+	}
+
+	int getCaseLabel(unsigned short caseID)
+	{
+		int result = INT_MAX;
+
+		switchCase* targetCase = getCasePtr(caseID);
+		if (targetCase != nullptr)
+		{
+			result = targetCase->startLabel;
+		}
+
+		return result;
+	}
+	int getCaseDefaultLabel()
+	{
+		return defaultCaseStartLabel;
+	}
+};
+
 ///variables start
 extern fstream WPtr;
 extern std::vector<ledger::codeLedgerEntry> codeLedger;
