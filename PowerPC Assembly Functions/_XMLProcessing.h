@@ -81,6 +81,8 @@ namespace xml
 		std::filesystem::path inputDirPath = "";
 		// Maps page shortnames to their structs!
 		std::map<lava::shortNameType, addonPageTarget> targetPages{};
+		// The amount of extra memory to set aside for this addon.
+		std::size_t workingMemorySize = 0x00;
 		// Denotes where this addons' line INDEX values start in memory.
 		std::size_t baseLOC = SIZE_MAX;
 

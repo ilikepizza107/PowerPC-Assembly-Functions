@@ -137,6 +137,7 @@ namespace xml
 		const std::string autoDetectTag = "doAutoDetect";
 		const std::string shortnameTag = "shortName";
 		const std::string localLOCtag = "localLOC";
+		const std::string workingMemorySize = "workingMemSize";
 	}
 
 	void fixIndentationOfChildNodes(pugi::xml_node& targetNode)
@@ -1699,6 +1700,8 @@ namespace xml
 		addonName = rootNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 		shortName = collectedShortName;
 		versionName = rootNode.attribute(configXMLConstants::versionTag.c_str()).as_string("");
+		workingMemorySize = rootNode.attribute(configXMLConstants::workingMemorySize.c_str()).as_uint(0x00);
+
 		// ... and record the input path!
 		inputDirPath = inputDirPathIn;
 
@@ -1828,6 +1831,26 @@ namespace xml
 					addonAliasBankStream << "# Addon \"" << currAddon.addonName << "\" Lines\n";
 					// and mark down the the beginning of the range occupied by this Addon's Lines' LOC values.
 					currAddon.baseLOC = currAddr;
+					// If this Addon requests any working memory...
+					if (currAddon.workingMemorySize != 0x00)
+					{
+						// ... set it up! Output the .alias entries for it...
+						std::string locNameBase = currAddon.shortName.str() + "_WORKING_MEM_LOC";
+						addonAliasBankStream << "# Working Memory (0x" << lava::numToHexStringWithPadding(currAddon.workingMemorySize, 2) << " bytes)";
+						addonAliasBankStream << " for \"" << currAddon.addonName << "\"\n";
+						addonAliasBankStream << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
+						addonAliasBankStream << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
+						addonAliasBankStream << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
+						// ... then make space for it in the menu cmnu!
+						// Ensure we're word-aligned as well; if we need to add some padding to fill a word then do it.
+						if (currAddon.workingMemorySize % 0x4)
+						{
+							currAddon.workingMemorySize += 0x4 - (currAddon.workingMemorySize % 0x4);
+						}
+						outputStream.write(std::vector<char>(currAddon.workingMemorySize, 0x00).data(), currAddon.workingMemorySize);
+						// And finally, push the current address forwards to account for the space.
+						currAddr += currAddon.workingMemorySize;
+					}
 					// Then, iterate through each page target...
 					for (auto currPageTarget : currAddon.targetPages)
 					{
