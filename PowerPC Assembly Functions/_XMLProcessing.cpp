@@ -2145,7 +2145,8 @@ namespace xml
 							}
 							else
 							{
-								logOutput << "Default Index is now " << currLine->Default;
+								std::vector<std::string_view> deconstructedText = splitLineContentString(currLine->Text);
+								logOutput << "Default Option is now \"" << deconstructedText[currLine->Default + 1] << "\" (index " << currLine->Default << ")";
 							}
 							break;
 						}
