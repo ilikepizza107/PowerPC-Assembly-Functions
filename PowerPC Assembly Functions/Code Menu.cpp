@@ -2458,38 +2458,28 @@ void EnterMenu(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2
 void LeaveMenu(int PageReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5, int TempReg6, int ActionReg)
 {
 	LWZ(TempReg1, PageReg, Page::PREV_PAGE);
-	If(TempReg1, EQUAL_I, 0); {
-		/*LoadWordToReg(TempReg1, TempReg2, PREV_CODE_MENU_CONTROL_FLAG);
-		STW(TempReg1, TempReg2, CODE_MENU_CONTROL_FLAG - PREV_CODE_MENU_CONTROL_FLAG);
-		LoadWordToReg(TempReg1, OLD_DEBUG_STATE_LOC);
-		SetRegister(TempReg2, IS_DEBUG_PAUSED);
-		STW(TempReg1, TempReg2, 0);*/
-		SetRegister(ActionReg, EXIT_MENU);
-	}Else(); {
-		ADD(TempReg2, PageReg, TempReg1);
-		SetRegister(TempReg1, CURRENT_PAGE_PTR_LOC);
-		STW(TempReg2, TempReg1, 0);
+	ADD(TempReg2, PageReg, TempReg1);
+	SetRegister(TempReg1, CURRENT_PAGE_PTR_LOC);
+	STW(TempReg2, TempReg1, 0);
 
-		//reg2 == super page
-		LWZ(TempReg1, TempReg2, Page::CURRENT_LINE_OFFSET);
-		ADD(TempReg1, TempReg1, TempReg2); //super page current line
-		LBZ(TempReg3, TempReg1, Line::COLOR); //color of super line
-		RLWINM(TempReg4, TempReg3, 29, 31, 31);
-		LWZ(TempReg5, TempReg2, Page::NUM_CHANGED_LINES); //super page num changed lines
-		ANDI(TempReg3, TempReg3, ~0x8);
-		SUBF(TempReg5, TempReg5, TempReg4);
-		LWZ(TempReg4, PageReg, Page::NUM_CHANGED_LINES);
-		SetRegister(TempReg6, 0);
-		ANDI(TempReg4, TempReg4, 0x1F);
-		If(TempReg4, NOT_EQUAL_I, 0); {
-			SetRegister(TempReg6, 1);
-		}EndIf();
-		ADD(TempReg5, TempReg5, TempReg6);
-		RLWINM(TempReg6, TempReg6, 3, 0, 31); //<<3
-		STW(TempReg5, TempReg2, Page::NUM_CHANGED_LINES);
-		OR(TempReg3, TempReg3, TempReg6);
-		STB(TempReg3, TempReg1, Line::COLOR);
-	}EndIf();
+	//reg2 == super page
+	LWZ(TempReg1, TempReg2, Page::CURRENT_LINE_OFFSET);
+	ADD(TempReg1, TempReg1, TempReg2); //super page current line
+	LBZ(TempReg3, TempReg1, Line::COLOR); //color of super line
+	RLWINM(TempReg4, TempReg3, 29, 31, 31);
+	LWZ(TempReg5, TempReg2, Page::NUM_CHANGED_LINES); //super page num changed lines
+	ANDI(TempReg3, TempReg3, ~0x8);
+	SUBF(TempReg5, TempReg5, TempReg4);
+	LWZ(TempReg4, PageReg, Page::NUM_CHANGED_LINES);
+	SetRegister(TempReg6, 0);
+	ANDI(TempReg4, TempReg4, 0x1F);
+	BC(2, bCACB_EQUAL);
+	SetRegister(TempReg6, 1);
+	ADD(TempReg5, TempReg5, TempReg6);
+	RLWINM(TempReg6, TempReg6, 3, 0, 31); //<<3
+	STW(TempReg5, TempReg2, Page::NUM_CHANGED_LINES);
+	OR(TempReg3, TempReg3, TempReg6);
+	STB(TempReg3, TempReg1, Line::COLOR);
 }
 
 int ModifyLineValueSubroutineLabel = INT_MAX;
@@ -2637,71 +2627,84 @@ void GetActionFromInputs(int ButtonReg, int ControlStickXReg, int ControlStickYR
 	SetRegister(ResultReg, NO_ACTION); //default
 
 	//set Z for fast
+	int notZPressLabel = GetNextLabel();
 	ANDI(4, ButtonReg, BUTTON_Z);
-	If(4, NOT_EQUAL_I, 0); {
-		//set frame timers to 3
-		LoadWordToReg(4, 7, MOVE_FRAME_TIMER_LOC);
-		LoadWordToReg(6, 8, INCREMENT_FRAME_TIMER_LOC);
-		SetRegister(5, 3);
-		If(4, GREATER, 5); {
-			STW(5, 7, 0);
-		}EndIf();
-		If(6, GREATER, 5); {
-			STW(5, 8, 0);
-		}EndIf();
+	JumpToLabel(notZPressLabel, bCACB_EQUAL);
+	//set frame timers to 3
+	LoadWordToReg(4, 7, MOVE_FRAME_TIMER_LOC);
+	LoadWordToReg(6, 8, INCREMENT_FRAME_TIMER_LOC);
+	SetRegister(5, 3);
+	If(4, GREATER, 5); {
+		STW(5, 7, 0);
 	}EndIf();
+	If(6, GREATER, 5); {
+		STW(5, 8, 0);
+	}EndIf();
+	Label(notZPressLabel);
 
-	//move
+	// D-Pad Move Up
 	ANDI(4, ButtonReg, BUTTON_DU);
-	If(4, NOT_EQUAL_I, 0);
-	SetRegister(ControlStickYReg, MOVE_THRESHHOLD);
-	EndIf();
+	BC(2, bCACB_EQUAL);
+	ADDI(ControlStickYReg, 0, MOVE_THRESHHOLD);
 
+	// D-Pad Move Down
 	ANDI(4, ButtonReg, BUTTON_DD);
-	If(4, NOT_EQUAL_I, 0);
-	SetRegister(ControlStickYReg, -MOVE_THRESHHOLD);
-	EndIf();
+	BC(2, bCACB_EQUAL);
+	ADDI(ControlStickYReg, 0, -MOVE_THRESHHOLD);
 
 	SetControlStickAction(ControlStickYReg, MOVE_FRAME_TIMER_LOC, MOVE_NUM_WAIT_FRAMES, FIRST_MOVE_NUM_WAIT_FRAMES, MOVE_THRESHHOLD, MOVE_UP, MOVE_DOWN, ResultReg);
 
-	//increment
+	// D-Pad Increment
 	ANDI(4, ButtonReg, BUTTON_DR);
-	If(4, NOT_EQUAL_I, 0);
-	SetRegister(ControlStickXReg, INCREMENT_THRESHHOLD);
-	EndIf();
+	BC(2, bCACB_EQUAL);
+	ADDI(ControlStickXReg, 0, INCREMENT_THRESHHOLD);
 
+	// D-Pad Decrement
 	ANDI(4, ButtonReg, BUTTON_DL);
-	If(4, NOT_EQUAL_I, 0);
-	SetRegister(ControlStickXReg, -INCREMENT_THRESHHOLD);
-	EndIf();
+	BC(2, bCACB_EQUAL);
+	ADDI(ControlStickXReg, 0, -INCREMENT_THRESHHOLD);
 
 	SetControlStickAction(ControlStickXReg, INCREMENT_FRAME_TIMER_LOC, INCREMENT_NUM_WAIT_FRAMES, FIRST_INCREMENT_NUM_WAIT_FRAMES, INCREMENT_THRESHHOLD, INCREMENT, DECREMENT, ResultReg);
 
 
+	// Reset Line
 	ANDI(4, ButtonReg, TRIGGER_RESET_LINE_BUTTON);
-	If(4, NOT_EQUAL_I, 0); //enter sub menu
-	SetRegister(ResultReg, RESET_LINE);
-	EndIf(); //enter sub menu
+	BC(2, bCACB_EQUAL);
+	ADDI(ResultReg, 0, RESET_LINE);
 
+	// Leave Sub Menu
 	ANDI(4, ButtonReg, TRIGGER_RESET_PAGE_BUTTON);
-	If(4, NOT_EQUAL_I, 0); //leave sub menu
-	SetRegister(ResultReg, RESET_PAGE);
-	EndIf(); //leave sub menu
+	BC(2, bCACB_EQUAL);
+	ADDI(ResultReg, 0, RESET_PAGE);
 
+	// Enter Sub Menu
 	ANDI(4, ButtonReg, TRIGGER_ENTER_SUB_MENU_BUTTON);
-	If(4, NOT_EQUAL_I, 0); //enter sub menu
-	SetRegister(ResultReg, ENTER_SUB_MENU);
-	EndIf(); //enter sub menu
+	BC(2, bCACB_EQUAL);
+	ADDI(ResultReg, 0, ENTER_SUB_MENU);
 
+	// Leave Sub Menu
+	int exitMenuInstrLabel = GetNextLabel();
+	int notLeaveSubMenuLabel = GetNextLabel();
 	ANDI(4, ButtonReg, TRIGGER_LEAVE_SUB_MENU_BUTTON);
-	If(4, NOT_EQUAL_I, 0); //leave sub menu
-	SetRegister(ResultReg, LEAVE_SUB_MENU);
-	EndIf(); //leave sub menu
+	JumpToLabel(notLeaveSubMenuLabel, bCACB_EQUAL);
+	// Assume by default we're just leaving a sub menu.
+	ADDI(ResultReg, 0, LEAVE_SUB_MENU);
+	// But we also need to support closing the menu if we're on the main page!
+	// Grab pointers to the currnet page and main page...
+	ADDIS(4, 0, MAIN_PAGE_PTR_LOC >> 0x10);
+	LWZ(5, 4, CURRENT_PAGE_PTR_LOC & 0xFFFF);
+	LWZ(4, 4, MAIN_PAGE_PTR_LOC & 0xFFFF);
+	// ... compare them...
+	CMPL(4, 5, 0);
+	// ... and if they're the same, overriding the action!
+	JumpToLabel(exitMenuInstrLabel, bCACB_EQUAL);
+	Label(notLeaveSubMenuLabel);
 
+	// Leave Menu
 	ANDI(4, ButtonReg, BUTTON_START);
-	If(4, NOT_EQUAL_I, 0); //leave menu
-	SetRegister(ResultReg, EXIT_MENU);
-	EndIf(); //leave menu
+	BC(2, bCACB_EQUAL);
+	Label(exitMenuInstrLabel);
+	ADDI(ResultReg, 0, EXIT_MENU);
 }
 
 void SetControlStickAction(int StickValReg, int TimerLoc, int NumWaitFrames, int FirstTimeNumWaitFrames, int Threshhold, int PositiveAction, int NegativeAction, int ResultReg)
