@@ -1336,7 +1336,7 @@ namespace xml
 	}
 	fieldChangeArr applyIntegerLineSettingsFromNode(const pugi::xml_node& sourceNode, Line* targetLine, fieldChangeArr allowedChanges)
 	{
-		std::array<bool, lineFields::lc__COUNT> result{};
+		fieldChangeArr result{};
 
 		pugi::xml_node minValNode = sourceNode.child(configXMLConstants::valueMinTag.c_str());
 		if (minValNode && allowedChanges[lineFields::lf_ValMin])
@@ -1361,8 +1361,8 @@ namespace xml
 		pugi::xml_node defaultValNode = sourceNode.child(configXMLConstants::valueDefaultTag.c_str());
 		if (defaultValNode && allowedChanges[lineFields::lf_ValDefault])
 		{
-			u32 currentVal = GetFloatFromHex(targetLine->Default);
-			u32 incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
+			u32 currentVal = targetLine->Default;
+			u32 incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_uint(currentVal);
 			incomingVal = std::min(std::max(incomingVal, targetLine->Min), targetLine->Max);
 			result[lineFields::lf_ValDefault] = incomingVal != currentVal;
 
@@ -1384,7 +1384,7 @@ namespace xml
 	}
 	fieldChangeArr applyFloatLineSettingsFromNode(const pugi::xml_node& sourceNode, Line* targetLine, fieldChangeArr allowedChanges)
 	{
-		std::array<bool, lineFields::lc__COUNT> result{};
+		fieldChangeArr result{};
 
 		pugi::xml_node minValNode = sourceNode.child(configXMLConstants::valueMinTag.c_str());
 		if (minValNode && allowedChanges[lineFields::lf_ValMin])
@@ -1434,13 +1434,31 @@ namespace xml
 	}
 	fieldChangeArr applyToggleLineSettingsFromNode(const pugi::xml_node& sourceNode, Line* targetLine, fieldChangeArr allowedChanges)
 	{
-		std::array<bool, lineFields::lc__COUNT> result{};
+		fieldChangeArr result{};
 
 		pugi::xml_node defaultValNode = sourceNode.child(configXMLConstants::valueDefaultTag.c_str());
 		if (defaultValNode && allowedChanges[lineFields::lf_ValDefault])
 		{
 			bool currentVal = targetLine->Default;
 			bool incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_bool(currentVal);
+			result[lineFields::lf_ValDefault] = incomingVal != currentVal;
+
+			targetLine->Default = incomingVal;
+			targetLine->Value = targetLine->Default;
+		}
+
+		return result;
+	}
+	fieldChangeArr applySelectionLineSettingsFromNode(const pugi::xml_node& sourceNode, Line* targetLine, fieldChangeArr allowedChanges)
+	{
+		fieldChangeArr result{};
+
+		pugi::xml_node defaultValNode = sourceNode.child(configXMLConstants::selectionDefaultTag.c_str());
+		if (defaultValNode && allowedChanges[lineFields::lf_ValDefault])
+		{
+			u32 currentVal = targetLine->Default;
+			u32 incomingVal = defaultValNode.attribute(configXMLConstants::indexTag.c_str()).as_uint(currentVal);
+			incomingVal = std::min(std::max(incomingVal, 0u), targetLine->Max);
 			result[lineFields::lf_ValDefault] = incomingVal != currentVal;
 
 			targetLine->Default = incomingVal;
@@ -1509,11 +1527,10 @@ namespace xml
 			options.push_back(optionNode.attribute(configXMLConstants::valueTag.c_str()).as_string(""));
 		}
 
-		std::size_t defaultIndex =
-			sourceNode.child(configXMLConstants::selectionDefaultTag.c_str()).attribute(configXMLConstants::indexTag.c_str()).as_uint(0);
-		defaultIndex = std::min(defaultIndex, options.size());
-
-		linePtr = std::make_shared<Selection>(lineName, options, defaultIndex, this->INDEX);
+		linePtr = std::make_shared<Selection>(lineName, options, 0, this->INDEX);
+		fieldChangeArr allowedChanges{};
+		allowedChanges[lineFields::lf_ValDefault] = 1;
+		populated = applySelectionLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
 	}
 	void addonLine::buildCommentLine(const pugi::xml_node& sourceNode)
 	{
@@ -1644,7 +1661,6 @@ namespace xml
 	{
 		return lineMap.find(nameIn) == lineMap.end();
 	}
-
 
 	bool addon::populate(std::string inputDirPathIn, lava::outputSplitter& logOutput)
 	{
@@ -2063,78 +2079,37 @@ namespace xml
 				if (lineFindItr == lineNodeMap.end()) continue;
 
 				// If so, pull the default value from the XML and write it into each line struct (based on the line type), and note if it changed!
-				bool lineDefaultChanged = 0;
+				fieldChangeArr allowedChanges{};
+				allowedChanges[lineFields::lf_ValDefault] = 1;
+				fieldChangeArr appliedChanges{};
 				switch (currLine->type)
 				{
 				case SELECTION_LINE:
 				{
 					// Selection lines are special, in that Toggle lines and Selection lines are technically the same thing.
-					// We need to support both, and specifically need to support both Selection and Toggle style input for both.
+					// We need to support both, and specifically need to support both Selection and Toggle style input for Toggles.
 					// So, we'll handle them a bit uniquely here. To start, we'll try grabbing the Toggle style default node...
-					u32 valueIn = currLine->Default;
-					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::valueDefaultTag.c_str());
 					// ... and if this line is in fact a Toggle type line, *and* we found the Toggle style default node...
-					if (((Selection*)currLine)->isToggleLine && defaultValNode)
+					if (((Selection*)currLine)->isToggleLine && lineFindItr->second.child(configXMLConstants::valueDefaultTag.c_str()))
 					{
-						// ... then we'll proceed parsing it Toggle style.
-						valueIn = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_bool(currLine->Default);
+						// ... then parse it Toggle Style.
+						appliedChanges = applyToggleLineSettingsFromNode(lineFindItr->second, currLine, allowedChanges);
 					}
 					// Otherwise, we'll fall back to the Selection style node.
 					else
 					{
-						// Try grabbing the appropriate node...
-						defaultValNode = lineFindItr->second.child(configXMLConstants::selectionDefaultTag.c_str());
-						// ... and if it exists...
-						if (defaultValNode)
-						{
-							// retrieve its value.
-							valueIn = defaultValNode.attribute(configXMLConstants::indexTag.c_str()).as_uint(currLine->Default);
-							valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
-						}
+						appliedChanges = applySelectionLineSettingsFromNode(lineFindItr->second, currLine, allowedChanges);
 					}
-					lineDefaultChanged = valueIn != currLine->Default;
-					currLine->Default = valueIn;
-					currLine->Value = valueIn;
 					break;
 				}
 				case INTEGER_LINE:
 				{
-					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::valueDefaultTag.c_str());
-					if (defaultValNode)
-					{
-						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(configXMLConstants::valueTag.c_str());
-						if (defaultValueAttr)
-						{
-							int valueIn = defaultValueAttr.as_int(currLine->Default);
-							valueIn = std::min(std::max(valueIn, (int)currLine->Min), (int)currLine->Max);
-							lineDefaultChanged = valueIn != currLine->Default;
-							currLine->Default = valueIn;
-							currLine->Value = valueIn;
-						}
-					}
+					appliedChanges = applyIntegerLineSettingsFromNode(lineFindItr->second, currLine, allowedChanges);
 					break;
 				}
 				case FLOATING_LINE:
 				{
-					pugi::xml_node defaultValNode = lineFindItr->second.child(configXMLConstants::valueDefaultTag.c_str());
-					if (defaultValNode)
-					{
-						pugi::xml_attribute defaultValueAttr = defaultValNode.attribute(configXMLConstants::valueTag.c_str());
-						if (defaultValueAttr)
-						{
-							float valueIn = defaultValueAttr.as_float(GetFloatFromHex(currLine->Default));
-							float currDefaultVal = GetFloatFromHex(currLine->Default);
-							float maxVal = GetFloatFromHex(currLine->Max);
-							float minVal = GetFloatFromHex(currLine->Min);
-							valueIn = std::min(std::max(valueIn, minVal), maxVal);
-							lineDefaultChanged = std::abs(valueIn - currDefaultVal) > 0.00001f;
-							if (lineDefaultChanged)
-							{
-								currLine->Default = GetHexFromFloat(valueIn);
-								currLine->Value = currLine->Default;
-							}
-						}
-					}
+					appliedChanges = applyFloatLineSettingsFromNode(lineFindItr->second, currLine, allowedChanges);
 					break;
 				}
 				default:
@@ -2149,6 +2124,7 @@ namespace xml
 
 				// If either the default value or one of the LBFs have changed...
 				bool lineLBFChanged = std::find(lineLBFsChanged.begin(), lineLBFsChanged.end(), 1) != lineLBFsChanged.end();
+				bool lineDefaultChanged = appliedChanges[lineFields::lf_ValDefault];
 				if (lineDefaultChanged || lineLBFChanged)
 				{
 					// ... print the relevant changes!
