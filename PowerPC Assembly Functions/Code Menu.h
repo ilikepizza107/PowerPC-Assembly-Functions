@@ -805,6 +805,7 @@ public:
 		this->Default = GetHexFromFloat(Default);
 		this->Speed = GetHexFromFloat(Speed);
 	}
+	bool forceHexXMLOutput = 0;
 };
 
 class Page

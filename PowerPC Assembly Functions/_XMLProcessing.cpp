@@ -31,6 +31,7 @@ namespace xml
 		const std::string codeModeTag = "codeMode";
 		const std::string indexTag = "index";
 		const std::string valueTag = "value";
+		const std::string valueHexTag = "valueHex";
 		const std::string flagTag = "flag";
 		const std::string callbackTag = "callback";
 		const std::string versionTag = "version";
@@ -1410,7 +1411,17 @@ namespace xml
 		if (defaultValNode && allowedChanges[lineFields::lf_ValDefault])
 		{
 			float currentVal = GetFloatFromHex(targetLine->Default);
-			float incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
+			float incomingVal;
+			pugi::xml_attribute defaultAttr = defaultValNode.attribute(configXMLConstants::valueHexTag.c_str());
+			if (defaultAttr)
+			{
+				incomingVal = GetFloatFromHex(defaultAttr.as_uint(targetLine->Default));
+				((Floating*)targetLine)->forceHexXMLOutput = 1;
+			}
+			else
+			{
+				incomingVal = defaultValNode.attribute(configXMLConstants::valueTag.c_str()).as_float(currentVal);
+			}
 			float maxVal = GetFloatFromHex(targetLine->Max);
 			float minVal = GetFloatFromHex(targetLine->Min);
 			incomingVal = std::min(std::max(incomingVal, minVal), maxVal);
@@ -2301,9 +2312,19 @@ namespace xml
 					lineNode = pageNode.append_child(configXMLConstants::menuLineFloatTag.c_str());
 					pugi::xml_node minValNode = lineNode.append_child(configXMLConstants::valueMinTag.c_str());
 					minValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
+
 					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
-					defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Default)).c_str());
+					if (((Floating*)currLine)->forceHexXMLOutput)
+					{
+						std::string hexStr = "0x" + lava::numToHexStringWithPadding(currLine->Default, 0x8);
+						defaultValNode.append_attribute(configXMLConstants::valueHexTag.c_str()).set_value(hexStr.c_str());
+					}
+					else
+					{
+						defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Default)).c_str());
+					}
 					defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
+
 					pugi::xml_node maxValNode = lineNode.append_child(configXMLConstants::valueMaxTag.c_str());
 					maxValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Max)).c_str());
 					pugi::xml_node speedNode = lineNode.append_child(configXMLConstants::speedTag.c_str());
