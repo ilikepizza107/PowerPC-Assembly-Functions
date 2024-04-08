@@ -2000,8 +2000,14 @@ namespace xml
 				// ... and if the returned attribute is valid...
 				if (nameAttr)
 				{
-					// ... record it and the corresponding line in the output map.
-					collectedNodes[nameAttr.value()] = *lineItr;
+					// ... try to grab the name from it...
+					std::string nameStr = getLineNameFromLineText(nameAttr.value());
+					// ... and if the retrieved name was valid...
+					if (!nameStr.empty())
+					{
+						// ... record it and the corresponding line in the output map.
+						collectedNodes[nameStr] = *lineItr;
+					}
 				}
 			}
 		}
@@ -2045,7 +2051,7 @@ namespace xml
 			}
 
 			// If there was, we need to apply the default values from the lines in that page node!
-			// Additionally, get a list of all the line nodes in this page node.
+			// So, get a list of all the line nodes in this page node.
 			std::map<std::string, pugi::xml_node> lineNodeMap;
 			findLinesInPageNode(pageFindItr->second, lineNodeMap);
 			// Then, for each line in the current page struct...
@@ -2053,7 +2059,7 @@ namespace xml
 			{
 				// ... check if a corresponding node is present in this page node.
 				std::vector<std::string_view> deconstructedText = splitLineContentString(currLine->Text);
-				auto lineFindItr = lineNodeMap.find(deconstructedText[0].data());
+				auto lineFindItr = lineNodeMap.find(currLine->LineName);
 				if (lineFindItr == lineNodeMap.end()) continue;
 
 				// If so, pull the default value from the XML and write it into each line struct (based on the line type), and note if it changed!
@@ -2083,9 +2089,9 @@ namespace xml
 						{
 							// retrieve its value.
 							valueIn = defaultValNode.attribute(configXMLConstants::indexTag.c_str()).as_uint(currLine->Default);
+							valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
 						}
 					}
-					valueIn = std::min<unsigned long>(std::max(0u, valueIn), deconstructedText.size() - 2);
 					lineDefaultChanged = valueIn != currLine->Default;
 					currLine->Default = valueIn;
 					currLine->Value = valueIn;
@@ -2280,8 +2286,6 @@ namespace xml
 					if (((Selection*)currLine)->isToggleLine)
 					{
 						lineNode = pageNode.append_child(configXMLConstants::menuLineToggleTag.c_str());
-						pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
-						lineNameAttr.set_value(deconstructedText[0].data());
 						pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
 						defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(currLine->Default ? "true" : "false");
 						defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
@@ -2289,8 +2293,6 @@ namespace xml
 					else
 					{
 						lineNode = pageNode.append_child(configXMLConstants::menuLineSelectionTag.c_str());
-						pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
-						lineNameAttr.set_value(deconstructedText[0].data());
 						pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::selectionDefaultTag.c_str());
 						defaultValNode.append_attribute(configXMLConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
 						defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
@@ -2306,8 +2308,6 @@ namespace xml
 				case INTEGER_LINE:
 				{
 					lineNode = pageNode.append_child(configXMLConstants::menuLineIntTag.c_str());
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
-					lineNameAttr.set_value(deconstructedText[0].data());
 					pugi::xml_node minValNode = lineNode.append_child(configXMLConstants::valueMinTag.c_str());
 					minValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(currLine->Min).c_str());
 					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
@@ -2315,13 +2315,13 @@ namespace xml
 					defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
 					pugi::xml_node maxValNode = lineNode.append_child(configXMLConstants::valueMaxTag.c_str());
 					maxValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(currLine->Max).c_str());
+					pugi::xml_node speedNode = lineNode.append_child(configXMLConstants::speedTag.c_str());
+					speedNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(currLine->Speed).c_str());
 					break;
 				}
 				case FLOATING_LINE:
 				{
 					lineNode = pageNode.append_child(configXMLConstants::menuLineFloatTag.c_str());
-					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
-					lineNameAttr.set_value(deconstructedText[0].data());
 					pugi::xml_node minValNode = lineNode.append_child(configXMLConstants::valueMinTag.c_str());
 					minValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Min)).c_str());
 					pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
@@ -2329,6 +2329,8 @@ namespace xml
 					defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
 					pugi::xml_node maxValNode = lineNode.append_child(configXMLConstants::valueMaxTag.c_str());
 					maxValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Max)).c_str());
+					pugi::xml_node speedNode = lineNode.append_child(configXMLConstants::speedTag.c_str());
+					speedNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(std::to_string(GetFloatFromHex(currLine->Speed)).c_str());
 					break;
 				}
 				default:
@@ -2336,9 +2338,13 @@ namespace xml
 					break;
 				}
 				}
+				// If we successfully initialized a line node...
 				if (lineNode)
 				{
-					// For each kind of LineBehaviorFlag...
+					// ... take care of writing it's name field.
+					pugi::xml_attribute lineNameAttr = lineNode.append_attribute(configXMLConstants::nameTag.c_str());
+					lineNameAttr.set_value(currLine->LineName.c_str());
+					// Then, for each kind of LineBehaviorFlag...
 					for (std::size_t lbfItr = 0; lbfItr < Line::LineBehaviorFlags::lbf__COUNT; lbfItr++)
 					{
 						// ... grab its setting from the line!
