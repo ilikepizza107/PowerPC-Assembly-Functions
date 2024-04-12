@@ -1733,6 +1733,7 @@ void ControlCodeMenu()
 
 	LoadWordToReg(Reg3, Reg5, IS_DEBUG_PAUSED);
 	
+	// If we're hovering over the Code Menu button in the Main Menu...
 	If(OpenFlagReg, EQUAL_I, CODE_MENU_PRIMED); {
 		//check for A press
 		SetRegister(OpenFlagReg, CODE_MENU_CLOSED);
@@ -1742,20 +1743,36 @@ void ControlCodeMenu()
 			//A or start is pressed
 			SetRegister(OpenFlagReg, CODE_MENU_TRIGGERED); //set open
 		}EndIf();
-	}EndIf();
-
-	if (CODE_MENU_ACTIVATION_SETTING_INDEX != -1) {
-		LoadWordToReg(Reg2, IS_IN_GAME_FLAG);
-		If(Reg2, EQUAL_I, 1); {
-			LoadWordToReg(Reg2, CODE_MENU_ACTIVATION_SETTING_INDEX + Line::VALUE);
-			If(Reg2, NOT_EQUAL_I, 0); {
-				LoadWordToReg(Reg2, CODE_MENU_CONTROL_FLAG);
-				If(Reg2, EQUAL_I, CODE_MENU_CLOSED); {
-					SetRegister(OpenFlagReg, CODE_MENU_CLOSED);
-				}EndIf();
-			}EndIf();
-		}EndIf();
 	}
+	// Additionally, if the Activation Setting line is present in the menu...
+	if (CODE_MENU_ACTIVATION_SETTING_INDEX != -1) {
+		// ... do another round of checks if the Code Menu has just been triggered via input.
+		Else(); If(OpenFlagReg, EQUAL_I, CODE_MENU_TRIGGERED);
+
+		int codeMenuEnabledLabel = GetNextLabel();
+
+		// Load the Activation Flag...
+		LoadWordToReg(Reg2, CODE_MENU_ACTIVATION_SETTING_INDEX + Line::VALUE);
+		// ... and do a single comparison against 1, since that'll do enough to distinguish 0, 1, and 2
+		CMPLI(Reg2, 1, 1);
+		// If we're on setting 0 (ie. Default), then code menu is always enabled.
+		JumpToLabel(codeMenuEnabledLabel, bCACB_LESSER.inConditionRegField(1));
+
+		// Otherwise, if we're in-game...
+		LoadWordToReg(Reg2, IS_IN_GAME_FLAG);
+		CMPLI(Reg2, 1, 0);
+		// ... AND we're on setting 1 (ie. 3.6)...	
+		CRANDC(EQ, crBitInCRF(EQ, 1), EQ);
+		// ... then code menu is enabled.
+		JumpToLabel(codeMenuEnabledLabel, bCACB_EQUAL);
+
+		// Otherwise, if we're on option 2 (ie. Off), or option 1 and in-game, we'll prevent the menu from opening.
+		SetRegister(OpenFlagReg, CODE_MENU_CLOSED);
+
+		Label(codeMenuEnabledLabel);
+		EndIf();
+	}
+	EndIf();
 
 	If(OpenFlagReg, EQUAL_I, CODE_MENU_TRIGGERED); {
 		SetRegister(Reg2, OLD_DEBUG_STATE_LOC);
@@ -1912,37 +1929,6 @@ void ControlCodeMenu()
 
 	//dumb solution to code menu closing problem
 	LoadWordToReg(OpenFlagReg, CODE_MENU_CONTROL_FLAG);
-
-	if (CODE_MENU_ACTIVATION_SETTING_INDEX != -1) {
-		If(OpenFlagReg, EQUAL_I, CODE_MENU_CLOSING); {
-			LoadWordToReg(Reg1, CODE_MENU_ACTIVATION_SETTING_INDEX + Line::VALUE);
-			If(Reg1, EQUAL_I, 2); {
-				//save certain settings
-				SetRegister(Reg7, CODE_MENU_ACTIVATION_SETTING_INDEX);
-				SetRegister(Reg8, AUTO_SAVE_REPLAY_INDEX);
-				SetRegister(Reg9, AUTO_SKIP_TO_CSS_INDEX);
-				LWZ(8, Reg7, Line::VALUE);
-				LBZ(9, Reg7, Line::COLOR);
-				LWZ(4, Reg8, Line::VALUE);
-				LBZ(5, Reg8, Line::COLOR);
-				LWZ(6, Reg9, Line::VALUE);
-				LBZ(7, Reg9, Line::COLOR);
-
-				LoadWordToReg(Reg2, MAIN_PAGE_PTR_LOC);
-				SetRegister(Reg1, RESET_LINES_STACK_LOC);
-				PushOnStack(Reg2, Reg1);
-				ResetPage(Reg1, Reg2, Reg3, Reg4, Reg5, Reg6, 3);
-
-				//restore certain settings
-				STW(8, Reg7, Line::VALUE);
-				STB(9, Reg7, Line::COLOR);
-				STW(4, Reg8, Line::VALUE);
-				STB(5, Reg8, Line::COLOR);
-				STW(6, Reg9, Line::VALUE);
-				STB(7, Reg9, Line::COLOR);
-			}EndIf();
-		}EndIf();
-	}
 
 	//port based codes
 	LoadWordToReg(Reg7, IS_IN_GAME_FLAG);
