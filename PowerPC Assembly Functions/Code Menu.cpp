@@ -1569,6 +1569,7 @@ void constantOverride() {
 void ControlCodeMenu()
 {
 	// Establish Subroutines!
+	ResetLineSubroutineLabel = GetNextLabel();
 	ModifyLineValueSubroutineLabel = GetNextLabel();
 
 	ASMStart(0x80029574, "[CM: Code Menu] Control Code Menu");
@@ -2197,6 +2198,7 @@ void ControlCodeMenu()
 
 	// Beginning of Subroutines
 	ModifyLineValueSubroutine();
+	ResetLineSubroutine();
 
 	ASMEnd();
 }
@@ -2297,15 +2299,17 @@ void switchTest_ExecuteAction(int ActionReg)
 
 void ExecuteAction(int ActionReg)
 {
-	int PageReg = 4;
-	int LineReg = 5;
+	int LineReg = 3;
+	int TypeReg = 4;
+	int PageReg = 5;
+
 	int TempReg1 = 6;
-	int TypeReg = 7;
-	int TempReg2 = 8;
-	int TempReg3 = 9;
-	int TempReg4 = 10;
-	int TempReg5 = 11;
-	int TempReg6 = 12;
+	int TempReg2 = 7;
+	int TempReg3 = 8;
+	int TempReg4 = 9;
+	int TempReg5 = 10;
+	int TempReg6 = 11;
+	int TempReg7 = 12;
 
 	int move = GetNextLabel();
 
@@ -2332,12 +2336,11 @@ void ExecuteAction(int ActionReg)
 	//change value
 	// Assume by default that we're gonna increment here, so set r6 to 0!
 	ADDI(6, 0, 0);
-
-	//increment
+	// And if action is INCREMENT or ENTER_SUB_MENU...
 	CMPLI(ActionReg, INCREMENT, 0);
-	JumpToLabel(ModifyLineValueSubroutineLabel, bCACB_EQUAL, 1);
-	//increment, if A is pressed
-	CMPLI(ActionReg, ENTER_SUB_MENU, 0);
+	CMPLI(ActionReg, ENTER_SUB_MENU, 1);
+	CROR(EQ, EQ, crBitInCRF(EQ, 1));
+	// ... then branch.
 	JumpToLabel(ModifyLineValueSubroutineLabel, bCACB_EQUAL, 1);
 	
 	// If we're decrementing though set r6 so we decrement instead...
@@ -2345,20 +2348,6 @@ void ExecuteAction(int ActionReg)
 	// ... and attempt the branch!
 	CMPLI(ActionReg, DECREMENT, 0);
 	JumpToLabel(ModifyLineValueSubroutineLabel, bCACB_EQUAL, 1);
-
-
-	//reset to defaults
-	SetRegister(TempReg1, RESET_LINES_STACK_LOC);
-	If(ActionReg, EQUAL_I, RESET_LINE); {
-		ResetLine(LineReg, PageReg, TempReg1, TypeReg, TempReg2, TempReg3, TempReg4, 0);
-	}EndIf();
-
-	If(ActionReg, EQUAL_I, RESET_PAGE); {
-		PushOnStack(PageReg, TempReg1, TempReg2);
-	}EndIf();
-
-	//reset page if applicable
-	ResetPage(TempReg1, TempReg2, TempReg3, TempReg4, TempReg5, TempReg6, 3);
 
 	//navigate menu
 	If(ActionReg, EQUAL_I, ENTER_SUB_MENU); {
@@ -2375,17 +2364,54 @@ void ExecuteAction(int ActionReg)
 		STW(TempReg1, TempReg2, 0);
 		ExitMenu();
 	}EndIf();
+
+	// --- Reset Actions! ---
+	// These are last because the ResetPage code modifies the Line, Type, and Page registers.
+	// Attempting to perform an action after that without first reacquiring those registers' values will cause undefined behavior!
+	// Set Stack Pointer, since we'll need this for all of what we're about to do.
+	SetRegister(7, RESET_LINES_STACK_LOC);
+
+	// If we're resetting a line...
+	CMPLI(ActionReg, RESET_LINE, 0);
+	// ... then set IsIndirect to 0 (since we're resetting the line directly)...
+	ADDI(6, 0, 0);
+	// ... and call the subroutine. Importantly, if the current line is a subpage, it'll get pushed onto the reset stack!
+	JumpToLabel(ResetLineSubroutineLabel, bCACB_EQUAL, 1);
+
+	// If we instead are resetting a page...
+	If(ActionReg, EQUAL_I, RESET_PAGE); {
+		// ... then push the current page's ptr onto the reset stack.
+		PushOnStack(PageReg, 7, 8);
+	}EndIf();
+
+	// Iterate through any pages on the reset stack, and reset the lines therein!
+	// Note: This modifes the Line, Type, and Page registers as it iterates; don't add actions beneath this unless you reload those values!
+	ResetPage();
 }
 
-void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1, int TempReg2, int TempReg3, bool isIndirectReset)
+// r3 = LineReg, r4 = LineTypeReg, r5 = PageReg, r6 = IsIndirectReg, r7 = StackReg, r8 - r12 = Work Regs (modifed)
+int ResetLineSubroutineLabel = INT_MAX;
+void ResetLineSubroutine()
 {
-	int exitLabel = GetNextLabel();
-	if (isIndirectReset)
-	{
-		LBZ(TempReg2, LineReg, Line::FLAGS);
-		ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
-		JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
-	}
+	int LineReg = 3;
+	int TypeReg = 4;
+	int PageReg = 5;
+	int IsIndirectReg = 6;
+	int StackReg = 7;
+
+	int TempReg1 = 8;
+	int TempReg2 = 9;
+	int TempReg3 = 10;
+
+	Label(ResetLineSubroutineLabel);
+
+	int notIndirectLabel = GetNextLabel();
+	CMPLI(IsIndirectReg, 1, 0);
+	JumpToLabel(notIndirectLabel, bCACB_NOT_EQUAL);
+	LBZ(TempReg2, LineReg, Line::FLAGS);
+	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
+	BCLR(bCACB_NOT_EQUAL);
+	Label(notIndirectLabel);
 
 	LBZ(TempReg2, LineReg, Line::COLOR);
 	LWZ(TempReg1, PageReg, Page::NUM_CHANGED_LINES);
@@ -2404,20 +2430,40 @@ void ResetLine(int LineReg, int PageReg, int StackReg, int TypeReg, int TempReg1
 		PushOnStack(TempReg1, StackReg, TempReg2);
 	}EndIf(); EndIf();
 
-	Label(exitLabel);
+	BLR();
 }
 
-void ResetPage(int StackReg, int TempReg1, int TempReg2, int TempReg3, int TempReg4, int TempReg5, int TempReg6)
+// r7 = StackReg, r3 - r6, r8 - r12 = Work Regs (modifed)
+void ResetPage()
 {
-	IterateStack(TempReg1, StackReg, TempReg2); {
-		SetRegister(TempReg6, 1);
-		ADDI(TempReg2, TempReg1, Page::FIRST_LINE_OFFSET); //first line
-		While(TempReg6, NOT_EQUAL_I, 0); {
-			LBZ(TempReg3, TempReg2, Line::TYPE);
-			ResetLine(TempReg2, TempReg1, StackReg, TempReg3, TempReg4, TempReg5, TempReg6, 1);
+	int LineReg = 3;
+	int TypeReg = 4;
+	int PageReg = 5;
+	int IsIndirectReg = 6;
+	int StackReg = 7;
 
-			LHZ(TempReg6, TempReg2, Line::SIZE);
-			LHZUX(TempReg6, TempReg2, TempReg6); //next line
+	int ItrReg1 = 12;
+
+	// Set IsIndirect flag to 1 (we only need to do this once, we guarantee that the register won't be modified in the loop.
+	ADDI(IsIndirectReg, 0, 1);
+
+	// Iterate through each page address pushed onto the stack (skipping of course if there are none).
+	IterateStack(PageReg, StackReg, ItrReg1);
+	{
+		// Point LineReg to this page's first line.
+		ADDI(LineReg, PageReg, Page::FIRST_LINE_OFFSET); 
+		// Get this first line's size, only do loop if that size isn't 0 (ie. line exists).
+		LHZ(ItrReg1, LineReg, Line::SIZE);
+		// Then iterate through each line in the page.
+		While(ItrReg1, NOT_EQUAL_I, 0); 
+		{
+			// Load the line's Type into TypeReg
+			LBZ(TypeReg, LineReg, Line::TYPE);
+			// ... and call the ResetLine Subroutine!
+			JumpToLabel(ResetLineSubroutineLabel, bCACB_UNSPECIFIED, 1);
+
+			// Use the Size in ItrReg to push LineReg to next line, and load that next line's size.
+			LHZUX(ItrReg1, LineReg, ItrReg1); 
 		}EndWhile();
 	}IterateStackEnd();
 }
@@ -2468,14 +2514,16 @@ void LeaveMenu(int PageReg, int TempReg1, int TempReg2, int TempReg3, int TempRe
 	STB(TempReg3, TempReg1, Line::COLOR);
 }
 
+// r3 = LineReg, r4 = LineTypeReg, r5 = PageReg, r6 = DoDecrReg, r7 - r12 = Work Regs (modifed)
 int ModifyLineValueSubroutineLabel = INT_MAX;
 void ModifyLineValueSubroutine()
 {
-	int PageReg = 4;
-	int LineReg = 5;
+	int LineReg = 3;
+	int TypeReg = 4;
+	int PageReg = 5;
 	// 0 = Incr, 1 = Decr
 	int OoDecrReg = 6;
-	int TypeReg = 7;
+
 	int TempReg1 = 12;
 	int TempReg2 = 11;
 	int TempReg3 = 10;
