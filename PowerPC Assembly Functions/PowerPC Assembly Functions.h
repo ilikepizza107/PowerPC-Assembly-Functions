@@ -283,6 +283,11 @@ constexpr unsigned long bitIndexFromButtonHex(unsigned long buttonHex, bool doIn
 #define GT 1
 #define EQ 2
 #define SO 3
+constexpr unsigned long crBitInCRF(unsigned long CondRegBit, unsigned long CondRegField)
+{
+	return CondRegBit + (4 * CondRegField);
+}
+
 #define MAX_CSTICK_VALUE 0x55
 #define CSTICK_COEFFICIENT 0.011775
 #define TERMINATE_REPLAY_VALUE 0x06000000
