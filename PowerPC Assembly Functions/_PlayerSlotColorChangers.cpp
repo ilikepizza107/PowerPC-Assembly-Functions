@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "_PlayerSlotColorChangers.h"
 
-const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.0.0] ";
+const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.0.1] ";
 const std::string codeSuffix = " [QuickLava]";
 
 // New approach:
@@ -210,11 +210,20 @@ void psccMiscAdjustments()
 			0xC60ebb98, 0x800ebbb8, // Branch Past Second Mark Color Set
 			0xC60ebde4, 0x800ebe00, // Branch Past Third Mark Color Set
 		});
+
 	CodeRawStart(codePrefix + "Hand Color Fix" + codeSuffix, 
 		"Fixes a conflict with Eon's Roster-Size-Based Hand Resizing code, which could"
 		"\nin some cases cause CSS hands to wind up the wrong color."
 		);
 	WriteIntToFile(0x0469CA2C); LFS(0, 3, 0x1014);
+	CodeRawEnd();
+
+	CodeRawStart(codePrefix + "Re-Enable Material Recalc on Certain In-Game Elements" + codeSuffix, 
+		"Prevents skipping the material recalc on certain in-game HUD elements, specifically"
+		"\nincluding the blastzone magnifying glass (and accompanying arrow) and the nametag arrow elements."
+		"\nRe-enabling the recalc ensures that their colors update every frame, allowing animated color support!"
+	);
+	WriteIntToFile(0x040E083C); NOP();
 	CodeRawEnd();
 
 	ASMStart(0x80697558, codePrefix + "CSS Random Always Uses P1 CSP" + codeSuffix, "");
