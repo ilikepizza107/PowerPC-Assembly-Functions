@@ -2077,7 +2077,7 @@ namespace xml
 				}
 			}
 
-			// If there was, we need to apply the default values from the lines in that page node!
+			// Additionally, we need to apply the default values from the lines in that page node!
 			// So, get a list of all the line nodes in this page node.
 			std::map<std::string, pugi::xml_node> lineNodeMap;
 			findLinesInPageNode(pageFindItr->second, lineNodeMap);
@@ -2085,7 +2085,6 @@ namespace xml
 			for (Line* currLine : currPage->Lines)
 			{
 				// ... check if a corresponding node is present in this page node.
-				std::vector<std::string_view> deconstructedText = splitLineContentString(currLine->Text);
 				auto lineFindItr = lineNodeMap.find(currLine->LineName);
 				if (lineFindItr == lineNodeMap.end()) continue;
 
@@ -2150,14 +2149,16 @@ namespace xml
 						case FLOATING_LINE: { logOutput << "Default Value is now " << GetFloatFromHex(currLine->Default); break; }
 						case SELECTION_LINE: 
 						{
-							if (((Selection*)currLine)->isToggleLine)
+							Selection* currSelection = (Selection*)currLine;
+
+							if (currSelection->isToggleLine)
 							{
-								logOutput << "Default Value is now \"" << (currLine->Default ? "true" : "false") << "\"";
+								logOutput << "Default Value is now \"" << (currSelection->Default ? "ON" : "OFF") << "\"";
 							}
 							else
 							{
-								std::vector<std::string_view> deconstructedText = splitLineContentString(currLine->Text);
-								logOutput << "Default Option is now \"" << deconstructedText[currLine->Default + 1] << "\" (index " << currLine->Default << ")";
+								std::vector<std::string_view> lineOptions = currSelection->getOptionStringViews();
+								logOutput << "Default Option is now \"" << lineOptions[currLine->Default] << "\" (index " << currLine->Default << ")";
 							}
 							break;
 						}
@@ -2265,30 +2266,43 @@ namespace xml
 				// If the line was set to be hidden from the XML, skip outputting it.
 				if (currLine->hideFromOptionsXML) continue;
 
-				std::vector<std::string_view> deconstructedText = splitLineContentString(currLine->Text);
 				pugi::xml_node lineNode{};
 				switch (currLine->type)
 				{
 				case SELECTION_LINE:
 				{
-					if (((Selection*)currLine)->isToggleLine)
+					Selection* currSelection = (Selection*)currLine;
+
+					if (currSelection->isToggleLine)
 					{
 						lineNode = pageNode.append_child(configXMLConstants::menuLineToggleTag.c_str());
 						pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::valueDefaultTag.c_str());
-						defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(currLine->Default ? "true" : "false");
+						defaultValNode.append_attribute(configXMLConstants::valueTag.c_str()).set_value(currSelection->Default ? "true" : "false");
 						defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
 					}
 					else
 					{
 						lineNode = pageNode.append_child(configXMLConstants::menuLineSelectionTag.c_str());
 						pugi::xml_node defaultValNode = lineNode.append_child(configXMLConstants::selectionDefaultTag.c_str());
-						defaultValNode.append_attribute(configXMLConstants::indexTag.c_str()).set_value(std::to_string(currLine->Default).c_str());
+						defaultValNode.append_attribute(configXMLConstants::indexTag.c_str()).set_value(std::to_string(currSelection->Default).c_str());
 						defaultValNode.append_attribute(configXMLConstants::editableTag.c_str()).set_value("true");
-						for (unsigned long i = 1; i < deconstructedText.size(); i++)
+
+						if (currSelection->SourceSelectionPtr == nullptr)
 						{
-							pugi::xml_node optionNode = lineNode.append_child(configXMLConstants::selectionOptionTag.c_str());
-							pugi::xml_attribute optionValueAttr = optionNode.append_attribute(configXMLConstants::valueTag.c_str());
-							optionValueAttr.set_value(deconstructedText[i].data());
+							std::vector<std::string_view> lineOptions = currSelection->getOptionStringViews();
+							for (unsigned long i = 0; i < lineOptions.size(); i++)
+							{
+								pugi::xml_node optionNode = lineNode.append_child(configXMLConstants::selectionOptionTag.c_str());
+								pugi::xml_attribute optionValueAttr = optionNode.append_attribute(configXMLConstants::valueTag.c_str());
+								optionValueAttr.set_value(lineOptions[i].data());
+							}
+						}
+						else
+						{
+							Selection* sourceSelection = currSelection->SourceSelectionPtr;
+							std::string message =
+								"Note: This Selection is a mirror of \"" + sourceSelection->ParentPageName + " > " + sourceSelection->LineName + "\"!";
+							lineNode.append_child(pugi::xml_node_type::node_comment).set_value(message.c_str());
 						}
 					}
 					break;

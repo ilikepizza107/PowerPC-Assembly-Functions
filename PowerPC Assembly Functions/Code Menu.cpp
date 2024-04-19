@@ -89,7 +89,6 @@ int JUMPSQUAT_OVERRIDE_FRAMES_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_MIN_INDEX = -1;
 int JUMPSQUAT_OVERRIDE_MAX_INDEX = -1;
 int EXTERNAL_INDEX = -1;	//Used for GCTRM codes that use other indexs for context
-int TOGGLE_BASE_LINE_INDEX = -1;
 
 //constant overrides
 vector<ConstantPair> constantOverrides;
@@ -549,6 +548,368 @@ bool pageShortnameIsFree(lava::shortNameType nameIn)
 	return menuPagesMap.find(nameIn) == menuPagesMap.end();
 }
 
+// === Beginning of Line and Page Type Definitions ===
+
+// Line Type Class Member Definitions
+Line::Line() {}
+Line::Line(string Text, u16 TextOffset, u8 type, u8 flags, u8 ColorOffset, int* Index) {
+	this->Text = Text + "\0"s;
+	this->type = type;
+	this->Flags = flags;
+	this->Color = ColorOffset;
+	this->TextOffset = TextOffset;
+	this->Index = Index;
+	Size = Text.size() + TextOffset + 1;
+
+	Padding = (4 - Size % 4) % 4;
+	Size += Padding;
+
+	this->LineName = getLineNameFromLineText(this->Text);
+}
+void Line::WriteLineData()
+{
+	WriteLineData({});
+}
+void Line::WriteLineData(vector<u8> SelectionOffsets)
+{
+	if (behaviorFlags[Line::lbf_REMOVED]) return; // If the line is explicitly marked as removed, skip it!
+
+	if (behaviorFlags[Line::lbf_UNSELECTABLE])
+	{
+		Color = UNSELECTABLE_LINE_COLOR_OFFSET;
+	}
+	Flags &= ~Line::LINE_FLAG_SKIP_PRINTING;
+	if (behaviorFlags[Line::lbf_HIDDEN])
+	{
+		Flags |= Line::LINE_FLAG_SKIP_PRINTING;
+	}
+	Flags &= ~Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
+	if (behaviorFlags[Line::lbf_STICKY])
+	{
+		Flags |= Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
+	}
+
+	vector<u8> output;
+	AddValueToByteArray(Size, output);
+	if (Size == 0) {
+		std::cout << Text << endl;
+	}
+	AddValueToByteArray(type, output);
+	AddValueToByteArray(Flags, output);
+	AddValueToByteArray(Color, output);
+	AddValueToByteArray(TextOffset, output);
+	AddValueToByteArray(lineNum, output);
+	//AddValueToByteArray((u8) 0, output);
+	AddValueToByteArray(Value, output);
+	if (type == PRINT_LINE) {
+		AddValueToByteArray(numArgs, output);
+	}
+	else if (type != COMMENT_LINE) {
+		AddValueToByteArray(UpOffset, output);
+		AddValueToByteArray(DownOffset, output);
+		if (type == SUB_MENU_LINE) {
+			AddValueToByteArray(SubMenuOffset, output);
+		}
+		else {
+			AddValueToByteArray(Default, output);
+			AddValueToByteArray(Max, output);
+			if (type == INTEGER_LINE || type == FLOATING_LINE) {
+				AddValueToByteArray(Min, output);
+				AddValueToByteArray(Speed, output);
+			}
+		}
+	}
+	copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
+	if (type == SELECTION_LINE)
+	{
+		Selection* selectionCastPtr = (Selection*)this;
+		if (selectionCastPtr->SourceSelectionPtr != nullptr)
+		{
+			Selection* sourceSelection = selectionCastPtr->SourceSelectionPtr;
+			while (sourceSelection->SourceSelectionPtr != nullptr)
+			{
+				sourceSelection = sourceSelection->SourceSelectionPtr;
+			}
+			lava::writeRawDataToStream<int>(MenuFile, *sourceSelection->Index);
+		}
+		else
+		{
+			lava::writeRawDataToStream<int>(MenuFile, *Index);
+		}
+
+		std::copy(SelectionOffsets.begin(), SelectionOffsets.end(), ostreambuf_iterator<char>(MenuFile));
+	}
+	MenuFile << Text;
+	WritePadding();
+}
+void Line::WritePadding() {
+	for (int i = 0; i < Padding; i++) {
+		MenuFile << '\0';
+	}
+}
+
+// Comment Type Class Member Definitions
+Comment::Comment(string Text, int* Index)
+	: Line(Text, COMMENT_LINE_TEXT_START, COMMENT_LINE, 0, COMMENT_LINE_COLOR_OFFSET, Index) {}
+void Comment::WriteLineData()
+{
+	Line::WriteLineData();
+}
+
+// Print Type Class Member Definitions
+Print::Print(string Text, vector<int*> args)
+	: Line(Text, PRINT_LINE_TEXT_START, PRINT_LINE, 0, COMMENT_LINE_COLOR_OFFSET) {
+	this->args = args;
+	this->numArgs = args.size();
+	Size += args.size() * 4;
+	for (auto x : args) {
+		argValues.push_back(*x);
+	}
+	//cout << Size << endl;
+}
+void Print::WriteLineData()
+{
+	Line::WriteLineData();
+	for (auto x : argValues) {
+		sprintf(OpHexBuffer, "%08X", x);
+		//cout << Text << ": " << OpHexBuffer << endl;
+		x = _byteswap_ulong(x);
+
+		MenuFile.write((const char*)&x, 4);
+		//sprintf(OpHexBuffer, "%08X", x);
+		//cout << Text << ": " << OpHexBuffer << endl;
+		//MenuFile << OpHexBuffer;
+	}
+}
+
+// Selection Type Class Member Definitions
+Selection::Selection(string Text, vector<string> Options, vector<u16> Values, int Default, int& Index)
+	: Line(CreateSelectionString(Text + ":  %s", Options), SELECTION_LINE_OFFSETS_START + Options.size() * 4, SELECTION_LINE, 0, NORMAL_LINE_COLOR_OFFSET, &Index)
+{
+	if (Options.size() != Values.size()) {
+		cout << "Mismatched values" << endl;
+		exit(-1);
+	}
+	u16 offset = Text.size() + 5 + 1 + SELECTION_LINE_OFFSETS_START + Options.size() * 4;
+	for (int i = 0; i < Options.size(); i++) {
+		AddValueToByteArray(offset, OptionOffsets);
+		AddValueToByteArray(Values[i], OptionOffsets);
+		offset += Options[i].size() + 1;
+	}
+	Value = Default;
+	this->Default = Default;
+	this->Max = Options.size() - 1;
+}
+Selection::Selection(string Text, vector<string> Options, int Default, int& Index)
+	: Selection(Text, Options, CreateVector(Options), Default, Index) {}
+Selection::Selection(string Text, vector<string> Options, vector<u16> Values, string Default, int& Index)
+	: Selection(Text, Options, Values, distance(Options.begin(), find(Options.begin(), Options.end(), Default)), Index) {}
+Selection::Selection(string Text, vector<string> Options, string Default, int& Index)
+	: Selection(Text, Options, distance(Options.begin(), find(Options.begin(), Options.end(), Default)), Index) {}
+string Selection::CreateSelectionString(string Text, vector<string> Options)
+{
+	for (string x : Options) {
+		Text += "\0"s + x;
+	}
+	return Text;
+}
+vector<u16> Selection::CreateVector(vector<string> x)
+{
+	vector<u16> Values;
+	for (u16 i = 0; i < x.size(); i++) {
+		Values.push_back(i);
+	}
+	return Values;
+}
+void Selection::WriteLineData()
+{
+	Line::WriteLineData(OptionOffsets);
+}
+std::vector<std::string_view> Selection::getOptionStringViews()
+{
+	std::vector<std::string_view> result{};
+
+	Selection* sourceSelection = this;
+	while (sourceSelection->SourceSelectionPtr != nullptr)
+	{
+		sourceSelection = sourceSelection->SourceSelectionPtr;
+	}
+
+	result = splitLineContentString(sourceSelection->Text);
+	result.erase(result.begin());
+
+	return result;
+}
+
+// SelectionMirror Type Class Member Definitions
+SelectionMirror::SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index, bool inheritFlags)
+	: Selection(Text, {}, {}, Default, Index)
+{
+	this->Min = SourceSelection.Min;
+	this->Max = SourceSelection.Max;
+	this->SourceSelectionPtr = &SourceSelection;
+	if (inheritFlags)
+	{
+		this->behaviorFlags = SourceSelection.behaviorFlags;
+	}
+}
+
+// Toggle Type Class Member Definitions
+Toggle* Toggle::firstToggleInstancePtr = nullptr;
+Toggle::Toggle(string Text, bool Default, int& Index)
+	: Selection(Text, 
+		((firstToggleInstancePtr == nullptr) ? std::vector<std::string>({"OFF", "ON"}) : std::vector<std::string>()),
+		Default, Index)
+{
+	this->Min = 0;
+	this->Max = 1;
+	this->isToggleLine = 1;
+	if (firstToggleInstancePtr == nullptr)
+	{
+		firstToggleInstancePtr = this;
+	}
+	else
+	{
+		this->SourceSelectionPtr = firstToggleInstancePtr;
+	}
+}
+
+// SubMenu Type Class Member Definitions
+SubMenu::SubMenu() {}
+SubMenu::SubMenu(string Text, Page* SubMenuPtr)
+	: Line(Text + " >", SUB_MENU_LINE_TEXT_START, SUB_MENU_LINE, 0, NORMAL_LINE_COLOR_OFFSET)
+{
+	this->SubMenuPtr = SubMenuPtr;
+}
+
+// Integer Type Class Member Definitions
+Integer::Integer(string Text, int Min, int Max, int Default, int Speed, int& Index, std::string format, u8 flags)
+	: Line(Text + ":  " + format, NUMBER_LINE_TEXT_START, INTEGER_LINE, flags, NORMAL_LINE_COLOR_OFFSET, &Index)
+{
+	this->Min = Min;
+	this->Max = Max;
+	Value = Default;
+	this->Default = Default;
+	this->Speed = Speed;
+}
+
+// Floating Type Class Member Definitions
+Floating::Floating(string Text, float Min, float Max, float Default, float Speed, int& Index, string format)
+	: Line(Text + ":  " + format, NUMBER_LINE_TEXT_START, FLOATING_LINE, 0, NORMAL_LINE_COLOR_OFFSET, &Index)
+{
+	this->Min = GetHexFromFloat(Min);
+	this->Max = GetHexFromFloat(Max);
+	Value = GetHexFromFloat(Default);
+	this->Default = GetHexFromFloat(Default);
+	this->Speed = GetHexFromFloat(Speed);
+}
+
+// Page Class Member Definitions
+Page::Page(string Name, vector<Line*> Lines, lava::shortNameType shortName) {
+	if (!shortName.empty())
+	{
+		auto pageFindRes = menuPagesMap.find(shortName);
+		if (pageFindRes == menuPagesMap.end())
+		{
+			menuPagesMap[shortName] = this;
+		}
+		else
+		{
+			std::cerr << "[ERROR] Shortname of page \"" << Name << "\" (" << shortName << ")" <<
+				" is already in use by Page \"" << pageFindRes->second->PageName << "\"!\n";
+			exit(1);
+		}
+	}
+
+	CalledFromLine = std::make_shared<SubMenu>(Name, this);
+	PageName = Name;
+	PrepareLines(Lines);
+}
+void Page::PrepareLines()
+{
+	PrepareLines(this->Lines);
+}
+void Page::PrepareLines(const std::vector<Line*> LinesIn)
+{
+	// Reset page size, will be re-tallied in the following loop.
+	Size = NUM_WORD_ELEMS * 4;
+	this->Lines = LinesIn;
+	std::size_t excludedLines = 0;
+	// Do some final line attribute assignment stuff...
+	for (std::size_t i = 0; i < this->Lines.size(); i++)
+	{
+		this->Lines[i]->ParentPageName = PageName;
+		// If the line is explicitly marked as removed...
+		if (this->Lines[i]->behaviorFlags[Line::lbf_REMOVED])
+		{
+			// ... increment the counter...
+			excludedLines++;
+			// ... and skip it!
+			continue;
+		}
+		// Subtract the number of excluded lines from i, to ensure excluded lines aren't counted!
+		this->Lines[i]->lineNum = i - excludedLines;
+		this->Lines[i]->PageOffset = Size;
+		Size += this->Lines[i]->Size;
+	}
+	// ... and connect the lines accordingly!
+	ConnectSelectableLines();
+}
+void Page::WritePage()
+{
+	vector<u8> output;
+	AddValueToByteArray(CurrentLineOffset, output);
+	AddValueToByteArray(PrevPageOffset, output);
+	AddValueToByteArray(NumChangedLines, output);
+	AddValueToByteArray(PrintLowHold, output);
+	copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
+	for (auto x : Lines) {
+		x->WriteLineData();
+	}
+}
+void Page::ConnectSelectableLines()
+{
+	vector<int> SelectableLines{};
+	GetSelectableLines(SelectableLines);
+	if (SelectableLines.size() > 0)
+	{
+		SelectableLines.insert(SelectableLines.begin(), SelectableLines.back());
+		SelectableLines.push_back(SelectableLines[1]);
+
+		for (int i = 1; i < SelectableLines.size() - 1; i++)
+		{
+			Lines[SelectableLines[i]]->UpOffset = Lines[SelectableLines[i - 1]]->PageOffset;
+			Lines[SelectableLines[i]]->DownOffset = Lines[SelectableLines[i + 1]]->PageOffset;
+		}
+
+		CurrentLineOffset = Lines[SelectableLines[1]]->PageOffset;
+		Lines[SelectableLines[1]]->Color = HIGHLIGHTED_LINE_COLOR_OFFSET;
+	}
+	else
+	{
+		CurrentLineOffset = NUM_WORD_ELEMS * 4;
+	}
+}
+void Page::GetSelectableLines(vector<int>& SelectableLines)
+{
+	for (int i = 0; i < Lines.size(); i++)
+	{
+		Line* currLine = Lines[i];
+		if (currLine->type != COMMENT_LINE && currLine->type != PRINT_LINE)
+		{
+			if (!currLine->behaviorFlags[Line::lbf_UNSELECTABLE] &&
+				!currLine->behaviorFlags[Line::lbf_HIDDEN] &&
+				!currLine->behaviorFlags[Line::lbf_REMOVED])
+			{
+				SelectableLines.push_back(i);
+			}
+		}
+	}
+}
+
+// === End of Line and Page Type Definitions ===
+
+
 void CodeMenu()
 {
 #if EON_DEBUG_BUILD
@@ -818,10 +1179,6 @@ void CodeMenu()
 		MainLines.push_back(new Selection("Active Theme", THEME_LIST, 0, THEME_SETTING_INDEX));
 	}
 	
-	MainLines.push_back(new Selection("_", { "OFF", "ON"}, 0, TOGGLE_BASE_LINE_INDEX));
-	MainLines.back()->hideFromOptionsXML = 1;
-	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_HIDDEN].value = 1;
-	MainLines.back()->behaviorFlags[Line::LineBehaviorFlags::lbf_UNSELECTABLE].value = 1;
 	Page Main("Main", MainLines, lava::shortNameType("_MAIN"));
 	
 	//Unclepunch fps code

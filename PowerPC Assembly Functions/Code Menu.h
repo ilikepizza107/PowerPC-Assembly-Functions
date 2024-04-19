@@ -94,9 +94,6 @@ extern int JUMPSQUAT_OVERRIDE_FRAMES_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MIN_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MAX_INDEX;
 
-// utility
-extern int TOGGLE_BASE_LINE_INDEX;
-
 struct ConstantPair {
 	int address;
 	int* index;
@@ -491,92 +488,11 @@ public:
 		LINE_FLAG_SKIP_PRINTING         = 0b00000010
 	};
 
-	Line() {}
-
-	Line(string Text, u16 TextOffset, u8 type, u8 flags, u8 ColorOffset, int* Index = nullptr) {
-		this->Text = Text + "\0"s;
-		this->type = type;
-		this->Flags = flags;
-		this->Color = ColorOffset;
-		this->TextOffset = TextOffset;
-		this->Index = Index;
-		Size = Text.size() + TextOffset + 1;
-
-		Padding = (4 - Size % 4) % 4;
-		Size += Padding;
-
-		this->LineName = getLineNameFromLineText(this->Text);
-	}
-
-	virtual void WriteLineData()
-	{
-		WriteLineData(nullptr, {});
-	}
-
-	void WriteLineData(int* SourceSelectionIndexPtr, vector<u8> SelectionOffsets)
-	{
-		if (behaviorFlags[Line::lbf_REMOVED]) return; // If the line is explicitly marked as removed, skip it!
-
-		if (behaviorFlags[Line::lbf_UNSELECTABLE])
-		{
-			Color = UNSELECTABLE_LINE_COLOR_OFFSET;
-		}
-		Flags &= ~Line::LINE_FLAG_SKIP_PRINTING;
-		if (behaviorFlags[Line::lbf_HIDDEN])
-		{
-			Flags |= Line::LINE_FLAG_SKIP_PRINTING;
-		}
-		Flags &= ~Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
-		if (behaviorFlags[Line::lbf_STICKY])
-		{
-			Flags |= Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
-		}
-
-		vector<u8> output;
-		AddValueToByteArray(Size, output);
-		if (Size == 0) {
-			std::cout << Text << endl;
-		}
-		AddValueToByteArray(type, output);
-		AddValueToByteArray(Flags, output);
-		AddValueToByteArray(Color, output);
-		AddValueToByteArray(TextOffset, output);
-		AddValueToByteArray(lineNum, output);
-		//AddValueToByteArray((u8) 0, output);
-		AddValueToByteArray(Value, output);
-		if (type == PRINT_LINE) {
-			AddValueToByteArray(numArgs, output);
-		}
-		else if (type != COMMENT_LINE) {
-			AddValueToByteArray(UpOffset, output);
-			AddValueToByteArray(DownOffset, output);
-			if (type == SUB_MENU_LINE) {
-				AddValueToByteArray(SubMenuOffset, output);
-			}
-			else {
-				AddValueToByteArray(Default, output);
-				AddValueToByteArray(Max, output);
-				if (type == INTEGER_LINE || type == FLOATING_LINE) {
-					AddValueToByteArray(Min, output);
-					AddValueToByteArray(Speed, output);
-				}
-			}
-		}
-		copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
-		if (type == SELECTION_LINE)
-		{
-			lava::writeRawDataToStream<int>(MenuFile, *SourceSelectionIndexPtr);
-			copy(SelectionOffsets.begin(), SelectionOffsets.end(), ostreambuf_iterator<char>(MenuFile));
-		}
-		MenuFile << Text;
-		WritePadding();
-	}
-
-	void WritePadding() {
-		for (int i = 0; i < Padding; i++) {
-			MenuFile << '\0';
-		}
-	}
+	Line();
+	Line(string Text, u16 TextOffset, u8 type, u8 flags, u8 ColorOffset, int* Index = nullptr);
+	virtual void WriteLineData();
+	void WriteLineData(vector<u8> SelectionOffsets);
+	void WritePadding();
 
 	int* Index = nullptr;
 	u32 numArgs;
@@ -603,6 +519,8 @@ public:
 
 	// Truncated version of the Text field. Just everything before the first colon (":") in the first delimited string.
 	std::string LineName = "";
+	// Parent Page's Name
+	std::string ParentPageName = "";
 	// Allows a line to be forcibly hidden from the Options XML (mostly just here to hide the Toggle base line).
 	bool hideFromOptionsXML = 0;
 
@@ -634,43 +552,14 @@ public:
 class Comment : public Line
 {
 public:
-	Comment(string Text, int* Index = nullptr)
-	: Line(Text, COMMENT_LINE_TEXT_START, COMMENT_LINE, 0, COMMENT_LINE_COLOR_OFFSET, Index) {}
-
-	void WriteLineData()
-	{
-		Line::WriteLineData();
-	}
+	Comment(string Text, int* Index = nullptr);
+	void WriteLineData();
 };
 
 class Print : public Line {
 public:
-	Print(string Text, vector<int*> args = {})
-		: Line(Text, PRINT_LINE_TEXT_START, PRINT_LINE, 0, COMMENT_LINE_COLOR_OFFSET) {
-		this->args = args;
-		this->numArgs = args.size();
-		Size += args.size() * 4;
-		for (auto x : args) {
-			argValues.push_back(*x);
-		}
-		//cout << Size << endl;
-	}
-
-	void WriteLineData()
-	{
-		Line::WriteLineData();
-		for (auto x : argValues) {
-			sprintf(OpHexBuffer, "%08X", x);
-			//cout << Text << ": " << OpHexBuffer << endl;
-			x = _byteswap_ulong(x);
-			
-			MenuFile.write((const char*)& x, 4);
-			//sprintf(OpHexBuffer, "%08X", x);
-			//cout << Text << ": " << OpHexBuffer << endl;
-			//MenuFile << OpHexBuffer;
-		}
-	}
-
+	Print(string Text, vector<int*> args = {});
+	void WriteLineData();
 private:
 	vector<int> argValues;
 };
@@ -678,100 +567,39 @@ private:
 class Selection : public Line
 {
 public:
-	Selection(string Text, vector<string> Options, vector<u16> Values, int Default, int &Index)
-	: Line(CreateSelectionString(Text + ":  %s", Options), SELECTION_LINE_OFFSETS_START + Options.size() * 4, SELECTION_LINE, 0, NORMAL_LINE_COLOR_OFFSET, &Index)
-	{
-		if (Options.size() != Values.size()) {
-			cout << "Mismatched values" << endl;
-			exit(-1);
-		}
-		u16 offset = Text.size() + 5 + 1 + SELECTION_LINE_OFFSETS_START + Options.size() * 4;
-		for (int i = 0; i < Options.size(); i++) {
-			AddValueToByteArray(offset, OptionOffsets);
-			AddValueToByteArray(Values[i], OptionOffsets);
-			offset += Options[i].size() + 1;
-		}
-		Value = Default;
-		this->Default = Default;
-		this->Max = Options.size() - 1;
-		this->SourceSelectionIndexPtr = this->Index;
-	}
-
-	Selection(string Text, vector<string> Options, int Default, int &Index)
-		: Selection(Text, Options, CreateVector(Options), Default, Index) {}
-
-	Selection(string Text, vector<string> Options, vector<u16> Values, string Default, int &Index)
-		: Selection(Text, Options, Values, distance(Options.begin(), find(Options.begin(), Options.end(), Default)), Index) {}
-
-	Selection(string Text, vector<string> Options, string Default, int &Index)
-		: Selection(Text, Options, distance(Options.begin(), find(Options.begin(), Options.end(), Default)), Index) {}
-
-	string CreateSelectionString(string Text, vector<string> Options)
-	{
-		for (string x : Options) {
-			Text += "\0"s + x;
-		}
-		return Text;
-	}
-
-	vector<u16> CreateVector(vector<string> x) 
-	{
-		vector<u16> Values;
-		for (u16 i = 0; i < x.size(); i++) {
-			Values.push_back(i);
-		}
-		return Values;
-	}
-
-	void WriteLineData()
-	{
-		Line::WriteLineData(SourceSelectionIndexPtr, OptionOffsets);
-	}
+	Selection(string Text, vector<string> Options, vector<u16> Values, int Default, int& Index);
+	Selection(string Text, vector<string> Options, int Default, int& Index);
+	Selection(string Text, vector<string> Options, vector<u16> Values, string Default, int& Index);
+	Selection(string Text, vector<string> Options, string Default, int& Index);
+	string CreateSelectionString(string Text, vector<string> Options);
+	vector<u16> CreateVector(vector<string> x);
+	void WriteLineData();
+	std::vector<std::string_view> getOptionStringViews();
 
 	bool isToggleLine = 0;
-	int* SourceSelectionIndexPtr = nullptr;
+	Selection* SourceSelectionPtr = nullptr;
 	vector<u8> OptionOffsets;
 };
 
 class SelectionMirror : public Selection
 {
 public:
-	SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index, bool inheritFlags = 1) 
-		: Selection(Text, {}, {}, Default, Index)
-	{
-		this->Min = SourceSelection.Min;
-		this->Max = SourceSelection.Max;
-		this->SourceSelectionIndexPtr = SourceSelection.Index;
-		if (inheritFlags)
-		{
-			this->behaviorFlags = SourceSelection.behaviorFlags;
-		}
-	}
+	SelectionMirror(Selection& SourceSelection, std::string Text, int Default, int& Index, bool inheritFlags = 1);
 };
 
 class Toggle : public Selection
 {
+private:
+	static Toggle* firstToggleInstancePtr;
 public:
-	Toggle(string Text, bool Default, int &Index)
-		: Selection(Text, {}, {}, Default, Index)
-	{
-		this->Min = 0;
-		this->Max = 1;
-		this->SourceSelectionIndexPtr = &TOGGLE_BASE_LINE_INDEX;
-		this->isToggleLine = 1;
-	}
+	Toggle(string Text, bool Default, int &Index);
 };
 
 class SubMenu : public Line
 {
 public:
-	SubMenu() {}
-
-	SubMenu(string Text, Page* SubMenuPtr)
-	: Line(Text + " >", SUB_MENU_LINE_TEXT_START, SUB_MENU_LINE, 0, NORMAL_LINE_COLOR_OFFSET)
-	{
-		this->SubMenuPtr = SubMenuPtr;
-	}
+	SubMenu();
+	SubMenu(string Text, Page* SubMenuPtr);
 };
 
 class Integer : public Line
@@ -782,29 +610,13 @@ public:
 		INT_FLAG_ALLOW_WRAP = 0b10000000,
 	};
 
-	Integer(string Text, int Min, int Max, int Default, int Speed, int &Index, std::string format = "%d", u8 flags = 0)
-	: Line(Text + ":  " + format, NUMBER_LINE_TEXT_START, INTEGER_LINE, flags, NORMAL_LINE_COLOR_OFFSET, &Index)
-	{
-		this->Min = Min;
-		this->Max = Max;
-		Value = Default;
-		this->Default = Default;
-		this->Speed = Speed;
-	}
+	Integer(string Text, int Min, int Max, int Default, int Speed, int& Index, std::string format = "%d", u8 flags = 0);
 };
 
 class Floating : public Line
 {
 public:
-	Floating(string Text, float Min, float Max, float Default, float Speed, int &Index, string format = "%f")
-	: Line(Text + ":  " + format, NUMBER_LINE_TEXT_START, FLOATING_LINE, 0, NORMAL_LINE_COLOR_OFFSET, &Index)
-	{
-		this->Min = GetHexFromFloat(Min);
-		this->Max = GetHexFromFloat(Max);
-		Value = GetHexFromFloat(Default);
-		this->Default = GetHexFromFloat(Default);
-		this->Speed = GetHexFromFloat(Speed);
-	}
+	Floating(string Text, float Min, float Max, float Default, float Speed, int& Index, string format = "%f");
 	bool forceHexXMLOutput = 0;
 };
 
@@ -826,108 +638,12 @@ public:
 	static const int PRINT_LOW_HOLD = NUM_CHANGED_LINES + 4;
 	static const int FIRST_LINE_OFFSET = NUM_WORD_ELEMS * 4;
 
-	Page(string Name, vector<Line*> Lines, lava::shortNameType shortName = lava::shortNameType("")) {
-		if (!shortName.empty())
-		{
-			auto pageFindRes = menuPagesMap.find(shortName);
-			if (pageFindRes == menuPagesMap.end())
-			{
-				menuPagesMap[shortName] = this;
-			}
-			else
-			{
-				std::cerr << "[ERROR] Shortname of page \"" << Name << "\" (" << shortName << ")" << 
-					" is already in use by Page \"" << pageFindRes->second->PageName << "\"!\n";
-				exit(1);
-			}
-		}
-
-		CalledFromLine = std::make_shared<SubMenu>(Name, this);
-		PageName = Name;
-		PrepareLines(Lines);
-	}
-	void PrepareLines()
-	{
-		PrepareLines(this->Lines);
-	}
-	void PrepareLines(const std::vector<Line*> LinesIn)
-	{
-		// Reset page size, will be re-tallied in the following loop.
-		Size = NUM_WORD_ELEMS * 4;
-		this->Lines = LinesIn;
-		std::size_t excludedLines = 0;
-		// Do some final line attribute assignment stuff...
-		for (std::size_t i = 0; i < this->Lines.size(); i++)
-		{
-			// If the line is explicitly marked as removed...
-			if (this->Lines[i]->behaviorFlags[Line::lbf_REMOVED])
-			{
-				// ... increment the counter...
-				excludedLines++;
-				// ... and skip it!
-				continue;
-			}
-			// Subtract the number of excluded lines from i, to ensure excluded lines aren't counted!
-			this->Lines[i]->lineNum = i - excludedLines;
-			this->Lines[i]->PageOffset = Size;
-			Size += this->Lines[i]->Size;
-		}
-		// ... and connect the lines accordingly!
-		ConnectSelectableLines();
-	}
-	void WritePage()
-	{
-		vector<u8> output;
-		AddValueToByteArray(CurrentLineOffset, output);
-		AddValueToByteArray(PrevPageOffset, output);
-		AddValueToByteArray(NumChangedLines, output);
-		AddValueToByteArray(PrintLowHold, output);
-		copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
-		for (auto x : Lines) {
-			x->WriteLineData();
-		}
-	}
-
-	void ConnectSelectableLines()
-	{
-		vector<int> SelectableLines{};
-		GetSelectableLines(SelectableLines);
-		if (SelectableLines.size() > 0) 
-		{
-			SelectableLines.insert(SelectableLines.begin(), SelectableLines.back());
-			SelectableLines.push_back(SelectableLines[1]);
-
-			for (int i = 1; i < SelectableLines.size() - 1; i++) 
-			{
-				Lines[SelectableLines[i]]->UpOffset = Lines[SelectableLines[i - 1]]->PageOffset;
-				Lines[SelectableLines[i]]->DownOffset = Lines[SelectableLines[i + 1]]->PageOffset;
-			}
-		
-			CurrentLineOffset = Lines[SelectableLines[1]]->PageOffset;
-			Lines[SelectableLines[1]]->Color = HIGHLIGHTED_LINE_COLOR_OFFSET;
-		}
-		else 
-		{
-			CurrentLineOffset = NUM_WORD_ELEMS * 4;
-		}
-	}
-
-	void GetSelectableLines(vector<int> &SelectableLines)
-	{
-		for (int i = 0; i < Lines.size(); i++) 
-		{
-			Line* currLine = Lines[i];
-			if (currLine->type != COMMENT_LINE && currLine->type != PRINT_LINE)
-			{
-				if (!currLine->behaviorFlags[Line::lbf_UNSELECTABLE] && 
-					!currLine->behaviorFlags[Line::lbf_HIDDEN] && 
-					!currLine->behaviorFlags[Line::lbf_REMOVED])
-				{
-					SelectableLines.push_back(i);
-				}
-			}
-		}
-	}
+	Page(string Name, vector<Line*> Lines, lava::shortNameType shortName = lava::shortNameType(""));
+	void PrepareLines();
+	void PrepareLines(const std::vector<Line*> LinesIn);
+	void WritePage();
+	void ConnectSelectableLines();
+	void GetSelectableLines(vector<int>& SelectableLines);
 };
 
 void PrintChar(int SettingsPtrReg, int CharReg);
