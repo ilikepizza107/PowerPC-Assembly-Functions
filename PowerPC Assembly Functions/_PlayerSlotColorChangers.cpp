@@ -406,6 +406,7 @@ void psccSetupCode()
 	// Mode3 = Mode0 - 1
 
 	int mode0Label = GetNextLabel();
+	int mode0DoStoreLabel = GetNextLabel();
 	int mode1Label = GetNextLabel();
 	int mode2Label = GetNextLabel();
 	int getUserDataLabel = GetNextLabel();
@@ -426,11 +427,16 @@ void psccSetupCode()
 	ADDIS(reg3, reg3, -activatorStringHiHalf);
 	ADDI(reg3, reg3, -activatorStringLowHalf);
 	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
+	CMPLI(reg3, 0x4, 0);
+	BC(3, bCACB_NOT_EQUAL);
+	ADDI(reg2, 0, 0x2);
+	JumpToLabel(mode0DoStoreLabel);
+
 	// If we're still above 3, then we're not looking at a valid CLR0; skip to the exit!
 	CMPLI(reg3, 0x3, 7);
 	JumpToLabel(badExitLabel, bCACB_GREATER.inConditionRegField(0x7));
 
-	// Reuse the check from the last line to branch for Mode 3 (which is handled in the Mode 1 logic, this isn't a typo lol)
+	// Reuse the check from the last line to branch for Mode 3 (which is handled in the Mode 0 logic, this isn't a typo lol)
 	// Note, we did this check in CR7 so that we can use whether we're in it again later to toggle the final port number subtraction!
 	JumpToLabel(mode0Label, bCACB_EQUAL.inConditionRegField(0x7));
 	// If Mode 0...
@@ -470,6 +476,7 @@ void psccSetupCode()
 	// Add 1 to that number...
 	ADDI(reg2, reg2, 1);
 	// ... and store it to reference as our target port!
+	Label(mode0DoStoreLabel);
 	STH(reg2, 1, safeStackWordOff + 0x6);
 
 	// Next, we need to try to get the CLR0's UserData and the accompanying mask data.
