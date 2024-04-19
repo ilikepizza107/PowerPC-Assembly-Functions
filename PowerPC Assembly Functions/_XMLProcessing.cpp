@@ -764,6 +764,21 @@ namespace xml
 			{
 				logOutput << "[ADDED] \"" << *currColorName << "\"!\n";
 			}
+			if (currColor->flags != 0x00)
+			{
+				bool noFlagsPrintedYet = 1;
+
+				logOutput << "\tFlags: ";
+				for (std::size_t i = 0; i < xml::configXMLConstants::colorFlagNames.size(); i++)
+				{
+					if (currColor->flags & (1 << i))
+					{
+						logOutput << (noFlagsPrintedYet ? "" : " | ") << xml::configXMLConstants::colorFlagNames[i];
+						noFlagsPrintedYet = 0;
+					}
+				}
+				logOutput << "\n";
+			}
 			pscc::colorTable[*currColorName] = *currColor;
 		}
 	}
