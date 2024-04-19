@@ -309,14 +309,14 @@ namespace pscc
 
 	std::map<std::string, color> colorTable =
 	{
-		{psccConstants::ColNameP1_M,	{0.00f,	1.00f,	0.50f}},
-		{psccConstants::ColNameP1_IG2,	{5.80f,	1.00f,	0.40f}},
-		{psccConstants::ColNameP2_M,	{3.90f,	0.70f,	0.50f}},
-		{psccConstants::ColNameP2_IG,	{3.60f,	1.00f,	0.50f}},
-		{psccConstants::ColNameP2_IG2,	{3.45f,	1.00f,	0.40f}},
-		{psccConstants::ColNameP3_M,	{0.85f,	0.90f,	0.55f, pscc::color::fb_DISABLE_HUE_MOD}},
-		{psccConstants::ColNameP4_M,	{2.10f,	0.80f,	0.375f, pscc::color::fb_DISABLE_HUE_MOD}},
-		{psccConstants::ColNameRGB,     {0.00f, 1.00f,  0.50f, pscc::color::fb_DISABLE_HUE_MOD, 0}},
+		{psccConstants::ColNameP1_M,	{0.000f, 1.00f,  0.50f}},
+		{psccConstants::ColNameP2_M,	{3.900f, 0.70f,  0.50f}},
+		{psccConstants::ColNameP2_IG,	{3.600f, 1.00f,  0.50f}},
+		{psccConstants::ColNameP2_IG2,	{3.450f, 1.00f,  0.40f}},
+		{psccConstants::ColNameP3_M,	{0.825f, 0.92f,  0.55f, pscc::color::fb_DISABLE_HUE_MOD}},
+		{psccConstants::ColNameP3_IG,	{0.900f, 0.60f,  0.45f, pscc::color::fb_DISABLE_HUE_MOD}},
+		{psccConstants::ColNameP4_M,	{2.135f, 0.80f,  0.35f, pscc::color::fb_DISABLE_HUE_MOD}},
+		{psccConstants::ColNameRGB,     {0.000f, 1.00f,  0.50f, pscc::color::fb_DISABLE_HUE_MOD, 0}},
 	};
 	std::size_t getColorTableSizeInBytes()
 	{
@@ -367,7 +367,7 @@ namespace pscc
 		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP1_M;
 		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP1_M;
 		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP1_M;
-		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP1_IG2;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP1_M;
 
 		currCol = &entries[schemePredefIDs::spi_P2];
 		currCol->name = psccConstants::SchemeNameP2;
@@ -380,8 +380,8 @@ namespace pscc
 		currCol->name = psccConstants::SchemeNameP3;
 		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP3_M;
 		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP3_M;
-		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP3_M;
-		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP3_M;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP3_IG;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP3_IG;
 
 		currCol = &entries[schemePredefIDs::spi_P4];
 		currCol->name = psccConstants::SchemeNameP4;
