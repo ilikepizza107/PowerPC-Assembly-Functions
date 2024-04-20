@@ -258,7 +258,7 @@ void shieldAttackerPushback() {
 	int modulePtrReg = 29;
 
 	ASMStart(0x808401f0, "[CM: Light Shield] shieldAttackerPushback");
-	SaveRegisters({0});
+	SaveRegisters(std::vector<int>({ 0 }));
 
 	getAnalogShieldValue(modulePtrReg);
 

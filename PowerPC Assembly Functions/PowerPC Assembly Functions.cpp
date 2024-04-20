@@ -1276,7 +1276,7 @@ void Memmove(int DestReg, int SourceReg, int SizeReg)
 
 void SaveRegisters()
 {
-	SaveRegisters({});
+	SaveRegisters(std::vector<int>());
 }
 
 void SaveRegisters(vector<int> FPRegs)
@@ -1303,20 +1303,59 @@ void SaveRegisters(int NumFPRegs)
 {
 	vector<int> FPRegs(NumFPRegs);
 	iota(FPRegs.begin(), FPRegs.end(), 0);
-	SaveRegisters(FPRegs);
+	FPPushRecords = FPRegs;
+
+	std::size_t GPRStackSpaceLength = 29 * 0x4;
+	std::size_t FPRStackSpaceLength = NumFPRegs * 0x8;
+	std::size_t Reg0CTRStackSpaceLength = 0x4 + 0x4;
+	std::size_t stackSize = 0x8 + GPRStackSpaceLength + FPRStackSpaceLength + Reg0CTRStackSpaceLength;
+	STW(0, 1, -4);
+	MFLR(0);
+	STW(0, 1, 4);
+	MFCTR(0);
+	STW(0, 1, -8);
+
+	JumpToLabel(getSaveFPRsDownLabel(NumFPRegs - 1), bCACB_UNSPECIFIED, 1);
+
+	STWU(1, 1, -stackSize);
+	STMW(3, 1, 8);
 }
 
 void RestoreRegisters()
 {
-	int stackSize = 29 * 4 + FPPushRecords.size() * 8 + 8 + 8;
+	std::size_t GPRStackSpaceLength = 29 * 0x4;
+	std::size_t FPRStackSpaceLength = FPPushRecords.size() * 0x8;
+	std::size_t Reg0CTRStackSpaceLength = 0x4 + 0x4;
+	std::size_t stackSize = 0x8 + GPRStackSpaceLength + FPRStackSpaceLength + Reg0CTRStackSpaceLength;
 
 	LMW(3, 1, 8);
 	ADDI(1, 1, stackSize);
 
-	int offset = -8;
-	for (int x : FPPushRecords) {
-		offset -= 8;
-		LFD(x, 1, offset);
+	if (FPPushRecords.size() > 1)
+	{
+		std::set<int> FPRegsSorted(FPPushRecords.begin(), FPPushRecords.end());
+		bool regsConsecutiveFromZero = *FPRegsSorted.begin() == 0x00;
+		int prevReg = INT_MAX;
+		for (auto i = FPRegsSorted.begin(); regsConsecutiveFromZero && i != FPRegsSorted.end(); i++)
+		{
+			if (prevReg != INT_MAX)
+			{
+				regsConsecutiveFromZero &= *i == (prevReg + 1);
+			}
+			prevReg = *i;
+		}
+		if (regsConsecutiveFromZero && FPPushRecords.size() > 0x1)
+		{
+			JumpToLabel(getRestoreFPRsDownLabel(*FPRegsSorted.rbegin()), bCACB_UNSPECIFIED, 1);
+		}
+		else
+		{
+			int offset = -8;
+			for (int x : FPPushRecords) {
+				offset -= 8;
+				LFD(x, 1, offset);
+			}
+		}
 	}
 	
 	LWZ(0, 1, -8);
@@ -2837,6 +2876,35 @@ void LFD(int DestReg, int AddressReg, int Immediate)
 	WriteIntToFile(OpHex);
 }
 
+void LFDU(int DestReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(51, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void LFDUX(int DestReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(631, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
+void LFDX(int DestReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(599, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
 void LFS(int DestReg, int AddressReg, int Immediate)
 {
 	OpHex = GetOpSegment(48, 6, 5);
@@ -3672,6 +3740,35 @@ void STFD(int SourceReg, int AddressReg, int Immediate)
 	OpHex |= GetOpSegment(SourceReg, 5, 10);
 	OpHex |= GetOpSegment(AddressReg, 5, 15);
 	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void STFDU(int SourceReg, int AddressReg, int Immediate)
+{
+	OpHex = GetOpSegment(55, 6, 5);
+	OpHex |= GetOpSegment(SourceReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg, 5, 15);
+	OpHex |= GetOpSegment(Immediate, 16, 31);
+	WriteIntToFile(OpHex);
+}
+
+void STFDUX(int DestReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(759, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
+void STFDX(int DestReg, int AddressReg1, int AddressReg2)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(DestReg, 5, 10);
+	OpHex |= GetOpSegment(AddressReg1, 5, 15);
+	OpHex |= GetOpSegment(AddressReg2, 5, 20);
+	OpHex |= GetOpSegment(727, 10, 30);
 	WriteIntToFile(OpHex);
 }
 

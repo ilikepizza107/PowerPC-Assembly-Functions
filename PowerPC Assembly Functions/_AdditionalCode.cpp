@@ -3,7 +3,7 @@
 
 namespace lava
 {
-	const std::string version = "v1.4.8";
+	const std::string version = "v1.4.8a";
 	int CMNUCopyOverride = INT_MAX;
 	int ASMCopyOverride = INT_MAX;
 	int GCTBuildOverride = INT_MAX;

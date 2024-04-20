@@ -299,7 +299,7 @@ void StartMatch()
 
 void orderRotationQueueByMatchPlacing() {
 	ASMStart(0x806d4c14, "[CM: Control Codes] Order Rotation Queue By Match Placing");
-	SaveRegisters({ 1 });
+	SaveRegisters(std::vector<int>({ 1 }));
 
 	//[[0x80623318 + 0x244 * port(0 based)] + 0x44] = stocks
 	//[[0x80623318 + 0x244 * port(0 based)] + 0x34] (float)= stocks
@@ -599,9 +599,7 @@ void EndMatch()
 void Draw()
 {
 	ASMStart(0x8000e588, "[CM: Control Codes] Draw");
-	vector<int> FPRegs(21);
-	iota(FPRegs.begin(), FPRegs.end(), 0);
-	SaveRegisters(FPRegs);
+	SaveRegisters(21);
 
 	//draw di
 	if (DI_DRAW_INDEX != -1) {

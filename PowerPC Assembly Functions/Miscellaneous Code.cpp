@@ -134,7 +134,7 @@ void musicPercentCode() {
 	//r3 + 0x698 = song id
 	//music object = [0x805a01d8]
 	ASMStart(0x8117e698, "[CM: Miscellaneous Code] musicPercentCode");
-	SaveRegisters({1});
+	SaveRegisters(std::vector<int>({ 1 }));
 
 	int reg1 = 31;
 	int reg2 = 30;

@@ -330,6 +330,8 @@ private:
 	}
 } HEAP_ADDRESS_TABLE;
 
-static const int END_OF_CODE_MENU_HEADER = HEAP_ADDRESS_TABLE.table_end();
+static const int UTILITY_SUBROUTINES_HOOK_LOC = HEAP_ADDRESS_TABLE.table_end(); // 0x4
+
+static const int END_OF_CODE_MENU_HEADER = UTILITY_SUBROUTINES_HOOK_LOC + 0x4;
 
 #endif

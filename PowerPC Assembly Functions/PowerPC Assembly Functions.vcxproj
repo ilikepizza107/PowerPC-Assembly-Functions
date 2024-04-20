@@ -176,6 +176,7 @@
     <ClInclude Include="IASA Overlay.h" />
     <ClInclude Include="IkeClimbers.h" />
     <ClInclude Include="Last Character Auto Select.h" />
+    <ClInclude Include="_UtilitySubroutines.h" />
     <ClInclude Include="_AdditionalCode_Util.h" />
     <ClInclude Include="_CodeMenuHeaderConstants.h" />
     <ClInclude Include="_JumpsquatOverride.h" />
@@ -289,6 +290,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="_UtilitySubroutines.cpp" />
     <ClCompile Include="_XMLProcessing.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

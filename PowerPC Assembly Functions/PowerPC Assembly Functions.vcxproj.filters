@@ -126,6 +126,9 @@
     <ClInclude Include="_XMLProcessing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="_UtilitySubroutines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PowerPC Assembly Functions.cpp">
@@ -234,6 +237,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="_XMLProcessing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_UtilitySubroutines.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

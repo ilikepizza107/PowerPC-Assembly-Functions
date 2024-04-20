@@ -13,6 +13,7 @@
 #include "_lavaGeckoHexConvert.h"
 #include "_CodeMenuHeaderConstants.h"
 #include "_lavaOutputSplitter.h"
+#include "_UtilitySubroutines.h"
 using namespace std;
 
 //set to 1 if debugging.  records positions every frame and compares them during replay
@@ -887,6 +888,9 @@ void LBZU(int DestReg, int AddressReg, int Immediate);
 void LBZUX(int DestReg, int AddressReg1, int AddressReg2);
 void LBZX(int DestReg, int AddressReg1, int AddressReg2);
 void LFD(int DestReg, int AddressReg, int Immediate);
+void LFDU(int DestReg, int AddressReg, int Immediate);
+void LFDUX(int DestReg, int AddressReg1, int AddressReg2);
+void LFDX(int DestReg, int AddressReg1, int AddressReg2);
 void LFS(int DestReg, int AddressReg, int Immediate);
 void LFSU(int DestReg, int AddressReg, int Immediate);
 void LFSUX(int DestReg, int AddressReg, int AddressReg2);
@@ -976,6 +980,9 @@ void STBU(int SourceReg, int AddressReg, int Immediate);
 void STBUX(int SourceReg, int AddressReg1, int AddressReg2);
 void STBX(int SourceReg, int AddressReg1, int AddressReg2);
 void STFD(int SourceReg, int AddressReg, int Immediate);
+void STFDU(int SourceReg, int AddressReg, int Immediate);
+void STFDUX(int DestReg, int AddressReg1, int AddressReg2);
+void STFDX(int DestReg, int AddressReg1, int AddressReg2);
 void STFIWX(int SourceReg, int AddressReg1, int AddressReg2);
 void STFS(int SourceReg, int AddressReg, int Immediate);
 void STFSU(int SourceReg, int AddressReg, int Immediate);

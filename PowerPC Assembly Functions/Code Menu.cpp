@@ -1196,6 +1196,8 @@ void CodeMenu()
 
 	ActualCodes();
 
+	utilitySubroutines();
+
 #if EON_DEBUG_BUILD
 	for(auto TOGGLE_LOC: toggleLocations)
 	{
@@ -1790,6 +1792,9 @@ void CreateMenu(Page& MainPage)
 		Header.insert(Header.end(), HEAP_ADDRESS_TABLE.idArray.cbegin(), HEAP_ADDRESS_TABLE.idArray.cend());
 	}
 
+	// Utility Function Dead Hook Loc
+	AddValueToByteArray(0x00000000, Header);
+
 	if (START_OF_CODE_MENU - START_OF_CODE_MENU_HEADER != Header.size()) {
 		std::cout << "Messed up header\n";
 		exit(-1);
@@ -1930,9 +1935,7 @@ void ControlCodeMenu()
 	ModifyLineValueSubroutineLabel = GetNextLabel();
 
 	ASMStart(0x80029574, "[CM: Code Menu] Control Code Menu");
-	vector<int> FPRegs(14);
-	iota(FPRegs.begin(), FPRegs.end(), 0);
-	SaveRegisters(FPRegs);
+	SaveRegisters(14);
 
 	printMenuSetters();
 
@@ -3204,9 +3207,7 @@ void printFPS() {
 void PrintCodeMenu()
 {
 	ASMStart(0x80017928, "[CM: Code Menu] Print Code Menu");
-	vector<int> FPRegs(14);
-	iota(FPRegs.begin(), FPRegs.end(), 0);
-	SaveRegisters(FPRegs);
+	SaveRegisters(14);
 
 	int Reg1 = 31;
 	int Reg2 = 30;
