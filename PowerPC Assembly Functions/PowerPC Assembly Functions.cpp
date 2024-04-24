@@ -1228,17 +1228,31 @@ void FindInTerminatedArray(int ValueReg, int StartAddressReg, int endMarker, int
 	Label(EndOfSearch);
 }
 
-void CallBrawlFunc(int Address, int addressReg) {
+void CallBrawlFunc(int Address, int addressReg, bool setLR) {
 	// If BLAs are enabled, and the target address can be validly represented using a BLA...
 	if (CONFIG_ALLOW_BLA_FUNCTION_CALLS && (Address >= 0x80000000) && (Address < 0x88000000) && !(Address & 0b11))
 	{
-		BLA(Address);
+		if (setLR)
+		{
+			BLA(Address);
+		}
+		else
+		{
+			BA(Address);
+		}
 	}
 	else
 	{
 		SetRegister(addressReg, Address);
 		MTCTR(addressReg);
-		BCTRL();
+		if (setLR)
+		{
+			BCTRL();
+		}
+		else
+		{
+			BCTR();
+		}
 	}
 }
 

@@ -717,7 +717,7 @@ void FindInArray(int ValueReg, int StartAddressReg, int numberOfElements, int el
 //StartAddressReg ends with the address of the found element, or an address after the array
 //ends when end marker is encountered
 void FindInTerminatedArray(int ValueReg, int StartAddressReg, int endMarker, int elementOffset, int ResultReg, int TempReg, int searchSize);
-void CallBrawlFunc(int Address, int addressReg = 0);
+void CallBrawlFunc(int Address, int addressReg = 0, bool setLR = 1);
 //r3 returns ptr
 void Allocate(int SizeReg, int Heap = HeapType::MenuInstance);
 void AllocateIfNotExist(int SizeReg, int AddressReg, int EmptyVal);
