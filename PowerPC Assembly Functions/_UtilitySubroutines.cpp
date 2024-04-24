@@ -113,11 +113,30 @@ void restoreFPRsDown()
 	BLR();
 }
 
+bool playSELabelUsed = 0;
+int playSELabel = GetNextLabel();
+int getPlaySELabel()
+{
+	playSELabelUsed = 1;
+	return playSELabel;
+}
+void playSE()
+{
+	if (playSELabelUsed)
+	{
+		Label(playSELabel);
+		LoadWordToReg(3, 0x805A01D0);
+		LFS(1, 13, 0x18);
+		// Note, call without setting LR so we don't need to BLR ourselves!
+		CallBrawlFunc(SND_PLAY_SE_FIXED_EFFECT, 12, 0);
+	}
+}
 
 void utilitySubroutines()
 {
 	ASMStart(UTILITY_SUBROUTINES_HOOK_LOC, codePrefix + "" + codeSuffix, "");
 	saveFPRsDown();
 	restoreFPRsDown();
+	playSE();
 	ASMEnd();
 }
