@@ -308,13 +308,13 @@ namespace pscc
 
 	std::map<std::string, color> colorTable =
 	{
-		{psccConstants::ColNameP1_M,	{0.000f, 1.00f,  0.50f}},
-		{psccConstants::ColNameP2_M,	{3.900f, 0.70f,  0.50f}},
-		{psccConstants::ColNameP2_IG,	{3.600f, 1.00f,  0.50f}},
+		{psccConstants::ColNameP1_M,	{0.015f, 0.95f,  0.48f}},
+		{psccConstants::ColNameP2_M,	{3.900f, 0.75f,  0.48f}},
+		{psccConstants::ColNameP2_M2,	{3.700f, 0.90f,  0.50f}},
 		{psccConstants::ColNameP2_IG2,	{3.450f, 1.00f,  0.40f}},
-		{psccConstants::ColNameP3_M,	{0.825f, 0.92f,  0.55f, pscc::color::fb_DISABLE_HUE_MOD}},
+		{psccConstants::ColNameP3_M,	{0.840f, 1.00f,  0.50f}},
 		{psccConstants::ColNameP3_IG,	{0.900f, 0.60f,  0.45f, pscc::color::fb_DISABLE_HUE_MOD}},
-		{psccConstants::ColNameP4_M,	{2.135f, 0.80f,  0.35f, pscc::color::fb_DISABLE_HUE_MOD}},
+		{psccConstants::ColNameP4_M,	{2.135f, 0.86f,  0.32f, pscc::color::fb_DISABLE_HUE_MOD}},
 		{psccConstants::ColNameRGB,     {0.000f, 1.00f,  0.50f, pscc::color::fb_DISABLE_HUE_MOD, 0}},
 	};
 	std::size_t getColorTableSizeInBytes()
@@ -371,8 +371,8 @@ namespace pscc
 		currCol = &entries[schemePredefIDs::spi_P2];
 		currCol->name = psccConstants::SchemeNameP2;
 		currCol->colors[colorSchemeColorSlots::cscs_MENU1] = psccConstants::ColNameP2_M;
-		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP2_M;
-		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP2_IG;
+		currCol->colors[colorSchemeColorSlots::cscs_MENU2] = psccConstants::ColNameP2_M2;
+		currCol->colors[colorSchemeColorSlots::cscs_INGAME1] = psccConstants::ColNameP2_M2;
 		currCol->colors[colorSchemeColorSlots::cscs_INGAME2] = psccConstants::ColNameP2_IG2;
 
 		currCol = &entries[schemePredefIDs::spi_P3];

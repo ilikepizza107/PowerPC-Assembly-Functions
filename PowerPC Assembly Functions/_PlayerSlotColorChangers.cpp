@@ -709,9 +709,9 @@ void psccMainCode()
 		PS_SEL(floatHSLRegisters[1], floatCalcRegisters[1], floatCalcRegisters[1], floatHSLRegisters[1]);
 		// If (Mul - 1) >= 0.0f, then FinalAdd = AbsVal, Else FinalAdd = 0.0
 		PS_SEL(floatHSLRegisters[2], floatCalcRegisters[1], floatCalcRegisters[0], floatHSLRegisters[2]);
-		// Get 1 - Val
+		// Get 1 - AbsVal
 		PS_SUB(floatTempRegisters[1], floatTempRegisters[0], floatCalcRegisters[0]);
-		// If (Mul - 1) >= 0.0f, then FinalMul2 = 1 - Val, Else FinalMul2 = Val
+		// If (Mul - 1) >= 0.0f, then FinalMul2 = 1 - AbsVal, Else FinalMul2 = AbsVal
 		PS_SEL(floatCalcRegisters[1], floatCalcRegisters[1], floatTempRegisters[1], floatCalcRegisters[0]);
 		// Final Result = (FinalMul1 * FinalMul2) + FinalAdd
 		PS_MADD(floatHSLRegisters[1], floatHSLRegisters[1], floatCalcRegisters[1], floatHSLRegisters[2]);
