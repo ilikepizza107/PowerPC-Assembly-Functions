@@ -11,6 +11,7 @@ int getRestoreFPRsDownLabel(unsigned char highestFPR);
 enum SoundInfoIndex
 {
 	sii_SND_SE_SYSTEM_CURSOR = 0x00,
+	sii_SND_SE_SYSTEM_INFOWINDOW_OPEN = 0x05,
 	sii_SND_SE_SYSTEM_PLATE_CATCH = 0x08,
 	sii_SND_SE_SYSTEM_COUNTER = 0x25,
 };

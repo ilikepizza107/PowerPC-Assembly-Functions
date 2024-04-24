@@ -2147,6 +2147,9 @@ void ControlCodeMenu()
 
 		SetRegister(Reg2, CODE_MENU_BUTTON_MASK_LOC);
 		STW(ButtonReg, Reg2, 0);
+
+		ADDI(4, 0, sii_SND_SE_SYSTEM_INFOWINDOW_OPEN);
+		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
 
 	//get only pressed button
@@ -2691,6 +2694,8 @@ void ExecuteAction(int ActionReg)
 
 		Label(move);
 		Move(LineReg, PageReg, TempReg1, TempReg2, TempReg3);
+		ADDI(4, 0, sii_SND_SE_SYSTEM_CURSOR);
+		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
 
 	//change value
@@ -2723,6 +2728,8 @@ void ExecuteAction(int ActionReg)
 		SetRegister(TempReg2, CODE_MENU_CONTROL_FLAG);
 		STW(TempReg1, TempReg2, 0);
 		ExitMenu();
+		ADDI(4, 0, sii_SND_SE_SYSTEM_PLATE_CATCH);
+		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
 
 	// --- Reset Actions! ---
@@ -2882,7 +2889,7 @@ void ModifyLineValueSubroutine()
 	int TypeReg = 4;
 	int PageReg = 5;
 	// 0 = Incr, 1 = Decr
-	int OoDecrReg = 6;
+	int DoDecrReg = 6;
 
 	int TempReg1 = 12;
 	int TempReg2 = 11;
@@ -2904,7 +2911,7 @@ void ModifyLineValueSubroutine()
 	JumpToLabel(exitLabel, bCACB_GREATER);
 
 	// Pre-compare the Change Direction into CR7, since we need it for every case.
-	CMPLI(OoDecrReg, 0, 7);
+	CMPLI(DoDecrReg, 0, 7);
 
 	If(TypeReg, EQUAL_I, FLOATING_LINE);
 	{
@@ -2997,6 +3004,9 @@ void ModifyLineValueSubroutine()
 	SUBF(TempReg5, TempReg5, TempReg4);
 	STB(TempReg2, LineReg, Line::COLOR);
 	STW(TempReg5, PageReg, Page::NUM_CHANGED_LINES);
+
+	ADDI(4, 0, sii_SND_SE_SYSTEM_COUNTER);
+	JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 0);
 
 	Label(exitLabel);
 	BLR();
