@@ -2148,6 +2148,7 @@ void ControlCodeMenu()
 		SetRegister(Reg2, CODE_MENU_BUTTON_MASK_LOC);
 		STW(ButtonReg, Reg2, 0);
 
+		// Play sound for opening menu.
 		ADDI(4, 0, sii_SND_SE_SYSTEM_INFOWINDOW_OPEN);
 		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
@@ -2181,7 +2182,7 @@ void ControlCodeMenu()
 
 		GetActionFromInputs(ButtonReg, ControlStickXReg, ControlStickYReg, ActionReg);
 
-		ExecuteAction(ActionReg);
+		ExecuteAction(ActionReg, Reg1);
 
 	}EndIf(); //run logic
 	
@@ -2561,7 +2562,7 @@ void ControlCodeMenu()
 
 	// Beginning of Subroutines
 	ModifyLineValueSubroutine();
-	ResetLineSubroutine();
+	ResetLineSubroutine(Reg1);
 
 	ASMEnd();
 }
@@ -2660,7 +2661,7 @@ void switchTest_ExecuteAction(int ActionReg)
 }
 */
 
-void ExecuteAction(int ActionReg)
+void ExecuteAction(int ActionReg, int ResetAccumulatorReg)
 {
 	int LineReg = 3;
 	int TypeReg = 4;
@@ -2694,6 +2695,8 @@ void ExecuteAction(int ActionReg)
 
 		Label(move);
 		Move(LineReg, PageReg, TempReg1, TempReg2, TempReg3);
+
+		// Play sound for moving to a different line.
 		ADDI(4, 0, sii_SND_SE_SYSTEM_CURSOR);
 		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
@@ -2728,6 +2731,8 @@ void ExecuteAction(int ActionReg)
 		SetRegister(TempReg2, CODE_MENU_CONTROL_FLAG);
 		STW(TempReg1, TempReg2, 0);
 		ExitMenu();
+
+		// Play sound for closing menu.
 		ADDI(4, 0, sii_SND_SE_SYSTEM_PLATE_CATCH);
 		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
@@ -2737,6 +2742,8 @@ void ExecuteAction(int ActionReg)
 	// Attempting to perform an action after that without first reacquiring those registers' values will cause undefined behavior!
 	// Set Stack Pointer, since we'll need this for all of what we're about to do.
 	SetRegister(7, RESET_LINES_STACK_LOC);
+	// Also zero the reset line accumulator, we need this to know whether to play the reset sound afterwards!
+	ADDI(ResetAccumulatorReg, 0, 0);
 
 	// If we're resetting a line...
 	CMPLI(ActionReg, RESET_LINE, 0);
@@ -2754,11 +2761,18 @@ void ExecuteAction(int ActionReg)
 	// Iterate through any pages on the reset stack, and reset the lines therein!
 	// Note: This modifes the Line, Type, and Page registers as it iterates; don't add actions beneath this unless you reload those values!
 	ResetPage();
+
+	// If the Reset Accumulator is non-zero, in one of the previous actions we reset a line!
+	CMPLI(ResetAccumulatorReg, 0, 0);
+	// Queue up the reset sound's ID...
+	ADDI(4, 0, sii_SND_SE_SYSTEM_CANCEL);
+	// ... and play it if the Accumulator wasn't 0 (ie. the previous check against 0 returned not equal).
+	JumpToLabel(getPlaySELabel(), bCACB_NOT_EQUAL, 1);
 }
 
 // r3 = LineReg, r4 = LineTypeReg, r5 = PageReg, r6 = IsIndirectReg, r7 = StackReg, r8 - r12 = Work Regs (modifed)
 int ResetLineSubroutineLabel = INT_MAX;
-void ResetLineSubroutine()
+void ResetLineSubroutine(int ResetAccumulatorReg)
 {
 	int LineReg = 3;
 	int TypeReg = 4;
@@ -2782,7 +2796,10 @@ void ResetLineSubroutine()
 
 	LBZ(TempReg2, LineReg, Line::COLOR);
 	LWZ(TempReg1, PageReg, Page::NUM_CHANGED_LINES);
+	// Load the changed bit of the line's color into TempReg3, will be 1 if changed, 0 otherwise.
 	RLWINM(TempReg3, TempReg2, 29, 31, 31);
+	// Add this to the ResetAccumulator to tally that a line's value was reset.
+	ADD(ResetAccumulatorReg, ResetAccumulatorReg, TempReg3);
 	ANDI(TempReg2, TempReg2, ~0x8);
 	SUBF(TempReg1, TempReg1, TempReg3);
 	STB(TempReg2, LineReg, Line::COLOR);
@@ -2851,6 +2868,10 @@ void EnterMenu(int LineReg, int PageReg, int TypeReg, int TempReg1, int TempReg2
 		STW(TempReg1, TempReg2, Page::PREV_PAGE);
 		SetRegister(TempReg1, CURRENT_PAGE_PTR_LOC);
 		STW(TempReg2, TempReg1, 0);
+
+		// Play sound for entering page.
+		ADDI(4, 0, sii_SND_SE_SYSTEM_PAGE_CHANGE);
+		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
 }
 
@@ -2879,6 +2900,10 @@ void LeaveMenu(int PageReg, int TempReg1, int TempReg2, int TempReg3, int TempRe
 	STW(TempReg5, TempReg2, Page::NUM_CHANGED_LINES);
 	OR(TempReg3, TempReg3, TempReg6);
 	STB(TempReg3, TempReg1, Line::COLOR);
+
+	// Play sound for leaving page.
+	ADDI(4, 0, sii_SND_SE_SYSTEM_CURSOR_L);
+	JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 }
 
 // r3 = LineReg, r4 = LineTypeReg, r5 = PageReg, r6 = DoDecrReg, r7 - r12 = Work Regs (modifed)
