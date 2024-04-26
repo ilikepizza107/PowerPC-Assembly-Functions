@@ -112,7 +112,13 @@ int main(int argc, char** argv)
 		}
 	}
 
-	std::cout << "PowerPC Assembly Functions (Code Menu Building Utility " << lava::version << ")\n";
+	std::string logHeaderStr = "PowerPC Assembly Functions (Code Menu Building Utility " + lava::builderVersion;
+	if (!lava::builderFlavor.empty())
+	{
+		logHeaderStr += ":" + lava::builderFlavor;
+	}
+	logHeaderStr += ")";
+	std::cout << logHeaderStr << "\n";
 	if (!std::filesystem::is_directory(outputFolder))
 	{
 		std::filesystem::create_directories(outputFolder);
@@ -125,8 +131,7 @@ int main(int argc, char** argv)
 		buildRosterLists();
 		buildThemeLists();
 
-		ChangelogOutput.write(
-			"PowerPC Assembly Functions (Code Menu Building Utility " + lava::version + ")\n", ULONG_MAX, lava::outputSplitter::sOS_DISABLED);
+		ChangelogOutput.write(logHeaderStr + "\n", ULONG_MAX, lava::outputSplitter::sOS_DISABLED);
 
 		ChangelogOutput << "Building \"" << cmnuFileName << "\" for ";
 		switch (BUILD_TYPE)

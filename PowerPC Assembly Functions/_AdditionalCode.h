@@ -9,7 +9,8 @@
 
 namespace lava
 {
-	extern const std::string version;
+	extern const std::string builderVersion;
+	extern const std::string builderFlavor;
 	extern int CMNUCopyOverride;
 	extern int ASMCopyOverride;
 	extern int GCTBuildOverride;
