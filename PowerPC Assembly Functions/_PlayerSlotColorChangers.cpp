@@ -226,59 +226,6 @@ void psccMiscAdjustments()
 	WriteIntToFile(0x040E083C); NOP();
 	CodeRawEnd();
 
-	ASMStart(0x80697558, codePrefix + "CSS Random Always Uses P1 CSP" + codeSuffix, "");
-	// Restore Original Instruction
-	SetRegister(24, 0);
-	// Force Number for Portrait Texture Name to 501 (for P1 Random)
-	SetRegister(25, 501);
-	ASMEnd();
-
-	int randFranchiseIconExitLabel = GetNextLabel();
-	ASMStart(0x80697074, codePrefix + "Random Franchise Icon uses Unique CLR0 Frame" + codeSuffix, "");
-	// Restore Original Instruction
-	MR(25, 3);
-	// Grab Team Battle Status...
-	ADDIS(11, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
-	LBZ(12, 11, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
-	// ... and if we *are* in Team mode...
-	CMPLI(12, Line::VALUE, 0x7);
-	// ... then skip this code.
-	JumpToLabel(randFranchiseIconExitLabel, bCACB_NOT_EQUAL.inConditionRegField(0x7));
-	// Grab player kind...
-	LWZ(12, 30, 0x1B4);
-	// ... and if we aren't a Human player...
-	CMPLI(12, 0x1, 0x7);
-	// ... then skip this code.
-	JumpToLabel(randFranchiseIconExitLabel, bCACB_NOT_EQUAL.inConditionRegField(0x7));
-	// Grab player port ID.
-	LWZ(12, 30, 0x1B0);
-	// Re-use the comparison from before this hook: add 4 to the ID if we're on the Random Icon.
-	BC(2, bCACB_NOT_EQUAL);
-	ADDI(12, 12, 0x4);
-	// Add another 0x1 to account for Frame 0 being clear.
-	ADDI(12, 12, 0x1);
-	// Convert the ID to float!
-	// Store the ID in the bottom half of the staging location...
-	STH(12, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x04) & 0xFFFF);
-	// ... then load it as a Paired Single (Unscaled Unsigned Short quantization).
-	PSQ_L(1, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x04) & 0xFFFF, 1, 3);
-	// Get Franchise Icon pointer from Player Area struct.
-	LWZ(3, 30, 0xB8);
-	// And set the frame color!
-	CallBrawlFunc(MU_SET_FRAME_MAT_COL, 12);
-	MR(3, 25);
-	CMPLI(3, 0x29, 0);
-	Label(randFranchiseIconExitLabel);
-	ASMEnd();
-
-	ASMStart(0x806986C0, "", "");
-	LWZ(0, 28, 0x1B0);
-	LWZ(12, 28, 0x1B8);
-	CMPLI(12, 0x29, 0x0);
-	BC(2, bCACB_NOT_EQUAL);
-	ADDIC(0, 0, 0x4);
-	ASMEnd();
-
 	int colorResetExitLabel = GetNextLabel();
 	ASMStart(0x8068BE94, codePrefix + "Color Choice Resets on Setting PlayerKind to None" + codeSuffix, 
 		"Ensures that colors are reset when players unplug their controllers,\n"
@@ -298,6 +245,118 @@ void psccMiscAdjustments()
 	Label(colorResetExitLabel);
 	MR(27, 5); // Restore Original Instruction
 	ASMEnd();
+}
+
+void psccRandomIcons()
+{
+	ASMStart(0x80697558, codePrefix + "CSS Random Always Uses P1 CSP" + codeSuffix, "");
+	// Restore Original Instruction
+	SetRegister(24, 0);
+	// Force Number for Portrait Texture Name to 501 (for P1 Random)
+	SetRegister(25, 501);
+	ASMEnd();
+
+	std::string codeGroupName = "Random Franchise Icon uses Unique CLR0 Frame ";
+	int randFranchiseIconExitLabel = GetNextLabel();
+	ASMStart(0x80697074, codePrefix + codeGroupName + "(setCharKind)" + codeSuffix, "");
+	// Restore Original Instruction
+	MR(25, 3);
+	// Grab player kind...
+	LWZ(12, 30, 0x1B4);
+	// ... and if we aren't a Human player...
+	CMPLI(12, 0x1, 0x7);
+	// ... then skip this code.
+	JumpToLabel(randFranchiseIconExitLabel, bCACB_NOT_EQUAL.inConditionRegField(0x7));
+	// Grab Team Battle Status...
+	ADDIS(11, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
+	LBZ(12, 11, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
+	// ... and do the comparison to check if we *are* in Team mode.
+	CMPLI(12, Line::VALUE, 0x7);
+	// Grab player port ID by default, assuming for now we're not in team mode.
+	LWZ(12, 30, 0x1B0);
+	// If we *are* in team mode though...
+	BC(4, bCACB_EQUAL.inConditionRegField(0x7));
+	// ... instead grab the Team ID we're on.
+	LWZ(12, 30, 0x1C0);
+	RLWINM(0, 12, 0x1F, 0x1F, 0x1F, 0);
+	ADD(12, 12, 0);
+	// Re-use the comparison from before this hook: add 4 to the ID if we're on the Random Icon.
+	BC(2, bCACB_NOT_EQUAL);
+	ADDI(12, 12, 0x4);
+	// Add another 0x1 to account for Frame 0 being clear.
+	ADDI(12, 12, 0x1);
+	// Convert the ID to float!
+	// Store the ID in the bottom half of the staging location...
+	STH(12, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x04) & 0xFFFF);
+	// ... then load it as a Paired Single (Unscaled Unsigned Short quantization).
+	PSQ_L(1, 11, (FLOAT_CONVERSION_STAGING_LOC + 0x04) & 0xFFFF, 1, 3);
+	// Get Franchise Icon pointer from Player Area struct.
+	LWZ(3, 30, 0xB8);
+	// And set the frame color!
+	CallBrawlFunc(MU_SET_FRAME_MAT_COL, 12);
+	MR(3, 25);
+	CMPLI(3, 0x29, 0);
+	Label(randFranchiseIconExitLabel);
+	ASMEnd();
+
+	int hook2EndLabel = GetNextLabel();
+	int hook2SubroutineLabel = GetNextLabel();
+	ASMStart(0x80699A2C, codePrefix + codeGroupName + "(incTeamColor)" + codeSuffix, 
+		"Note: Serves as a subroutine for the following codes as well, to avoid redundancy."
+	);
+	// Load char kind...
+	LWZ(12, 27, 0x1B8);
+	JumpToLabel(hook2SubroutineLabel, bCACB_UNSPECIFIED, 1);
+	JumpToLabel(hook2EndLabel);
+	// We'll use this as a subroutine to avoid duplicating the code across all these hooks!
+	Label(hook2SubroutineLabel);
+	// Load 1.0f into fr0, normal frame offset constant.
+	LFS(0, 13, 0x18);
+	// ... and if charKind is set to random...
+	CMPLI(12, 0x29, 0x0);
+	BC(2, bCACB_NOT_EQUAL);
+	// ... load 5.0f instead, effectively adding 4.0f.
+	LFS(0, 13, 0x5F4);
+	// Restore Original Instruction
+	CMPI(3, 0, 0);
+	BLR();
+	// Exit point for this hook, to skip the subroutine.
+	Label(hook2EndLabel);
+	ASMEnd();
+
+	// Hook 3
+	ASMStart(0x80699D70, codePrefix + codeGroupName + "(decTeamColor)" + codeSuffix, "");
+	// Load char kind...
+	LWZ(12, 27, 0x1B8);
+	JumpToLabel(hook2SubroutineLabel, bCACB_UNSPECIFIED, 1);
+	ASMEnd();
+
+	// Hook 4
+	ASMStart(0x80698690, codePrefix + codeGroupName + "(setPlayerKind)" + codeSuffix, "");
+	// Load char kind...
+	LWZ(12, 28, 0x1B8);
+	JumpToLabel(hook2SubroutineLabel, bCACB_UNSPECIFIED, 1);
+	ASMEnd();
+
+	// Hook 5, updateMeleeKind
+	ASMStart(0x80698F18, codePrefix + codeGroupName + "(updateMeleeKind)" + codeSuffix, "");
+	// Load char kind...
+	LWZ(12, 26, 0x1B8);
+	JumpToLabel(hook2SubroutineLabel, bCACB_UNSPECIFIED, 1);
+	ASMEnd();
+
+	CodeRawStart(codePrefix + codeGroupName + "(NOP Writes)" + codeSuffix, "");
+	// Hook 2 NOP
+	WriteIntToFile(0x04699A40); NOP();
+	// Hook 3 NOP
+	WriteIntToFile(0x04699D84); NOP();
+	// Hook 4 NOPs
+	WriteIntToFile(0x046986A4); NOP();
+	WriteIntToFile(0x046986CC); NOP();
+	// Hook 5 NOPs
+	WriteIntToFile(0x04698F2C); NOP();
+	WriteIntToFile(0x04698F54); NOP();
+	CodeRawEnd();
 }
 
 void psccCLR0V4InstallCode()
@@ -801,6 +860,7 @@ void playerSlotColorChangersV3(bool enabled)
 		psccTransparentCSSandResultsScreenNames();
 		psccStoreTeamBattleStatus();
 		psccMiscAdjustments();
+		psccRandomIcons();
 		psccCLR0V4InstallCode();
 		psccEmbedFloatTable();
 		psccCallbackCodes();
