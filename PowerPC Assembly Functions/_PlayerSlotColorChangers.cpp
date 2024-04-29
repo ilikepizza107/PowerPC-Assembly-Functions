@@ -245,6 +245,13 @@ void psccMiscAdjustments()
 	Label(colorResetExitLabel);
 	MR(27, 5); // Restore Original Instruction
 	ASMEnd();
+
+	CodeRawStart(codePrefix + "Port-Specific Stocks Set CLR0 Frame" + codeSuffix,
+		"Has stock icons set their texture using the SetFrame function instead of SetFameTex, which ensures\n"
+		"the CLR0 frame is set properly in addition to the texture itself; to make sure CPUs don't activate PSCC."
+	);
+	WriteIntToFile(0x040E2188); BL(-0xAB13);
+	CodeRawEnd();
 }
 
 void psccRandomIcons()
@@ -389,8 +396,6 @@ void psccCLR0V4InstallCode()
 	Label(v4PatchExit);
 	ASMEnd(0x81050000); // Restore Original Instruction: lwz r8, 0 (r5)
 }
-
-
 
 void psccEmbedFloatTable()
 {
