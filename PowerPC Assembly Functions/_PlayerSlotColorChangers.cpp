@@ -521,8 +521,6 @@ void psccSetupCode()
 	// Unset the 4s bit, so values 4 through 7 map to 0 through 3, but values 8 and above still register invalid.
 	ANDI(reg1, reg1, ~0b100);
 	STH(reg1, 1, safeStackWordOff + 0x6);
-	CMPLI(reg1, 0x3, 0);
-	JumpToLabel(badExitLabel, bCACB_GREATER);
 
 	// Next, we need to try to get the CLR0's UserData and the accompanying mask data.
 	Label(getUserDataLabel);
@@ -560,10 +558,9 @@ void psccSetupCode()
 	JumpToLabel(exitLabel);
 
 	Label(badExitLabel);
-	// If the detected Mode doesn't correspond to a supported case, force the mode to 0xFFFFFFFF and exit!
+	// If the detected Mode doesn't correspond to a supported case, force the mask mode to 0xFFFFFFFF exit!
 	ORC(reg3, reg3, reg3);
 	STW(reg3, 1, safeStackWordOff);
-	STW(reg3, 1, safeStackWordOff + 0x4);
 
 	Label(exitLabel);
 	ADDI(5, 5, 0x1); // Restore Original Instruction
@@ -587,19 +584,12 @@ void psccMainCode()
 	int floatHSLRegisters[3] = { 11, 12, 13 };
 	int floatCurrFrameReg = 31;
 
-	int skipMode1 = GetNextLabel();
 	int exitLabel = GetNextLabel();
 	// Hooks "GetAnmResult/[nw4r3g3d9ResAnmClrCFPQ34nw4r3g3d12]/g3d_res".
 	ASMStart(0x801934fc, codePrefix + "Main Code" + codeSuffix, "");
 	// Restore Original Instruction: Store RGBA result in Result struct.
 	// Note, this register is free to use after this point, since the result's been stored now!
 	STW(reg3, CLR0ResultStructReg, 0x4);
-
-	// Load the port index short...
-	LHZ(reg0, 1, safeStackWordOff + 0x6);
-	// ... and exit if our value doesn't correspond to a valid port.
-	CMPLI(reg0, 0x3, 0);
-	JumpToLabel(exitLabel, bCACB_GREATER);
 
 	// Otherwise, check if the code is disabled for the current material!
 	// Get the mask from the safe space...
@@ -610,6 +600,12 @@ void psccMainCode()
 	RLWNM(reg3, reg2, reg3, 0x1F, 0x1F, 1);
 	// If the bit wasn't 0 (ie. if the code is disabled for this material-target), skip to exit!
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
+	// Load the port index short...
+	LHZ(reg0, 1, safeStackWordOff + 0x6);
+	// ... and exit if our value doesn't correspond to a valid port.
+	CMPLI(reg0, 0x3, 0);
+	JumpToLabel(exitLabel, bCACB_GREATER);
 
 	// Main Algorithm!
 	{
@@ -816,7 +812,6 @@ void psccMainCode()
 		MTSPR(GQRBackupReg1, CustomGQRID1);
 		MTSPR(GQRBackupReg2, CustomGQRID2);
 	}
-	Label(skipMode1);
 
 	Label(exitLabel);
 	ASMEnd();
