@@ -111,48 +111,49 @@ vector<string> CHARACTER_LIST{};
 vector<u16> CHARACTER_ID_LIST{};
 void buildCharacterIDLists()
 {
-	std::map<std::string, u16> characterNameToIDMap =
+	std::map<std::string, u16> characterNameToIDMap{};
+	if (characterListVersion >= characterListVersions::clv_vBRAWL)
 	{
-		{"Bowser", LCSI_BOWSER},
-		{"Captain Falcon", LCSI_CAPTAIN_FALCON},
-		{"Charizard", LCSI_CHARIZARD},
-		{"Dedede", LCSI_DEDEDE},
-		{"Diddy Kong", LCSI_DIDDY_KONG},
-		{"Donkey Kong", LCSI_DONKEY_KONG},
-		{"Falco", LCSI_FALCO},
-		{"Fox", LCSI_FOX},
-		{"Ganondorf", LCSI_GANONDORF},
-		{"Ice Climbers", LCSI_ICE_CLIMBERS},
-		{"Ike", LCSI_IKE},
-		{"Ivysaur", LCSI_IVYSAUR},
-		{"Jigglypuff", LCSI_JIGGLYPUFF},
-		{"Kirby", LCSI_KIRBY},
-		{"Link", LCSI_LINK},
-		{"Lucario", LCSI_LUCARIO},
-		{"Lucas", LCSI_LUCAS},
-		{"Luigi", LCSI_LUIGI},
-		{"Mario", LCSI_MARIO},
-		{"Marth", LCSI_MARTH},
-		{"Meta Knight", LCSI_META_KNIGHT},
-		{"Mr. Game and Watch", LCSI_MR_GAME_AND_WATCH},
-		{"Ness", LCSI_NESS},
-		{"Olimar", LCSI_OLIMAR},
-		{"Peach", LCSI_PEACH},
-		{"Pikachu", LCSI_PIKACHU},
-		{"Pit", LCSI_PIT},
-		{"R.O.B.", LCSI_ROB},
-		{"Samus", LCSI_SAMUS},
-		{"Sheik", LCSI_SHEIK},
-		{"Snake", LCSI_SNAKE},
-		{"Sonic", LCSI_SONIC},
-		{"Squirtle", LCSI_SQUIRTLE},
-		{"Toon Link", LCSI_TOON_LINK},
-		{"Wario", LCSI_WARIO},
-		{"Wolf", LCSI_WOLF},
-		{"Yoshi", LCSI_YOSHI},
-		{"Zelda", LCSI_ZELDA},
-		{"Zero Suit Samus", LCSI_ZERO_SUIT_SAMUS }
-	};
+		characterNameToIDMap.emplace("Bowser", LCSI_BOWSER);
+		characterNameToIDMap.emplace("Captain Falcon", LCSI_CAPTAIN_FALCON);
+		characterNameToIDMap.emplace("Charizard", LCSI_CHARIZARD);
+		characterNameToIDMap.emplace("Dedede", LCSI_DEDEDE);
+		characterNameToIDMap.emplace("Diddy Kong", LCSI_DIDDY_KONG);
+		characterNameToIDMap.emplace("Donkey Kong", LCSI_DONKEY_KONG);
+		characterNameToIDMap.emplace("Falco", LCSI_FALCO);
+		characterNameToIDMap.emplace("Fox", LCSI_FOX);
+		characterNameToIDMap.emplace("Ganondorf", LCSI_GANONDORF);
+		characterNameToIDMap.emplace("Ice Climbers", LCSI_ICE_CLIMBERS);
+		characterNameToIDMap.emplace("Ike", LCSI_IKE);
+		characterNameToIDMap.emplace("Ivysaur", LCSI_IVYSAUR);
+		characterNameToIDMap.emplace("Jigglypuff", LCSI_JIGGLYPUFF);
+		characterNameToIDMap.emplace("Kirby", LCSI_KIRBY);
+		characterNameToIDMap.emplace("Link", LCSI_LINK);
+		characterNameToIDMap.emplace("Lucario", LCSI_LUCARIO);
+		characterNameToIDMap.emplace("Lucas", LCSI_LUCAS);
+		characterNameToIDMap.emplace("Luigi", LCSI_LUIGI);
+		characterNameToIDMap.emplace("Mario", LCSI_MARIO);
+		characterNameToIDMap.emplace("Marth", LCSI_MARTH);
+		characterNameToIDMap.emplace("Meta Knight", LCSI_META_KNIGHT);
+		characterNameToIDMap.emplace("Mr. Game and Watch", LCSI_MR_GAME_AND_WATCH);
+		characterNameToIDMap.emplace("Ness", LCSI_NESS);
+		characterNameToIDMap.emplace("Olimar", LCSI_OLIMAR);
+		characterNameToIDMap.emplace("Peach", LCSI_PEACH);
+		characterNameToIDMap.emplace("Pikachu", LCSI_PIKACHU);
+		characterNameToIDMap.emplace("Pit", LCSI_PIT);
+		characterNameToIDMap.emplace("R.O.B.", LCSI_ROB);
+		characterNameToIDMap.emplace("Samus", LCSI_SAMUS);
+		characterNameToIDMap.emplace("Sheik", LCSI_SHEIK);
+		characterNameToIDMap.emplace("Snake", LCSI_SNAKE);
+		characterNameToIDMap.emplace("Sonic", LCSI_SONIC);
+		characterNameToIDMap.emplace("Squirtle", LCSI_SQUIRTLE);
+		characterNameToIDMap.emplace("Toon Link", LCSI_TOON_LINK);
+		characterNameToIDMap.emplace("Wario", LCSI_WARIO);
+		characterNameToIDMap.emplace("Wolf", LCSI_WOLF);
+		characterNameToIDMap.emplace("Yoshi", LCSI_YOSHI);
+		characterNameToIDMap.emplace("Zelda", LCSI_ZELDA);
+		characterNameToIDMap.emplace("Zero Suit Samus", LCSI_ZERO_SUIT_SAMUS);
+	}
 	if (characterListVersion >= characterListVersions::clv_vBRAWL_SPECIAL_CHARS)
 	{
 		characterNameToIDMap.emplace("Giga Bowser", LCSI_GIGA_BOWSER);
@@ -929,8 +930,10 @@ void CodeMenu()
 	vector<Line*> P1Lines;
 	P1Lines.push_back(new Toggle("Infinite Shield", false, INFINITE_SHIELDS_P1_INDEX));
 	Selection* P1CharSelect = new Selection("P1 Character Select", CHARACTER_LIST, CHARACTER_ID_LIST, 0, CHARACTER_SELECT_P1_INDEX);
-	P1Lines.push_back(P1CharSelect);
-	//P1Lines.push_back(new Selection("P1 Identity Crisis", CHARACTER_LIST, CHARACTER_ID_LIST, 0, CHARACTER_SELECT_P1_INDEX));
+	if (!CHARACTER_LIST.empty())
+	{
+		P1Lines.push_back(P1CharSelect);
+	}
 	P1Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P1_INDEX, "%.0f%%"));
 	P1Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P1_INDEX));
 	P1Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P1_INDEX));
@@ -951,7 +954,10 @@ void CodeMenu()
 
 	vector<Line*> P2Lines;
 	P2Lines.push_back(new Toggle("Infinite Shield", false, INFINITE_SHIELDS_P2_INDEX));
-	P2Lines.push_back(new SelectionMirror(*P1CharSelect, "P2 Character Select", 0, CHARACTER_SELECT_P2_INDEX));
+	if (!CHARACTER_LIST.empty())
+	{
+		P2Lines.push_back(new SelectionMirror(*P1CharSelect, "P2 Character Select", 0, CHARACTER_SELECT_P2_INDEX));
+	}
 	P2Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P2_INDEX, "%.0f%%"));
 	P2Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P2_INDEX));
 	P2Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P2_INDEX));
@@ -968,7 +974,10 @@ void CodeMenu()
 
 	vector<Line*> P3Lines;
 	P3Lines.push_back(new Toggle("Infinite Shield", false, INFINITE_SHIELDS_P3_INDEX));
-	P3Lines.push_back(new SelectionMirror(*P1CharSelect, "P3 Character Select", 0, CHARACTER_SELECT_P3_INDEX));
+	if (!CHARACTER_LIST.empty())
+	{
+		P3Lines.push_back(new SelectionMirror(*P1CharSelect, "P3 Character Select", 0, CHARACTER_SELECT_P3_INDEX));
+	}
 	P3Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P3_INDEX, "%.0f%%"));
 	P3Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P3_INDEX));
 	P3Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P3_INDEX));
@@ -985,7 +994,10 @@ void CodeMenu()
 
 	vector<Line*> P4Lines;
 	P4Lines.push_back(new Toggle("Infinite Shield", false, INFINITE_SHIELDS_P4_INDEX));
-	P4Lines.push_back(new SelectionMirror(*P1CharSelect, "P4 Character Select", 0, CHARACTER_SELECT_P4_INDEX));
+	if (!CHARACTER_LIST.empty())
+	{
+		P4Lines.push_back(new SelectionMirror(*P1CharSelect, "P4 Character Select", 0, CHARACTER_SELECT_P4_INDEX));
+	}
 	P4Lines.push_back(new Floating("Select Percent", 0, 999, 0, 1, PERCENT_SELECT_VALUE_P4_INDEX, "%.0f%%"));
 	P4Lines.push_back(new Toggle("Press DPad to select percent", false, PERCENT_SELECT_ACTIVATOR_P4_INDEX));
 	P4Lines.push_back(new Toggle("Disable DPad", false, DISABLE_DPAD_P4_INDEX));

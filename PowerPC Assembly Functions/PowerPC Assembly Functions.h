@@ -32,7 +32,8 @@ using namespace std;
 // Eg. "clv_PROJECTM" includes all of vBrawl's characters, the special characters adapted for playability in PM, and the two PM newcomers.
 enum characterListVersions
 {
-	clv_vBRAWL = 0,
+	clv_EMPTY = 0,
+	clv_vBRAWL,
 	clv_vBRAWL_SPECIAL_CHARS,
 	clv_PROJECTM,
 	clv_PPLUS,
@@ -41,10 +42,10 @@ enum characterListVersions
 	clv_PPEX_ALLOYS,
 	clv_PPEX_DARK_SAMUS,
 	clv_PPEX_SCEPTILE,
-	__clv_Count
+	__clv_Count,
 };
 extern unsigned long characterListVersion;
-extern const std::array<std::string, characterListVersions::__clv_Count> characterListVersionNames;
+std::string getCharacterListVersionName(unsigned long versionID);
 // P+EX Configuration Macros
 #define PROJECT_PLUS_EX_BUILD (true && (BUILD_TYPE == PROJECT_PLUS))
 // Controls whether or not externally defined character, rosters, and themes are loaded into their respective lists.

@@ -85,6 +85,7 @@ namespace xml
 		const std::string baseCharListTag = "baseListVersion";
 		const std::string characterTag = "character";
 		const std::string slotIDTag = "slotID";
+		const std::string deleteCharTag = "deleteChar";
 
 		// Code Settings
 		const std::string codeSettingsTag = "codeSettings";
@@ -329,6 +330,9 @@ namespace xml
 				tempPair.first = characterItr->attribute(configXMLConstants::nameTag.c_str()).as_string("");
 				tempPair.second = characterItr->attribute(configXMLConstants::slotIDTag.c_str()).as_int(USHRT_MAX);
 
+				// Set the top-most bit if the deleteChar flag was set.
+				tempPair.second |= characterItr->attribute(configXMLConstants::deleteCharTag.c_str()).as_bool(0) ? 0x8000 : 0x0000;
+
 				if (!tempPair.first.empty() && (tempPair.second != USHRT_MAX))
 				{
 					result.push_back(tempPair);
@@ -366,28 +370,38 @@ namespace xml
 
 			for (int i = 0; i < nameIDPairs.size(); i++)
 			{
-				const std::pair<std::string, u16>* currPair = &nameIDPairs[i];
+				bool deleteFoundEntry = 0;
+				std::pair<std::string, u16> currPair = nameIDPairs[i];
 
 				// If this entry has an invalid ID...
-				if (currPair->second == SHRT_MAX)
+				if (currPair.second == SHRT_MAX)
 				{
 					// ... report the error...
-					logOutput.write("[ERROR] Invalid Slot ID specified! The character \"" + currPair->first + "\" will not be added to the Code Menu!\n",
+					logOutput.write("[ERROR] Invalid Slot ID specified! Character entry for \"" + currPair.first + "\" cannot be processed!\n",
 						ULONG_MAX, lava::outputSplitter::sOS_CERR);
 					// ... and skip to next entry!
 					continue;
 				}
 
-				const std::map<std::string, u16>::const_iterator zipEndItr = zippedIDMap.cend();
-				std::map<std::string, u16>::iterator entryWithSameName = zippedIDMap.find(currPair->first);
+				// If we're requesting to delete the found entry...
+				if (currPair.second & 0x8000)
+				{
+					// ... set the flag to true...
+					deleteFoundEntry = 1;
+					// ... and unset the bit in the ID short!
+					currPair.second &= ~0x8000;
+				}
+
+				std::map<std::string, u16>::iterator zipEndItr = zippedIDMap.end();
+				std::map<std::string, u16>::iterator entryWithSameName = zippedIDMap.find(currPair.first);
 				std::map<std::string, u16>::iterator entryWithSameID = zippedIDMap.end();
 				// If the incoming ID isn't unique, then populate entryWithSameID!
-				if (uniqueIDList.find(currPair->second) != uniqueIDList.end())
+				if (uniqueIDList.find(currPair.second) != uniqueIDList.end())
 				{
 					// Find the entry already using that ID...
 					for (auto zipMapItr = zippedIDMap.begin(); zipMapItr != zipEndItr; zipMapItr++)
 					{
-						if (zipMapItr->second == currPair->second)
+						if (zipMapItr->second == currPair.second)
 						{
 							// ... and write its iterator to entryWithSameID!
 							entryWithSameID = zipMapItr;
@@ -396,49 +410,75 @@ namespace xml
 					}
 				}
 
-				// If both values are unique in this map...
-				if ((entryWithSameName == zipEndItr) && (entryWithSameID == zipEndItr))
+				// If we're trying to *add* this entry...
+				if (!deleteFoundEntry)
 				{
-					// ... we can simply add the entry to the map, and the ID into the set!
-					auto insertItr = zippedIDMap.insert(*currPair);
-					uniqueIDList.insert(insertItr.first->second);
-					// Then report the addition!
-					logOutput << "[ADDED] \"" << insertItr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(insertItr.first->second, 2) << ")\n";
+					// ... and both values are unique in this map...
+					if ((entryWithSameName == zipEndItr) && (entryWithSameID == zipEndItr))
+					{
+						// ... we can simply add the entry to the map, and the ID into the set!
+						auto insertItr = zippedIDMap.insert(currPair);
+						uniqueIDList.insert(insertItr.first->second);
+						// Then report the addition!
+						logOutput << "[ADDED] \"" << insertItr.first->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(insertItr.first->second, 2) << ")\n";
+					}
+					// Otherwise, if only name is unique (so we need to change an existing entry's name)...
+					else if (entryWithSameName == zipEndItr)
+					{
+						// ... then we can record the old name, erase the old entry from the map...
+						std::string oldName = entryWithSameID->first;
+						zippedIDMap.erase(entryWithSameID);
+						// ... and insert our new entry!
+						auto insertItr = zippedIDMap.insert(currPair);
+						logOutput << "[CHANGED] \"" << oldName << "\" (Slot ID: 0x" << lava::numToHexStringWithPadding(insertItr.first->second, 2) << "): ";
+						logOutput << "Name = \"" << insertItr.first->first << "\"\n";
+					}
+					// Otherwise, if only ID is unique (so we need to change an existing entry's ID)...
+					else if (entryWithSameID == zipEndItr)
+					{
+						// ... then we can record the old ID, erase the old ID from the set...
+						u16 oldID = entryWithSameName->second;
+						uniqueIDList.erase(entryWithSameName->second);
+						// ... change the ID of the existing entry...
+						entryWithSameName->second = currPair.second;
+						// ... and add the new ID to the set!
+						uniqueIDList.insert(entryWithSameName->second);
+						logOutput << "[CHANGED] \"" << entryWithSameName->first << "\" (Slot ID: 0x" << lava::numToHexStringWithPadding(oldID, 2) << "): ";
+						logOutput << "Slot ID = 0x" << lava::numToHexStringWithPadding(entryWithSameName->second, 2) << "\n";
+					}
+					// Otherwise, if neither are unique...
+					else
+					{
+						// ... then we can't do the addition at all! Report the error:
+						logOutput << "[ERROR] Unable to process entry \"" <<
+							currPair.first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(currPair.second, 2) << ")!\n";
+						logOutput << "\tName is used by: \"" <<
+							entryWithSameName->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(entryWithSameName->second, 2) << ")!\n";
+						logOutput << "\tSlot ID is used by: \"" <<
+							entryWithSameID->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(entryWithSameID->second, 2) << ")!\n";
+					}
 				}
-				// Otherwise, if only name is unique (so we need to change an existing entry's name)...
-				else if (entryWithSameName == zipEndItr)
-				{
-					// ... then we can record the old name, erase the old entry from the map...
-					std::string oldName = entryWithSameID->first;
-					zippedIDMap.erase(entryWithSameID);
-					// ... and insert our new entry!
-					auto insertItr = zippedIDMap.insert(*currPair);
-					logOutput << "[CHANGED] \"" << oldName << "\" (Slot ID: 0x" << lava::numToHexStringWithPadding(insertItr.first->second, 2) << "): ";
-					logOutput << "Name = \"" << insertItr.first->first << "\"\n";
-				}
-				// Otherwise, if only ID is unique (so we need to change an existing entry's ID)...
-				else if (entryWithSameID == zipEndItr)
-				{
-					// ... then we can record the old ID, erase the old ID from the set...
-					u16 oldID = entryWithSameName->second;
-					uniqueIDList.erase(entryWithSameName->second);
-					// ... change the ID of the existing entry...
-					entryWithSameName->second = currPair->second;
-					// ... and add the new ID to the set!
-					uniqueIDList.insert(entryWithSameName->second);
-					logOutput << "[CHANGED] \"" << entryWithSameName->first << "\" (Slot ID: 0x" << lava::numToHexStringWithPadding(oldID, 2) << "): ";
-					logOutput << "Slot ID = 0x" << lava::numToHexStringWithPadding(entryWithSameName->second, 2) << "\n";
-				}
-				// Otherwise, if neither are unique...
+				// Otherwise, if we're looking for an existing entry to delete...
 				else
 				{
-					// ... then we can't do the addition at all! Report the error:
-					logOutput << "[ERROR] Unable to process entry \"" <<
-						currPair->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(currPair->second, 2) << ")!\n";
-					logOutput << "\tName is used by: \"" <<
-						entryWithSameName->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(entryWithSameName->second, 2) << ")!\n";
-					logOutput << "\tSlot ID is used by: \"" <<
-						entryWithSameID->first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(entryWithSameID->second, 2) << ")!\n";
+					// ... and we found an entry with matching name and ID...
+					if ((entryWithSameName != zipEndItr) && (entryWithSameName == entryWithSameID))
+					{
+						// ... then erase it from the lists.
+						zippedIDMap.erase(entryWithSameName);
+						uniqueIDList.erase(currPair.second);
+						// Then report the erasure!
+						logOutput << "[REMOVED] \"" << currPair.first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(currPair.second, 2) << ")\n";
+						zipEndItr = zippedIDMap.end();
+					}
+					// Otherwise, if neither are unique...
+					else
+					{
+						// ... then we can't do the addition at all! Report the error:
+						logOutput << "[ERROR] Unable to delete entry \"" <<
+							currPair.first << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(currPair.second, 2) << ")!\n";
+						logOutput << "\tNo such entry could be found!\n";
+					}
 				}
 			}
 
@@ -1052,18 +1092,18 @@ namespace xml
 
 				// Check if a character list version argument was given...
 				unsigned long requestedCharListVersion =
-					lava::stringToNum(declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_string(), 0, ULONG_MAX);
-				if (requestedCharListVersion != ULONG_MAX)
+					lava::stringToNum(declNodeItr->attribute(configXMLConstants::baseCharListTag.c_str()).as_string(), 1, LONG_MAX);
+				if (requestedCharListVersion != LONG_MAX)
 				{
-					// ... and attempt to apply it if so.
+					// ... and if so add 1 to account for the empty list and attempt to apply it.
 					logOutput << "Base Character List argument detected, applying settings...\n";
-					if (applyCharacterListVersion(requestedCharListVersion))
+					if (applyCharacterListVersion(++requestedCharListVersion))
 					{
-						logOutput << "[SUCCESS] Base Character list changed to \"" << characterListVersionNames[characterListVersion] << "\"!\n";
+						logOutput << "[SUCCESS] Base Character list changed to \"" << getCharacterListVersionName(characterListVersion) << "\"!\n";
 					}
 					else
 					{
-						logOutput << "[WARNING] Invalid list requested! Using \"" << characterListVersionNames[characterListVersion] << "\" list instead!\n";
+						logOutput << "[WARNING] Invalid list requested! Using \"" << getCharacterListVersionName(characterListVersion) << "\" list instead!\n";
 					}
 				}
 
@@ -1095,7 +1135,7 @@ namespace xml
 				}
 
 				//Do final character list summary.
-				logOutput << "Final Character List (Base List = \"" << characterListVersionNames[characterListVersion] << "\")\n";
+				logOutput << "Final Character List (Base List = \"" << getCharacterListVersionName(characterListVersion) << "\")\n";
 				for (std::size_t i = 0; i < CHARACTER_LIST.size(); i++)
 				{
 					logOutput << "\t\"" << CHARACTER_LIST[i] << "\" (Slot ID = 0x" << lava::numToHexStringWithPadding(CHARACTER_ID_LIST[i], 2) << ")\n";

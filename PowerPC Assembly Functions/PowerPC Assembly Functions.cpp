@@ -22,6 +22,7 @@
 
 const std::array<std::string, characterListVersions::__clv_Count> characterListVersionNames = 
 {
+	"Empty",
 	"vBrawl",
 	"vBrawl+ (Sopo, Giga Bowser, WarioMan)",
 	"Project M (Roy, Mewtwo)",
@@ -32,6 +33,17 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 	"P+EX (Dark Samus)",
 	"P+EX (Sceptile)",
 };
+std::string getCharacterListVersionName(unsigned long versionID)
+{
+	std::string result = "";
+
+	if (versionID < characterListVersions::__clv_Count)
+	{
+		result = characterListVersionNames[versionID];
+	}
+
+	return result;
+}
 
 bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY = 0;
 bool CONFIG_DISABLE_ASM_DISASSEMBLY = 0;
