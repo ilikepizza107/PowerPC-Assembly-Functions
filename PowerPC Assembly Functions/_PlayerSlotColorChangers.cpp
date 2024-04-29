@@ -464,10 +464,7 @@ void psccSetupCode()
 	// Mode2 = Mode1 + 1
 	// Mode3 = Mode0 - 1
 
-	int mode0Label = GetNextLabel();
-	int mode0DoStoreLabel = GetNextLabel();
-	int mode1Label = GetNextLabel();
-	int mode2Label = GetNextLabel();
+	int frameModeLabel = GetNextLabel();
 	int getUserDataLabel = GetNextLabel();
 	int badExitLabel = GetNextLabel();
 	int exitLabel = GetNextLabel();
@@ -485,58 +482,42 @@ void psccSetupCode()
 	// Do some subtractions to check that the activator is there *and* get the code operation version!
 	ADDIS(reg3, reg3, -activatorStringHiHalf);
 	ADDI(reg3, reg3, -activatorStringLowHalf);
-	// If the activator was present, the above subtractions should have reduced it down to just the number corresponding to its mode!
+
+	// If we're at or above 8, then we're looking at an invalid label...
+	CMPLI(reg3, 0x8, 0);
+	// ... so exit!
+	JumpToLabel(badExitLabel, bCACB_GREATER_OR_EQ);
+
+	// Otherwise, if the resulting value is greater than or equal to 4...
 	CMPLI(reg3, 0x4, 0);
-	BC(3, bCACB_NOT_EQUAL);
-	ADDI(reg2, 0, 0x2);
-	JumpToLabel(mode0DoStoreLabel);
+	// ... then we need to grab the CLR0's frame, jump to the relevant label.
+	JumpToLabel(frameModeLabel, bCACB_GREATER_OR_EQ);
+	// Otherwise, we're dealing with the absolute cases! Just store the value itself as our port...
+	STH(reg3, 1, safeStackWordOff + 0x6);
+	// ... and jump down to grabbing the userData.
+	JumpToLabel(getUserDataLabel);
 
-	// If we're still above 3, then we're not looking at a valid CLR0; skip to the exit!
-	CMPLI(reg3, 0x3, 7);
-	JumpToLabel(badExitLabel, bCACB_GREATER.inConditionRegField(0x7));
-
-	// Reuse the check from the last line to branch for Mode 3 (which is handled in the Mode 0 logic, this isn't a typo lol)
-	// Note, we did this check in CR7 so that we can use whether we're in it again later to toggle the final port number subtraction!
-	JumpToLabel(mode0Label, bCACB_EQUAL.inConditionRegField(0x7));
-	// If Mode 0...
-	CMPLI(reg3, 0x0, 0);
-	JumpToLabel(mode0Label, bCACB_EQUAL);
-	// The remaining two modes deal with the frame float, so make a mutable copy of that...
+	Label(frameModeLabel);
+	// The remaining modes deal with the frame float, so make a mutable copy of that...
 	FMR(13, 1);
-	// If Mode 1...
-	CMPLI(reg3, 0x1, 0);
-	JumpToLabel(mode1Label, bCACB_EQUAL);
-	// Mode2 is the only option left, and it's the same as Mode1, only we add 1 to the frame first; so we can just make it an add-on for Mode1.
-
-	Label(mode2Label);
-	// Mode2 == Mode1 except we need to add 1.0f to our frame before storing it.
-	// So load 1.0f...
-	LFS(12, 2, -0x6170);
-	// ... and add it to our frame register.
-	FADDS(13, 13, 12);
-	Label(mode1Label);
-	// Round our frame to single precision, just to be certain we can safely PSQ_ST it...
+	// round it to single precision, just to be certain we can safely PSQ_ST it...
 	FRSP(13, 13);
 	// ... then store using GQR3 (store as unsigned short) in the third & fourth half-words in our safe space.
 	PSQ_ST(13, 1, safeStackWordOff + 0x4, 0, 3);
-	JumpToLabel(getUserDataLabel);
-
-	Label(mode0Label);
-	// Get the address of the CLR0's name string...
-	LWZ(reg1, 6, 0x14);
-	ADD(reg1, reg1, 6);
-	// ... and load its length (also pushing reg1 backwards by 4 bytes).
-	LWZU(reg2, reg1, -0x4);
-	// Now LWZ using the length as an offset (causing us to load the last 4 bytes of the name, since we moved back 4 before).
-	LWZX(reg2, reg1, reg2);
-	// Isolate just the final nibble of those bytes, which'll (for our purposes) convert the number at the end to an integer.
-	RLWINM(reg2, reg2, 0, 0x1C, 0x1F);
-	BC(2, bCACB_EQUAL.inConditionRegField(0x7));
-	// Add 1 to that number...
-	ADDI(reg2, reg2, 1);
-	// ... and store it to reference as our target port!
-	Label(mode0DoStoreLabel);
-	STH(reg2, 1, safeStackWordOff + 0x6);
+	LHZ(reg1, 1, safeStackWordOff + 0x6);
+	// If our Mode value's 1s bit is set (ie. Mode 5 or 7)...
+	ANDI(reg2, reg3, 0b01);
+	BC(2, bCACB_EQUAL);
+	// ... then subtract 1 from it!
+	ADDI(reg1, reg1, -0x1);
+	// If our Mode value's 2s bit is set (ie. Mode 6 or 7)
+	ANDI(reg2, reg3, 0b10);
+	BC(2, bCACB_EQUAL);
+	// Unset the 4s bit, so values 4 through 7 map to 0 through 3, but values 8 and above still register invalid.
+	ANDI(reg1, reg1, ~0b100);
+	STH(reg1, 1, safeStackWordOff + 0x6);
+	CMPLI(reg1, 0x3, 0);
+	JumpToLabel(badExitLabel, bCACB_GREATER);
 
 	// Next, we need to try to get the CLR0's UserData and the accompanying mask data.
 	Label(getUserDataLabel);
@@ -576,10 +557,10 @@ void psccSetupCode()
 	Label(badExitLabel);
 	// If the detected Mode doesn't correspond to a supported case, force the mode to 0xFFFFFFFF and exit!
 	ORC(reg3, reg3, reg3);
+	STW(reg3, 1, safeStackWordOff);
+	STW(reg3, 1, safeStackWordOff + 0x4);
 
 	Label(exitLabel);
-	// And store our Code Mode as the top half of the second st!
-	STH(reg3, 1, safeStackWordOff + 0x4);
 	ADDI(5, 5, 0x1); // Restore Original Instruction
 	ASMEnd();
 }
@@ -609,37 +590,24 @@ void psccMainCode()
 	// Note, this register is free to use after this point, since the result's been stored now!
 	STW(reg3, CLR0ResultStructReg, 0x4);
 
-	// Load the code mode short...
-	LHZ(reg2, 1, safeStackWordOff + 0x4);
-	// ... and if it's null...
-	CMPLI(reg2, 0xFFFF, 0);
-	// ... exit the code!
-	JumpToLabel(exitLabel, bCACB_EQUAL);
+	// Load the port index short...
+	LHZ(reg0, 1, safeStackWordOff + 0x6);
+	// ... and exit if our value doesn't correspond to a valid port.
+	CMPLI(reg0, 0x3, 0);
+	JumpToLabel(exitLabel, bCACB_GREATER);
 
 	// Otherwise, check if the code is disabled for the current material!
 	// Get the mask from the safe space...
 	LWZ(reg2, 1, safeStackWordOff);
 	// ... calculate how many bytes to shift by based on what iteration of the loop we're in...
-	SUBFIC(reg0, 26, 0x20);
+	SUBFIC(reg3, 26, 0x20);
 	// ... and rotate the relevant bit into the bottom of reg0.
-	RLWNM(reg0, reg2, reg0, 0x1F, 0x1F, 1);
+	RLWNM(reg3, reg2, reg3, 0x1F, 0x1F, 1);
 	// If the bit wasn't 0 (ie. if the code is disabled for this material-target), skip to exit!
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
 	// Main Algorithm!
 	{
-		// Load the target port from safe space!
-		LHZ(reg0, 1, safeStackWordOff + 0x6);
-		// Subtract 1 so P1 is now 0, and use the Condition Reg to also implicitly compare against 0!
-		ADDIC(reg0, reg0, -1, 1);
-		// If the target port doesn't correspond to one of the code menu lines, we'll skip execution.
-		JumpToLabel(exitLabel, bCACB_LESSER);
-		// Note: We do between 0 and 7 specifically here to accommodate the Random Icon's custom frame value.
-		CMPLI(reg0, 7, 0);
-		JumpToLabel(exitLabel, bCACB_GREATER);
-		// Clamp target line to range from 0-3, again to accommmodate Random Icon.
-		ANDI(reg0, reg0, 0b11);
-
 		// Set up the top half of the address for Code Menu stuff in reg3 ahead of time so we don't have to redundantly do it.
 		ADDIS(reg3, 0, START_OF_CODE_MENU_HEADER >> 0x10);
 
