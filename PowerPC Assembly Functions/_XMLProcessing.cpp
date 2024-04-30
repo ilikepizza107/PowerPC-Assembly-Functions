@@ -1203,6 +1203,14 @@ namespace xml
 					// ... then push it back in our list!
 					addonPathsToLoad.push_back(addonPath);
 				}
+
+				if (addonPathsToLoad.size() >= c_maxAddonCount)
+				{
+					logOutput << "[ERROR] Too many Addons queued for loading!\n";
+					logOutput << "Maximum allowable Addon count is " << lava::numToDecStringWithPadding(c_maxAddonCount, 3) << "!\n";
+					lava::errorPromptAndExit();
+				}
+
 				// Finally, for each collected Addon path...
 				for (std::string currPath : addonPathsToLoad)
 				{
@@ -1215,6 +1223,10 @@ namespace xml
 						logOutput << "[SUCCESS] Successfully parsed and included Addon \"" << tempAddon.addonName << "\" (ShortName: \""<< tempAddon.shortName.str() << "\")!\n";
 						// ... then store it permanently in our list!
 						collectedAddons.push_back(tempAddon);
+					}
+					else
+					{
+						logOutput << "[ERROR] Addon \"" << tempAddon.addonName << "\" (ShortName: \"" << tempAddon.shortName.str() << "\") was either empty or malformed!\n";
 					}
 				}
 			}
@@ -1783,6 +1795,14 @@ namespace xml
 		shortName = collectedShortName;
 		versionName = rootNode.attribute(configXMLConstants::versionTag.c_str()).as_string("");
 		workingMemorySize = rootNode.attribute(configXMLConstants::workingMemorySize.c_str()).as_uint(0x00);
+
+		if (workingMemorySize > c_maxSingleAddonWorkingSpaceSize)
+		{
+			logOutput << "[ERROR] Unable to allot " << lava::numToDecStringWithPadding(workingMemorySize, 3)
+				<< " bytes of working memory to Addon \"" << addonName << "\".\n";
+			logOutput << "Maximum allowable space allotment is " << lava::numToDecStringWithPadding(c_maxSingleAddonWorkingSpaceSize, 3) << " bytes.\n";
+			lava::errorPromptAndExit();
+		}
 
 		// ... and record the input path!
 		inputDirPath = inputDirPathIn;

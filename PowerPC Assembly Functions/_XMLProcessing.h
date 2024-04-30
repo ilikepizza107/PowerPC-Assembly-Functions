@@ -93,6 +93,8 @@ namespace xml
 		std::filesystem::path getOutputDirPath();
 		std::filesystem::path getBuildASMPath();
 	};
+	constexpr unsigned long c_maxSingleAddonWorkingSpaceSize = 0x400;
+	constexpr unsigned long c_maxAddonCount = 0x100;
 
 	extern std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages;
 	extern std::vector<addon> collectedAddons;

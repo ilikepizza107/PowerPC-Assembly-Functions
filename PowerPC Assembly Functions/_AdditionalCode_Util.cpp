@@ -122,6 +122,12 @@ namespace lava
 
 		return result;
 	}
+	void errorPromptAndExit()
+	{
+		std::cerr << "Please attempt to resolve the error and try again. Press any button to exit.\n";
+		_getch();
+		exit(0);
+	}
 
 	shortNameType::shortNameType(std::string str)
 	{
