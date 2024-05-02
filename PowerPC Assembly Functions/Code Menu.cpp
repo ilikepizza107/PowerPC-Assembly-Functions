@@ -1202,7 +1202,7 @@ void CodeMenu()
 
 	PrintCodeMenu();
 
-	PrimeCodeMenu();
+	//PrimeCodeMenu();	# applied directly to sora_menu_main instead
 
 	ControlCodeMenu();
 
