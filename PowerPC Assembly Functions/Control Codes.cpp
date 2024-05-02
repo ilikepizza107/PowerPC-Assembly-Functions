@@ -655,9 +655,8 @@ void DeleteCharacterBufferOnTransform()
 	LWZ(CharacterBufferReg, CharacterBufferPtrReg, 0);
 	While(CharacterBufferReg, NOT_EQUAL, 4); {
 		LWZU(CharacterBufferReg, CharacterBufferPtrReg, 8);
-		If(CharacterBufferReg, EQUAL_I, 0); {
-			JumpToLabel(Quit);
-		}EndIf();
+		CMPLI(CharacterBufferReg, 0, 0);
+		JumpToLabel(Quit, bCACB_EQUAL);
 	}EndWhile();
 	LWZ(CharacterBufferReg, CharacterBufferPtrReg, 4);
 
@@ -728,10 +727,8 @@ void AddNewCharacterBuffer()
 		// Then, for as long as we're looking at a non-empty slot...
 		While(CharacterBufferReg, NOT_EQUAL_I, 0); {
 			// ... check if the entry in that slot is for the entry we'd be adding right now.
-			If(CharacterBufferReg, EQUAL, BaseModuleTableReg); {
-				// If it is, then we can abord adding this entry to the buffer, jump to quit.
-				JumpToLabel(Quit);
-			}EndIf();
+			CMPL(CharacterBufferReg, BaseModuleTableReg, 0);
+			JumpToLabel(Quit, bCACB_EQUAL); // If it is, then we can abord adding this entry to the buffer, jump to quit.
 			// If the existing entry didn't match the entry we're about to add, move to next entry.
 			LWZU(CharacterBufferReg, reg1, 8);
 		}EndWhile();
@@ -868,9 +865,8 @@ void DeleteCharacterBuffer()
 		LWZ(CharacterBufferReg, CharacterBufferPtrReg, 0);
 		While(CharacterBufferReg, NOT_EQUAL, 4); {
 			LWZU(CharacterBufferReg, CharacterBufferPtrReg, 8);
-			If(CharacterBufferReg, EQUAL_I, 0); {
-				JumpToLabel(Quit);
-			}EndIf();
+			CMPLI(CharacterBufferReg, 0, 0);
+			JumpToLabel(Quit, bCACB_EQUAL);
 		}EndWhile();
 		LWZ(CharacterBufferReg, CharacterBufferPtrReg, 4);
 
@@ -916,9 +912,8 @@ void FindCharacterBuffer(int TargetReg, int ResultReg)
 		LWZ(ResultReg, 3, 0);
 		While(ResultReg, NOT_EQUAL, TargetReg); {
 			LWZU(ResultReg, 3, 8);
-			If(ResultReg, EQUAL_I, 0); {
-				JumpToLabel(Quit);
-			}EndIf();
+			CMPLI(ResultReg, 0, 0);
+			JumpToLabel(Quit, bCACB_EQUAL);
 		}EndWhile();
 		LWZ(ResultReg, 3, 4);
 	}EndIf();
@@ -968,6 +963,8 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 			If(reg1, EQUAL_I, 0); {
 				// TODO: Check if certain sequences
 				// TODO: Case when picking random in stagelists
+
+				// TODO: Hazard setting
 
 				// random stage
 				STWU(1, 1, -0x20);
