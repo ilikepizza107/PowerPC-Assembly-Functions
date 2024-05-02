@@ -961,28 +961,36 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 		//LoadWordToReg(reg1, RANDOM_1_TO_1_INDEX + Line::VALUE);
 		//If(reg1, NOT_EQUAL_I, 1); {
 
+			LoadWordToReg(reg2, 0x805a00e0);	// GameGlobal
+			LWZ(reg2, reg2, 8);	// GameGlobal->modeMelee
+
 			LoadWordToReg(reg1, ENDLESS_FRIENDLIES_STAGE_SELECTION_INDEX + Line::VALUE);
 			If(reg1, EQUAL_I, 0); {
-				//random stage
-				GetLegalStagesArray(reg1, reg2, reg3, reg4, reg5, reg6, reg7, reg8, reg9);
-				If(reg4, EQUAL_I, 0); {
-					//provide default
-					STW(reg4, reg3, 0);
-					SetRegister(reg4, 1);
+				// TODO: Check if certain sequences
+				// TODO: Case when picking random in stagelists
+
+				// random stage
+				STWU(1, 1, -0x20);
+				ADDI(3, 1, 0x8);
+				SetRegister(4, 0x0);
+				LoadByteToReg(reg3, 0x806AEE18); // RSS_EXDATA_BONUS
+				ANDI(reg3, reg3, 0x8);
+				If(reg3, NOT_EQUAL_I, 0x0); { // Check if Ordered stage choice
+					SetRegister(4, 0x1);
 				}EndIf();
-				MR(3, reg4);
-				CallBrawlFunc(0x8003fc7c); //randi
-				//RandomCapped(reg4, reg1);
-				LoadWordToReg(reg2, 0x805a00e0);
-				LBZX(3, reg3, 3);
-				LWZ(reg2, reg2, 8);
-				CallBrawlFunc(0x800af614); //exchangeMuStageForScStage
-				STH(3, reg2, 0x1A);
+
+				//random stage
+				CallBrawlFunc(0x806b7618); //muSelectStageTask::selectSequential
+
+				LWZ(3, 1, 0x10);
+
+				STH(3, reg2, 0x1A);	// modeMelee.meleeInitData.stageKind
+				ADDI(1, 1, 0x20);
+
+				SetRegister(reg4, 0x21);
+				StoreByteAtAddr(reg4, reg3, 0x8053F003); // write ! to STEX to signify force reload of stage
 			}EndIf();
 
-			LoadWordToReg(reg2, 0x805a00e0);
-			LBZX(3, reg3, 3);
-			LWZ(reg2, reg2, 8);
 			LHZ(3, reg2, 0x1A); //stage ID
 			ADDI(4, reg2, 0x1C);
 			ADDI(5, reg2, 0x5C);
