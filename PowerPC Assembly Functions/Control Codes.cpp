@@ -902,8 +902,10 @@ void DeleteCharacterBuffer()
 //r3 has address of chr buffer ptr
 void FindCharacterBuffer(int TargetReg, int ResultReg)
 {
+	int Quit = GetNextLabel();
+
 	SetRegister(ResultReg, 1);
-	
+
 	LoadWordToReg(3, MAIN_BUFFER_PTR);
 	RLWINM(4, 3, 16, 16, 31);
 	If(4, EQUAL_I_L, 0xCCCC); {
@@ -914,9 +916,14 @@ void FindCharacterBuffer(int TargetReg, int ResultReg)
 		LWZ(ResultReg, 3, 0);
 		While(ResultReg, NOT_EQUAL, TargetReg); {
 			LWZU(ResultReg, 3, 8);
+			If(ResultReg, EQUAL_I, 0); {
+				JumpToLabel(Quit);
+			}EndIf();
 		}EndWhile();
 		LWZ(ResultReg, 3, 4);
 	}EndIf();
+
+	Label(Quit);
 
 	/*LoadWordToReg(ResultReg, MAIN_BUFFER_PTR);
 	LWZ(3, ResultReg, 0);
