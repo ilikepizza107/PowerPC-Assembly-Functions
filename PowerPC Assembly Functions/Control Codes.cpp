@@ -961,18 +961,25 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 
 			LoadWordToReg(reg1, ENDLESS_FRIENDLIES_STAGE_SELECTION_INDEX + Line::VALUE);
 			If(reg1, EQUAL_I, 0); {
-				// TODO: Check if certain sequences
-				// TODO: Case when picking random in stagelists
 
+				// Check if should change stage slot
+				int isSameStageSlot = GetNextLabel();
+				LoadByteToReg(reg6, 0x806AEE18);
+				ANDI(reg3, reg6, 0x20);
+				JumpToLabel(isSameStageSlot, bCACB_NOT_EQUAL);
+				
 				// random stage
+				// TODO: Fix Castle Siege not loading properly
+
+				int isNotOrdered = GetNextLabel();
 				STWU(1, 1, -0x20);
 				ADDI(3, 1, 0x8);
 				SetRegister(4, 0x0);
 				LoadByteToReg(reg3, 0x806AEE18); // RSS_EXDATA_BONUS
-				ANDI(reg3, reg3, 0x8);
-				If(reg3, NOT_EQUAL_I, 0x0); { // Check if Ordered stage choice
-					SetRegister(4, 0x1);
-				}EndIf();
+				ANDI(reg3, reg3, 0x8); // check if ordered stagelist
+				JumpToLabel(isNotOrdered, bCACB_EQUAL);
+				SetRegister(4, 0x1);
+				Label(isNotOrdered);
 
 				//random stage
 				CallBrawlFunc(0x806b7618); //muSelectStageTask::selectSequential
@@ -982,16 +989,21 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 
 				LoadByteToReg(4, 0x80496000); // CURRENT_PAGE
 				LWZ(3, 1, 0xC);	// selectEntry.index
-				CallBrawlFunc(0x806b74f0);
+				CallBrawlFunc(0x806b74f0); //muSelectStageTask::selectRandom (get if hazard)
 				LBZ(reg4, reg2, 0x29);
 				RLWIMI(reg4, 3, 5, 26, 26);
-				STB(reg4, reg2, 0x29);
-
+				STB(reg4, reg2, 0x29);	// store isHazardsOff
 				ADDI(1, 1, 0x20);
 
+				Label(isSameStageSlot);
 
+				// remove flag in RSS_EXDATA_BONUS to allow random alts if on
+				ANDI(reg6, reg6, 0xEF);
+				StoreByteAtAddr(reg6, reg3, 0x806AEE18);
+
+				// write ! to STEX to signify force reload of stage
 				SetRegister(reg4, 0x21);
-				StoreByteAtAddr(reg4, reg3, 0x8053F003); // write ! to STEX to signify force reload of stage
+				StoreByteAtAddr(reg4, reg3, 0x8053F003); 
 			}EndIf();
 
 			LHZ(3, reg2, 0x1A); //stage ID
