@@ -964,8 +964,6 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 				// TODO: Check if certain sequences
 				// TODO: Case when picking random in stagelists
 
-				// TODO: Hazard setting
-
 				// random stage
 				STWU(1, 1, -0x20);
 				ADDI(3, 1, 0x8);
@@ -979,10 +977,18 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 				//random stage
 				CallBrawlFunc(0x806b7618); //muSelectStageTask::selectSequential
 
-				LWZ(3, 1, 0x10);
-
+				LWZ(3, 1, 0x10);	// selectEntry.stageKind
 				STH(3, reg2, 0x1A);	// modeMelee.meleeInitData.stageKind
+
+				LoadByteToReg(4, 0x80496000); // CURRENT_PAGE
+				LWZ(3, 1, 0xC);	// selectEntry.index
+				CallBrawlFunc(0x806b74f0);
+				LBZ(reg4, reg2, 0x29);
+				RLWIMI(reg4, 3, 5, 26, 26);
+				STB(reg4, reg2, 0x29);
+
 				ADDI(1, 1, 0x20);
+
 
 				SetRegister(reg4, 0x21);
 				StoreByteAtAddr(reg4, reg3, 0x8053F003); // write ! to STEX to signify force reload of stage
