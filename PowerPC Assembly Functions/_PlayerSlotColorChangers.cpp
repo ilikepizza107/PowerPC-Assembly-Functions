@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "_PlayerSlotColorChangers.h"
 
-const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.0.1] ";
+const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.0.2] ";
 const std::string codeSuffix = " [QuickLava]";
 
 // New approach:
