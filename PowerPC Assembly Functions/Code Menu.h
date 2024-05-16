@@ -630,12 +630,14 @@ public:
 	u32 NumChangedLines = 0;
 	u32 PrintLowHold = 0;
 	vector<Line*> Lines;
+	int CalledFromLineIndex = -1;
 	std::shared_ptr<SubMenu> CalledFromLine;
-	static const int NUM_WORD_ELEMS = 4;
+	static const int NUM_WORD_ELEMS = 5;
 	static const int CURRENT_LINE_OFFSET = 0;
 	static const int PREV_PAGE = CURRENT_LINE_OFFSET + 4;
 	static const int NUM_CHANGED_LINES = PREV_PAGE + 4;
 	static const int PRINT_LOW_HOLD = NUM_CHANGED_LINES + 4;
+	static const int CALLED_FROM_LINE = PRINT_LOW_HOLD + 4;
 	static const int FIRST_LINE_OFFSET = NUM_WORD_ELEMS * 4;
 
 	Page(string Name, vector<Line*> Lines, lava::shortNameType shortName = lava::shortNameType(""));

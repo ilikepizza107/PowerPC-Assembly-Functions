@@ -823,6 +823,7 @@ Page::Page(string Name, vector<Line*> Lines, lava::shortNameType shortName) {
 	}
 
 	CalledFromLine = std::make_shared<SubMenu>(Name, this);
+	CalledFromLine->Index = &CalledFromLineIndex;
 	PageName = Name;
 	PrepareLines(Lines);
 }
@@ -863,6 +864,14 @@ void Page::WritePage()
 	AddValueToByteArray(PrevPageOffset, output);
 	AddValueToByteArray(NumChangedLines, output);
 	AddValueToByteArray(PrintLowHold, output);
+	if (CalledFromLine != nullptr)
+	{
+		AddValueToByteArray(*CalledFromLine->Index, output);
+	}
+	else
+	{
+		AddValueToByteArray(0xFFFFFFFF, output);
+	}
 	copy(output.begin(), output.end(), ostreambuf_iterator<char>(MenuFile));
 	for (auto x : Lines) {
 		x->WriteLineData();
@@ -2799,32 +2808,53 @@ void ResetLineSubroutine(int ResetAccumulatorReg)
 	Label(ResetLineSubroutineLabel);
 
 	int notIndirectLabel = GetNextLabel();
+	int setPageLineColorLabel = GetNextLabel();
+
+	// Grab Line Color early, since whether we're direct or not we'll need it for setting the page color!
+	LBZ(TempReg2, LineReg, Line::COLOR);
+
 	CMPLI(IsIndirectReg, 1, 0);
 	JumpToLabel(notIndirectLabel, bCACB_NOT_EQUAL);
-	LBZ(TempReg2, LineReg, Line::FLAGS);
-	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
-	BCLR(bCACB_NOT_EQUAL);
-	Label(notIndirectLabel);
+	LBZ(TempReg3, LineReg, Line::FLAGS);
+	ANDI(TempReg3, TempReg3, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
+	JumpToLabel(setPageLineColorLabel, bCACB_NOT_EQUAL);
 
-	LBZ(TempReg2, LineReg, Line::COLOR);
+	Label(notIndirectLabel);
 	LWZ(TempReg1, PageReg, Page::NUM_CHANGED_LINES);
+	
 	// Load the changed bit of the line's color into TempReg3, will be 1 if changed, 0 otherwise.
 	RLWINM(TempReg3, TempReg2, 29, 31, 31);
-	// Add this to the ResetAccumulator to tally that a line's value was reset.
-	ADD(ResetAccumulatorReg, ResetAccumulatorReg, TempReg3);
 	ANDI(TempReg2, TempReg2, ~0x8);
 	SUBF(TempReg1, TempReg1, TempReg3);
 	STB(TempReg2, LineReg, Line::COLOR);
 	STW(TempReg1, PageReg, Page::NUM_CHANGED_LINES);
 
 	If(TypeReg, LESS_OR_EQUAL_I, HAS_VALUE_LIMIT); {
+		// Add the changed bit to the ResetAccumulator to tally that a line's value was reset.
+		ADD(ResetAccumulatorReg, ResetAccumulatorReg, TempReg3);
 		LWZ(TempReg1, LineReg, Line::DEFAULT);
 		STW(TempReg1, LineReg, Line::VALUE);
 	}Else(); If(TypeReg, EQUAL_I, SUB_MENU_LINE); {
 		LHZ(TempReg1, LineReg, Line::SUB_MENU);
 		ADD(TempReg1, TempReg1, PageReg);
-		PushOnStack(TempReg1, StackReg, TempReg2);
+		PushOnStack(TempReg1, StackReg, TempReg3);
 	}EndIf(); EndIf();
+
+	Label(setPageLineColorLabel);
+	// Load the current page's submenu line...
+	LWZ(TempReg3, PageReg, Page::CALLED_FROM_LINE);
+	// ... and if no such line existed...
+	CMPI(TempReg3, 0xFFFF, 0);
+	// ... then return early to skip the below.
+	BCLR(bCACB_EQUAL);
+	// Otherwise though, grab that line's color value...
+	LBZ(TempReg1, TempReg3, Line::COLOR);
+	// ... and isolate the changed bit.
+	ANDI(TempReg2, TempReg2, 0x8);
+	// OR that into the parent page's line color...
+	OR(TempReg1, TempReg1, TempReg2);
+	// ... and write it into place!
+	STB(TempReg1, TempReg3, Line::COLOR);
 
 	BLR();
 }
