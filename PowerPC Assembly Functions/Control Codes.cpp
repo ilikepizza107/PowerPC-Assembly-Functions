@@ -964,8 +964,8 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 
 				// Check if should change stage slot
 				int isSameStageSlot = GetNextLabel();
-				LoadByteToReg(reg6, 0x806AEE18);
-				ANDI(reg3, reg6, 0x20);
+				LoadByteToReg(reg6, 0x806AEE18); // RSS_EXDATA_BONUS
+				ANDI(0, reg6, 0x20);
 				JumpToLabel(isSameStageSlot, bCACB_NOT_EQUAL);
 				
 				// random stage
@@ -975,8 +975,7 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 				STWU(1, 1, -0x20);
 				ADDI(3, 1, 0x8);
 				SetRegister(4, 0x0);
-				LoadByteToReg(reg3, 0x806AEE18); // RSS_EXDATA_BONUS
-				ANDI(reg3, reg3, 0x8); // check if ordered stagelist
+				ANDI(0, reg6, 0x8); // check if ordered stagelist
 				JumpToLabel(isNotOrdered, bCACB_EQUAL);
 				SetRegister(4, 0x1);
 				Label(isNotOrdered);
@@ -987,9 +986,15 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 				LWZ(3, 1, 0x10);	// selectEntry.stageKind
 				STH(3, reg2, 0x1A);	// modeMelee.meleeInitData.stageKind
 
+				int isForceHazards = GetNextLabel();
+				SRAWI(3, reg6, 7);
+				ANDI(0, reg6, 0xC0); // check if force hazards
+				JumpToLabel(isForceHazards, bCACB_NOT_EQUAL);
+
 				LoadByteToReg(4, 0x80496000); // CURRENT_PAGE
 				LWZ(3, 1, 0xC);	// selectEntry.index
 				CallBrawlFunc(0x806b74f0); //muSelectStageTask::selectRandom (get if hazard)
+				Label(isForceHazards);
 				LBZ(reg4, reg2, 0x29);
 				RLWIMI(reg4, 3, 5, 26, 26);
 				STB(reg4, reg2, 0x29);	// store isHazardsOff
