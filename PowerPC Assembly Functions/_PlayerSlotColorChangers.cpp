@@ -40,16 +40,146 @@ unsigned long safeStackWordOff = 0x10; // Stores version of the code we need to 
 
 void psccIncrementOnButtonPress()
 {
+	int reg0 = 0;
 	int reg1 = 11;
 	int reg2 = 12;
-	int reg3 = 30; // Safe to use, overwritten by the instruction following our hook.
-	int padReg = 0; // Note, we can use this reg after using the pad data from it
-	int padPtrReg = 25;
+	int reg3 = 10;
+	int reg4 = 30; // Safe to use, overwritten by the instructions following our hook.
 
+	int padPtrReg = 25;
+	int controllerIDReg = 28;
+	int playerAreaIDReg = 29;
+
+	// Thresholds for registering and unregistering a trigger press.
+	constexpr unsigned char analogPressThreshold = 0x60;
+	constexpr unsigned char analogUnpressThreshold = 0x30;
+	// CR Bit IDs for digital press checks.
+	constexpr unsigned char digitalZPressBit = crBitInCRF(EQ, 7);
+	constexpr unsigned char digitalLPressBit = crBitInCRF(LT, 7);
+	constexpr unsigned char digitalRPressBit = crBitInCRF(GT, 7);
+
+	// Setup branch destination labels.
+	int decrCheckEndLabel = GetNextLabel();
+	int incrCheckEndLabel = GetNextLabel();
+	int decrCheckUnpressLabel = GetNextLabel();
+	int incrCheckUnpressLabel = GetNextLabel();
+	int decrInputDisabledLabel = GetNextLabel();
+	int incrInputDisabledLabel = GetNextLabel();
 	int applyChangesLabel = GetNextLabel();
+	int storeValueLabel = GetNextLabel();
 	int exitLabel = GetNextLabel();
 
-	ASMStart(0x8068b168, codePrefix + "Incr and Decr Slot Color with L/R, Reset with Z on Player Kind Button" + codeSuffix);
+	ASMStart(0x8068B168, codePrefix + "Incr and Decr Slot Color with L/R, Reset with Z on Player Kind Button" + codeSuffix);
+	// If the A Button was pressed...
+	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_A) + 1, 31, 31, 1);
+	// ... that takes priority over anything else, exit!
+	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
+
+	// Check if the Z Button is pressed...
+	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_Z) + 1, 31, 31, 1);
+	// ... and store that fact in CR7.
+	CROR(digitalZPressBit, crBitInCRF(EQ, 0), crBitInCRF(EQ, 0));
+
+	// Check if the L Button is pressed...
+	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_L) + 1, 31, 31, 1);
+	// ... and store that fact in CR7.
+	CROR(digitalLPressBit, crBitInCRF(EQ, 0), crBitInCRF(EQ, 0));
+
+	// Check if the R Button is pressed...
+	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_R) + 1, 31, 31, 1);
+	// ... and store that fact in CR7.
+	CROR(digitalRPressBit, crBitInCRF(EQ, 0), crBitInCRF(EQ, 0));
+
+	// Load the press state bitfield...
+	ADDIS(reg1, 0, PSCC_CSS_INPUT_PRESS_STATE_LOC >> 0x10);
+	LBZ(reg2, reg1, PSCC_CSS_INPUT_PRESS_STATE_LOC & 0xFFFF);
+
+	// ... zero out reg3...
+	ADDI(reg3, 0, 0);
+	// ... and set up our probe bit for checking the current port.
+	ADDI(reg4, 0x0, 0b0001);
+	RLWNM(reg4, reg4, controllerIDReg, 0x18, 0x1F);
+
+	// Grab the L Analog Distance byte...
+	LBZ(reg0, padPtrReg, 0x34);
+	// If that distance is both lower than the press threshold...
+	CMPLI(reg0, analogPressThreshold, 0);
+	// ... *and* we didn't detect a digital press...
+	CRAND(crBitInCRF(LT, 0), crBitInCRF(LT, 0), digitalLPressBit);
+	// ... just skip to checking the unpress.
+	JumpToLabel(decrCheckUnpressLabel, bCACB_LESSER);
+	{
+		// Check the bitmask for whether or not the input is already active.
+		AND(reg0, reg2, reg4, 1);
+		// If so...
+		JumpToLabel(decrInputDisabledLabel, bCACB_NOT_EQUAL);
+		{
+			// ... set the pressed bit in the bitfield...
+			OR(reg2, reg2, reg4);
+			// ... and then set delta register to -1.
+			ADDI(reg3, reg3, -1);
+		}
+		Label(decrInputDisabledLabel);
+		// Skip past unpress check.
+		JumpToLabel(decrCheckEndLabel);
+	}
+	Label(decrCheckUnpressLabel);
+	// Otherwise, if the analog distance is beneath the unpress threshold... 
+	CMPLI(reg0, analogUnpressThreshold, 0);
+	JumpToLabel(decrCheckEndLabel, bCACB_GREATER);
+	{
+		// ... then unset the corresponding bit!
+		ANDC(reg2, reg2, reg4);
+	}
+	Label(decrCheckEndLabel);
+
+	// Shift probe bit up to check the increment input.
+	RLWINM(reg4, reg4, 4, 0x18, 0x1F, 1);
+	// Grab the R Analog Distance byte...
+	LBZ(reg0, padPtrReg, 0x35);
+	// If that distance is both lower than the press threshold...
+	CMPLI(reg0, analogPressThreshold, 0);
+	// ... *and* we didn't detect a digital press...
+	CRAND(crBitInCRF(LT, 0), crBitInCRF(LT, 0), digitalRPressBit);
+	// ... just skip to checking the unpress.
+	JumpToLabel(incrCheckUnpressLabel, bCACB_LESSER);
+	{
+		// Check the bitmask for whether or not the input is already active.
+		AND(reg0, reg2, reg4, 1);
+		// If so...
+		JumpToLabel(incrInputDisabledLabel, bCACB_NOT_EQUAL);
+		{
+			// ... set the pressed bit in the bitfield...
+			OR(reg2, reg2, reg4);
+			// ... and then set delta register to 1.
+			ADDI(reg3, reg3, 1);
+		}
+		Label(incrInputDisabledLabel);
+		// Skip past unpress check.
+		JumpToLabel(incrCheckEndLabel);
+	}
+	Label(incrCheckUnpressLabel);
+	// Otherwise, if the analog distance is beneath the unpress threshold... 
+	CMPLI(reg0, analogUnpressThreshold, 0);
+	JumpToLabel(incrCheckEndLabel, bCACB_GREATER);
+	{
+		// ... then unset the corresponding bit!
+		ANDC(reg2, reg2, reg4);
+	}
+	Label(incrCheckEndLabel);
+
+	// After all that, we've set up reg3 with our delta value, and updated the bitfield with.
+	// Store the updated bitset.
+	STB(reg2, reg1, PSCC_CSS_INPUT_PRESS_STATE_LOC & 0xFFFF);
+
+	// Zero reg0...
+	ADDI(reg0, 0, 0x00);
+	// ... check if the delta register is 0...
+	CMPLI(reg3, 0x00, 0);
+	// ... AND we didn't press Z before.
+	CRAND(crBitInCRF(EQ, 0), crBitInCRF(EQ, 0), digitalZPressBit);
+	// ... and exit if so.
+	JumpToLabel(exitLabel, bCACB_EQUAL);
 
 	// If we're hovering over the player status button.
 	CMPI(26, 0x1D, 0);
@@ -62,36 +192,19 @@ void psccIncrementOnButtonPress()
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
 	// Disable input if we're in team mode (also set up reg1 with top half of Code Menu Addr).
-	ADDIS(reg1, 0, PSCC_TEAM_BATTLE_STORE_LOC >> 0x10);
 	LBZ(reg2, reg1, PSCC_TEAM_BATTLE_STORE_LOC & 0xFFFF);
 	CMPI(reg2, Line::DEFAULT, 0);
 	JumpToLabel(exitLabel, bCACB_EQUAL);
 
 	// Multiply slot value by 4, move it into reg1
-	RLWIMI(reg1, 29, 2, 0x10, 0x1D);
+	RLWIMI(reg1, playerAreaIDReg, 2, 0x10, 0x1D);
 	// And use that to grab the relevant line's INDEX Value
 	LWZ(reg1, reg1, PSCC_COLOR_1_LOC & 0xFFFF);
 
-	// If Z Button is pressed...
-	RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_Z) + 1, 31, 31, 1);
-	// ... reset the slot's color value.
-	LWZ(reg3, reg1, Line::DEFAULT);
-	JumpToLabel(applyChangesLabel, bCACB_NOT_EQUAL);
-
-	// Setup incr/decrement value
-	// Shift down BUTTON_R bit to use it as a bool, reg2 is 1 if set, 0 if not
-	RLWINM(reg2, padReg, bitIndexFromButtonHex(BUTTON_R) + 1, 31, 31);
-	// Shift down BUTTON_L bit to use it as a bool, reg3 is 1 if set, 0 if not
-	RLWINM(reg3, padReg, bitIndexFromButtonHex(BUTTON_L) + 1, 31, 31);
-	// Subtract reg3 from reg2! So if L was pressed, and R was not, reg2 = -1. L not pressed, R pressed, reg2 = 1.
-	// Additionally, set the condition bit, and if the result of this subtraction was 0 (ie. either both pressed or neither pressed) we skip.
-	SUBF(reg2, reg2, reg3, 1);
-	JumpToLabel(exitLabel, bCACB_EQUAL);
-
 	// Load the line's current option into reg3...
-	LWZ(reg3, reg1, Line::VALUE);
+	LWZ(reg2, reg1, Line::VALUE);
 	// ... and add our modification value to it.
-	ADD(reg3, reg3, reg2);
+	ADD(reg3, reg2, reg3);
 
 	// If modified value is greater than the max...
 	CMPI(reg3, pscc::schemeTable.entries.size() - 1, 0);
@@ -105,20 +218,18 @@ void psccIncrementOnButtonPress()
 	BC(2, bCACB_GREATER_OR_EQ);
 	ADDI(reg3, 0, pscc::schemeTable.entries.size() - 1);
 
+	BC(2, bCACB_EQUAL.inConditionRegField(7), 0);
+	LWZ(reg3, reg1, Line::DEFAULT);
+
 	// Store our modified value back in place.
-	Label(applyChangesLabel);
 	STW(reg3, reg1, Line::VALUE);
 
-	// Use value in r4 to grab current player status
+	// Set the current playerkind to none...
 	LWZ(reg1, 4, 0x44);
-	LWZ(reg2, reg1, 0x1B4);
-	// Subtract 1 from it.
-	ADDI(reg2, reg2, -1);
-	// Put it back.
+	ADDI(reg2, 0, 0x0);
 	STW(reg2, reg1, 0x1B4);
-
-	// Set padReg to A button press to piggyback off the setPlayerKind call to update our colors.
-	ADDI(padReg, 0, BUTTON_A);
+	// ... then set padReg to A button press to piggyback off the setPlayerKind call to update our colors.
+	ADDI(reg0, 0, BUTTON_A);
 
 	Label(exitLabel);
 

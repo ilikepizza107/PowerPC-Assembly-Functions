@@ -1166,7 +1166,7 @@ void CodeMenu()
 	
 	// HUD Color Settings
 	vector<Line*> HUDColorLines;
-	HUDColorLines.push_back(new Comment("Replacement Hud Colors:"));
+	HUDColorLines.push_back(new Comment("Replacement HUD Colors"));
 	std::vector<std::string> schemeNames(pscc::schemeTable.entries.size(), "");
 	for (std::size_t i = 0; i < pscc::schemeTable.entries.size(); i++)
 	{

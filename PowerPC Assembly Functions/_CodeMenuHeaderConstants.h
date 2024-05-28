@@ -123,8 +123,10 @@ static const int PSCC_COLOR_1_LOC = TRIP_INTERVAL_LOC + 4; //4
 static const int PSCC_COLOR_2_LOC = PSCC_COLOR_1_LOC + 4; //4
 static const int PSCC_COLOR_3_LOC = PSCC_COLOR_2_LOC + 4; //4
 static const int PSCC_COLOR_4_LOC = PSCC_COLOR_3_LOC + 4; //4
-static const int PSCC_TEAM_BATTLE_STORE_LOC = PSCC_COLOR_4_LOC + 4; //4
-static const int PSCC_FLOAT_TABLE_LOC = PSCC_TEAM_BATTLE_STORE_LOC + 0x4; // 0x04, Player Slot Color Float Table Address
+static const int PSCC_TEAM_BATTLE_STORE_LOC = PSCC_COLOR_4_LOC + 4; // 1
+static const int PSCC_CSS_INPUT_PRESS_STATE_LOC = PSCC_TEAM_BATTLE_STORE_LOC + 1; // 1, Stores 2 bits per port for Incr/Decr Pressed
+static const int PSCC_UNUSED_SHORT_LOC = PSCC_CSS_INPUT_PRESS_STATE_LOC + 1; // 2, 2 unused bytes.
+static const int PSCC_FLOAT_TABLE_LOC = PSCC_UNUSED_SHORT_LOC + 2; // 4, Player Slot Color Float Table Address
 
 static const int JUMPSQUAT_OVERRIDE_TOGGLE_LOC = PSCC_FLOAT_TABLE_LOC + 4; // 4
 static const int JUMPSQUAT_OVERRIDE_FRAMES_LOC = JUMPSQUAT_OVERRIDE_TOGGLE_LOC + 4; // 4
