@@ -47,6 +47,8 @@ void psccIncrementOnButtonPress()
 	int reg4 = 30; // Safe to use, overwritten by the instructions following our hook.
 
 	int padPtrReg = 25;
+	int collKindIDReg1 = 3;
+	int collKindIDReg2 = 26;
 	int controllerIDReg = 28;
 	int playerAreaIDReg = 29;
 
@@ -181,8 +183,15 @@ void psccIncrementOnButtonPress()
 	// ... and exit if so.
 	JumpToLabel(exitLabel, bCACB_EQUAL);
 
+	// If we're hovering over the nametag button...
+	CMPLI(collKindIDReg1, 0x1C, 0);
+	BC(3, bCACB_NOT_EQUAL);
+	// ... lie and say we're on the player status button instead!
+	ADDI(collKindIDReg1, 0, 0x1D);
+	MR(collKindIDReg2, collKindIDReg1);
+
 	// If we're hovering over the player status button.
-	CMPI(26, 0x1D, 0);
+	CMPLI(collKindIDReg1, 0x1D, 0);
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
 	// Disable input if the port kind isn't currently set to Human
