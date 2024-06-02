@@ -241,8 +241,13 @@ void psccIncrementOnButtonPress()
 	ADDI(reg0, 0, BUTTON_A);
 
 	Label(exitLabel);
+	ASMEnd(0x540005ef); // Restore Original Instruction: rlwinm. r0, r0, 0, 23, 23 (00000100)
 
-	ASMEnd(0x540005ef); // Restore Original Instruction: rlwinm.	r0, r0, 0, 23, 23 (00000100)
+	ASMStart(0x806828CC, "", "");
+	ADDI(reg2, 0, -1);
+	ADDIS(reg1, 0, PSCC_CSS_INPUT_PRESS_STATE_LOC >> 0x10);
+	STB(reg2, reg1, PSCC_CSS_INPUT_PRESS_STATE_LOC & 0xFFFF);
+	ASMEnd(0x3880002A); // Restore Original Instruction: li r4, 42
 }
 
 void psccTransparentCSSandResultsScreenNames()
