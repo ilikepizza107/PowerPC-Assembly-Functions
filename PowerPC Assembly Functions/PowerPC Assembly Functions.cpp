@@ -3142,6 +3142,17 @@ void MFXER(int TargetReg)
 	MFSPR(TargetReg, 1);
 }
 
+void MFCR(int TargetReg)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(TargetReg, 5, 10);
+	OpHex |= GetOpSegment(0, 5, 15);
+	OpHex |= GetOpSegment(0, 5, 20);
+	OpHex |= GetOpSegment(19, 10, 30);
+	WriteIntToFile(OpHex);
+}
+
+
 //DestReg = SourceReg1 % SourceReg2
 void MOD(int DestReg, int SourceReg1, int SourceReg2)
 {
@@ -3179,6 +3190,18 @@ void MTLR(int TargetReg)
 
 void MTXER(int TargetReg) {
 	MTSPR(TargetReg, 1);
+}
+
+void MTCRF(int MaskBitfield, int MaskReg)
+{
+	OpHex = GetOpSegment(31, 6, 5);
+	OpHex |= GetOpSegment(MaskReg, 5, 10);
+	OpHex |= GetOpSegment(0, 1, 11);
+	OpHex |= GetOpSegment(MaskBitfield, 8, 19);
+	OpHex |= GetOpSegment(0, 1, 20);
+	OpHex |= GetOpSegment(144, 10, 30);
+	OpHex |= GetOpSegment(0, 1, 31);
+	WriteIntToFile(OpHex);
 }
 
 void MULLI(int DestReg, int SourceReg, int Immediate)

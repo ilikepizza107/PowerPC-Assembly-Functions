@@ -919,6 +919,7 @@ void MFSPR(int TargetReg, int SpecialRegID);
 void MFCTR(int TargetReg);
 void MFLR(int TargetReg);
 void MFXER(int TargetReg);
+void MFCR(int TargetReg);
 void MOD(int DestReg, int SourceReg1, int SourceReg2);
 void MR(int DestReg, int SourceReg);
 // Note: Function automatically handles swapping top and bottom halves of the SpReg ID!
@@ -926,6 +927,7 @@ void MTSPR(int SourceReg, int SpecialRegID);
 void MTCTR(int TargetReg);
 void MTLR(int TargetReg);
 void MTXER(int TargetReg);
+void MTCRF(int MaskBitfield, int MaskReg);
 void MULLI(int DestReg, int SourceReg, int Immediate);
 void MULLW(int DestReg, int SourceReg1, int SourceReg2, bool SetConditionReg = 0);
 void NEG(int DestReg, int SourceReg, bool SetConditionReg = 0);
