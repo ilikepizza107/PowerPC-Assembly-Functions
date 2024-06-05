@@ -56,9 +56,13 @@ void psccIncrementOnButtonPress()
 	constexpr unsigned char analogPressThreshold = 0x60;
 	constexpr unsigned char analogUnpressThreshold = 0x30;
 	// CR Bit IDs for digital press checks.
-	constexpr unsigned char digitalZPressBit = crBitInCRF(EQ, 7);
-	constexpr unsigned char digitalLPressBit = crBitInCRF(LT, 7);
-	constexpr unsigned char digitalRPressBit = crBitInCRF(GT, 7);
+	constexpr unsigned char digitalPressCRF = 7;
+	constexpr unsigned char digitalZPressBit = crBitInCRF(EQ, digitalPressCRF);
+	constexpr unsigned char digitalZPressBitFromRight = 31 - digitalZPressBit;
+	constexpr unsigned char digitalLPressBit = crBitInCRF(LT, digitalPressCRF);
+	constexpr unsigned char digitalLPressBitFromRight = 31 - digitalLPressBit;
+	constexpr unsigned char digitalRPressBit = crBitInCRF(GT, digitalPressCRF);
+	constexpr unsigned char digitalRPressBitFromRight = 31 - digitalRPressBit;
 
 	// Setup branch destination labels.
 	int decrCheckEndLabel = GetNextLabel();
@@ -77,25 +81,18 @@ void psccIncrementOnButtonPress()
 	// ... that takes priority over anything else, exit!
 	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
-	// Check if the Z Button is pressed...
-	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_Z) + 1, 31, 31, 1);
-	// ... and store that fact in CR7.
-	CROR(digitalZPressBit, crBitInCRF(EQ, 0), crBitInCRF(EQ, 0));
-
-	// Check if the L Button is pressed...
-	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_L) + 1, 31, 31, 1);
-	// ... and store that fact in CR7.
-	CROR(digitalLPressBit, crBitInCRF(EQ, 0), crBitInCRF(EQ, 0));
-
-	// Check if the R Button is pressed...
-	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_R) + 1, 31, 31, 1);
-	// ... and store that fact in CR7.
-	CROR(digitalRPressBit, crBitInCRF(EQ, 0), crBitInCRF(EQ, 0));
+	// Check if the Z Button is pressed, store in reg2.
+	RLWINM(reg2, reg0, bitIndexFromButtonHex(BUTTON_Z) + 1 + digitalZPressBitFromRight, digitalZPressBit, digitalZPressBit);
+	// Check if the L Button is pressed, store in reg2.
+	RLWIMI(reg2, reg0, bitIndexFromButtonHex(BUTTON_L) + 1 + digitalLPressBitFromRight, digitalLPressBit, digitalLPressBit);
+	// Check if the R Button is pressed, store in reg2.
+	RLWIMI(reg2, reg0, bitIndexFromButtonHex(BUTTON_R) + 1 + digitalRPressBitFromRight, digitalRPressBit, digitalRPressBit);
+	// And move all the above to the Condition Register!
+	MTCRF(0b1 << (7 - digitalPressCRF), reg2);
 
 	// Load the press state bitfield...
 	ADDIS(reg1, 0, PSCC_CSS_INPUT_PRESS_STATE_LOC >> 0x10);
 	LBZ(reg2, reg1, PSCC_CSS_INPUT_PRESS_STATE_LOC & 0xFFFF);
-
 	// ... zero out reg3...
 	ADDI(reg3, 0, 0);
 	// ... and set up our probe bit for checking the current port.
@@ -107,7 +104,7 @@ void psccIncrementOnButtonPress()
 	// If that distance is both lower than the press threshold...
 	CMPLI(reg0, analogPressThreshold, 0);
 	// ... *and* we didn't detect a digital press...
-	CRAND(crBitInCRF(LT, 0), crBitInCRF(LT, 0), digitalLPressBit);
+	CRANDC(crBitInCRF(LT, 0), crBitInCRF(LT, 0), digitalLPressBit);
 	// ... just skip to checking the unpress.
 	JumpToLabel(decrCheckUnpressLabel, bCACB_LESSER);
 	{
@@ -142,7 +139,7 @@ void psccIncrementOnButtonPress()
 	// If that distance is both lower than the press threshold...
 	CMPLI(reg0, analogPressThreshold, 0);
 	// ... *and* we didn't detect a digital press...
-	CRAND(crBitInCRF(LT, 0), crBitInCRF(LT, 0), digitalRPressBit);
+	CRANDC(crBitInCRF(LT, 0), crBitInCRF(LT, 0), digitalRPressBit);
 	// ... just skip to checking the unpress.
 	JumpToLabel(incrCheckUnpressLabel, bCACB_LESSER);
 	{
@@ -179,20 +176,18 @@ void psccIncrementOnButtonPress()
 	// ... check if the delta register is 0...
 	CMPLI(reg3, 0x00, 0);
 	// ... AND we didn't press Z before.
-	CRAND(crBitInCRF(EQ, 0), crBitInCRF(EQ, 0), digitalZPressBit);
+	CRANDC(crBitInCRF(EQ, 0), crBitInCRF(EQ, 0), digitalZPressBit);
 	// ... and exit if so.
 	JumpToLabel(exitLabel, bCACB_EQUAL);
 
-	// If we're hovering over the nametag button...
-	CMPLI(collKindIDReg1, 0x1C, 0);
-	BC(3, bCACB_NOT_EQUAL);
-	// ... lie and say we're on the player status button instead!
+	// If we're not over either the playerkind or nametag buttons...
+	ADDI(reg2, collKindIDReg1, -0x1C);
+	CMPLI(reg2, 0x2, 0);
+	// ... then jump to exit!
+	JumpToLabel(exitLabel, bCACB_GREATER_OR_EQ);
+	// Otherwise, ensure we set the collkind registers to 0x1D (playerkind button).
 	ADDI(collKindIDReg1, 0, 0x1D);
 	MR(collKindIDReg2, collKindIDReg1);
-
-	// If we're hovering over the player status button.
-	CMPLI(collKindIDReg1, 0x1D, 0);
-	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
 	// Disable input if the port kind isn't currently set to Human
 	LWZ(reg2, 4, 0x44);
@@ -227,7 +222,8 @@ void psccIncrementOnButtonPress()
 	BC(2, bCACB_GREATER_OR_EQ);
 	ADDI(reg3, 0, pscc::schemeTable.entries.size() - 1);
 
-	BC(2, bCACB_EQUAL.inConditionRegField(7), 0);
+	// If we pressed the Z button though, then load the line's default value instead!
+	BC(2, BRANCH_IF_FALSE, digitalZPressBit);
 	LWZ(reg3, reg1, Line::DEFAULT);
 
 	// Store our modified value back in place.
