@@ -111,6 +111,7 @@ extern std::string MENU_NAME;
 #define FT_MGR_GET_PLAYER_NO 0x80815ad0 // r3 = ftManager pointer, r4 = entryID
 #define MU_SET_FRAME_MAT_COL 0x800B7A18
 #define SND_PLAY_SE_FIXED_EFFECT 0x80074ECC
+#define MU_CHANGE_CLR_ANIM_N_IF 0x800B51F4
 ///Function addresses end
 
 

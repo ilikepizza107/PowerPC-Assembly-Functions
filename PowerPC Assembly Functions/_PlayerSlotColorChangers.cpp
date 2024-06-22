@@ -375,6 +375,60 @@ void psccMiscAdjustments()
 	CodeRawEnd();
 }
 
+void psccSSSRandomStocks()
+{
+	int reg1 = 11;
+	int reg2 = 12;
+	int portIDReg = 23;
+	int playerKindReg = 24;
+	int muObjectPtrReg = 29;
+
+	int exitLabel = GetNextLabel();
+
+	const std::string clr0Name = "MenSelmapFaceR_\0";
+	const unsigned long nameEmbedLineCount = 0x4;
+
+	CodeRawStart(codePrefix + "SSS Random Stocks Set CLR0 Frame" + codeSuffix, "");
+	// Force CPU check to always pass so all players use the same Random Texture.
+	WriteIntToFile(0x046B2FB0); CMPL(24, 24, 0);
+	CodeRawEnd();
+
+	// Set CLR0 Frame
+	ASMStart(0x806B2FE8, "", "");
+	BL(1 + nameEmbedLineCount);
+	for (unsigned long i = 0; i < clr0Name.size(); i += 0x4)
+	{
+		WriteIntToFile(lava::bytesToFundamental<unsigned long>((unsigned char*)clr0Name.data() + i));
+	}
+	MFLR(4);
+	ADDI(reg2, portIDReg, 0x30);
+	RLWIMI(reg2, playerKindReg, 3, 0x1C, 0x1C);
+	STB(reg2, 4, clr0Name.size() - 1);
+	MR(3, muObjectPtrReg);
+	CallBrawlFunc(MU_CHANGE_CLR_ANIM_N_IF, 12, 1);
+	CMPLI(3, 0x0, 0);
+	JumpToLabel(exitLabel, bCACB_EQUAL);
+
+	// Load 1.0f into f1.
+	ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
+	STB(portIDReg, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
+	PSQ_L(1, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF, 1, 2);
+	MR(3, muObjectPtrReg);
+	CallBrawlFunc(MU_SET_FRAME_MAT_COL, 12, 1);
+
+	FSUB(1, 1, 1);
+	LWZ(3, muObjectPtrReg, 0x14);
+	LWZ(3, 3, 0x18);
+	LWZ(reg2, 3, 0x00);
+	LWZ(reg2, reg2, 0x28);
+	MTCTR(reg2);
+	BCTRL();
+
+	Label(exitLabel);
+	LFS(31, 30, 0x019C); // Restore Original Instruction
+	ASMEnd();
+}
+
 void psccRandomIcons()
 {
 	ASMStart(0x80697558, codePrefix + "CSS Random Always Uses P1 CSP" + codeSuffix, "");
@@ -950,6 +1004,7 @@ void playerSlotColorChangersV3(bool enabled)
 		psccStoreTeamBattleStatus();
 		psccMiscAdjustments();
 		psccRandomIcons();
+		psccSSSRandomStocks();
 		psccCLR0V4InstallCode();
 		psccEmbedFloatTable();
 		psccCallbackCodes();
