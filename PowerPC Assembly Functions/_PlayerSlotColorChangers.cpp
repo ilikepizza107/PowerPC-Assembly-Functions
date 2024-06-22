@@ -381,48 +381,53 @@ void psccSSSRandomStocks()
 	int reg2 = 12;
 	int portIDReg = 23;
 	int playerKindReg = 24;
+	int isTeamModeReg = 27;
+	int currentTeamReg = 28;
 	int muObjectPtrReg = 29;
+	int constantsPtrReg = 30;
 
+	int teamCaseEndLabel = GetNextLabel();
 	int exitLabel = GetNextLabel();
 
 	const std::string clr0Name = "MenSelmapFaceR_\0";
 	const unsigned long nameEmbedLineCount = 0x4;
 
-	CodeRawStart(codePrefix + "SSS Random Stocks Set CLR0 Frame" + codeSuffix, "");
+	CodeRawStart(codePrefix + "SSS Random Stocks Use CLR0 Coloring" + codeSuffix, "");
 	// Force CPU check to always pass so all players use the same Random Texture.
 	WriteIntToFile(0x046B2FB0); CMPL(24, 24, 0);
 	CodeRawEnd();
 
 	// Set CLR0 Frame
 	ASMStart(0x806B2FE8, "", "");
+	// Embed base CLR0 name string.
 	BL(1 + nameEmbedLineCount);
 	for (unsigned long i = 0; i < clr0Name.size(); i += 0x4)
 	{
 		WriteIntToFile(lava::bytesToFundamental<unsigned long>((unsigned char*)clr0Name.data() + i));
 	}
+	// Pull string address into r4 for use in trying to load it to the stock object.
 	MFLR(4);
+	// And convert Port ID to its ASCII form...
 	ADDI(reg2, portIDReg, 0x30);
-	RLWIMI(reg2, playerKindReg, 3, 0x1C, 0x1C);
+	// ... and also add 0x4 if Player Kind is CPU, to map those to 4 - 7.
+	RLWIMI(reg2, playerKindReg, 2, 0x1D, 0x1D);
+
+	// If, however, we're in Team Mode...
+	CMPLI(isTeamModeReg, 0x1, 0);
+	JumpToLabel(teamCaseEndLabel, bCACB_NOT_EQUAL);
+	// ... then we'll override slot ID with team ID, using same process as the base game to get ID...
+	ADDI(reg2, constantsPtrReg, 0x190);
+	LBZX(reg2, reg2, currentTeamReg);
+	// ... then adding 0x30 again to convert to ASCII.
+	ADDI(reg2, reg2, 0x30);
+	Label(teamCaseEndLabel);
+
+	// Write the number suffix into the name string...
 	STB(reg2, 4, clr0Name.size() - 1);
+	// ... copy the object pointer into r3...
 	MR(3, muObjectPtrReg);
+	// ... and launch!
 	CallBrawlFunc(MU_CHANGE_CLR_ANIM_N_IF, 12, 1);
-	CMPLI(3, 0x0, 0);
-	JumpToLabel(exitLabel, bCACB_EQUAL);
-
-	// Load 1.0f into f1.
-	ADDIS(reg1, 0, FLOAT_CONVERSION_STAGING_LOC >> 0x10);
-	STB(portIDReg, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF);
-	PSQ_L(1, reg1, FLOAT_CONVERSION_STAGING_LOC & 0xFFFF, 1, 2);
-	MR(3, muObjectPtrReg);
-	CallBrawlFunc(MU_SET_FRAME_MAT_COL, 12, 1);
-
-	FSUB(1, 1, 1);
-	LWZ(3, muObjectPtrReg, 0x14);
-	LWZ(3, 3, 0x18);
-	LWZ(reg2, 3, 0x00);
-	LWZ(reg2, reg2, 0x28);
-	MTCTR(reg2);
-	BCTRL();
 
 	Label(exitLabel);
 	LFS(31, 30, 0x019C); // Restore Original Instruction
