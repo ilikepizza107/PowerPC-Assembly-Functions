@@ -1106,7 +1106,7 @@ void CodeMenu()
 	SpecialModeLines.push_back(DBZModePage.CalledFromLine.get());
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
 	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
-	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = true;
+	SpecialModeLines.back()->behaviorFlags[Line::lbf_HIDDEN].value = true;
 	SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
 	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = !PROJECT_PLUS_EX_BUILD;
 	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
