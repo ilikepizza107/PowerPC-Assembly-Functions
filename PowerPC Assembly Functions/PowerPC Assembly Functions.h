@@ -26,6 +26,9 @@ using namespace std;
 #define EON_DEBUG_BUILD false
 #define TOURNAMENT_ADDITION_BUILD false
 
+// Selectively un-does a few changes made in the transition to P+ v3.0 which break functionality on earlier versions.
+#define ENSURE_PRE_PP30_COMPAT false
+
 // Character List Config Constants
 // Defines different base versions of the character lists. 
 // Set the characterListVersion variable equal to one of these values to include all characters up to and including that version.

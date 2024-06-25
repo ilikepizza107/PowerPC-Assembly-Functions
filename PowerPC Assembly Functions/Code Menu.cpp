@@ -1106,7 +1106,8 @@ void CodeMenu()
 	SpecialModeLines.push_back(DBZModePage.CalledFromLine.get());
 	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
 	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
-	SpecialModeLines.back()->behaviorFlags[Line::lbf_HIDDEN].value = true;
+	// War Mode is only visible by default on P+Ex builds based on pre v3.0 P+.
+	SpecialModeLines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !(PROJECT_PLUS_EX_BUILD && ENSURE_PRE_PP30_COMPAT);
 	SpecialModeLines.push_back(new Selection("Gameplay Speed Modifier", { "Off", "1.25", "1.5x", "2.0x", "1/2x", "3/4x" }, 0, SPEED_INDEX));
 	SpecialModeLines.back()->behaviorFlags[Line::lbf_REMOVED].value = !PROJECT_PLUS_EX_BUILD;
 	SpecialModeLines.push_back(new Toggle("Scale Mode", false, SCALE_INDEX));
@@ -1211,7 +1212,9 @@ void CodeMenu()
 
 	PrintCodeMenu();
 
-	//PrimeCodeMenu();	# applied directly to sora_menu_main instead
+#if ENSURE_PRE_PP30_COMPAT
+	PrimeCodeMenu();	// In post P+ v3.0 based builds, this is applied directly to sora_menu_main instead
+#endif
 
 	ControlCodeMenu();
 

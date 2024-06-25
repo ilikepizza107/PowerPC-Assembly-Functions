@@ -115,7 +115,7 @@ int main(int argc, char** argv)
 	std::string logHeaderStr = "PowerPC Assembly Functions (Code Menu Building Utility " + lava::builderVersion;
 	if (!lava::builderFlavor.empty())
 	{
-		logHeaderStr += ":" + lava::builderFlavor;
+		logHeaderStr += ": " + lava::builderFlavor;
 	}
 	logHeaderStr += ")";
 	std::cout << logHeaderStr << "\n";
@@ -150,11 +150,11 @@ int main(int argc, char** argv)
 			{
 				if (PROJECT_PLUS_EX_BUILD == true)
 				{
-					ChangelogOutput << "Project+ EX";
+					ChangelogOutput << "Project+ EX" << (ENSURE_PRE_PP30_COMPAT ? " (Pre P+ v3.0.0)" : "");
 				}
 				else
 				{
-					ChangelogOutput << "Project+";
+					ChangelogOutput << "Project+" << (ENSURE_PRE_PP30_COMPAT ? " (Pre v3.0.0)" : "");
 				}
 				break;
 			}
