@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "_PlayerSlotColorChangers.h"
 
-const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.1.0] ";
+const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.1.1] ";
 const std::string codeSuffix = " [QuickLava]";
 
 // New approach:
@@ -347,24 +347,31 @@ void psccMiscAdjustments()
 	WriteIntToFile(0x040E083C); NOP();
 	CodeRawEnd();
 
-	int colorResetExitLabel = GetNextLabel();
-	ASMStart(0x8068BE94, codePrefix + "Color Choice Resets on Setting PlayerKind to None" + codeSuffix, 
-		"Ensures that colors are reset when players unplug their controllers,\n"
-		"while also providing an easy way of resetting without the use of the added controls."
+	ASMStart(0x806971C0, codePrefix + "Color Choice Resets on Controller Disconnect" + codeSuffix,
+		"Ensures that colors are reset when players unplug their controllers."
 	);
-	// If the PlayerKind we're switching to isn't "None" (ie. 0)...
-	CMPLI(5, 0, 0);
-	// ... then we'll skip this code, exit early.
-	JumpToLabel(colorResetExitLabel, bCACB_NOT_EQUAL);
-	// Otherwise, get the pointer to the relevant line (note: r0 already holds port# * 4)...
-	ORIS(11, 0, PSCC_COLOR_1_LOC >> 0x10);
-	LWZ(11, 11, PSCC_COLOR_1_LOC & 0xFFFF);
-	// ... load the line's default value...
-	LWZ(12, 11, Line::DEFAULT);
-	// ... and write that over the current value.
-	STW(12, 11, Line::VALUE);
-	Label(colorResetExitLabel);
-	MR(27, 5); // Restore Original Instruction
+	{
+		int reg1 = 11;
+		int reg2 = 12;
+		int colorResetExitLabel = GetNextLabel();
+
+		// If we're turning the target slot off...
+		CMPI(4, -1, 0);
+		JumpToLabel(colorResetExitLabel, bCACB_NOT_EQUAL);
+		// .. grab the current ID for the slot..
+		LWZ(reg2, 3, 0x1DC);
+		// ... and grab the pointer to the associated Line.
+		ADDIS(reg1, 0, PSCC_COLOR_1_LOC >> 0x10);
+		RLWIMI(reg1, reg2, 0x2, 0x10, 0x1D);
+		LWZ(reg1, reg1, PSCC_COLOR_1_LOC & 0xFFFF);
+		// Load its default value...
+		LWZ(reg2, reg1, Line::DEFAULT);
+		// ... and write that over the current value to reset its color!
+		STW(reg2, reg1, Line::VALUE);
+
+		Label(colorResetExitLabel);
+		XORI(0, 4, 0x8); // Restore Original Instruction
+	}
 	ASMEnd();
 
 	CodeRawStart(codePrefix + "Port-Specific Stocks Set CLR0 Frame" + codeSuffix,
