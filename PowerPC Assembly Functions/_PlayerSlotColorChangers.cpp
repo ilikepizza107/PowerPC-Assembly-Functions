@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "_PlayerSlotColorChangers.h"
 
-const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.1.1] ";
+const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.1.2] ";
 const std::string codeSuffix = " [QuickLava]";
 
 // New approach:
@@ -358,8 +358,8 @@ void psccMiscAdjustments()
 		// If we're turning the target slot off...
 		CMPI(4, -1, 0);
 		JumpToLabel(colorResetExitLabel, bCACB_NOT_EQUAL);
-		// .. grab the current ID for the slot..
-		LWZ(reg2, 3, 0x1DC);
+		// ... grab the current port ID...
+		LWZ(reg2, 3, 0x1B0);
 		// ... and grab the pointer to the associated Line.
 		ADDIS(reg1, 0, PSCC_COLOR_1_LOC >> 0x10);
 		RLWIMI(reg1, reg2, 0x2, 0x10, 0x1D);
