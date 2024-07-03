@@ -50,7 +50,7 @@ enum characterListVersions
 extern unsigned long characterListVersion;
 std::string getCharacterListVersionName(unsigned long versionID);
 // P+EX Configuration Macros
-#define PROJECT_PLUS_EX_BUILD (true && (BUILD_TYPE == PROJECT_PLUS))
+#define PROJECT_PLUS_EX_BUILD (false && (BUILD_TYPE == PROJECT_PLUS))
 // Controls whether or not externally defined character, rosters, and themes are loaded into their respective lists.
 // Relevant constants are defined in "Code Menu.cpp", and relevant code found in "MainCode.cpp".
 #define COLLECT_EXTERNAL_EX_CHARACTERS (true)
