@@ -138,8 +138,8 @@ namespace xml
 		const std::string addonTag = "addon";
 		const std::string autoDetectTag = "doAutoDetect";
 		const std::string shortnameTag = "shortName";
-		const std::string localLOCtag = "localLOC";
-		const std::string workingMemorySize = "workingMemSize";
+		const std::string workingMemorySizeTag = "workingMemSize";
+		const std::string addonNeedsINDEXFileTag = "makeINDEXFile";
 	}
 
 	void fixIndentationOfChildNodes(pugi::xml_node& targetNode)
@@ -1794,7 +1794,8 @@ namespace xml
 		addonName = rootNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 		shortName = collectedShortName;
 		versionName = rootNode.attribute(configXMLConstants::versionTag.c_str()).as_string("");
-		workingMemorySize = rootNode.attribute(configXMLConstants::workingMemorySize.c_str()).as_uint(0x00);
+		workingMemorySize = rootNode.attribute(configXMLConstants::workingMemorySizeTag.c_str()).as_uint(0x00);
+		needsINDEXFile = rootNode.attribute(configXMLConstants::addonNeedsINDEXFileTag.c_str()).as_bool(0x00);
 
 		if (workingMemorySize > c_maxSingleAddonWorkingSpaceSize)
 		{
@@ -1846,6 +1847,101 @@ namespace xml
 	std::filesystem::path addon::getBuildASMPath()
 	{
 		return "Source/" + addonOutputFolderName + shortName.str() + "/" + addonInputSourceFilename;
+	}
+	void addon::writeEmbedsToMenuFileAndBank(std::ostream& menuFile, std::ostream& aliasBankOutput)
+	{
+		// Initialize the address value we'll be iterating as we establish new INDEX values!
+		std::size_t currAddr = std::size_t(START_OF_CODE_MENU_HEADER) + menuFile.tellp();
+
+		// Label the beginning of its aliases in the bank...
+		aliasBankOutput << "# Addon \"" << addonName << "\" Lines\n";
+		// ... and record the the beginning of the range occupied by this Addon's Lines' LOC values.
+		baseLOC = currAddr;
+		// If this Addon requests any working memory...
+		if (workingMemorySize > 0x00)
+		{
+			// ... set it up! Output the .alias entries for it...
+			std::string locNameBase = shortName.str() + "_WORKING_MEM_LOC";
+			aliasBankOutput << "# Working Memory (0x" << lava::numToHexStringWithPadding(workingMemorySize, 2) << " bytes)";
+			aliasBankOutput << " for \"" << addonName << "\"\n";
+			aliasBankOutput << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
+			aliasBankOutput << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
+			aliasBankOutput << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
+			// ... then make space for it in the menu cmnu!
+			// Ensure we're word-aligned as well; if we need to add some padding to fill a word then do it.
+			if (workingMemorySize % 0x4)
+			{
+				workingMemorySize += 0x4 - (workingMemorySize % 0x4);
+			}
+			menuFile.write(std::vector<char>(workingMemorySize, 0x00).data(), workingMemorySize);
+			// And finally, push the current address forwards to account for the space.
+			currAddr += workingMemorySize;
+		}
+		// Then, iterate through each page target...
+		for (auto& currPageTarget : targetPages)
+		{
+			// ... and for each of their lines...
+			for (auto& currLine : currPageTarget.second.lineMap)
+			{
+				// ... output a set of .alias entries for it (one joined, and two split).
+				std::string locNameBase = shortName.str() + "_" + currLine.first.str() + "_LOC";
+				aliasBankOutput << "# Line \"" << currLine.second->lineName << "\" in \"" << addonName << "\"\n";
+				aliasBankOutput << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
+				aliasBankOutput << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
+				aliasBankOutput << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
+				// Lastly, write the line's INDEX value into the menu cmnu...
+				lava::writeRawDataToStream(menuFile, currLine.second->INDEX);
+				// ... and scoot the address forwards 0x4 bytes to prepare for the next line.
+				currAddr += 0x4;
+			}
+		}
+		// Write out a newline to separate the end of this Addon with the next one.
+		aliasBankOutput << "\n";
+	}
+	bool addon::generateINDEXFile()
+	{
+		bool result = 0;
+
+		// If we don't yet have a shortName or a baseLOC, skip, since we need that info to place and populate the file!
+		if (!shortName.empty() && baseLOC != SIZE_MAX)
+		{
+			// If the Addon's output directory exists...
+			std::filesystem::path destFolderPath = getOutputDirPath();
+			if (std::filesystem::is_directory(destFolderPath))
+			{
+				// ... then attempt to create our output file!
+				std::ofstream outputFile(destFolderPath / addonINDEXFileFilename, std::ios_base::out | std::ios_base::binary);
+				// If we were successful, proceed with populating the file!
+				if (outputFile.is_open())
+				{
+					// If the addon has Working Memory...
+					if (workingMemorySize > 0x00)
+					{
+						// ... write its baseLOC to the file to denote its position.
+						lava::writeRawDataToStream(outputFile, baseLOC);
+					}
+					// Otherwise...
+					else
+					{
+						// ... write 0xFFFFFFFF instead to denote that it isn't present.
+						lava::writeRawDataToStream(outputFile, SIZE_MAX);
+					}
+
+					// Then, iterate through each page target...
+					for (const auto& currPageTarget : targetPages)
+					{
+						// ... and for each of the lines in that Page Target...
+						for (auto currLine : currPageTarget.second.lineMap)
+						{
+							// ... write out that line's INDEX value!
+							lava::writeRawDataToStream(outputFile, currLine.second->INDEX);
+						}
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 
 	std::map<lava::shortNameType, std::shared_ptr<Page>> collectedNewPages{};
@@ -1924,55 +2020,18 @@ namespace xml
 				// Write out a header for the file (prefixed with a '#' so it doesn't show up in GCTRM)
 				writeBorderedStringToStream(addonAliasBankStream, "#[CM_Addons] Code Menu Addons Line Alias LOC Bank", 0x10, '#');
 				// For each collected Addon...
-				for (addon currAddon : collectedAddons)
+				for (addon& currAddon : collectedAddons)
 				{
 					// ... copy its folder into the output directory, renamed according to its shortName!
 					std::filesystem::copy(currAddon.inputDirPath, currAddon.getOutputDirPath());
-
-					// Additionally, mark the beginning of its aliases in the bank...
-					addonAliasBankStream << "# Addon \"" << currAddon.addonName << "\" Lines\n";
-					// and mark down the the beginning of the range occupied by this Addon's Lines' LOC values.
-					currAddon.baseLOC = currAddr;
-					// If this Addon requests any working memory...
-					if (currAddon.workingMemorySize != 0x00)
+					// Handle setting up the addon's necessary embeds...
+					currAddon.writeEmbedsToMenuFileAndBank(outputStream, addonAliasBankStream);
+					// ... and if it needs an external LOC file...
+					if (currAddon.needsINDEXFile)
 					{
-						// ... set it up! Output the .alias entries for it...
-						std::string locNameBase = currAddon.shortName.str() + "_WORKING_MEM_LOC";
-						addonAliasBankStream << "# Working Memory (0x" << lava::numToHexStringWithPadding(currAddon.workingMemorySize, 2) << " bytes)";
-						addonAliasBankStream << " for \"" << currAddon.addonName << "\"\n";
-						addonAliasBankStream << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
-						addonAliasBankStream << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
-						addonAliasBankStream << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
-						// ... then make space for it in the menu cmnu!
-						// Ensure we're word-aligned as well; if we need to add some padding to fill a word then do it.
-						if (currAddon.workingMemorySize % 0x4)
-						{
-							currAddon.workingMemorySize += 0x4 - (currAddon.workingMemorySize % 0x4);
-						}
-						outputStream.write(std::vector<char>(currAddon.workingMemorySize, 0x00).data(), currAddon.workingMemorySize);
-						// And finally, push the current address forwards to account for the space.
-						currAddr += currAddon.workingMemorySize;
+						// ... generate it!
+						currAddon.generateINDEXFile();
 					}
-					// Then, iterate through each page target...
-					for (auto currPageTarget : currAddon.targetPages)
-					{
-						// ... and for each of their lines...
-						for (auto currLine : currPageTarget.second.lineMap)
-						{
-							// ... output a set of .alias entries for it (one joined, and two split).
-							std::string locNameBase = currAddon.shortName.str() + "_" + currLine.first.str() + "_LOC";
-							addonAliasBankStream << "# Line \"" << currLine.second->lineName << "\" in \"" << currAddon.addonName << "\"\n";
-							addonAliasBankStream << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
-							addonAliasBankStream << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
-							addonAliasBankStream << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
-							// Lastly, write the line's INDEX value into the menu cmnu...
-							lava::writeRawDataToStream(outputStream, currLine.second->INDEX);
-							// ... and scoot the address forwards 0x4 bytes to prepare for the next line.
-							currAddr += 0x4;
-						}
-					}
-					// Write out a newline to separate the end of this Addon with the next one.
-					addonAliasBankStream << "\n";
 				}
 			}
 			// Otherwise, if the Alias bank stream couldn't be opened...

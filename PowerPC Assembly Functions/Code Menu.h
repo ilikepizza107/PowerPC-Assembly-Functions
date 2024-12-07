@@ -350,6 +350,7 @@ extern const std::string netMenuConfigXMLFileName;
 extern const std::string addonInputFolderPath;
 extern const std::string addonInputSourceFilename;
 extern const std::string addonInputConfigFilename;
+extern const std::string addonINDEXFileFilename;
 extern const std::string addonAliasBankFilename;
 extern const std::string addonOutputFolderName;
 extern const std::string symbolMapInputFileName;

@@ -85,6 +85,8 @@ namespace xml
 		std::size_t workingMemorySize = 0x00;
 		// Denotes where this addons' line INDEX values start in memory.
 		std::size_t baseLOC = SIZE_MAX;
+		// Denotes whether we need to create an INDEX file in the output directory for this addon.
+		bool needsINDEXFile = 0;
 
 		addon() {};
 		bool populate(std::string inputDirPathIn, lava::outputSplitter& logOutput);
@@ -92,6 +94,9 @@ namespace xml
 		std::filesystem::path getInputASMPath();
 		std::filesystem::path getOutputDirPath();
 		std::filesystem::path getBuildASMPath();
+
+		void writeEmbedsToMenuFileAndBank(std::ostream& menuFile, std::ostream& aliasBankFile);
+		bool generateINDEXFile();
 	};
 	constexpr unsigned long c_maxSingleAddonWorkingSpaceSize = 0x400;
 	constexpr unsigned long c_maxAddonCount = 0x100;

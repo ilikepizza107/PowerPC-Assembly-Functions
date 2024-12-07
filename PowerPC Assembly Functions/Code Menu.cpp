@@ -432,6 +432,7 @@ const std::string netMenuConfigXMLFileName = "Net-" + menuConfigXMLFileName;
 const std::string addonInputFolderPath = "./Addons/";
 const std::string addonInputSourceFilename = "Source.asm";
 const std::string addonInputConfigFilename = "Definition.xml";
+const std::string addonINDEXFileFilename = "idx.dat";
 const std::string addonAliasBankFilename = "AddonAliases.asm";
 const std::string addonOutputFolderName = "CM_Addons/";
 const std::string outputFolder = "./Code_Menu_Output/";
