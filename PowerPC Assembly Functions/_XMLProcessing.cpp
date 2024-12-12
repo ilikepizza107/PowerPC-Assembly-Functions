@@ -40,6 +40,7 @@ namespace xml
 		const std::string menuLinePageTag = "codeMenuPage";
 		const std::string menuLineSubmenuTag = "codeMenuSubmenu";
 		const std::string menuLineSelectionTag = "codeMenuSelection";
+		const std::string menuLineSelectionMirrorTag = "codeMenuSelectionMirror";
 		const std::string menuLineToggleTag = "codeMenuToggle";
 		const std::string menuLineIntTag = "codeMenuInt";
 		const std::string menuLineFloatTag = "codeMenuFloat";
@@ -51,7 +52,6 @@ namespace xml
 		const std::string selectionDefaultTag = "defaultOption";
 		const std::string selectionOptionTag = "option";
 		const std::string formatTag = "format";
-
 		// Line Behavior Flag Tags
 		struct lbfTagVec : std::vector<std::string>
 		{
@@ -140,6 +140,7 @@ namespace xml
 		const std::string shortnameTag = "shortName";
 		const std::string workingMemorySizeTag = "workingMemSize";
 		const std::string addonNeedsINDEXFileTag = "makeINDEXFile";
+		const std::string selectionMirrorSourceTag = "mirrorSourceShortName";
 	}
 
 	void fixIndentationOfChildNodes(pugi::xml_node& targetNode)
@@ -1610,12 +1611,34 @@ namespace xml
 		allowedChanges[lineFields::lf_ValDefault] = 1;
 		populated = applySelectionLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
 	}
+	void addonLine::buildSelectionMirrorLine(const pugi::xml_node& sourceNode, const addon* parentAddon)
+	{
+		if (parentAddon != nullptr)
+		{
+			lava::shortNameType sourceShortName = sourceNode.attribute(configXMLConstants::selectionMirrorSourceTag.c_str()).as_string("");
+			if (!sourceShortName.empty())
+			{
+				for (const auto& pageTarget : parentAddon->targetPages)
+				{
+					auto findRes = pageTarget.second.lineMap.find(sourceShortName);
+					if (findRes != pageTarget.second.lineMap.cend())
+					{
+						linePtr = std::make_shared<SelectionMirror>(*(Selection*)findRes->second->linePtr.get(), lineName, 0, this->INDEX);
+						fieldChangeArr allowedChanges{};
+						allowedChanges[lineFields::lf_ValDefault] = 1;
+						populated = applySelectionLineSettingsFromNode(sourceNode, linePtr.get(), allowedChanges);
+						break;
+					}
+				}
+			}
+		}
+	}
 	void addonLine::buildCommentLine(const pugi::xml_node& sourceNode)
 	{
 		std::string text = sourceNode.attribute(configXMLConstants::textTag.c_str()).as_string("");
 		linePtr = std::make_shared<Comment>(text);
 	}
-	bool addonLine::populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput)
+	bool addonLine::populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput, const addon* parentAddon)
 	{
 		bool lineTypeUnrecognized = 0;
 
@@ -1651,6 +1674,15 @@ namespace xml
 			{
 				buildSelectionLine(sourceNode);
 			}
+			else if (sourceNode.name() == configXMLConstants::menuLineSelectionMirrorTag)
+			{
+				buildSelectionMirrorLine(sourceNode, parentAddon);
+				if (linePtr.get() == nullptr)
+				{
+					logOutput.write("[ERROR] Failed to create Selection Mirror \"" + lineName + "\" (ShortName \"" + shortName.str() + "\"): unable to locate source line!\n"
+						, ULONG_MAX, lava::outputSplitter::sOS_CERR);
+				}
+			}
 			else if (sourceNode.name() == configXMLConstants::menuLineToggleTag)
 			{
 				buildToggleLine(sourceNode);
@@ -1678,10 +1710,13 @@ namespace xml
 		return linePtr.get() != nullptr;
 	}
 
-	bool addonPageTarget::populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput)
+	bool addonPageTarget::populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput, const addon* parentAddon)
 	{
 		bool errorOccurred = 0;
 
+		// Clear the Line Storage Vector and Map!
+		lines.clear();
+		lineMap.clear();
 		// Grab the target's shortName.
 		shortName = sourceNode.attribute(configXMLConstants::shortnameTag.c_str()).as_string("");
 		// If the collected shortName valid...
@@ -1694,7 +1729,7 @@ namespace xml
 				// ... create a corresponding line object... 
 				std::shared_ptr<addonLine> tempLine = std::make_shared<addonLine>();
 				// ... attempt to populate using the associated node. If we populate the line successfully...
-				if (tempLine->populate(childNode, logOutput))
+				if (tempLine->populate(childNode, logOutput, parentAddon))
 				{
 					// ... verify that it's shortName (if it has one) is free to use. If so...
 					if (tempLine->shortName.empty() || lineShortNameIsFree(tempLine->shortName))
@@ -1808,26 +1843,29 @@ namespace xml
 		// ... and record the input path!
 		inputDirPath = inputDirPathIn;
 
+		// Create an entry in the page target map for temporarily staging pages while they populate!
+		const lava::shortNameType tempPageShortName = "";
+		auto tempPageItr = targetPages.emplace(tempPageShortName, addonPageTarget()).first;
 		// Then, for each page node...
 		for (pugi::xml_node pageNode : rootNode.children(configXMLConstants::menuLinePageTag.c_str()))
 		{
-			// ... construct a temp page target...
-			addonPageTarget currTarget;
 			// ... and attempt to populate it. If successful...
-			if (currTarget.populate(pageNode, logOutput))
+			if (tempPageItr->second.populate(pageNode, logOutput, this))
 			{
-				// ... add it to our list of pageTargets.
-				targetPages[currTarget.shortName] = currTarget;
+				// ... copy the temporary entry into its own spot corresponding to its specified ShortName!
+				targetPages[tempPageItr->second.shortName] = tempPageItr->second;
 				result = 1;
 			}
 			// Otherwise...
 			else
 			{
 				// ... report the error!
-				logOutput.write("[ERROR] Unable to apply Page Target \"" + currTarget.shortName.str() + "\" due to the above errors!\n"
+				logOutput.write("[ERROR] Unable to apply Page Target \"" + tempPageItr->second.shortName.str() + "\" due to the above errors!\n"
 					, ULONG_MAX, lava::outputSplitter::sOS_CERR);
 			}
 		}
+		// Finally, delete the staging entry!
+		targetPages.erase(tempPageItr);
 
 		return result;
 	}
