@@ -1965,15 +1965,20 @@ namespace xml
 						lava::writeRawDataToStream(outputFile, SIZE_MAX);
 					}
 
+					// We want the line in the output to be ordered irrespective of page, so create a temporary map.
+					std::map<lava::shortNameType, std::shared_ptr<addonLine>> sortedLines{};
 					// Then, iterate through each page target...
 					for (const auto& currPageTarget : targetPages)
 					{
-						// ... and for each of the lines in that Page Target...
-						for (auto currLine : currPageTarget.second.lineMap)
-						{
-							// ... write out that line's INDEX value!
-							lava::writeRawDataToStream(outputFile, currLine.second->INDEX);
-						}
+						// ... and add its lines to our map to sort them!
+						const addonPageTarget* pagePtr = &currPageTarget.second;
+						sortedLines.insert(pagePtr->lineMap.cbegin(), pagePtr->lineMap.cend());
+					}
+					// Finally, iterate through the sorted lines...
+					for (const auto& currLine : sortedLines)
+					{
+						// ... and write their INDEX values out to file!
+						lava::writeRawDataToStream(outputFile, currLine.second->INDEX);
 					}
 				}
 			}
