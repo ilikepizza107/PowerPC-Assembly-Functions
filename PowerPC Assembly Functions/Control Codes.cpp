@@ -966,7 +966,7 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 
 				// Check if should change stage slot
 				int isSameStageSlot = GetNextLabel();
-				LoadByteToReg(reg6, 0x806AEE18); // RSS_EXDATA_BONUS
+				LoadByteToReg(reg6, 0x8042C840); // RSS_EXDATA_BONUS
 				ANDI(0, reg6, 0x20);
 				JumpToLabel(isSameStageSlot, bCACB_NOT_EQUAL);
 				
@@ -1006,7 +1006,7 @@ void InfiniteFriendlies(int reg1, int reg2, int reg3, int reg4, int reg5, int re
 
 				// remove flag in RSS_EXDATA_BONUS to allow random alts if on
 				ANDI(reg6, reg6, 0xEF);
-				StoreByteAtAddr(reg6, reg3, 0x806AEE18);
+				StoreByteAtAddr(reg6, reg3, 0x8042C840);
 
 				// write ! to STEX to signify force reload of stage
 				SetRegister(reg4, 0x21);
