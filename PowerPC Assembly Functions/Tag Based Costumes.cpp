@@ -16,7 +16,7 @@ void tagBasedCostumes() {
 
 	reloadCostumeAfterTagSelect();
 
-	teamBattleTagReload();
+	//teamBattleTagReload();
 
 	updateTagsWhenOptionChanged();
 }
@@ -99,10 +99,11 @@ void setTagCostume() {
 	LoadWordToReg(reg1, TAG_COSTUME_TOGGLE_INDEX + 8);
 	If(reg1, NOT_EQUAL_I, 2); { //not off
 		If(reg1, EQUAL_I, 0); { //on, no teams
-			LoadByteToReg(reg2, TEAM_SETTINGS_LOC); //= 1 if team
-			LoadByteToReg(reg3, TEAM_SETTINGS_LOC + 3); //= 1 if S4 teams
-			If(reg2, EQUAL_I, 1); { //in teams
-				If(reg3, EQUAL_I, 1); { //S4 teams
+			LoadWordToReg(reg2, 0x805a00e0);
+			LWZ(reg2, reg2, 0x10);
+			LBZ(reg2, reg2, 0x33);
+			If(reg2, NOT_EQUAL_I, 0); { //in teams
+				If(reg2, EQUAL_I, 2); { //S4 teams
 					SetRegister(reg1, 1); //should change costume
 				} EndIf();
 			} Else(); {
