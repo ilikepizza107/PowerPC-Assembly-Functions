@@ -485,7 +485,7 @@ public:
 	{
 		// Makes line immune to being reset to its default value!
 		LINE_FLAG_IGNORE_INDIRECT_RESET = 0b00000001,
-		LINE_FLAG_SKIP_PRINTING         = 0b00000010
+		LINE_FLAG_HIDE_FROM_USER         = 0b00000010,
 	};
 
 	Line();

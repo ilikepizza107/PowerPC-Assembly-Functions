@@ -579,10 +579,10 @@ void Line::WriteLineData(vector<u8> SelectionOffsets)
 	{
 		Color = UNSELECTABLE_LINE_COLOR_OFFSET;
 	}
-	Flags &= ~Line::LINE_FLAG_SKIP_PRINTING;
+	Flags &= ~Line::LINE_FLAG_HIDE_FROM_USER;
 	if (behaviorFlags[Line::lbf_HIDDEN])
 	{
-		Flags |= Line::LINE_FLAG_SKIP_PRINTING;
+		Flags |= Line::LINE_FLAG_HIDE_FROM_USER;
 	}
 	Flags &= ~Line::LINE_FLAG_IGNORE_INDIRECT_RESET;
 	if (behaviorFlags[Line::lbf_STICKY])
@@ -907,9 +907,7 @@ void Page::GetSelectableLines(vector<int>& SelectableLines)
 		Line* currLine = Lines[i];
 		if (currLine->type != COMMENT_LINE && currLine->type != PRINT_LINE)
 		{
-			if (!currLine->behaviorFlags[Line::lbf_UNSELECTABLE] &&
-				!currLine->behaviorFlags[Line::lbf_HIDDEN] &&
-				!currLine->behaviorFlags[Line::lbf_REMOVED])
+			if (!currLine->behaviorFlags[Line::lbf_UNSELECTABLE] && !currLine->behaviorFlags[Line::lbf_REMOVED])
 			{
 				SelectableLines.push_back(i);
 			}
@@ -2699,28 +2697,43 @@ void ExecuteAction(int ActionReg, int ResetAccumulatorReg)
 	int TempReg6 = 11;
 	int TempReg7 = 12;
 
-	int move = GetNextLabel();
+	int retryActionLabel = GetNextLabel();
+	int abortActionLabel = GetNextLabel();
 
+	Label(retryActionLabel);
 	LoadWordToReg(PageReg, CURRENT_PAGE_PTR_LOC);
 	LWZ(LineReg, PageReg, Page::CURRENT_LINE_OFFSET);
 	ADD(LineReg, LineReg, PageReg);
 	LBZ(TypeReg, LineReg, Line::TYPE);
 
 	//move
+	int doMoveLabel = GetNextLabel();
 	If(ActionReg, EQUAL_I, MOVE_UP); {
 		//move up
 		LHZ(TempReg1, LineReg, Line::UP);
 
-		JumpToLabel(move);
+		JumpToLabel(doMoveLabel);
 	}EndIf();
 	If(ActionReg, EQUAL_I, MOVE_DOWN); {
 		//move down
 		LHZ(TempReg1, LineReg, Line::DOWN);
 
-		Label(move);
+		Label(doMoveLabel);
+		// Attempt the move...
 		Move(LineReg, PageReg, TempReg1, TempReg2, TempReg3);
+		// ... and compare the line we landed on with the current line.
+		CMPL(LineReg, TempReg1, 0);
+		// If we landed back in the same place, this is the only selectable line on the page, so abort the move.
+		JumpToLabel(abortActionLabel, bCACB_EQUAL);
 
-		// Play sound for moving to a different line.
+		// Otherwise, if we did land on a new line, grab its flag byte...
+		LBZ(TempReg1, TempReg2, Line::FLAGS);
+		// ... and see if it's hidden from printing. If so...
+		ANDI(TempReg1, TempReg1, Line::LINE_FLAGS_FIELDS::LINE_FLAG_HIDE_FROM_USER);
+		// ... then we want to skip over it instead of selecting it, so we'll just retry the move!
+		JumpToLabel(retryActionLabel, bCACB_NOT_EQUAL);
+
+		// If we've successfully moved, we can now play the sound for moving to a different line.
 		ADDI(4, 0, sii_SND_SE_SYSTEM_CURSOR);
 		JumpToLabel(getPlaySELabel(), bCACB_UNSPECIFIED, 1);
 	}EndIf();
@@ -2792,6 +2805,8 @@ void ExecuteAction(int ActionReg, int ResetAccumulatorReg)
 	ADDI(4, 0, sii_SND_SE_SYSTEM_CANCEL);
 	// ... and play it if the Accumulator wasn't 0 (ie. the previous check against 0 returned not equal).
 	JumpToLabel(getPlaySELabel(), bCACB_NOT_EQUAL, 1);
+
+	Label(abortActionLabel);
 }
 
 // r3 = LineReg, r4 = LineTypeReg, r5 = PageReg, r6 = IsIndirectReg, r7 = StackReg, r8 - r12 = Work Regs (modifed)
@@ -3082,6 +3097,7 @@ void ModifyLineValueSubroutine()
 	BLR();
 }
 
+// Returns New Line Address in TempReg1!
 void Move(int LineReg, int PageReg, int NextLineOffset, int TempReg1, int TempReg2) {
 	LBZ(TempReg2, LineReg, Line::COLOR);
 	XORI(TempReg2, TempReg2, 0x4);
@@ -3559,7 +3575,7 @@ void PrintCodeMenuLine(int LinePtrReg, int SettingsPtrReg, int ColorArrayPtrReg,
 {
 	int skipPrintingLabel = GetNextLabel();
 	LBZ(TempReg2, LinePtrReg, Line::FLAGS);
-	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_SKIP_PRINTING);
+	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_HIDE_FROM_USER);
 	JumpToLabel(skipPrintingLabel, bCACB_NOT_EQUAL);
 
 	LBZ(TempReg2, LinePtrReg, Line::TYPE);
