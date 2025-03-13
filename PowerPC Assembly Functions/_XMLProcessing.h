@@ -34,6 +34,9 @@ namespace xml
 	};
 	typedef std::array<bool, lineFields::lc__COUNT> fieldChangeArr;
 
+	// Addon Type Forward Decl
+	struct addon;
+
 	// A bundle which holds the details for an addon line!
 	struct addonLine
 	{
@@ -51,11 +54,12 @@ namespace xml
 		void buildFloatLine(const pugi::xml_node& sourceNode);
 		void buildToggleLine(const pugi::xml_node& sourceNode);
 		void buildSelectionLine(const pugi::xml_node& sourceNode);
+		void buildSelectionMirrorLine(const pugi::xml_node& sourceNode, const addon* parentAddon);
 		void buildCommentLine(const pugi::xml_node& sourceNode);
 
 	public:
 		addonLine() {};
-		bool populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput);
+		bool populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput, const addon* parentAddon = nullptr);
 	};
 	struct addonPageTarget
 	{
@@ -66,7 +70,7 @@ namespace xml
 		// Map of line shortnames to their structs.
 		std::map<lava::shortNameType, std::shared_ptr<addonLine>> lineMap{};
 
-		bool populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput);
+		bool populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput, const addon* parentAddon = nullptr);
 		bool lineShortNameIsFree(lava::shortNameType nameIn) const;
 	};
 	struct addon
@@ -85,6 +89,8 @@ namespace xml
 		std::size_t workingMemorySize = 0x00;
 		// Denotes where this addons' line INDEX values start in memory.
 		std::size_t baseLOC = SIZE_MAX;
+		// Denotes whether we need to create an INDEX file in the output directory for this addon.
+		bool needsINDEXFile = 0;
 
 		addon() {};
 		bool populate(std::string inputDirPathIn, lava::outputSplitter& logOutput);
@@ -92,6 +98,9 @@ namespace xml
 		std::filesystem::path getInputASMPath();
 		std::filesystem::path getOutputDirPath();
 		std::filesystem::path getBuildASMPath();
+
+		void writeEmbedsToMenuFileAndBank(std::ostream& menuFile, std::ostream& aliasBankFile);
+		bool generateINDEXFile();
 	};
 	constexpr unsigned long c_maxSingleAddonWorkingSpaceSize = 0x400;
 	constexpr unsigned long c_maxAddonCount = 0x100;
