@@ -1104,7 +1104,7 @@ void CodeMenu()
 	SpecialModeLines.push_back(new Comment("Special Modes"));
 	SpecialModeLines.push_back(ConstantsPage.CalledFromLine.get());
 	SpecialModeLines.push_back(DBZModePage.CalledFromLine.get());
-	SpecialModeLines.push_back(new Toggle("Random Angle Mode", false, RANDOM_ANGLE_INDEX));
+	SpecialModeLines.push_back(new Selection("Random Angle Mode", {"Off", "True Random", "Static Random"}, 0, RANDOM_ANGLE_INDEX));
 	SpecialModeLines.push_back(new Toggle("War Mode", false, WAR_MODE_INDEX));
 	// War Mode is only visible by default on P+Ex builds based on pre v3.0 P+.
 	SpecialModeLines.back()->behaviorFlags[Line::lbf_HIDDEN].value = !(PROJECT_PLUS_EX_BUILD && ENSURE_PRE_PP30_COMPAT);
