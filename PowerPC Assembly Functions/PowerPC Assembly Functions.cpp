@@ -1583,9 +1583,14 @@ void WriteStringToMem(string Text, int AddressReg)
 void WriteVectorToMem(vector<int> Values, int AddressReg)
 {
 	int offset = 0;
+	int prevX = Values.front() -1;
 	for (int x : Values) {
-		SetRegister(4, x);
+		if (prevX != x)
+		{
+			SetRegister(4, x);
+		}
 		STW(4, AddressReg, offset);
+		prevX = x;
 		offset += 4;
 	}
 }
