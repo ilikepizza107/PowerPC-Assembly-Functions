@@ -5,7 +5,7 @@
 
 #if BUILD_TYPE == PROJECT_PLUS // If the program is configured by default for P+ builds...
 	#if PROJECT_PLUS_EX_BUILD // ... and this is a P+EX build... 
-		unsigned long characterListVersion = characterListVersions::clv_PPEX_WALUIGI; // ... we'll default to the current version's character list,
+		unsigned long characterListVersion = characterListVersions::clv_PPEX_SCEPTILE; // ... we'll default to the current version's character list,
 		string MAIN_FOLDER = "P+EX/./."; // use the "P+EX" base directory,
 		std::string MENU_NAME = "Project+Ex Code Menu"; // and use the P+EX menu name.
 
@@ -30,8 +30,8 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 	"P+EX (Ridley)",
 	"P+EX (Waluigi)",
 	"P+EX (Alloys)",
-	"P+EX (Dark Samus)",
 	"P+EX (Sceptile)",
+	"P+EX (Dark Samus)",
 };
 std::string getCharacterListVersionName(unsigned long versionID)
 {

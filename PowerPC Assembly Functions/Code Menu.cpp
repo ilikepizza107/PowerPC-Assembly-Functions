@@ -184,13 +184,13 @@ void buildCharacterIDLists()
 		characterNameToIDMap.emplace("Yellow Alloy", LCSI_ALLOY_YELLOW);
 		characterNameToIDMap.emplace("Green Alloy", LCSI_ALLOY_GREEN);
 	}
-	if (characterListVersion >= characterListVersions::clv_PPEX_DARK_SAMUS)
-	{
-		characterNameToIDMap.emplace("Dark Samus", LCSI_DARK_SAMUS);
-	}
 	if (characterListVersion >= characterListVersions::clv_PPEX_SCEPTILE)
 	{
 		characterNameToIDMap.emplace("Sceptile", LCSI_SCEPTILE);
+	}
+	if (characterListVersion >= characterListVersions::clv_PPEX_DARK_SAMUS)
+	{
+		characterNameToIDMap.emplace("Dark Samus", LCSI_DARK_SAMUS);
 	}
 
 	unzipMapToVectors(characterNameToIDMap, CHARACTER_LIST, CHARACTER_ID_LIST);
