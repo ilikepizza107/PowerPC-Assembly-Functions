@@ -490,7 +490,7 @@ namespace xml
 		}
 		else
 		{
-			logOutput << "[WARNING] Character Declaration block parsed, but no valid entries were found!\n";
+			logOutput << "[NOTE] Character Declaration block parsed, but no valid entries were found!\n";
 		}
 	}
 	void regenEXCharacterDeclsInXML(pugi::xml_node_iterator& characterDeclNodeItr, const std::vector<std::pair<std::string, u16>>& nameIDPairs)
@@ -635,7 +635,7 @@ namespace xml
 		// Otherwise, note that nothing was found.
 		else
 		{
-			logOutput << "[WARNING] Roster Declaration block parsed, but no valid entries were found!\n";
+			logOutput << "[NOTE] Roster Declaration block parsed, but no valid entries were found!\n";
 		}
 	}
 	void regenRosterDeclsInXML(pugi::xml_node_iterator& rosterDeclNodeItr, const std::vector<std::pair<std::string, std::string>>& tempRosterList)
@@ -734,7 +734,7 @@ namespace xml
 		// Otherwise, note that nothing was found.
 		else
 		{
-			logOutput << "[WARNING] Theme Declaration block parsed, but no valid entries were found!\n";
+			logOutput << "[NOTE] Theme Declaration block parsed, but no valid entries were found!\n";
 		}
 	}
 
@@ -1055,7 +1055,7 @@ namespace xml
 					}
 					else
 					{
-						logOutput << "[WARNING] Comment Declaration block parsed, but no valid entries were found!\n";
+						logOutput << "[NOTE] Comment Declaration block parsed, but no valid entries were found!\n";
 					}
 				}
 			}
@@ -1184,7 +1184,7 @@ namespace xml
 						else
 						{
 							// ... report that we didn't find anything.
-							logOutput << "[WARNING] Searched Addons directory, but found no potential Addons.\n";
+							logOutput << "[NOTE] Searched Addons directory, but found no potential Addons.\n";
 						}
 					}
 					// Otherwise....
@@ -1318,7 +1318,7 @@ namespace xml
 								}
 								else
 								{
-									logOutput << "[WARNING] Color Definition Block parsed, but no valid entries found!\n";
+									logOutput << "[NOTE] Color Definition Block parsed, but no valid entries found!\n";
 								}
 							}
 
@@ -1333,7 +1333,7 @@ namespace xml
 								}
 								else
 								{
-									logOutput << "[WARNING] Scheme Definition Block parsed, but no valid entries found!\n";
+									logOutput << "[NOTE] Scheme Definition Block parsed, but no valid entries found!\n";
 								}
 							}
 
