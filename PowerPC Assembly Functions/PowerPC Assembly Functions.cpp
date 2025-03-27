@@ -2051,32 +2051,38 @@ void IfInVersus(int reg) {
 
 void LoadFile(string filePath, int destination, int reg1, int reg2, bool loadFromSD)
 {
-	SetRegister(reg1, STRING_BUFFER);
+	const int stackSize = 0x50;
+	STWU(1, 1, -stackSize);
+	MFLR(0);
+	STW(0, 1, stackSize + 0x4);
 
-	SetRegister(reg2, STRING_BUFFER + 0x18);
-	STW(reg2, reg1, 0); //file path ptr
-
-	SetRegister(reg2, 0);
-	STW(reg2, reg1, 4);
-	STW(reg2, reg1, 8);
-	STW(reg2, reg1, 0x10);
-
-	SetRegister(reg2, destination);
-	STW(reg2, reg1, 0xC); //storage loc
-
-	SetRegister(reg2, -1);
-	STW(reg2, reg1, 0x14);
-
-	ADDI(reg2, reg1, 0x18);
+	ADDI(3, 1, 0x08);
+	ADDI(reg2, 3, 0x18);
 	WriteStringToMem(filePath, reg2);
 
-	MR(3, reg1);
+	STW(reg2, 3, 0); //file path ptr
+
+	SetRegister(reg2, 0);
+	STW(reg2, 3, 4);
+	STW(reg2, 3, 8);
+	STW(reg2, 3, 0x10);
+
+	SetRegister(reg2, destination);
+	STW(reg2, 3, 0xC); //storage loc
+
+	SetRegister(reg2, -1);
+	STW(reg2, 3, 0x14);
+
 	if (loadFromSD) {
-		CallBrawlFunc(0x8001cbf4); //readSDFile
+		CallBrawlFunc(0x8001CBF4); //readSDFile
 	}
 	else {
 		CallBrawlFunc(0x8001BF0C); //readFile
 	}
+
+	LWZ(0, 1, stackSize + 0x4);
+	MTLR(0);
+	ADDI(1, 1, stackSize);
 }
 
 void constrainFloat(int floatReg, int tempFReg, int tempReg, float min, float max) {
