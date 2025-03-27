@@ -2350,7 +2350,7 @@ void ControlCodeMenu()
 								GetArrayValueFromIndex(PERCENT_SELCTION_VALUE_ARRAY_LOC, Reg8, 0, 3); {
 									LFS(1, 3, Line::VALUE);
 
-									SetRegister(Reg3, 0x80615520);
+									LWZ(Reg3, 13, -0x4150); // Get IfMngr Pointer
 									RLWINM(Reg4, Reg8, 2, 0, 31); //<< 2
 									ADD(Reg3, Reg3, Reg4);	//Reg8 changed to Reg4, P+ 2.28 fix
 									LWZ(Reg3, Reg3, 0x4C);
