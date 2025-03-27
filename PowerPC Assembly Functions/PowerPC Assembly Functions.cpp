@@ -1308,21 +1308,29 @@ void SaveRegisters()
 void SaveRegisters(vector<int> FPRegs)
 {
 	FPPushRecords = FPRegs;
-	int stackSize = 29 * 4 + FPRegs.size() * 8 + 8 + 8;
-	STW(0, 1, -4);
-	MFLR(0);
-	STW(0, 1, 4);
-	MFCTR(0);
-	STW(0, 1, -8);
 
-	int offset = -8;
-	for (int x : FPRegs) {
-		offset -= 8;
-		STFD(x, 1, offset);
-	}
+	// Determine length of FPR backup
+	std::size_t FPRStackBakLength = FPRegs.size() * 0x8;
+	std::size_t stackSize = 0x8 + GPRStackBakLength + Reg0CTRStackBakLength + FPRStackBakLength;
+	stackSize += 0x10 - (stackSize & 0xF);
 
+	// Allocate Stack Frame
 	STWU(1, 1, -stackSize);
-	STMW(3, 1, 8);
+	// Store r0 and CTR at designated Stack Region
+	STW(0, 1, Reg0CTRStackBakOffset);
+	MFCTR(0);
+	STW(0, 1, Reg0CTRStackBakOffset + 0x4);
+	// Get LR and store it at its designated Stack Region
+	MFLR(0);
+	STW(0, 1, stackSize + 0x4);
+	// Backup GPRs to designated Stack Region
+	STMW(3, 1, GPRStackBakOffset);
+	// Backup FPRs to designated Stack Region
+	int offset = FPRStackBakOffset;
+	for (int x : FPRegs) {
+		STFD(x, 1, offset);
+		offset += 0x8;
+	}
 }
 
 void SaveRegisters(int NumFPRegs)
@@ -1330,34 +1338,34 @@ void SaveRegisters(int NumFPRegs)
 	vector<int> FPRegs(NumFPRegs);
 	iota(FPRegs.begin(), FPRegs.end(), 0);
 	FPPushRecords = FPRegs;
+	
+	// Determine length of FPR backup
+	std::size_t FPRStackBakLength = NumFPRegs * 0x8;
+	std::size_t stackSize = 0x8 + GPRStackBakLength + Reg0CTRStackBakLength + FPRStackBakLength;
+	stackSize += 0x10 - (stackSize & 0xF);
 
-	std::size_t GPRStackSpaceLength = 29 * 0x4;
-	std::size_t FPRStackSpaceLength = NumFPRegs * 0x8;
-	std::size_t Reg0CTRStackSpaceLength = 0x4 + 0x4;
-	std::size_t stackSize = 0x8 + GPRStackSpaceLength + FPRStackSpaceLength + Reg0CTRStackSpaceLength;
-	STW(0, 1, -4);
-	MFLR(0);
-	STW(0, 1, 4);
-	MFCTR(0);
-	STW(0, 1, -8);
-
-	JumpToLabel(getSaveFPRsDownLabel(NumFPRegs - 1), bCACB_UNSPECIFIED, 1);
-
+	// Allocate Stack Frame
 	STWU(1, 1, -stackSize);
-	STMW(3, 1, 8);
+	// Store r0 and CTR at designated Stack Region
+	STW(0, 1, Reg0CTRStackBakOffset);
+	MFCTR(0);
+	STW(0, 1, Reg0CTRStackBakOffset + 0x4);
+	// Get LR and store it at its designated Stack Region
+	MFLR(0);
+	STW(0, 1, stackSize + 0x4);
+	// Backup GPRs to designated Stack Region
+	STMW(3, 1, GPRStackBakOffset);
+	// Backup FPRs to designated Stack Region
+	JumpToLabel(getSaveFPRsDownLabel(NumFPRegs - 1), bCACB_UNSPECIFIED, 1);
 }
 
 void RestoreRegisters()
 {
-	std::size_t GPRStackSpaceLength = 29 * 0x4;
-	std::size_t FPRStackSpaceLength = FPPushRecords.size() * 0x8;
-	std::size_t Reg0CTRStackSpaceLength = 0x4 + 0x4;
-	std::size_t stackSize = 0x8 + GPRStackSpaceLength + FPRStackSpaceLength + Reg0CTRStackSpaceLength;
+	std::size_t FPRStackBakLength = FPPushRecords.size() * 0x8;
+	std::size_t stackSize = 0x8 + GPRStackBakLength + Reg0CTRStackBakLength + FPRStackBakLength;
+	stackSize += 0x10 - (stackSize & 0xF);
 
-	LMW(3, 1, 8);
-	ADDI(1, 1, stackSize);
-
-	if (FPPushRecords.size() > 1)
+	if (FPPushRecords.size() > 0)
 	{
 		std::set<int> FPRegsSorted(FPPushRecords.begin(), FPPushRecords.end());
 		bool regsConsecutiveFromZero = *FPRegsSorted.begin() == 0x00;
@@ -1376,19 +1384,25 @@ void RestoreRegisters()
 		}
 		else
 		{
-			int offset = -8;
+			int offset = FPRStackBakOffset;
 			for (int x : FPPushRecords) {
-				offset -= 8;
 				LFD(x, 1, offset);
+				offset += 0x8;
 			}
 		}
 	}
 	
-	LWZ(0, 1, -8);
-	MTCTR(0);
-	LWZ(0, 1, 4);
+	// Restore GPRs!
+	LMW(3, 1, GPRStackBakOffset);
+	// Restore LR!
+	LWZ(0, 1, stackSize + 0x4);
 	MTLR(0);
-	LWZ(0, 1, -4);
+	// Restore r0 and CTR!
+	LWZ(0, 1, Reg0CTRStackBakOffset + 0x4);
+	MTCTR(0);
+	LWZ(0, 1, Reg0CTRStackBakOffset);
+	// De-allocate Stack Frame!
+	ADDI(1, 1, stackSize);
 }
 
 void SetRegs(int StartReg, vector<int> values)

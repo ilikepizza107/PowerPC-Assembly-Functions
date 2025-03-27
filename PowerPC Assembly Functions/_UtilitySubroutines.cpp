@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "_UtilitySubroutines.h"
 
-const std::string codePrefix = "[CM: _UtilitySubroutines v1.0.0] ";
+const std::string codePrefix = "[CM: _UtilitySubroutines v1.1.0] ";
 const std::string codeSuffix = " [QuickLava]";
 
 template <std::size_t size>
@@ -78,12 +78,12 @@ int getSaveFPRsDownLabel(unsigned char highestFPR)
 void saveFPRsDown()
 {
 	if (highestSaveFPRLabelUsed == UCHAR_MAX) return;
-	int stackOff = -(0x10 + (highestSaveFPRLabelUsed * 0x8));
+	int stackOff = FPRStackBakOffset + (highestSaveFPRLabelUsed * 0x8);
 	for (int i = highestSaveFPRLabelUsed; i >= 0; i--)
 	{
 		Label(saveFPRLabels[i]);
 		STFD(i, 1, stackOff);
-		stackOff += 0x8;
+		stackOff -= 0x8;
 	}
 	BLR();
 }
@@ -103,12 +103,12 @@ int getRestoreFPRsDownLabel(unsigned char highestFPR)
 void restoreFPRsDown()
 {
 	if (highestRestoreFPRLabelUsed == UCHAR_MAX) return;
-	int stackOff = -(0x10 + (highestRestoreFPRLabelUsed * 0x8));
+	int stackOff = FPRStackBakOffset + (highestSaveFPRLabelUsed * 0x8);
 	for (int i = highestRestoreFPRLabelUsed; i >= 0; i--)
 	{
 		Label(restoreFPRLabels[i]);
 		LFD(i, 1, stackOff);
-		stackOff += 0x8;
+		stackOff -= 0x8;
 	}
 	BLR();
 }

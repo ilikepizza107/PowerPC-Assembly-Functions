@@ -117,6 +117,13 @@ extern std::string MENU_NAME;
 #define MU_CHANGE_CLR_ANIM_N_IF 0x800B51F4
 ///Function addresses end
 
+/// Register Stack Backup Constants
+const std::size_t GPRStackBakOffset = 0x8;
+const std::size_t GPRStackBakLength = 29 * 0x4;
+const std::size_t Reg0CTRStackBakOffset = GPRStackBakOffset + GPRStackBakLength;
+const std::size_t Reg0CTRStackBakLength = 0x4 + 0x4;
+const std::size_t FPRStackBakOffset = Reg0CTRStackBakOffset + Reg0CTRStackBakLength;
+/// Register Stack Backup Constants End
 
 
 ///addresses maintained by Brawl start

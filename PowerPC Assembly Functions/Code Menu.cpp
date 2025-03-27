@@ -2445,8 +2445,8 @@ void ControlCodeMenu()
 								MULLI(Reg3, Reg3, 0x5C); // ... and multiply it by 0x5C, probably to index into a list of entries
 								STWX(Reg1, Reg4, Reg3); // Write 0 into (&gmSelCharData + 0x43AD8 + OffsetIntoListForTargetPort), Setting to 1 gives RAlt?
 
-								STB(Reg1, Reg2, 5); //force costume to 0
-								STB(Reg1, Reg2, 6); //force HUD to 0
+								STB(Reg1, Reg2, 5); // force costume to 0
+								STB(Reg1, Reg2, 6); // force HUD to 0
 							}EndIf();
 						}EndIf(); EndIf();
 					}EndIf();
