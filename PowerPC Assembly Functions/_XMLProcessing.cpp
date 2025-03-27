@@ -1824,7 +1824,9 @@ namespace xml
 			return 0;
 		}
 
-		// Otherwise, parse the rest of the Addon!
+		// Otherwise, the Addon itself is valid, mark it as such and parse the rest of the Addon!
+		result = 1;
+
 		// Properly store its name, shortname, and version...
 		addonName = rootNode.attribute(configXMLConstants::nameTag.c_str()).as_string("");
 		shortName = collectedShortName;
@@ -1854,7 +1856,6 @@ namespace xml
 			{
 				// ... copy the temporary entry into its own spot corresponding to its specified ShortName!
 				targetPages[tempPageItr->second.shortName] = tempPageItr->second;
-				result = 1;
 			}
 			// Otherwise...
 			else
@@ -1866,6 +1867,12 @@ namespace xml
 		}
 		// Finally, delete the staging entry!
 		targetPages.erase(tempPageItr);
+
+		if (targetPages.empty())
+		{
+			// ... report the error!
+			logOutput << "[NOTE] Addon parsed, but no valid Page Targets were found!\n";
+		}
 
 		return result;
 	}
