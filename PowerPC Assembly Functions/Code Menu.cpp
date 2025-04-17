@@ -1621,6 +1621,12 @@ void CreateMenu(Page& MainPage)
 	//reset line stack
 	AddValueToByteArray(RESET_LINES_STACK_LOC, Header); //reset line stack
 	for (int i = 0; i < MAX_SUBPAGE_DEPTH + 1; i++) { AddValueToByteArray(0, Header); }
+
+	AddValueToByteArray(0, Header); // \ Space reclaimed from lowering MAX_SUBPAGE_DEPTH from 20 to 16! 
+	AddValueToByteArray(0, Header); // | Ensure you update _CodeMenuHeaderConstants.h if you use these.
+	AddValueToByteArray(0, Header); // /
+	AddValueToByteArray(ALT_STAGE_BEHAVIOR_INDEX, Header); // Alternate Stage Line INDEX
+
 	//address arrays
 	//character switcher
 	AddValueToByteArray(CHARACTER_SELECT_P1_INDEX, Header); //P1
