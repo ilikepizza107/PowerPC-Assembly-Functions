@@ -464,7 +464,7 @@ class Line
 public:
 	enum LineBehaviorFlags
 	{
-		lbf_UNSELECTABLE = 0,
+		lbf_LOCKED = 0,
 		lbf_HIDDEN,
 		lbf_STICKY,
 		lbf_REMOVED,
@@ -486,7 +486,10 @@ public:
 	{
 		// Makes line immune to being reset to its default value!
 		LINE_FLAG_IGNORE_INDIRECT_RESET = 0b00000001,
-		LINE_FLAG_HIDE_FROM_USER         = 0b00000010,
+		// Makes line unselectable and invisible!
+		LINE_FLAG_HIDE_FROM_USER        = 0b00000010,
+		// Disables changing the line's value manually!
+		LINE_FLAG_VALUE_LOCKED          = 0b00000100,
 	};
 
 	Line();

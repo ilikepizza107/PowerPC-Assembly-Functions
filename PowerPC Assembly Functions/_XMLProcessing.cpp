@@ -58,7 +58,7 @@ namespace xml
 			lbfTagVec()
 			{
 				resize(Line::LineBehaviorFlags::lbf__COUNT, "BAD_TAG");
-				(*this)[Line::LineBehaviorFlags::lbf_UNSELECTABLE] = "locked";
+				(*this)[Line::LineBehaviorFlags::lbf_LOCKED] = "locked";
 				(*this)[Line::LineBehaviorFlags::lbf_HIDDEN] = "hidden";
 				(*this)[Line::LineBehaviorFlags::lbf_STICKY] = "sticky";
 				(*this)[Line::LineBehaviorFlags::lbf_REMOVED] = "excluded";
@@ -1073,12 +1073,10 @@ namespace xml
 					// ... summarize the table!
 					__LineColorsTable* table = &LINE_COLOR_TABLE;
 					logOutput << "[SUCCESS] Final Line Color List:\n";
-					logOutput << "\tNormal: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_NORMAL], 0x8) << "\n";
-					logOutput << "\tSelected: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_HIGHL], 0x8) << "\n";
-					logOutput << "\tChanged: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_CH_NORMAL], 0x8) << "\n";
-					logOutput << "\tChanged & Selected: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_CH_HIGHL], 0x8) << "\n";
-					logOutput << "\tComment: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_COMMENT], 0x8) << "\n";
-					logOutput << "\tLocked: 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[table->COLOR_LOCKED], 0x8) << "\n";
+					for (u32 i = 0; i < table->__COLOR_COUNT; i++)
+					{
+						logOutput << "\t" << table->COLOR_NAMES_ARR[i] << ": 0x" << lava::numToHexStringWithPadding(table->COLORS_ARR[i], 0x8) << "\n";
+					}
 				}
 				else
 				{

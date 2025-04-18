@@ -576,9 +576,10 @@ void Line::WriteLineData(vector<u8> SelectionOffsets)
 {
 	if (behaviorFlags[Line::lbf_REMOVED]) return; // If the line is explicitly marked as removed, skip it!
 
-	if (behaviorFlags[Line::lbf_UNSELECTABLE])
+	Flags &= ~Line::LINE_FLAG_VALUE_LOCKED;
+	if (behaviorFlags[Line::lbf_LOCKED])
 	{
-		Color = UNSELECTABLE_LINE_COLOR_OFFSET;
+		Flags |= Line::LINE_FLAG_VALUE_LOCKED;
 	}
 	Flags &= ~Line::LINE_FLAG_HIDE_FROM_USER;
 	if (behaviorFlags[Line::lbf_HIDDEN])
@@ -908,7 +909,7 @@ void Page::GetSelectableLines(vector<int>& SelectableLines)
 		Line* currLine = Lines[i];
 		if (currLine->type != COMMENT_LINE && currLine->type != PRINT_LINE)
 		{
-			if (!currLine->behaviorFlags[Line::lbf_UNSELECTABLE] && !currLine->behaviorFlags[Line::lbf_REMOVED])
+			if (!currLine->behaviorFlags[Line::lbf_REMOVED])
 			{
 				SelectableLines.push_back(i);
 			}
@@ -2736,7 +2737,7 @@ void ExecuteAction(int ActionReg, int ResetAccumulatorReg)
 		// Otherwise, if we did land on a new line, grab its flag byte...
 		LBZ(TempReg1, TempReg2, Line::FLAGS);
 		// ... and see if it's hidden from printing. If so...
-		ANDI(TempReg1, TempReg1, Line::LINE_FLAGS_FIELDS::LINE_FLAG_HIDE_FROM_USER);
+		ANDI(TempReg1, TempReg1, Line::LINE_FLAG_HIDE_FROM_USER);
 		// ... then we want to skip over it instead of selecting it, so we'll just retry the move!
 		JumpToLabel(retryActionLabel, bCACB_NOT_EQUAL);
 
@@ -2838,10 +2839,13 @@ void ResetLineSubroutine(int ResetAccumulatorReg)
 	// Grab Line Color early, since whether we're direct or not we'll need it for setting the page color!
 	LBZ(TempReg2, LineReg, Line::COLOR);
 
+	LBZ(TempReg3, LineReg, Line::FLAGS);
+	ANDI(TempReg1, TempReg3, Line::LINE_FLAG_VALUE_LOCKED);
+	JumpToLabel(setPageLineColorLabel, bCACB_NOT_EQUAL);
+
 	CMPLI(IsIndirectReg, 1, 0);
 	JumpToLabel(notIndirectLabel, bCACB_NOT_EQUAL);
-	LBZ(TempReg3, LineReg, Line::FLAGS);
-	ANDI(TempReg3, TempReg3, Line::LINE_FLAGS_FIELDS::LINE_FLAG_IGNORE_INDIRECT_RESET);
+	ANDI(TempReg1, TempReg3, Line::LINE_FLAG_IGNORE_INDIRECT_RESET);
 	JumpToLabel(setPageLineColorLabel, bCACB_NOT_EQUAL);
 
 	Label(notIndirectLabel);
@@ -3001,6 +3005,12 @@ void ModifyLineValueSubroutine()
 	CMPLI(TypeReg, HAS_VALUE_LIMIT, 0);
 	// If not, skip to the end of the subroutine.
 	JumpToLabel(exitLabel, bCACB_GREATER);
+
+	// Also check if the value lock bit is set...
+	LBZ(TempReg1, LineReg, Line::FLAGS);
+	ANDI(TempReg1, TempReg1, Line::LINE_FLAG_VALUE_LOCKED);
+	// ... and if so, also skip to the end of the subroutine.
+	JumpToLabel(exitLabel, bCACB_NOT_EQUAL);
 
 	// Pre-compare the Change Direction into CR7, since we need it for every case.
 	CMPLI(DoDecrReg, 0, 7);
@@ -3581,14 +3591,25 @@ void PrintPage(int PageReg, int SettingsPtrReg, int Reg1, int Reg2, int Reg3, in
 void PrintCodeMenuLine(int LinePtrReg, int SettingsPtrReg, int ColorArrayPtrReg, int TempReg1, int TempReg2)
 {
 	int skipPrintingLabel = GetNextLabel();
+	// Load flag byte to TempReg2!
 	LBZ(TempReg2, LinePtrReg, Line::FLAGS);
-	ANDI(TempReg2, TempReg2, Line::LINE_FLAGS_FIELDS::LINE_FLAG_HIDE_FROM_USER);
+	// If the flag for hiding a line is active...
+	ANDI(TempReg1, TempReg2, Line::LINE_FLAG_HIDE_FROM_USER);
+	// ... skip printing it!
 	JumpToLabel(skipPrintingLabel, bCACB_NOT_EQUAL);
 
-	LBZ(TempReg2, LinePtrReg, Line::TYPE);
-
+	// If we are printing, then instead check if the flag for locking a line is active, storing result in CR0.
+	int skipToLoadColorLabel = GetNextLabel();
+	ANDI(TempReg1, TempReg2, Line::LINE_FLAG_VALUE_LOCKED);
+	// Load current color byte.ss
 	LBZ(TempReg1, LinePtrReg, Line::COLOR);
+	// If the line isn't locked, just use the color as is.
+	JumpToLabel(skipToLoadColorLabel, bCACB_EQUAL);
+	// Otherwise though, convert it to the Locked variant of the given color!
+	ADDI(TempReg1, TempReg1, LOCKED_NORMAL_LINE_COLOR_OFFSET);
+	Label(skipToLoadColorLabel);
 	LWZX(TempReg1, ColorArrayPtrReg, TempReg1);
+	LBZ(TempReg2, LinePtrReg, Line::TYPE);
 	SetTextColor(TempReg1, SettingsPtrReg);
 
 	LHZ(4, LinePtrReg, Line::TEXT_OFFSET);
