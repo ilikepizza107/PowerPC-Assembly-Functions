@@ -1865,7 +1865,16 @@ void constantOverride() {
 		{
 			ADDIS(reg1, 0, indexHiHalf);
 		}
-		LWZ(reg3, reg1, indexLoHalf);
+		switch (x.writeSize)
+		{
+			case ConstantPair::ds_BYTE_A: { LBZ(reg3, reg1, indexLoHalf); break; }
+			case ConstantPair::ds_BYTE_B: { LBZ(reg3, reg1, indexLoHalf + 1); break; }
+			case ConstantPair::ds_BYTE_C: { LBZ(reg3, reg1, indexLoHalf + 2); break; }
+			case ConstantPair::ds_BYTE_D: { LBZ(reg3, reg1, indexLoHalf + 3); break; }
+			case ConstantPair::ds_HALF_A: { LHZ(reg3, reg1, indexLoHalf); break; }
+			case ConstantPair::ds_HALF_B: { LHZ(reg3, reg1, indexLoHalf + 2); break; }
+			case ConstantPair::ds_WORD: { LWZ(reg3, reg1, indexLoHalf); break; }
+		}
 		prevIndexHiHalf = indexHiHalf;
 
 		unsigned short destHiHalf = x.address >> 0x10;
@@ -1875,7 +1884,16 @@ void constantOverride() {
 		{
 			ADDIS(reg2, 0, destHiHalf);
 		}
-		STW(reg3, reg2, destLoHalf);
+		switch (x.writeSize)
+		{
+			case ConstantPair::ds_BYTE_A: case ConstantPair::ds_BYTE_B:
+			case ConstantPair::ds_BYTE_C: case ConstantPair::ds_BYTE_D: 
+			{ STB(reg3, reg2, destLoHalf);  break; }
+			case ConstantPair::ds_HALF_A: case ConstantPair::ds_HALF_B:
+			{ STH(reg3, reg2, destLoHalf); break; }
+			case ConstantPair::ds_WORD:
+			{ STW(reg3, reg2, destLoHalf); break; }
+		}
 		prevDestHiHalf = destHiHalf;
 	}
 
