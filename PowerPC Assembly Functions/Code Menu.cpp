@@ -1856,6 +1856,7 @@ void constantOverride() {
 
 	unsigned short prevIndexHiHalf = 0xFFFF;
 	unsigned short prevDestHiHalf = 0xFFFF;
+	std::sort(constantOverrides.begin(), constantOverrides.end());
 	for(auto& x : constantOverrides) {
 
 		unsigned short indexHiHalf = *x.index >> 0x10;

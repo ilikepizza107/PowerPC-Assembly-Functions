@@ -45,6 +45,20 @@ namespace xml
 		const std::string menuLineIntTag = "codeMenuInt";
 		const std::string menuLineFloatTag = "codeMenuFloat";
 		const std::string menuLineCommentTag = "codeMenuComment";
+		struct constOverTagVec : std::vector<std::string>
+		{
+			constOverTagVec()
+			{
+				resize(ConstantPair::dataSize::ds__COUNT, "BAD_TAG");
+				(*this)[ConstantPair::ds_WORD] = "exportTo";
+				(*this)[ConstantPair::ds_HALF_A] = "exportHalfATo";
+				(*this)[ConstantPair::ds_HALF_B] = "exportHalfBTo";
+				(*this)[ConstantPair::ds_BYTE_A] = "exportByteATo";
+				(*this)[ConstantPair::ds_BYTE_B] = "exportByteBTo";
+				(*this)[ConstantPair::ds_BYTE_C] = "exportByteCTo";
+				(*this)[ConstantPair::ds_BYTE_D] = "exportByteDTo";
+			}
+		} const constOverrideTagVec;
 		const std::string speedTag = "speed";
 		const std::string valueMinTag = "minValue";
 		const std::string valueMaxTag = "maxValue";
@@ -1708,6 +1722,21 @@ namespace xml
 		return linePtr.get() != nullptr;
 	}
 
+	void attemptToCollectConstOverride(const pugi::xml_node& sourceNode, std::shared_ptr<addonLine> destLine)
+	{
+		const configXMLConstants::constOverTagVec* strVec = &configXMLConstants::constOverrideTagVec;
+		pugi::xml_attribute targetAttr{};
+		for (u32 i = 0; !targetAttr && i < strVec->size(); i++)
+		{
+			targetAttr = sourceNode.attribute(strVec->at(i).c_str());
+			if (targetAttr)
+			{
+				destLine->overrideAddr = targetAttr.as_uint(0x00);
+				destLine->overrideDataSize = (ConstantPair::dataSize)i;
+			}
+		}
+	}
+
 	bool addonPageTarget::populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput, const addon* parentAddon)
 	{
 		bool errorOccurred = 0;
@@ -1738,6 +1767,7 @@ namespace xml
 						if (!tempLine->shortName.empty())
 						{
 							// ... additionally add it to our map, so we can handle its LOC and INDEX values later!
+							attemptToCollectConstOverride(childNode, tempLine);
 							lineMap[tempLine->shortName] = tempLine;
 						}
 					}
@@ -1928,12 +1958,26 @@ namespace xml
 			{
 				// ... output a set of .alias entries for it (one joined, and two split).
 				std::string locNameBase = shortName.str() + "_" + currLine.first.str() + "_LOC";
-				aliasBankOutput << "# Line \"" << currLine.second->lineName << "\" in \"" << addonName << "\"\n";
+
+				xml::addonLine* linePtr = currLine.second.get();
+				aliasBankOutput << "# Line \"" << linePtr->lineName << "\" in \"" << addonName << "\"\n";
 				aliasBankOutput << ".alias " << locNameBase << " = 0x" << lava::numToHexStringWithPadding(currAddr, 0x8) << "\n";
 				aliasBankOutput << ".alias " << locNameBase << "_HI = 0x" << lava::numToHexStringWithPadding(currAddr >> 0x10, 0x4) << "\n";
 				aliasBankOutput << ".alias " << locNameBase << "_LO = 0x" << lava::numToHexStringWithPadding(currAddr & 0xFFFF, 0x4) << "\n";
+
+				// If the line specified a constantOverride...
+				if (linePtr->overrideAddr != 0x00)
+				{
+					// ... register it!
+					u32 exportAddr = linePtr->overrideAddr;
+					aliasBankOutput << ".alias " << locNameBase << "_EXPORT = 0x" << lava::numToHexStringWithPadding(exportAddr, 0x8) << "\n";
+					aliasBankOutput << ".alias " << locNameBase << "_EXPORT_HI = 0x" << lava::numToHexStringWithPadding(exportAddr >> 0x10, 0x4) << "\n";
+					aliasBankOutput << ".alias " << locNameBase << "_EXPORT_LO = 0x" << lava::numToHexStringWithPadding(exportAddr & 0xFFFF, 0x4) << "\n";
+					constantOverrides.emplace_back(linePtr->overrideAddr, linePtr->INDEX, (ConstantPair::dataSize)linePtr->overrideDataSize);
+				}
+
 				// Lastly, write the line's INDEX value into the menu cmnu...
-				lava::writeRawDataToStream(menuFile, currLine.second->INDEX);
+				lava::writeRawDataToStream(menuFile, linePtr->INDEX);
 				// ... and scoot the address forwards 0x4 bytes to prepare for the next line.
 				currAddr += 0x4;
 			}

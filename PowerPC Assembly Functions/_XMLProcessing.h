@@ -48,6 +48,9 @@ namespace xml
 		std::shared_ptr<Line> linePtr = nullptr;
 		fieldChangeArr populated{};
 
+		u32 overrideAddr = 0x00;
+		ConstantPair::dataSize overrideDataSize = ConstantPair::ds_WORD;
+
 	private:
 		void buildSubmenuLine(const pugi::xml_node& sourceNode);
 		void buildIntegerLine(const pugi::xml_node& sourceNode);
@@ -56,7 +59,6 @@ namespace xml
 		void buildSelectionLine(const pugi::xml_node& sourceNode);
 		void buildSelectionMirrorLine(const pugi::xml_node& sourceNode, const addon* parentAddon);
 		void buildCommentLine(const pugi::xml_node& sourceNode);
-
 	public:
 		addonLine() {};
 		bool populate(const pugi::xml_node& sourceNode, lava::outputSplitter& logOutput, const addon* parentAddon = nullptr);

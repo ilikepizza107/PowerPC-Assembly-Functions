@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <map>
 #include <array>
+#include "ConstantOverrides.h"
 #include "_XMLProcessing.h"
 
 //active codes
@@ -93,25 +94,6 @@ extern int JUMPSQUAT_OVERRIDE_TOGGLE_INDEX;
 extern int JUMPSQUAT_OVERRIDE_FRAMES_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MIN_INDEX;
 extern int JUMPSQUAT_OVERRIDE_MAX_INDEX;
-
-struct ConstantPair {
-	enum dataSize
-	{
-		ds_WORD = 0,
-		ds_HALF_A,
-		ds_HALF_B,
-		ds_BYTE_A,
-		ds_BYTE_B,
-		ds_BYTE_C,
-		ds_BYTE_D,
-	};
-
-	int address;
-	int* index;
-	dataSize writeSize;
-
-	ConstantPair(int address, int &index, dataSize writeSizeIn = ds_WORD) : address(address), index(&index), writeSize(writeSizeIn) {}
-};
 
 //constant overrides
 extern vector<ConstantPair> constantOverrides;

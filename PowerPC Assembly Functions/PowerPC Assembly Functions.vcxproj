@@ -168,6 +168,7 @@
     <ClInclude Include="AIDisplay.h" />
     <ClInclude Include="C++Injection.h" />
     <ClInclude Include="Code Menu.h" />
+    <ClInclude Include="ConstantOverrides.h" />
     <ClInclude Include="Control Codes.h" />
     <ClInclude Include="Controls.h" />
     <ClInclude Include="DBZ Mode.h" />
@@ -208,6 +209,7 @@
     <ClCompile Include="AIDisplay.cpp" />
     <ClCompile Include="C++Injection.cpp" />
     <ClCompile Include="Code Menu.cpp" />
+    <ClCompile Include="ConstantOverrides.cpp" />
     <ClCompile Include="Control Codes.cpp" />
     <ClCompile Include="Controls.cpp" />
     <ClCompile Include="DBZ Mode.cpp" />
