@@ -26,7 +26,8 @@
         <lineColor lineKind="0" colorHex="0xRRGGBBAA" />
         -->
         <!--Where "lineKind" corresponds to the type of line whose color you're modifying.-->
-        <!--0: Normal, 1: Selected, 2: Changed, 3: Changed & Selected, 4: Comment, 5: Locked-->
+        <!--0: Normal, 1: Selected, 2: Changed, 3: Changed & Selected-->
+        <!--4: Locked, 5: Locked & Selected, 6: Locked & Changed, 7: Locked & Changed & Selected, 8: Comment-->
     </menuLineColors>
 
     <!--To add characters to the code menu, add entries for them into this block!-->
