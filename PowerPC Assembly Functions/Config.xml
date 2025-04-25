@@ -9,7 +9,7 @@
         <buildBaseFolder name="Project+" />
         <!--Specify a replacement for the text that usually sits at the top of the menu.-->
         <!--Leave this blank to leave the original title text in place.-->
-        <menuTitle text="" />
+        <menuTitle text="ILP+ Build Code Menu" />
         <!--Specify additional comment text to add to the top of the menu!-->
         <!--Note: By default, comments specified here are included beneath the usual comments outlining the menu's controls.-->
         <!--To delete those comments on the controls, set the "deleteControlsComments" argument to "true"!-->
@@ -37,7 +37,7 @@
     <!--Use this block to register Addons for inclusion in the menu!-->
     <!--To define entries manually, you may add entries to this block!-->
     <!--Additionally, to automatically include any Addons present in the "./Addons/" folder, set the "doAutoDetect" argument to "true".-->
-    <addonIncludes doAutoDetect="true">
+    <addonIncludes doAutoDetect="false">
         <!--Add entries in the following format:
         <addon path="./Addons/Example Addon/" />
         -->
@@ -62,7 +62,7 @@
         <jumpsquatModifier enabled="true" />
 
         <!--Controls the behavior of the Player Slot Color Changer Code!-->
-        <slotColorChanger enabled="false">
+        <slotColorChanger enabled="true">
             <colorDefinitions>
                 <color name="Pink" hue="317.5" saturation="1.00" luminance="0.55" />
                 <color name="Purple" hue="278.5" saturation="0.85" luminance="0.45">
