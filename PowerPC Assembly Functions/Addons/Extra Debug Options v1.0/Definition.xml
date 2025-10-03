@@ -1,0 +1,39 @@
+<addon name="Extra Debug Options v1.0 [Eon, ilikepizza107]" shortName="XTRADBUG">
+    <codeMenuPage shortName="_DEBUG">
+        <codeMenuSelection name="Selected Debug Option" shortName="VALUE">
+            <defaultOption index="6" editable="true"/>
+            <option value="Empty Presenter"/>
+            <option value="Unknown ECB Related"/> 
+            <option value="Footstool Hurt/Hitbox"/>
+            <option value="Footstool Hitbox"/>
+            <option value="Char Item Grabbox"/>
+            <option value="Char/Item Eatbox"/>
+            <option value="Unknown 1"/>
+            <option value="Unknown 2"/>
+            <option value="Unknown 3"/>
+            <option value="SSE Enemy ECB Related"/>
+            <option value="Unknown 4"/>
+            <option value="SSE AI Logic?"/>
+            <option value="Unknown 5"/>
+            <option value="Unknown 6"/>
+            <option value="SSE Enemy FS Hurtbox"/>
+            <option value="Unknown 7"/>
+            <option value="Unknown 8"/>
+            <option value="Eat/Bounce/Item Grabbox"/>
+            <option value="Char/S Item Grabbox"/>
+            <option value="Char/L Item Grabbox"/>
+            <option value="Unknown 9"/>
+            <option value="SSE Stage Interactibles"/>
+            <option value="Ladder"/>
+            <option value="Elevator"/>
+            <option value="Unknown 10"/>
+            <option value="Unknown ECB Related"/>
+            <option value="Wind/Grav/ECB Related"/>
+            <option value="Conveyor"/>
+            <option value="Water"/>
+            <option value="D3 Waddle Grab Range"/>
+            <option value="Unknown ECB Related"/>
+            <option value="Spring"/>
+        </codeMenuSelection>
+    </codeMenuPage>
+</addon>
