@@ -18,6 +18,8 @@
             <comment text="YOUR_COMMENT_HERE" />
             -->
         </menuComments>
+		<!--Determines whether or not the player settings pages display the player's current Tag in Hex, for use in setting up Tag-Based Costumes.-->
+		<tagCostumeDisplay enabled="false"/>
     </menuProperties>
 
     <!--To modify the menu's line colors, add new entries into this block!-->

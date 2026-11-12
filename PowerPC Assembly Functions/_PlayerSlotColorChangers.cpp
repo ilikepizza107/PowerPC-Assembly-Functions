@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "_PlayerSlotColorChangers.h"
 
-const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.1.2] ";
+const std::string codePrefix = "[CM: _PlayerSlotColorChangers v3.1.3] ";
 const std::string codeSuffix = " [QuickLava]";
 
 // New approach:
@@ -452,6 +452,7 @@ void psccRandomIcons()
 
 	std::string codeGroupName = "Random Franchise Icon uses Unique CLR0 Frame ";
 	int randFranchiseIconExitLabel = GetNextLabel();
+	const int teamCLR0IndexWordAddr = 0x806A0EAC;
 	ASMStart(0x80697074, codePrefix + codeGroupName + "(setCharKind)" + codeSuffix, "");
 	// Restore Original Instruction
 	MR(25, 3);
@@ -470,10 +471,11 @@ void psccRandomIcons()
 	LWZ(12, 30, 0x1B0);
 	// If we *are* in team mode though...
 	BC(4, bCACB_EQUAL.inConditionRegField(0x7));
-	// ... instead grab the Team ID we're on.
+	// ... instead grab the Team ID we're on...
 	LWZ(12, 30, 0x1C0);
-	RLWINM(0, 12, 0x1F, 0x1F, 0x1F, 0);
-	ADD(12, 12, 0);
+	// ... and use that as the index into the CLR0 Index Word to determine the target color frame.
+	ORIS(12, 12, teamCLR0IndexWordAddr >> 0x10);
+	LBZ(12, 12, teamCLR0IndexWordAddr & 0xFFFF);
 	// Re-use the comparison from before this hook: add 4 to the ID if we're on the Random Icon.
 	BC(2, bCACB_NOT_EQUAL);
 	ADDI(12, 12, 0x4);

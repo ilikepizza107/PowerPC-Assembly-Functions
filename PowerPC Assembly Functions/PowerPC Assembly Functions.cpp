@@ -5,7 +5,7 @@
 
 #if BUILD_TYPE == PROJECT_PLUS // If the program is configured by default for P+ builds...
 	#if PROJECT_PLUS_EX_BUILD // ... and this is a P+EX build... 
-		unsigned long characterListVersion = characterListVersions::clv_PPEX_SCEPTILE; // ... we'll default to the current version's character list,
+		unsigned long characterListVersion = characterListVersions::clv_PPEX_ZERO; // ... we'll default to the current version's character list,
 		string MAIN_FOLDER = "P+EX/./."; // use the "P+EX" base directory,
 		std::string MENU_NAME = "Project+Ex Code Menu"; // and use the P+EX menu name.
 
@@ -32,6 +32,7 @@ const std::array<std::string, characterListVersions::__clv_Count> characterListV
 	"P+EX (Alloys)",
 	"P+EX (Sceptile)",
 	"P+EX (Dark Samus)",
+	"P+EX (Zero)",
 };
 std::string getCharacterListVersionName(unsigned long versionID)
 {
@@ -50,7 +51,7 @@ bool CONFIG_DISABLE_ASM_DISASSEMBLY = 0;
 bool CONFIG_ENABLE_ASM_HEX_COMMENTS = 0;
 bool CONFIG_DELETE_ASM_TXT_FILE = 1;
 bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS = 0;
-bool CONFIG_ALLOW_BLA_FUNCTION_CALLS = !ENSURE_PRE_PP30_COMPAT;
+bool CONFIG_ALLOW_BLA_FUNCTION_CALLS = 1;
 
 
 bool setMAIN_FOLDER(std::string mainFolderIn)

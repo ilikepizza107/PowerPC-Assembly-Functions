@@ -45,6 +45,7 @@ enum characterListVersions
 	clv_PPEX_ALLOYS,
 	clv_PPEX_SCEPTILE,
 	clv_PPEX_DARK_SAMUS,
+	clv_PPEX_ZERO,
 	__clv_Count,
 };
 extern unsigned long characterListVersion;
@@ -68,9 +69,10 @@ extern bool CONFIG_OUTPUT_ASM_INSTRUCTION_DICTIONARY;
 extern bool CONFIG_DISABLE_ASM_DISASSEMBLY;
 extern bool CONFIG_ENABLE_ASM_HEX_COMMENTS;
 extern bool CONFIG_DELETE_ASM_TXT_FILE;
-extern bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS; // Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
-extern bool CONFIG_ALLOW_BLA_FUNCTION_CALLS; // Enables function calls via BLA! Only valid for builds that have Eon's BLA code in your build!
-
+// Allows the builder to implicitly replace MULLIs by powers of 2 with bitshift operations!
+extern bool CONFIG_ALLOW_IMPLICIT_OPTIMIZATIONS;
+// Enables function calls via BLA! Only valid for builds that have Eon's BLA code installed.
+extern bool CONFIG_ALLOW_BLA_FUNCTION_CALLS;
 //ROTC floating offsets
 #define FS_20_0 -0x7920
 
